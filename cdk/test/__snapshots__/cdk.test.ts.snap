@@ -717,7 +717,7 @@ exports[`Snapshot test 1`] = `
       ],
       "Properties": {
         "Architectures": [
-          "arm64",
+          "x86_64",
         ],
         "Code": {
           "ImageUri": {
@@ -931,7 +931,7 @@ exports[`Snapshot test 1`] = `
       ],
       "Properties": {
         "Architectures": [
-          "arm64",
+          "x86_64",
         ],
         "Code": {
           "ImageUri": {
