@@ -209,8 +209,6 @@ Users will primarily request software engineering assistance including bug fixes
     });
     firstCachePoint = secondCachePoint;
 
-    const forceReport = Date.now() - lastReportedTime > 300 * 1000;
-
     const res = await pRetry(
       async () => {
         try {
@@ -330,7 +328,7 @@ Users will primarily request software engineering assistance including bug fixes
             toolUseId,
             content: toolResultObject ?? [
               {
-                text: renderToolResult({ toolResult, forceReport }),
+                text: renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
               },
             ],
           },

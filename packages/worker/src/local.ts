@@ -11,7 +11,7 @@ const rl = createInterface({
 const workerId = WorkerId;
 
 import { WorkerId } from './common/constants';
-import { saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
+import { renderUserMessage, saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
 
 async function processInput(input: string) {
   try {
@@ -20,7 +20,7 @@ async function processInput(input: string) {
         workerId,
         {
           role: 'user',
-          content: [{ text: input }],
+          content: [{ text: renderUserMessage({ message: input }) }],
         },
         0,
         'userMessage'

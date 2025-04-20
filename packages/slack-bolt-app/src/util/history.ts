@@ -1,5 +1,6 @@
 import { PutCommand, QueryCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
+import { renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 import { Message } from '@aws-sdk/client-bedrock-runtime';
 
 type MessageItem = {
@@ -20,7 +21,7 @@ export const saveConversationHistory = async (
 ) => {
   const content = [];
   if (message) {
-    content.push({ text: message });
+    content.push({ text: renderUserMessage({ message }) });
   }
   imageS3Keys.forEach((key) => {
     content.push({
