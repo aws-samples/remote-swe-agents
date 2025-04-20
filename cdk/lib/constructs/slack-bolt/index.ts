@@ -33,7 +33,9 @@ export class SlackBolt extends Construct {
     const asyncHandler = new DockerImageFunction(this, 'AsyncHandler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore')).toString().split('\n'),
+        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore'))
+          .toString()
+          .split('\n'),
         cmd: ['async-handler.handler'],
       }),
       timeout: Duration.minutes(10),
@@ -54,7 +56,9 @@ export class SlackBolt extends Construct {
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore')).toString().split('\n'),
+        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore'))
+          .toString()
+          .split('\n'),
       }),
       timeout: Duration.seconds(29),
       environment: {

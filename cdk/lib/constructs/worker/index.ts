@@ -63,7 +63,7 @@ export class Worker extends Construct {
     new BucketDeployment(this, 'SourceDeployment', {
       destinationBucket: sourceBucket,
       sources: [
-         // specify a dummy directory. All the input files are already in the image.
+        // specify a dummy directory. All the input files are already in the image.
         Source.asset(join('..', 'resources'), {
           bundling: {
             command: [
@@ -72,12 +72,12 @@ export class Worker extends Construct {
               [
                 //
                 'cd /asset-input',
-                "tar -zcf source.tar.gz -C /build/ .",
+                'tar -zcf source.tar.gz -C /build/ .',
                 'mkdir -p /asset-output/source',
                 'mv source.tar.gz /asset-output/source',
               ].join('&&'),
             ],
-            image: DockerImage.fromBuild('..', {file: join('docker','worker.Dockerfile')}),
+            image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
           },
         }),
       ],
