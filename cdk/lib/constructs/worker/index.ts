@@ -167,7 +167,7 @@ chown -R ubuntu:ubuntu /opt/myapp
 # Create setup script
 mkdir -p /opt/scripts
 cat << 'EOF' > /opt/scripts/start-app.sh
-#!/bin/bash
+#!/bin/bash -l
 
 # Clean up existing files
 rm -rf ./{*,.*}
@@ -271,6 +271,21 @@ cat << EOF > /etc/fluent-bit/fluent-bit.conf
     auto_create_group false
 EOF
 
+# Create Fluent Bit startup script
+cat << 'EOF' > /opt/scripts/start-fluent-bit.sh
+#!/bin/bash
+
+# Set up dynamic environment variables
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
+export WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+# Start Fluent Bit with the configuration using exec to replace the shell process
+exec /opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+EOF
+
+# Make script executable
+chmod +x /opt/scripts/start-fluent-bit.sh
+
 # Create and configure Fluent Bit systemd service
 cat << EOF > /etc/systemd/system/fluent-bit.service
 [Unit]
@@ -279,10 +294,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+ExecStart=/opt/scripts/start-fluent-bit.sh
 Restart=always
 RestartSec=5
-Environment=WORKER_ID=$WORKER_ID
 
 [Install]
 WantedBy=multi-user.target
