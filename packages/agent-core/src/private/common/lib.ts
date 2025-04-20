@@ -3,10 +3,13 @@ import { ZodSchema } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 export type ToolDefinition<Input> = {
-  name: string;
-  handler: (input: Input) => Promise<string>;
-  schema: ZodSchema;
-  toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
+  /**
+   * Name of the tool. This is the identifier of the tool for the agent.
+   */
+  readonly name: string;
+  readonly handler: (input: Input) => Promise<string>;
+  readonly schema: ZodSchema;
+  readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
 };
 
 export const zodToJsonSchemaBody = (schema: ZodSchema) => {
