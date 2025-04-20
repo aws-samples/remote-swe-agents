@@ -37,6 +37,9 @@ jobs:
       - run: |
           npm ci
           npm run build
+        working-directory: ./packages/agent-core
+      - run: |
+          npm run build
           npm run format:check
         working-directory: ./packages/slack-bolt-app
         name: Run static analyses
@@ -50,6 +53,10 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
+          npm run build
+        working-directory: ./packages/agent-core
+        name: Install dependencies
+      - run: |
           npm run format:check
         working-directory: ./packages/worker
         name: Run static analyses
