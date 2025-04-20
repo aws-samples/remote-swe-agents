@@ -37,7 +37,7 @@ jobs:
       - run: |
           npm ci
           npm run build -w packages/agent-core
-          name: Install dependencies
+        name: Install dependencies
       - run: |
           npm run build
           npm run format:check
@@ -54,7 +54,7 @@ jobs:
       - run: |
           npm ci
           npm run build -w packages/agent-core
-          name: Install dependencies
+        name: Install dependencies
       - run: |
           npm run format:check
         working-directory: ./packages/worker
