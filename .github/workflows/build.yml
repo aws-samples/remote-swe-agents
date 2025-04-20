@@ -87,6 +87,16 @@ jobs:
           npm run build
         working-directory: ./packages/agent-core
         name: Run next build
+  Build-and-Test-Dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -f docker/slack-bolt-app.Dockerfile -t slack-bolt-app .
+        name: Build slack-bolt-app docker image
+      - run: |
+          docker run --entrypoint node --env TESTING_BOOTSTRAP=true --env BOT_TOKEN=dummy --env SIGNING_SECRET=dummy slack-bolt-app local.js
+        name: Test if the image can boot successfully
 permissions:
   id-token: write # This is required for requesting the JWT
   contents: read # This is required for actions/checkout
