@@ -174,7 +174,7 @@ chown -R ubuntu:ubuntu /opt/myapp
 
 # Create setup script
 mkdir -p /opt/scripts
-cat << 'EOF' > /opt/scripts/setup-app.sh
+cat << 'EOF' > /opt/scripts/start-app.sh
 #!/bin/bash
 
 # Clean up existing files
@@ -197,11 +197,15 @@ npx playwright install chromium
 
 # Configure GitHub CLI
 gh config set prompt disabled
+
+# Start app
+cd packages/worker
+npx tsx src/main.ts'
 EOF
 
 # Make script executable and set ownership
-chmod +x /opt/scripts/setup-app.sh
-chown ubuntu:ubuntu /opt/scripts/setup-app.sh
+chmod +x /opt/scripts/start-app.sh
+chown ubuntu:ubuntu /opt/scripts/start-app.sh
 
 cat << EOF > /etc/systemd/system/myapp.service
 [Unit]
@@ -213,10 +217,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/myapp
 
-# Pre-start script to download and update source code from S3
-ExecStartPre=/opt/scripts/setup-app.sh
-
-ExecStart=/bin/bash -l -c 'cd packages/worker && npx tsx src/main.js'
+ExecStart=/opt/scripts/start-app.sh
 Restart=always
 RestartSec=10
 TimeoutStartSec=600
