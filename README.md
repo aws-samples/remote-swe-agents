@@ -61,6 +61,7 @@ Please carefully follow all the steps below. If you encounter any issues, we're 
 - npm (version 9 or higher)
 - AWS CLI
 - AWS IAM profile with appropriate permissions
+- Docker
 - Bedrock Claude Sonnet 3.7 model is [enabled on](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access) us-west-2 regions
 - Slack Workspace
 - GitHub Account

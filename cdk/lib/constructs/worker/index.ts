@@ -161,14 +161,6 @@ mv gh-token /usr/bin
     }
 
     userData.addCommands(`
-AWS_REGION=${Stack.of(this).region}
-TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
-WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-SLACK_CHANNEL_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-SLACK_THREAD_TS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
-SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text)
-GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)` : '""'}
-
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
@@ -198,9 +190,17 @@ npx playwright install chromium
 # Configure GitHub CLI
 gh config set prompt disabled
 
+# Set up dynamic environment variables
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
+export WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+export SLACK_CHANNEL_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
+export SLACK_THREAD_TS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
+export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text)
+export GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)` : '""'}
+
 # Start app
 cd packages/worker
-npx tsx src/main.ts'
+npx tsx src/main.ts
 EOF
 
 # Make script executable and set ownership
@@ -225,16 +225,12 @@ TimeoutStopSec=10s
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=myapp
-Environment=AWS_REGION=$AWS_REGION
-Environment=WORKER_ID=$WORKER_ID
-Environment=SLACK_CHANNEL_ID=$SLACK_CHANNEL_ID
-Environment=SLACK_THREAD_TS=$SLACK_THREAD_TS
-Environment=SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN
+# Static environment variables
+Environment=AWS_REGION=${Stack.of(this).region}
 Environment=EVENT_HTTP_ENDPOINT=${bus.httpEndpoint}
 Environment=GITHUB_APP_PRIVATE_KEY_PATH=${privateKey ? '/opt/private-key.pem' : ''}
 Environment=GITHUB_APP_ID=${props.gitHubApp?.appId ?? ''}
 Environment=GITHUB_APP_INSTALLATION_ID=${props.gitHubApp?.installationId ?? ''}
-Environment=GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN
 Environment=TABLE_NAME=${props.storageTable.tableName}
 Environment=BUCKET_NAME=${props.imageBucket.bucketName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
