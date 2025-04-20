@@ -8,7 +8,6 @@ import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from '@remote-swe-agents/agent-core';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
-import { writeFileSync } from 'fs';
 import { WorkerId } from '../../common/constants';
 
 const sts = new STSClient();
