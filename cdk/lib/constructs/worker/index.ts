@@ -129,7 +129,7 @@ snap install aws-cli --classic
 # Install Fluent Bit
 curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 
-# https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+# Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
 (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
   && sudo mkdir -p -m 755 /etc/apt/keyrings \
   && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -267,7 +267,7 @@ cat << EOF > /etc/fluent-bit/fluent-bit.conf
     Match        myapp
     region       ${Stack.of(this).region}
     log_group_name    ${this.logGroup.logGroupName}
-    log_stream_name   log-$WORKER_ID
+    log_stream_name   log-\${WORKER_ID}
     auto_create_group false
 EOF
 
@@ -275,11 +275,9 @@ EOF
 cat << 'EOF' > /opt/scripts/start-fluent-bit.sh
 #!/bin/bash
 
-# Set up dynamic environment variables
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 
-# Start Fluent Bit with the configuration using exec to replace the shell process
 exec /opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
 EOF
 
