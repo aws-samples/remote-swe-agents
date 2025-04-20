@@ -36,8 +36,8 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
-          npm run build
-        working-directory: ./packages/agent-core
+          npm run build -w packages/agent-core
+          name: Install dependencies
       - run: |
           npm run build
           npm run format:check
@@ -53,9 +53,8 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
-          npm run build
-        working-directory: ./packages/agent-core
-        name: Install dependencies
+          npm run build -w packages/agent-core
+          name: Install dependencies
       - run: |
           npm run format:check
         working-directory: ./packages/worker
@@ -78,8 +77,7 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
-          npm run format:check
-        working-directory: ./packages/agent-core
+          npm run format:check -w packages/agent-core
         name: Run static analyses
       - run: |
           npm run test
