@@ -115,18 +115,13 @@ export class Worker extends Construct {
     const userData = launchTemplate.userData!;
 
     userData.addCommands(`
-export AWS_REGION=${Stack.of(this).region}
-
-# Install Node.js https://github.com/nodesource/distributions
-curl -fsSL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh
-while true; do
-  # apt update inside the script sometimes fails
-  bash nodesource_setup.sh && break
-done
-
-apt-get -o DPkg::Lock::Timeout=-1 install -y nodejs docker.io python3-pip
+apt-get -o DPkg::Lock::Timeout=-1 update
+apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
 ln -s -f /usr/bin/python3 /usr/bin/pip
+
+# Install Node.js
+snap install node --channel=22/stable --classic
 
 # Install AWS CLI
 snap install aws-cli --classic
@@ -166,6 +161,7 @@ mv gh-token /usr/bin
     }
 
     userData.addCommands(`
+AWS_REGION=${Stack.of(this).region}
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 SLACK_CHANNEL_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
@@ -175,6 +171,37 @@ GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws
 
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
+
+# Create setup script
+mkdir -p /opt/scripts
+cat << 'EOF' > /opt/scripts/setup-app.sh
+#!/bin/bash
+
+# Clean up existing files
+rm -rf ./{*,.*}
+
+# Download source code from S3
+aws s3 cp s3://${sourceBucket.bucketName}/source/source.tar.gz ./source.tar.gz
+
+# Extract and clean up
+tar -xvzf source.tar.gz
+rm -f source.tar.gz
+
+# Install dependencies and build
+npm ci
+npm run build -w packages/agent-core
+
+# Install Playwright dependencies
+npx playwright install-deps
+npx playwright install chromium
+
+# Configure GitHub CLI
+gh config set prompt disabled
+EOF
+
+# Make script executable and set ownership
+chmod +x /opt/scripts/setup-app.sh
+chown ubuntu:ubuntu /opt/scripts/setup-app.sh
 
 cat << EOF > /etc/systemd/system/myapp.service
 [Unit]
@@ -187,16 +214,7 @@ User=ubuntu
 WorkingDirectory=/opt/myapp
 
 # Pre-start script to download and update source code from S3
-ExecStartPre=/bin/bash -c '\\
-    rm -rf ./{*,.*} && \\
-    aws s3 cp s3://${sourceBucket.bucketName}/source/source.tar.gz ./source.tar.gz && \\
-    tar -xvzf source.tar.gz && \\
-    rm -f source.tar.gz && \\
-    npm ci && \\
-    npm run build -w packages/agent-core && \\
-    npx playwright install-deps && \\
-    npx playwright install chromium && \\
-    gh config set prompt disabled'
+ExecStartPre=/opt/scripts/setup-app.sh
 
 ExecStart=/bin/bash -l -c 'cd packages/worker && npx tsx src/main.js'
 Restart=always
