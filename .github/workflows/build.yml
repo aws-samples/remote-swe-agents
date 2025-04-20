@@ -61,7 +61,7 @@ jobs:
           npm run build
         working-directory: ./packages/worker
         name: Run next build
-  Build-and-Test-Worker:
+  Build-and-Test-AgentCore:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
