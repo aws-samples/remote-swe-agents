@@ -10,8 +10,8 @@ const rl = createInterface({
 });
 const workerId = WorkerId;
 
-import { saveConversationHistory } from './agent/common/messages';
 import { WorkerId } from './common/constants';
+import { saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
 
 async function processInput(input: string) {
   try {

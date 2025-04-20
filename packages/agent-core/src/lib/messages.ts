@@ -4,8 +4,8 @@ import sharp from 'sharp';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
-import { ddb, TableName } from '../../lib/aws/ddb';
-import { writeBytesToKey, getBytesFromKey } from '../../lib/aws/s3';
+import { ddb, TableName } from './aws/ddb';
+import { writeBytesToKey, getBytesFromKey } from './aws/s3';
 
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;

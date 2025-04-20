@@ -11,7 +11,7 @@ import {
   saveConversationHistory,
   saveConversationHistoryAtomic,
   updateMessageTokenCount,
-} from './common/messages';
+} from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from './common/bedrock';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';

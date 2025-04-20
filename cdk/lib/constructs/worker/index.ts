@@ -193,7 +193,7 @@ ExecStartPre=/bin/bash -c '\\
     tar -xvzf source.tar.gz && \\
     rm -f source.tar.gz && \\
     npm ci && \\
-    npm run build -w packages/common && \\
+    npm run build -w packages/agent-core && \\
     npx playwright install-deps && \\
     npx playwright install chromium && \\
     gh config set prompt disabled'
