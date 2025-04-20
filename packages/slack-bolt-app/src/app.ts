@@ -8,7 +8,7 @@ import { calculateCost } from './util/cost';
 import * as fs from 'fs';
 import * as os from 'os';
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-import { s3, BucketName } from '@remote-swe-agents/common';
+import { s3, BucketName } from '@remote-swe-agents/agent-core';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { IdempotencyAlreadyInProgressError } from '@aws-lambda-powertools/idempotency';
 

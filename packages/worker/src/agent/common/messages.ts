@@ -1,8 +1,8 @@
 import { Message } from '@aws-sdk/client-bedrock-runtime';
 import { PutCommand, UpdateCommand, paginateQuery, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { getBytesFromKey, writeBytesToKey } from '@remote-swe-agents/common';
+import { getBytesFromKey, writeBytesToKey } from '@remote-swe-agents/agent-core';
 import sharp from 'sharp';
-import { ddb, TableName } from '@remote-swe-agents/common';
+import { ddb, TableName } from '@remote-swe-agents/agent-core';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
