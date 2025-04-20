@@ -1,4 +1,4 @@
-import { reportProgressTool } from '../tools/report-progress';
+import { reportProgressTool } from "../tools/report-progress";
 
 export const renderToolResult = (props: { toolResult: string; forceReport: boolean }) => {
   return `

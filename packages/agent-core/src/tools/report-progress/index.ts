@@ -1,6 +1,6 @@
-import { ToolDefinition, zodToJsonSchemaBody } from '../../common/lib';
 import { z } from 'zod';
-import { sendMessage } from '../../../common/slack';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
+import { sendMessageToSlack } from '../../lib/slack';
 
 const inputSchema = z.object({
   message: z
@@ -14,7 +14,7 @@ export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (input: z.infer<typeof inputSchema>) => {
     if (!input.message) return 'No message was sent.';
-    await sendMessage(input.message, true);
+    await sendMessageToSlack(input.message, true);
     return 'Successfully sent a message.';
   },
   schema: inputSchema,

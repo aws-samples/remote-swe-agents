@@ -1,10 +1,10 @@
-import { DefaultWorkingDirectory, executeCommand } from '../command-execution';
-import { ToolDefinition, zodToJsonSchemaBody } from '../../common/lib';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { writeMetadata } from '../../common/metadata';
+import { DefaultWorkingDirectory, executeCommand } from '../command-execution';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
+import { writeMetadata } from '../../lib/metadata';
 
 const inputSchema = z.object({
   owner: z.string().describe('GitHub repository owner'),

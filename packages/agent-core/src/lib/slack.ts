@@ -1,5 +1,5 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
-import { readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 
 const BotToken = process.env.SLACK_BOT_TOKEN!;
 const channelID = process.env.SLACK_CHANNEL_ID!;
@@ -25,7 +25,7 @@ const getApp = () => {
   return app;
 };
 
-export const sendMessage = async (message: string, progress = false) => {
+export const sendMessageToSlack = async (message: string, progress = false) => {
   if (disableSlack) {
     console.log(`[Slack] ${message}`);
     return;
@@ -58,7 +58,7 @@ export const sendMessage = async (message: string, progress = false) => {
   });
 };
 
-export const sendImageWithMessage = async (imagePath: string, message: string, progress = false) => {
+export const sendFileToSlack = async (imagePath: string, message: string, progress = false) => {
   if (disableSlack) {
     console.log(`[Slack] Image: ${imagePath}, Message: ${message}`);
     return;

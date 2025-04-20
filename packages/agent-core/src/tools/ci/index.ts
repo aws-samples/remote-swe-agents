@@ -1,8 +1,8 @@
 import { setTimeout } from 'timers/promises';
 import { executeCommand } from '../command-execution';
-import { setKillTimer } from '../../../common/kill-timer';
-import { ToolDefinition, zodToJsonSchemaBody } from '../../common/lib';
 import { z } from 'zod';
+import { setKillTimer } from '../../lib/kill-timer';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 
 const inputSchema = z.object({
   owner: z.string().describe('GitHub repository owner'),

@@ -3,7 +3,7 @@ import { authorizeGitHubCli } from './github';
 import { homedir } from 'os';
 import { join } from 'path';
 import { z } from 'zod';
-import { ToolDefinition, truncate, zodToJsonSchemaBody } from '../../common/lib';
+import { ToolDefinition, truncate,zodToJsonSchemaBody } from '../../private/common/lib';
 
 const inputSchema = z.object({
   command: z.string().describe('The command to execute.'),

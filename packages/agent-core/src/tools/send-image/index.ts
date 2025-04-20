@@ -1,6 +1,6 @@
-import { ToolDefinition, zodToJsonSchemaBody } from '../../common/lib';
 import { z } from 'zod';
-import { sendImageWithMessage } from '../../../common/slack';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
+import { sendFileToSlack } from '../../lib/slack';
 
 const inputSchema = z.object({
   imagePath: z.string().describe('the local file system path to the image'),
@@ -12,7 +12,7 @@ const name = 'sendImageToUser';
 export const sendImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (input: z.infer<typeof inputSchema>) => {
-    await sendImageWithMessage(input.imagePath, input.message);
+    await sendFileToSlack(input.imagePath, input.message);
     return 'successfully sent an image with message.';
   },
   schema: inputSchema,

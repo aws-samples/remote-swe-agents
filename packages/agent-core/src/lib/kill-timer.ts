@@ -1,5 +1,5 @@
-import { stopMyself } from './ec2';
-import { sendMessage } from './slack';
+import { stopMyself } from './aws/ec2';
+import { sendMessageToSlack } from './slack';
 
 let killTimer: NodeJS.Timeout;
 export const setKillTimer = () => {
@@ -8,7 +8,7 @@ export const setKillTimer = () => {
   }
   killTimer = setTimeout(
     async () => {
-      await sendMessage('Going to sleep mode. You can wake me up at any time.');
+      await sendMessageToSlack('Going to sleep mode. You can wake me up at any time.');
       await stopMyself();
     },
     30 * 60 * 1000

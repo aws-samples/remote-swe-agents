@@ -4,7 +4,6 @@ import {
   ThrottlingException,
   ToolResultContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
-import { sendMessage } from '../common/slack';
 import {
   getConversationHistory,
   middleOutFiltering,
@@ -13,21 +12,23 @@ import {
   saveConversationHistoryAtomic,
   updateMessageTokenCount,
 } from './common/messages';
-import { commandExecutionTool, DefaultWorkingDirectory } from './tools/command-execution';
 import pRetry, { AbortError } from 'p-retry';
-import { ciTool } from './tools/ci';
-import { setKillTimer } from '../common/kill-timer';
-import { reportProgressTool } from './tools/report-progress';
-import { fileEditTool } from './tools/editor';
 import { bedrockConverse } from './common/bedrock';
-import { cloneRepositoryTool } from './tools/repo';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
-import { sendImageTool } from './tools/send-image';
-import { getPRCommentsTool, replyPRCommentTool } from './tools/github-pr-comments';
-import { readMetadata } from './common/metadata';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
-import { renderToolResult } from './common/prompt';
+import {
+  ciTool,
+  cloneRepositoryTool,
+  commandExecutionTool,
+  DefaultWorkingDirectory,
+  fileEditTool,
+  getPRCommentsTool,
+  replyPRCommentTool,
+  reportProgressTool,
+  sendImageTool,
+} from '@remote-swe-agents/agent-core/tools';
+import { readMetadata, renderToolResult, sendMessageToSlack, setKillTimer } from '@remote-swe-agents/agent-core/lib';
 
 export const onMessageReceived = async (workerId: string) => {
   const { items: allItems, slackUserId } = await pRetry(
@@ -275,23 +276,25 @@ Users will primarily request software engineering assistance including bug fixes
             if (typeof mcpResult.content == 'string') {
               toolResult = mcpResult.content;
             } else {
-              toolResultObject = await Promise.all(mcpResult.content!.map(
-                async (c): Promise<{ text: string } | { image: { format: string; source: { bytes: any } } }> => {
-                  if (c.type == 'text') {
-                    return {
-                      text: c.text,
-                    };
-                  } else if (c.type == 'image') {
-                    return {
-                      image: {
-                        format: c.mimeType.split('/')[1],
-                        source: { bytes: Buffer.from(c.data, 'base64') },
-                      },
-                    };
-                  } else {
-                    throw new Error(`unsupported content type! ${JSON.stringify(c)}`);
+              toolResultObject = (await Promise.all(
+                mcpResult.content!.map(
+                  async (c): Promise<{ text: string } | { image: { format: string; source: { bytes: any } } }> => {
+                    if (c.type == 'text') {
+                      return {
+                        text: c.text,
+                      };
+                    } else if (c.type == 'image') {
+                      return {
+                        image: {
+                          format: c.mimeType.split('/')[1],
+                          source: { bytes: Buffer.from(c.data, 'base64') },
+                        },
+                      };
+                    } else {
+                      throw new Error(`unsupported content type! ${JSON.stringify(c)}`);
+                    }
                   }
-                }
+                )
               )) as any;
             }
           } else {
@@ -350,7 +353,7 @@ Users will primarily request software engineering assistance including bug fixes
         // It seems this happens sometimes. We can just ignore this message.
         console.log('final message is empty. ignoring...');
         if (mention) {
-          await sendMessage(mention);
+          await sendMessageToSlack(mention);
         }
         break;
       }
@@ -360,7 +363,7 @@ Users will primarily request software engineering assistance including bug fixes
       const responseText = finalMessage.content?.at(-1)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
-      await sendMessage(`${mention}${responseTextWithoutThinking}`);
+      await sendMessageToSlack(`${mention}${responseTextWithoutThinking}`);
       break;
     }
   }

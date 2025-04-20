@@ -1,5 +1,5 @@
-import { ToolDefinition, zodToJsonSchemaBody } from '../../common/lib';
 import { z } from 'zod';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { executeCommand } from '../command-execution';
 
 const getPRCommentsSchema = z.object({
