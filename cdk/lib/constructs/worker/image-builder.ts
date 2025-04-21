@@ -1,9 +1,9 @@
-import { CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { IVpc, UserData } from 'aws-cdk-lib/aws-ec2';
+import { IVpc, SecurityGroup, UserData } from 'aws-cdk-lib/aws-ec2';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
-import { ImagePipeline } from 'cdk-image-pipeline';
+import { ImagePipeline, ImagePipelineProps } from 'cdk-image-pipeline';
 import { Construct } from 'constructs';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -53,11 +53,12 @@ export class WorkerImageBuilder extends Construct {
     const componentTemplate = yaml.parse(componentTemplateString);
     const userData = UserData.forLinux();
 
-    userData.addCommands(`
+    userData.addCommands(
+      `
 apt-get -o DPkg::Lock::Timeout=-1 update
 apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
-ln -s -f /usr/bin/python3 /usr/bin/pip
+ln -s -f /usr/bin/python3 /usr/bin/python
 
 # Install Node.js
 snap install node --channel=22/stable --classic
@@ -78,22 +79,19 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
   && sudo apt-get -o DPkg::Lock::Timeout=-1 update \
   && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
 
-# https://github.com/amazonlinux/amazon-linux-2023/discussions/417#discussioncomment-8246163
-while true; do
-  dnf install -y https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && break
-done
-
-# Configure Git user for ec2-user
-sudo -u ec2-user bash -c 'git config --global user.name "remote-swe-app[bot]"'
-sudo -u ec2-user bash -c 'git config --global user.email "${props.gitHubApp?.appId ?? '123456'}+remote-swe-app[bot]@users.noreply.github.com"'
+# Configure Git user for ubuntu
+sudo -u ubuntu bash -c 'git config --global user.name "remote-swe-app[bot]"'
+sudo -u ubuntu bash -c 'git config --global user.email "${props.gitHubApp?.appId ?? '123456'}+remote-swe-app[bot]@users.noreply.github.com"'
 
 # install uv
-sudo -u ec2-user bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
-    `);
+sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+      `.trim()
+    );
 
     if (privateKey) {
       // install gh-token to obtain github token using github apps credentials
-      userData.addCommands(`
+      userData.addCommands(
+        `
 aws ssm get-parameter \
     --name ${privateKey.parameterName} \
     --query "Parameter.Value" \
@@ -101,10 +99,12 @@ aws ssm get-parameter \
 curl -L "https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64" -o gh-token
 chmod +x gh-token
 mv gh-token /usr/bin
-    `);
+      `.trim()
+      );
     }
 
-    userData.addCommands(`
+    userData.addCommands(
+      `
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
@@ -184,7 +184,8 @@ Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
 [Install]
 WantedBy=multi-user.target
 EOF
-`);
+`.trim()
+    );
 
     userData.addCommands(`
 # Configure Fluent Bit for CloudWatch Logs
@@ -243,15 +244,18 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-    `);
+      `);
 
-    // userData.addCommands(`
-    // systemctl daemon-reload
-    // systemctl enable fluent-bit
-    // systemctl start fluent-bit
-    // systemctl enable myapp
-    // systemctl start myapp
-    // `);
+    userData.addCommands(
+      `
+systemctl daemon-reload
+systemctl enable fluent-bit
+systemctl enable myapp
+systemctl start fluent-bit
+systemctl start myapp
+      `.trim()
+    );
+
     componentTemplate.phases[0].steps[1].inputs.commands = [userData.render()];
     writeFileSync(
       join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
@@ -264,7 +268,7 @@ EOF
       runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.seconds(5),
-      lambdaPurpose: 'ComponentVersioning',
+      lambdaPurpose: 'ImageBuilderVersioning',
       uuid: '153e8b47-ce27-4abc-a3b1-ad890c5d81e4',
       code: Code.fromInline(`
 const response = require('cfn-response');
@@ -275,15 +279,19 @@ exports.handler = async function (event, context) {
     if (event.RequestType == 'Delete') {
       return await response.send(event, context, response.SUCCESS);
     }
+    const initialVersion = event.ResourceProperties.initialVersion;
     if (event.RequestType == 'Create') {
-      const initialVersion = event.ResourceProperties.initialVersion;
       return await response.send(event, context, response.SUCCESS, { version: initialVersion }, initialVersion);
     }
     if (event.RequestType == 'Update') {
       const currentVersion = event.PhysicalResourceId; // e.g. 1.0.0
       // increment patch version
       const [major, minor, patch] = currentVersion.split('.').map(Number);
-      const newVersion = [major, minor, patch + 1].join('.');
+      const [oMajor, oMinor, oPatch] = initialVersion.split('.').map(Number);
+      let newVersion = [major, minor, patch + 1].join('.');
+      if (oMajor > major || (oMajor == major && oMinor > minor)) {
+        newVersion = initialVersion;
+      }
       await response.send(event, context, response.SUCCESS, { version: newVersion }, newVersion);
     }
   } catch (e) {
@@ -294,19 +302,21 @@ exports.handler = async function (event, context) {
 `),
     });
 
-    const version = new CustomResource(this, 'ComponentVersion', {
+    const securityGroup = new SecurityGroup(this, 'SecurityGroup', { vpc });
+
+    const componentVersion = new CustomResource(this, 'WorkerDependenciesComponentVersion', {
       serviceToken: versioningHandler.functionArn,
-      resourceType: 'Custom::ComponentVersioning',
-      properties: { initialVersion: '0.0.0', key: yaml.stringify(componentTemplate, { lineWidth: 0 }) },
+      resourceType: 'Custom::ImageBuilderVersioning',
+      properties: { initialVersion: '0.0.1', key: yaml.stringify(componentTemplate, { lineWidth: 0 }) },
       serviceTimeout: Duration.seconds(20),
     });
 
-    new ImagePipeline(this, 'ImagePipeline', {
+    const imagePipelineProps: Omit<ImagePipelineProps, 'imageRecipeVersion'> = {
       components: [
         {
           document: join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
           name: 'WorkerDependencies',
-          version: version.getAttString('version'),
+          version: componentVersion.getAttString('version'),
         },
       ],
       parentImage: StringParameter.fromStringParameterAttributes(this, 'ParentImageId', {
@@ -314,6 +324,7 @@ exports.handler = async function (event, context) {
         forceDynamicReference: true,
       }).stringValue,
       subnetId: vpc.publicSubnets[0].subnetId,
+      securityGroups: [securityGroup.securityGroupId],
       ebsVolumeConfigurations: [
         {
           deviceName: '/dev/sda1',
@@ -324,6 +335,20 @@ exports.handler = async function (event, context) {
           },
         },
       ],
+    };
+
+    const recipeVersion = new CustomResource(this, 'RecipeVersion', {
+      serviceToken: versioningHandler.functionArn,
+      resourceType: 'Custom::ImageBuilderVersioning',
+      properties: { initialVersion: '0.1.0', key: JSON.stringify(imagePipelineProps) },
+      serviceTimeout: Duration.seconds(20),
     });
+
+    const pipeline = new ImagePipeline(this, 'ImagePipeline', {
+      ...imagePipelineProps,
+      imageRecipeVersion: recipeVersion.getAttString('version'),
+    });
+    // avoid duplicated SSM state association
+    (pipeline.node.findChild('ImagePipeline') as CfnResource).addPropertyOverride('EnhancedImageMetadataEnabled', false);
   }
 }

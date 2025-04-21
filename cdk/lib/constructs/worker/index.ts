@@ -117,7 +117,8 @@ export class Worker extends Construct {
     });
     const userData = launchTemplate.userData!;
 
-    userData.addCommands(`
+    userData.addCommands(
+      `
 apt-get -o DPkg::Lock::Timeout=-1 update
 apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
@@ -142,22 +143,19 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
   && sudo apt-get -o DPkg::Lock::Timeout=-1 update \
   && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
 
-# https://github.com/amazonlinux/amazon-linux-2023/discussions/417#discussioncomment-8246163
-while true; do
-  dnf install -y https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && break
-done
-
-# Configure Git user for ec2-user
-sudo -u ec2-user bash -c 'git config --global user.name "remote-swe-app[bot]"'
-sudo -u ec2-user bash -c 'git config --global user.email "${props.gitHubApp?.appId ?? '123456'}+remote-swe-app[bot]@users.noreply.github.com"'
+# Configure Git user for ubuntu
+sudo -u ubuntu bash -c 'git config --global user.name "remote-swe-app[bot]"'
+sudo -u ubuntu bash -c 'git config --global user.email "${props.gitHubApp?.appId ?? '123456'}+remote-swe-app[bot]@users.noreply.github.com"'
 
 # install uv
-sudo -u ec2-user bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
-`);
+sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+      `.trim()
+    );
 
     if (privateKey) {
       // install gh-token to obtain github token using github apps credentials
-      userData.addCommands(`
+      userData.addCommands(
+        `
 aws ssm get-parameter \
     --name ${privateKey.parameterName} \
     --query "Parameter.Value" \
@@ -165,10 +163,12 @@ aws ssm get-parameter \
 curl -L "https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64" -o gh-token
 chmod +x gh-token
 mv gh-token /usr/bin
-`);
+      `.trim()
+      );
     }
 
-    userData.addCommands(`
+    userData.addCommands(
+      `
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
@@ -248,7 +248,8 @@ Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
 [Install]
 WantedBy=multi-user.target
 EOF
-`);
+`.trim()
+    );
 
     userData.addCommands(`
 # Configure Fluent Bit for CloudWatch Logs
@@ -307,16 +308,17 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-`);
+      `);
 
-    userData.addCommands(`
+    userData.addCommands(
+      `
 systemctl daemon-reload
 systemctl enable fluent-bit
-systemctl start fluent-bit
 systemctl enable myapp
+systemctl start fluent-bit
 systemctl start myapp
-`);
-    userData.render();
+      `.trim()
+    );
 
     this.launchTemplate = launchTemplate;
 
