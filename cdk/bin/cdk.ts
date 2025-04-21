@@ -45,6 +45,6 @@ new MainStack(app, `RemoteSweStack-${targetEnv}`, {
 });
 // cdk.Aspects.of(app).add(new AwsSolutionsChecks());
 
-new WorkerImageBuilderStack(app, `WorkerImageBuilderStack-${targetEnv}`, {
-  workerAmiParameterName,
-});
+// new WorkerImageBuilderStack(app, `WorkerImageBuilderStack-${targetEnv}`, {
+//   workerAmiParameterName,
+// });

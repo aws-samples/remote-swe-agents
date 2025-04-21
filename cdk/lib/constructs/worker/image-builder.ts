@@ -1,18 +1,20 @@
-import { Construct } from 'constructs';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { WorkerBus } from './bus';
-import { BlockPublicAccess, Bucket, IBucket } from 'aws-cdk-lib/aws-s3';
-import { DockerImage, RemovalPolicy, Stack } from 'aws-cdk-lib';
-import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
-import { join } from 'path';
+import { CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
+import { IVpc, UserData } from 'aws-cdk-lib/aws-ec2';
+import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import { WorkerImageBuilder } from './image-builder';
+import { ImagePipeline } from 'cdk-image-pipeline';
+import { Construct } from 'constructs';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { WorkerBus } from './bus';
+import { ILogGroup } from 'aws-cdk-lib/aws-logs';
+import * as yaml from 'yaml';
+import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
 
-export interface WorkerProps {
-  vpc: ec2.IVpc;
+export interface WorkerImageBuilderProps {
+  vpc: IVpc;
+
   storageTable: ITableV2;
   imageBucket: IBucket;
   slackBotTokenParameter: IStringParameter;
@@ -27,23 +29,16 @@ export interface WorkerProps {
     roleName: string;
   };
   accessLogBucket: IBucket;
+  sourceBucket: IBucket;
+  bus: WorkerBus;
+  logGroup: ILogGroup;
 }
 
-export class Worker extends Construct {
-  public readonly launchTemplate: ec2.LaunchTemplate;
-  public readonly bus: WorkerBus;
-  public readonly logGroup: logs.LogGroup;
-
-  constructor(scope: Construct, id: string, props: WorkerProps) {
+export class WorkerImageBuilder extends Construct {
+  constructor(scope: Construct, id: string, props: WorkerImageBuilderProps) {
     super(scope, id);
 
-    const { vpc } = props;
-
-    // Create CloudWatch LogGroup for worker logs
-    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
-      retention: logs.RetentionDays.TWO_WEEKS,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    const { vpc, sourceBucket, bus, logGroup } = props;
 
     const privateKey = props.gitHubApp
       ? StringParameter.fromStringParameterAttributes(this, 'GitHubAppPrivateKey', {
@@ -52,70 +47,11 @@ export class Worker extends Construct {
         })
       : undefined;
 
-    const sourceBucket = new Bucket(this, 'SourceBucket', {
-      autoDeleteObjects: true,
-      removalPolicy: RemovalPolicy.DESTROY,
-      enforceSSL: true,
-      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      serverAccessLogsBucket: props.accessLogBucket,
-      serverAccessLogsPrefix: 's3AccessLog/SourceBucket/',
-    });
-
-    const bus = new WorkerBus(this, 'Bus', {});
-    this.bus = bus;
-
-    new WorkerImageBuilder(this, 'ImageBuilder', { ...props, logGroup: this.logGroup, bus, sourceBucket });
-
-    new BucketDeployment(this, 'SourceDeployment', {
-      destinationBucket: sourceBucket,
-      sources: [
-        // specify a dummy directory. All the input files are already in the image.
-        Source.asset(join('..', 'resources'), {
-          bundling: {
-            command: [
-              'sh',
-              '-c',
-              [
-                //
-                'cd /asset-input',
-                'tar -zcf source.tar.gz -C /build/ .',
-                'mkdir -p /asset-output/source',
-                'mv source.tar.gz /asset-output/source',
-              ].join('&&'),
-            ],
-            image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
-          },
-        }),
-      ],
-    });
-
-    const role = new iam.Role(this, 'Role', {
-      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')],
-    });
-
-    const launchTemplate = new ec2.LaunchTemplate(this, 'LaunchTemplate', {
-      machineImage: ec2.MachineImage.fromSsmParameter(
-        '/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id'
-      ),
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
-      blockDevices: [
-        {
-          deviceName: '/dev/xvda',
-          volume: ec2.BlockDeviceVolume.ebs(50, {
-            volumeType: ec2.EbsDeviceVolumeType.GP3,
-            encrypted: true,
-          }),
-        },
-      ],
-      role,
-      requireImdsv2: true,
-      instanceMetadataTags: true,
-      securityGroup: new ec2.SecurityGroup(this, 'SecurityGroup', {
-        vpc,
-      }),
-    });
-    const userData = launchTemplate.userData!;
+    const componentTemplateString = readFileSync(
+      join(__dirname, 'resources', 'image-component-template.yml')
+    ).toString();
+    const componentTemplate = yaml.parse(componentTemplateString);
+    const userData = UserData.forLinux();
 
     userData.addCommands(`
 apt-get -o DPkg::Lock::Timeout=-1 update
@@ -153,7 +89,7 @@ sudo -u ec2-user bash -c 'git config --global user.email "${props.gitHubApp?.app
 
 # install uv
 sudo -u ec2-user bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
-`);
+    `);
 
     if (privateKey) {
       // install gh-token to obtain github token using github apps credentials
@@ -165,7 +101,7 @@ aws ssm get-parameter \
 curl -L "https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64" -o gh-token
 chmod +x gh-token
 mv gh-token /usr/bin
-`);
+    `);
     }
 
     userData.addCommands(`
@@ -274,7 +210,7 @@ cat << EOF > /etc/fluent-bit/fluent-bit.conf
     Name         cloudwatch_logs
     Match        myapp
     region       ${Stack.of(this).region}
-    log_group_name    ${this.logGroup.logGroupName}
+    log_group_name    ${logGroup.logGroupName}
     log_stream_name   log-\\\${WORKER_ID}
     auto_create_group false
 EOF
@@ -307,55 +243,87 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-`);
+    `);
 
-    userData.addCommands(`
-systemctl daemon-reload
-systemctl enable fluent-bit
-systemctl start fluent-bit
-systemctl enable myapp
-systemctl start myapp
-`);
-    userData.render();
-
-    this.launchTemplate = launchTemplate;
-
-    role.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: ['bedrock:InvokeModel'],
-        resources: ['*'],
-      })
+    // userData.addCommands(`
+    // systemctl daemon-reload
+    // systemctl enable fluent-bit
+    // systemctl start fluent-bit
+    // systemctl enable myapp
+    // systemctl start myapp
+    // `);
+    componentTemplate.phases[0].steps[1].inputs.commands = [userData.render()];
+    writeFileSync(
+      join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
+      yaml.stringify(componentTemplate, { lineWidth: 0 })
     );
-    if (props.loadBalancing) {
-      role.addToPrincipalPolicy(
-        new iam.PolicyStatement({
-          actions: ['sts:AssumeRole'],
-          resources: [`arn:aws:iam::*:role/${props.loadBalancing!.roleName}`],
-        })
-      );
+
+    // The CloudMap service is created implicitly via ECS Service Connect.
+    // That is why we fetch the ARN of the service via CFn custom resource.
+    const versioningHandler = new SingletonFunction(this, 'ComponentVersioningHandler', {
+      runtime: Runtime.NODEJS_22_X,
+      handler: 'index.handler',
+      timeout: Duration.seconds(5),
+      lambdaPurpose: 'ComponentVersioning',
+      uuid: '153e8b47-ce27-4abc-a3b1-ad890c5d81e4',
+      code: Code.fromInline(`
+const response = require('cfn-response');
+
+exports.handler = async function (event, context) {
+  try {
+    console.log(event);
+    if (event.RequestType == 'Delete') {
+      return await response.send(event, context, response.SUCCESS);
     }
-    role.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: ['ec2:TerminateInstances', 'ec2:StopInstances'],
-        resources: ['*'],
-        // can only terminate themselves
-        conditions: {
-          StringEquals: {
-            'aws:ARN': '${ec2:SourceInstanceARN}',
+    if (event.RequestType == 'Create') {
+      const initialVersion = event.ResourceProperties.initialVersion;
+      return await response.send(event, context, response.SUCCESS, { version: initialVersion }, initialVersion);
+    }
+    if (event.RequestType == 'Update') {
+      const currentVersion = event.PhysicalResourceId; // e.g. 1.0.0
+      // increment patch version
+      const [major, minor, patch] = currentVersion.split('.').map(Number);
+      const newVersion = [major, minor, patch + 1].join('.');
+      await response.send(event, context, response.SUCCESS, { version: newVersion }, newVersion);
+    }
+  } catch (e) {
+    console.log(e);
+    await response.send(event, context, response.FAILED);
+  }
+};
+`),
+    });
+
+    const version = new CustomResource(this, 'ComponentVersion', {
+      serviceToken: versioningHandler.functionArn,
+      resourceType: 'Custom::ComponentVersioning',
+      properties: { initialVersion: '0.0.0', key: yaml.stringify(componentTemplate, { lineWidth: 0 }) },
+      serviceTimeout: Duration.seconds(20),
+    });
+
+    new ImagePipeline(this, 'ImagePipeline', {
+      components: [
+        {
+          document: join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
+          name: 'WorkerDependencies',
+          version: version.getAttString('version'),
+        },
+      ],
+      parentImage: StringParameter.fromStringParameterAttributes(this, 'ParentImageId', {
+        parameterName: '/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id',
+        forceDynamicReference: true,
+      }).stringValue,
+      subnetId: vpc.publicSubnets[0].subnetId,
+      ebsVolumeConfigurations: [
+        {
+          deviceName: '/dev/sda1',
+          ebs: {
+            encrypted: true,
+            volumeSize: 50,
+            volumeType: 'gp3',
           },
         },
-      })
-    );
-    sourceBucket.grantRead(role);
-    props.storageTable.grantReadWriteData(role);
-    props.imageBucket.grantReadWrite(role);
-    privateKey?.grantRead(role);
-    props.githubPersonalAccessTokenParameter?.grantRead(role);
-    props.slackBotTokenParameter.grantRead(role);
-    bus.api.grantSubscribe(role);
-    bus.api.grantConnect(role);
-
-    // Grant permissions to write logs to CloudWatch
-    this.logGroup.grantWrite(role);
+      ],
+    });
   }
 }
