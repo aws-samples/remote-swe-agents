@@ -125,10 +125,13 @@ ln -s -f /usr/bin/pip3 /usr/bin/pip
 ln -s -f /usr/bin/python3 /usr/bin/pip
 
 # Install Node.js
-snap install node --channel=22/stable --classic
+sudo -u ubuntu bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
+sudo -u ubuntu bash -c -i "nvm install 22"
 
 # Install AWS CLI
-snap install aws-cli --classic
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
 # Install Fluent Bit
 curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
