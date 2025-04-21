@@ -3,7 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { WorkerBus } from './bus';
 import { BlockPublicAccess, Bucket, IBucket } from 'aws-cdk-lib/aws-s3';
-import { DockerImage, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { AssetHashType, DockerImage, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { join } from 'path';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
@@ -64,8 +64,6 @@ export class Worker extends Construct {
     const bus = new WorkerBus(this, 'Bus', {});
     this.bus = bus;
 
-    new WorkerImageBuilder(this, 'ImageBuilder', { ...props, logGroup: this.logGroup, bus, sourceBucket });
-
     new BucketDeployment(this, 'SourceDeployment', {
       destinationBucket: sourceBucket,
       sources: [
@@ -85,6 +83,7 @@ export class Worker extends Construct {
             ],
             image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
           },
+          assetHashType: AssetHashType.OUTPUT,
         }),
       ],
     });
@@ -101,7 +100,7 @@ export class Worker extends Construct {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
       blockDevices: [
         {
-          deviceName: '/dev/xvda',
+          deviceName: '/dev/sda1',
           volume: ec2.BlockDeviceVolume.ebs(50, {
             volumeType: ec2.EbsDeviceVolumeType.GP3,
             encrypted: true,
@@ -172,6 +171,13 @@ mv gh-token /usr/bin
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
+# Install Playwright dependencies
+npx playwright install-deps
+npx playwright install chromium
+
+# Configure GitHub CLI
+gh config set prompt disabled
+
 # Create setup script
 mkdir -p /opt/scripts
 cat << 'EOF' > /opt/scripts/start-app.sh
@@ -190,13 +196,6 @@ rm -f source.tar.gz
 # Install dependencies and build
 npm ci
 npm run build -w packages/agent-core
-
-# Install Playwright dependencies
-npx playwright install-deps
-npx playwright install chromium
-
-# Configure GitHub CLI
-gh config set prompt disabled
 
 # Set up dynamic environment variables
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
@@ -308,19 +307,24 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-      `);
 
-    userData.addCommands(
-      `
 systemctl daemon-reload
 systemctl enable fluent-bit
 systemctl enable myapp
+      `);
+
+    const installDependenciesCommand = userData.render();
+
+    userData.addCommands(
+      `
 systemctl start fluent-bit
 systemctl start myapp
       `.trim()
     );
 
     this.launchTemplate = launchTemplate;
+
+    new WorkerImageBuilder(this, 'ImageBuilder', { vpc, installDependenciesCommand });
 
     role.addToPrincipalPolicy(
       new iam.PolicyStatement({
