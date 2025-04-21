@@ -27,6 +27,7 @@ export interface WorkerProps {
     roleName: string;
   };
   accessLogBucket: IBucket;
+  amiIdParameterName: string;
 }
 
 export class Worker extends Construct {
@@ -172,11 +173,11 @@ mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
 # Install Playwright dependencies
-npx playwright install-deps
-npx playwright install chromium
+sudo -u ubuntu bash -c "npx playwright install-deps"
+sudo -u ubuntu bash -c "npx playwright install chromium"
 
 # Configure GitHub CLI
-gh config set prompt disabled
+sudo -u ubuntu bash -c "gh config set prompt disabled"
 
 # Create setup script
 mkdir -p /opt/scripts
@@ -324,7 +325,11 @@ systemctl start myapp
 
     this.launchTemplate = launchTemplate;
 
-    new WorkerImageBuilder(this, 'ImageBuilder', { vpc, installDependenciesCommand });
+    new WorkerImageBuilder(this, 'ImageBuilder', {
+      vpc,
+      installDependenciesCommand,
+      amiIdParameterName: props.amiIdParameterName,
+    });
 
     role.addToPrincipalPolicy(
       new iam.PolicyStatement({

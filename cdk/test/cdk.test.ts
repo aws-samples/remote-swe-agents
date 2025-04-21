@@ -27,6 +27,7 @@ test('Snapshot test', () => {
       appId: '123456',
       installationId: '9876543',
     },
+    workerAmiIdParameterName: '/remote-swe/worker/ami-id',
   });
 
   expect(Template.fromStack(main)).toMatchSnapshot();

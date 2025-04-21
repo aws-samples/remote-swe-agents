@@ -7,14 +7,18 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import * as yaml from 'yaml';
 import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
+import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
+import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 
 export interface WorkerImageBuilderProps {
   vpc: IVpc;
-
   installDependenciesCommand: string;
+  amiIdParameterName: string;
 }
 
 export class WorkerImageBuilder extends Construct {
+  public readonly imageRecipeName: string;
+
   constructor(scope: Construct, id: string, props: WorkerImageBuilderProps) {
     super(scope, id);
 
@@ -31,7 +35,7 @@ export class WorkerImageBuilder extends Construct {
       yaml.stringify(componentTemplate, { lineWidth: 0 })
     );
 
-    const versioningHandler = new SingletonFunction(this, 'ComponentVersioningHandler', {
+    const versioningHandler = new SingletonFunction(this, 'ImageBuilderVersioningHandler', {
       runtime: Runtime.NODEJS_22_X,
       handler: 'index.handler',
       timeout: Duration.seconds(5),
@@ -42,10 +46,10 @@ export class WorkerImageBuilder extends Construct {
 
     const securityGroup = new SecurityGroup(this, 'SecurityGroup', { vpc });
 
-    const componentVersion = new CustomResource(this, 'WorkerDependenciesComponentVersion', {
+    const componentVersion = new CustomResource(this, 'WorkerDependenciesVersion', {
       serviceToken: versioningHandler.functionArn,
       resourceType: 'Custom::ImageBuilderVersioning',
-      properties: { initialVersion: '0.0.1', key: yaml.stringify(componentTemplate, { lineWidth: 0 }) },
+      properties: { initialVersion: '0.0.0', key: yaml.stringify(componentTemplate, { lineWidth: 0 }) },
       serviceTimeout: Duration.seconds(20),
     });
 
@@ -63,7 +67,7 @@ export class WorkerImageBuilder extends Construct {
       }).stringValue,
       subnetId: vpc.publicSubnets[0].subnetId,
       securityGroups: [securityGroup.securityGroupId],
-      amiIdSsmPath: '/remote-swe/worker/ami-id',
+      amiIdSsmPath: props.amiIdParameterName,
       amiIdSsmAccountId: Stack.of(this).account,
       amiIdSsmRegion: Stack.of(this).region,
       ebsVolumeConfigurations: [
@@ -78,14 +82,14 @@ export class WorkerImageBuilder extends Construct {
       ],
     };
 
-    const recipeVersion = new CustomResource(this, 'RecipeVersion', {
+    const recipeVersion = new CustomResource(this, 'ImageRecipeVersion', {
       serviceToken: versioningHandler.functionArn,
       resourceType: 'Custom::ImageBuilderVersioning',
-      properties: { initialVersion: '0.1.0', key: JSON.stringify(imagePipelineProps) },
+      properties: { initialVersion: '0.0.0', key: JSON.stringify(imagePipelineProps) },
       serviceTimeout: Duration.seconds(20),
     });
 
-    const pipeline = new ImagePipeline(this, 'ImagePipeline', {
+    const pipeline = new ImagePipeline(this, 'ImagePipelineV2', {
       ...imagePipelineProps,
       imageRecipeVersion: recipeVersion.getAttString('version'),
     });
@@ -95,5 +99,20 @@ export class WorkerImageBuilder extends Construct {
       'EnhancedImageMetadataEnabled',
       false
     );
+    this.imageRecipeName = (pipeline.node.findChild('ImageRecipe') as CfnImageRecipe).attrName;
+
+    new AwsCustomResource(this, 'RunPipeline', {
+      onUpdate: {
+        service: '@aws-sdk/client-imagebuilder',
+        action: 'StartImagePipelineExecution',
+        parameters: {
+          imagePipelineArn: pipeline.pipeline.attrArn,
+        },
+        physicalResourceId: PhysicalResourceId.of(recipeVersion.getAttString('version')),
+      },
+      policy: AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [pipeline.pipeline.attrArn],
+      }),
+    });
   }
 }

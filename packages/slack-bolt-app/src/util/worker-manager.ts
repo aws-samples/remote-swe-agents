@@ -1,9 +1,9 @@
 import { EC2Client, DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
-import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/client-ssm';
 
-const LaunchTemplateId = process.env.LAUNCH_TEMPLATE_ID!;
+const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
-const SubnetIdList = process.env.SUBNET_ID_LIST!;
+const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
 const ec2Client = new EC2Client({});
 const ssmClient = new SSMClient({});
 
@@ -66,8 +66,10 @@ async function fetchWorkerAmiId(workerAmiParameterName: string): Promise<string 
     );
     return result.Parameter?.Value;
   } catch (e) {
-    console.error(e);
-    throw new Error('Failed to get Worker AMI ID');
+    if (e instanceof ParameterNotFound) {
+      return;
+    }
+    throw e;
   }
 }
 
@@ -90,6 +92,14 @@ async function createWorkerInstance(
     MinCount: 1,
     MaxCount: 1,
     SubnetId: subnetId,
+    // Remove UserData if launching from our AMI, where all the dependencies are already installed.
+    UserData: imageId
+      ? Buffer.from(
+          `
+#!/bin/bash
+    `.trim()
+        ).toString('base64')
+      : undefined,
     TagSpecifications: [
       {
         ResourceType: 'instance',
@@ -141,8 +151,8 @@ export async function getOrCreateWorkerInstance(
     return { instanceId: stoppedInstanceId, oldStatus: 'stopped' };
   }
 
-  // TODO: choose subnet randomly
-  const subnetId = SubnetIdList.split(',')[0];
+  // choose subnet randomly
+  const subnetId = SubnetIdList[Math.floor(Math.random() * SubnetIdList.length)];
   // If no instance exists, create a new one
   const instanceId = await createWorkerInstance(
     workerId,

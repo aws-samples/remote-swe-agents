@@ -35,6 +35,58 @@ exports[`Snapshot test 1`] = `
     },
   },
   "Resources": {
+    "AWS679f53fac002430cb0da5b7982bd22872D164C4C": {
+      "DependsOn": [
+        "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 120,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "AccessLogAutoDeleteObjectsCustomResource6A56D3C2": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
@@ -613,6 +665,85 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::Events::Rule",
     },
+    "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4CE16D83A": {
+      "DependsOn": [
+        "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4ServiceRole075D0F03",
+      ],
+      "Properties": {
+        "Code": {
+          "ZipFile": "const response = require('cfn-response');
+
+exports.handler = async function (event, context) {
+  try {
+    console.log(event);
+    if (event.RequestType == 'Delete') {
+      return await response.send(event, context, response.SUCCESS);
+    }
+    const initialVersion = event.ResourceProperties.initialVersion;
+    if (event.RequestType == 'Create') {
+      return await response.send(event, context, response.SUCCESS, { version: initialVersion }, initialVersion);
+    }
+    if (event.RequestType == 'Update') {
+      const currentVersion = event.PhysicalResourceId; // e.g. 1.0.0
+      // increment patch version
+      const [major, minor, patch] = currentVersion.split('.').map(Number);
+      const [oMajor, oMinor, oPatch] = initialVersion.split('.').map(Number);
+      let newVersion = [major, minor, patch + 1].join('.');
+      if (oMajor > major || (oMajor == major && oMinor > minor)) {
+        newVersion = initialVersion;
+      }
+      await response.send(event, context, response.SUCCESS, { version: newVersion }, newVersion);
+    }
+  } catch (e) {
+    console.log(e);
+    await response.send(event, context, response.FAILED);
+  }
+};
+",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4ServiceRole075D0F03",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 5,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4ServiceRole075D0F03": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "SlackBoltAccessLog187F540C": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -744,9 +875,6 @@ exports[`Snapshot test 1`] = `
                 ],
               ],
             },
-            "LAUNCH_TEMPLATE_ID": {
-              "Ref": "WorkerLaunchTemplateCB68F8E3",
-            },
             "SUBNET_ID_LIST": {
               "Fn::Join": [
                 "",
@@ -767,6 +895,10 @@ exports[`Snapshot test 1`] = `
             },
             "TABLE_NAME": {
               "Ref": "StorageHistory251A3AE8",
+            },
+            "WORKER_AMI_PARAMETER_NAME": "/remote-swe/worker/ami-id",
+            "WORKER_LAUNCH_TEMPLATE_ID": {
+              "Ref": "WorkerLaunchTemplateCB68F8E3",
             },
           },
         },
@@ -899,6 +1031,16 @@ exports[`Snapshot test 1`] = `
                   ],
                 ],
               },
+            },
+            {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
             },
             {
               "Action": [
@@ -1592,6 +1734,1197 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::AppSync::ChannelNamespace",
     },
+    "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA": {
+      "Properties": {
+        "DisplayName": "Image Builder Notify",
+      },
+      "Type": "AWS::SNS::Topic",
+    },
+    "WorkerImageBuilderImagePipelineV2ImagePipelineF6B46161": {
+      "Properties": {
+        "Description": "A sample image pipeline",
+        "EnhancedImageMetadataEnabled": false,
+        "ImageRecipeArn": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
+            "Arn",
+          ],
+        },
+        "InfrastructureConfigurationArn": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImagePipelineV2InfrastructureConfigurationDA9D33AE",
+            "Arn",
+          ],
+        },
+        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6DImagePipeline",
+      },
+      "Type": "AWS::ImageBuilder::ImagePipeline",
+    },
+    "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4": {
+      "Properties": {
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "Encrypted": true,
+              "VolumeSize": 50,
+              "VolumeType": "gp3",
+            },
+          },
+        ],
+        "Components": [
+          {
+            "ComponentArn": {
+              "Fn::GetAtt": [
+                "WorkerImageBuilderImagePipelineV2WorkerDependencies6FAC8E07",
+                "Arn",
+              ],
+            },
+          },
+        ],
+        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6D414A87",
+        "ParentImage": "{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}",
+        "Version": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImageRecipeVersion51A6E2BF",
+            "version",
+          ],
+        },
+      },
+      "Type": "AWS::ImageBuilder::ImageRecipe",
+    },
+    "WorkerImageBuilderImagePipelineV2InfrastructureConfigurationDA9D33AE": {
+      "DependsOn": [
+        "WorkerImageBuilderImagePipelineV2InstanceProfileA6F88A4C",
+      ],
+      "Properties": {
+        "Description": "Example Infrastructure Configuration for Image Builder",
+        "InstanceProfileName": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6DProfile",
+        "InstanceTypes": [
+          "t3.medium",
+          "m5.large",
+          "m5.xlarge",
+        ],
+        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6DInfraConfig",
+        "SecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "WorkerImageBuilderSecurityGroup45E41ABB",
+              "GroupId",
+            ],
+          },
+        ],
+        "SnsTopicArn": {
+          "Ref": "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA",
+        },
+        "SubnetId": {
+          "Ref": "VpcV2PublicSubnet1SubnetD67FC535",
+        },
+      },
+      "Type": "AWS::ImageBuilder::InfrastructureConfiguration",
+    },
+    "WorkerImageBuilderImagePipelineV2InstanceProfileA6F88A4C": {
+      "Properties": {
+        "InstanceProfileName": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6DProfile",
+        "Roles": [
+          {
+            "Ref": "WorkerImageBuilderImagePipelineV2Role3BCE675E",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::InstanceProfile",
+    },
+    "WorkerImageBuilderImagePipelineV2Role3BCE675E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "IAM role used as part of an Image Builder pipeline",
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/EC2InstanceProfileForImageBuilder",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/AmazonSSMManagedInstanceCore",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerImageBuilderImagePipelineV2UpdateLambdaA19D3FE4": {
+      "DependsOn": [
+        "WorkerImageBuilderImagePipelineV2UpdateLambdaRole648C1C2C",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Environment": {
+          "Variables": {
+            "SSM_PATH": "/remote-swe/worker/ami-id",
+          },
+        },
+        "Handler": "image-builder-lambda-update-ssm.lambda_handler",
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImagePipelineV2UpdateLambdaRole648C1C2C",
+            "Arn",
+          ],
+        },
+        "Runtime": "python3.10",
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "WorkerImageBuilderImagePipelineV2UpdateLambdaAllowInvokeTestMainStackWorkerImageBuilderImagePipelineV2ImageBuilderTopic99176B1DE13D9CE4": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImagePipelineV2UpdateLambdaA19D3FE4",
+            "Arn",
+          ],
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA",
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "WorkerImageBuilderImagePipelineV2UpdateLambdaImageBuilderTopicD5FE83C9": {
+      "Properties": {
+        "Endpoint": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderImagePipelineV2UpdateLambdaA19D3FE4",
+            "Arn",
+          ],
+        },
+        "Protocol": "lambda",
+        "TopicArn": {
+          "Ref": "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA",
+        },
+      },
+      "Type": "AWS::SNS::Subscription",
+    },
+    "WorkerImageBuilderImagePipelineV2UpdateLambdaRole648C1C2C": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "ssm:AddTagsToResource",
+                    "ssm:GetParameter",
+                    "ssm:GetParameterHistory",
+                    "ssm:GetParameters",
+                    "ssm:PutParameter",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "AmiSsmUpdateLambdaPolicy",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerImageBuilderImagePipelineV2WorkerDependencies6FAC8E07": {
+      "Properties": {
+        "Data": {
+          "Fn::Join": [
+            "",
+            [
+              "name: MyComponentDocument
+description: This is an example component document
+schemaVersion: 1
+phases:
+  - name: build
+    steps:
+      - name: InstallUpdates
+        action: UpdateOS
+      - name: InstallDependencies
+        action: ExecuteBash
+        inputs:
+          commands:
+            - "#!/bin/bash
+
+              apt-get -o DPkg::Lock::Timeout=-1 update
+
+              apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
+
+              ln -s -f /usr/bin/pip3 /usr/bin/pip
+
+              ln -s -f /usr/bin/python3 /usr/bin/pip
+
+
+              # Install Node.js
+
+              snap install node --channel=22/stable --classic
+
+
+              # Install AWS CLI
+
+              snap install aws-cli --classic
+
+
+              # Install Fluent Bit
+
+              curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
+
+
+              # Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
+              (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y))   && sudo mkdir -p -m 755 /etc/apt/keyrings   && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg   && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null   && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg   && echo \\"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\\" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null   && sudo apt-get -o DPkg::Lock::Timeout=-1 update   && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
+
+
+              # Configure Git user for ubuntu
+
+              sudo -u ubuntu bash -c 'git config --global user.name \\"remote-swe-app[bot]\\"'
+
+              sudo -u ubuntu bash -c 'git config --global user.email \\"123456+remote-swe-app[bot]@users.noreply.github.com\\"'
+
+
+              # install uv
+
+              sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+
+              aws ssm get-parameter     --name /remote-swe/github/app-private-key     --query \\"Parameter.Value\\"     --output text > /opt/private-key.pem
+
+              curl -L \\"https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64\\" -o gh-token
+
+              chmod +x gh-token
+
+              mv gh-token /usr/bin
+
+              mkdir -p /opt/myapp && cd /opt/myapp
+
+              chown -R ubuntu:ubuntu /opt/myapp
+
+
+              # Install Playwright dependencies
+
+              sudo -u ubuntu bash -c \\"npx playwright install-deps\\"
+
+              sudo -u ubuntu bash -c \\"npx playwright install chromium\\"
+
+
+              # Configure GitHub CLI
+
+              sudo -u ubuntu bash -c \\"gh config set prompt disabled\\"
+
+
+              # Create setup script
+
+              mkdir -p /opt/scripts
+
+              cat << 'EOF' > /opt/scripts/start-app.sh
+
+              #!/bin/bash -l
+
+
+              # Clean up existing files
+
+              rm -rf ./{*,.*}
+
+
+              # Download source code from S3
+
+              aws s3 cp s3://",
+              {
+                "Ref": "WorkerSourceBucket539ACD15",
+              },
+              "/source/source.tar.gz ./source.tar.gz
+
+
+              # Extract and clean up
+
+              tar -xvzf source.tar.gz
+
+              rm -f source.tar.gz
+
+
+              # Install dependencies and build
+
+              npm ci
+
+              npm run build -w packages/agent-core
+
+
+              # Set up dynamic environment variables
+
+              TOKEN=$(curl -X PUT \\"http://169.254.169.254/latest/api/token\\" -H \\"X-aws-ec2-metadata-token-ttl-seconds: 900\\")
+
+              export WORKER_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+              export SLACK_CHANNEL_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
+
+              export SLACK_THREAD_TS=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
+
+              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
+
+              export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
+
+
+              # Start app
+
+              cd packages/worker
+
+              npx tsx src/main.ts
+
+              EOF
+
+
+              # Make script executable and set ownership
+
+              chmod +x /opt/scripts/start-app.sh
+
+              chown ubuntu:ubuntu /opt/scripts/start-app.sh
+
+
+              cat << EOF > /etc/systemd/system/myapp.service
+
+              [Unit]
+
+              Description=My Node.js Application
+
+              After=network.target
+
+
+              [Service]
+
+              Type=simple
+
+              User=ubuntu
+
+              WorkingDirectory=/opt/myapp
+
+
+              ExecStart=/opt/scripts/start-app.sh
+
+              Restart=always
+
+              RestartSec=10
+
+              TimeoutStartSec=600
+
+              TimeoutStopSec=10s
+
+              StandardOutput=journal
+
+              StandardError=journal
+
+              SyslogIdentifier=myapp
+
+              # Static environment variables
+
+              Environment=AWS_REGION=us-east-1
+
+              Environment=EVENT_HTTP_ENDPOINT=https://",
+              {
+                "Fn::GetAtt": [
+                  "WorkerBusApi8460ABC0",
+                  "Dns.Http",
+                ],
+              },
+              "
+
+              Environment=GITHUB_APP_PRIVATE_KEY_PATH=/opt/private-key.pem
+
+              Environment=GITHUB_APP_ID=123456
+
+              Environment=GITHUB_APP_INSTALLATION_ID=9876543
+
+              Environment=TABLE_NAME=",
+              {
+                "Ref": "StorageHistory251A3AE8",
+              },
+              "
+
+              Environment=BUCKET_NAME=",
+              {
+                "Ref": "StorageImageBucket99BA9550",
+              },
+              "
+
+              Environment=BEDROCK_AWS_ACCOUNTS=
+
+              Environment=BEDROCK_AWS_ROLE_NAME=
+
+              # Environment=MODEL_OVERRIDE=nova-pro
+
+
+              [Install]
+
+              WantedBy=multi-user.target
+
+              EOF
+
+
+              # Configure Fluent Bit for CloudWatch Logs
+
+              mkdir -p /etc/fluent-bit
+
+
+              cat << EOF > /etc/fluent-bit/fluent-bit.conf
+
+              [SERVICE]
+
+              \\    Flush        5
+
+              \\    Daemon       Off
+
+              \\    Log_Level    info
+
+
+              [INPUT]
+
+              \\    Name         systemd
+
+              \\    Tag          myapp
+
+              \\    Systemd_Filter    _SYSTEMD_UNIT=myapp.service
+
+
+              [FILTER]
+
+              \\    Name         modify
+
+              \\    Match        myapp
+
+              \\    Remove_regex ^(?!MESSAGE).+$
+
+
+              [OUTPUT]
+
+              \\    Name         cloudwatch_logs
+
+              \\    Match        myapp
+
+              \\    region       us-east-1
+
+              \\    log_group_name    ",
+              {
+                "Ref": "WorkerLogGroup67ABCFFE",
+              },
+              "
+
+              \\    log_stream_name   log-\\\\\${WORKER_ID}
+
+              \\    auto_create_group false
+
+              EOF
+
+
+              # Create Fluent Bit startup script
+
+              cat << 'EOF' > /opt/scripts/start-fluent-bit.sh
+
+              #!/bin/bash
+
+
+              TOKEN=$(curl -X PUT \\"http://169.254.169.254/latest/api/token\\" -H \\"X-aws-ec2-metadata-token-ttl-seconds: 900\\")
+
+              export WORKER_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+
+              exec /opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+
+              EOF
+
+
+              # Make script executable
+
+              chmod +x /opt/scripts/start-fluent-bit.sh
+
+
+              # Create and configure Fluent Bit systemd service
+
+              cat << EOF > /etc/systemd/system/fluent-bit.service
+
+              [Unit]
+
+              Description=Fluent Bit
+
+              After=network.target
+
+
+              [Service]
+
+              Type=simple
+
+              ExecStart=/opt/scripts/start-fluent-bit.sh
+
+              Restart=always
+
+              RestartSec=5
+
+
+              [Install]
+
+              WantedBy=multi-user.target
+
+              EOF
+
+
+              systemctl daemon-reload
+
+              systemctl enable fluent-bit
+
+              systemctl enable myapp
+
+              \\      "
+  - name: validate
+    steps:
+      - name: HelloWorldStep
+        action: ExecuteBash
+        inputs:
+          commands:
+            - aws --version
+            - docker --version
+            - uv --version
+            - uvx --version
+            - python --version
+            - gh --version
+            - node --version
+            - npm --version
+            - npx --version
+  - name: test
+    steps:
+      - name: HelloWorldStep
+        action: ExecuteBash
+        inputs:
+          commands:
+            - aws --version
+            - docker --version
+            - uv --version
+            - uvx --version
+            - python --version
+            - gh --version
+            - node --version
+            - npm --version
+            - npx --version
+",
+            ],
+          ],
+        },
+        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6DWorkerDependencies",
+        "Platform": "Linux",
+        "Version": {
+          "Fn::GetAtt": [
+            "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
+            "version",
+          ],
+        },
+      },
+      "Type": "AWS::ImageBuilder::Component",
+    },
+    "WorkerImageBuilderImageRecipeVersion51A6E2BF": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ServiceTimeout": "20",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4CE16D83A",
+            "Arn",
+          ],
+        },
+        "initialVersion": "0.0.0",
+        "key": {
+          "Fn::Join": [
+            "",
+            [
+              "{"components":[{"document":"/Users/mtomooka/Documents/nodejs/remote-swe-agents/cdk/lib/constructs/worker/resources/TestMainStack-image-component.yml","name":"WorkerDependencies","version":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
+                  "version",
+                ],
+              },
+              ""}],"parentImage":"{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}","subnetId":"",
+              {
+                "Ref": "VpcV2PublicSubnet1SubnetD67FC535",
+              },
+              "","securityGroups":["",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderSecurityGroup45E41ABB",
+                  "GroupId",
+                ],
+              },
+              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":50,"volumeType":"gp3"}}]}",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::ImageBuilderVersioning",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerImageBuilderRunPipelineA153A00F": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkerImageBuilderRunPipelineCustomResourcePolicy37323E03",
+      ],
+      "Properties": {
+        "Create": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-imagebuilder","action":"StartImagePipelineExecution","parameters":{"imagePipelineArn":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderImagePipelineV2ImagePipelineF6B46161",
+                  "Arn",
+                ],
+              },
+              ""},"physicalResourceId":{"id":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderImageRecipeVersion51A6E2BF",
+                  "version",
+                ],
+              },
+              ""}}",
+            ],
+          ],
+        },
+        "InstallLatestAwsSdk": false,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "Arn",
+          ],
+        },
+        "Update": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-imagebuilder","action":"StartImagePipelineExecution","parameters":{"imagePipelineArn":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderImagePipelineV2ImagePipelineF6B46161",
+                  "Arn",
+                ],
+              },
+              ""},"physicalResourceId":{"id":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderImageRecipeVersion51A6E2BF",
+                  "version",
+                ],
+              },
+              ""}}",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::AWS",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerImageBuilderRunPipelineCustomResourcePolicy37323E03": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "imagebuilder:StartImagePipelineExecution",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderImagePipelineV2ImagePipelineF6B46161",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerImageBuilderRunPipelineCustomResourcePolicy37323E03",
+        "Roles": [
+          {
+            "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerImageBuilderSecurityGroup45E41ABB": {
+      "Properties": {
+        "GroupDescription": "TestMainStack/Worker/ImageBuilder/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "VpcV257066EE3",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ServiceTimeout": "20",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4CE16D83A",
+            "Arn",
+          ],
+        },
+        "initialVersion": "0.0.0",
+        "key": {
+          "Fn::Join": [
+            "",
+            [
+              "name: MyComponentDocument
+description: This is an example component document
+schemaVersion: 1
+phases:
+  - name: build
+    steps:
+      - name: InstallUpdates
+        action: UpdateOS
+      - name: InstallDependencies
+        action: ExecuteBash
+        inputs:
+          commands:
+            - "#!/bin/bash
+
+              apt-get -o DPkg::Lock::Timeout=-1 update
+
+              apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
+
+              ln -s -f /usr/bin/pip3 /usr/bin/pip
+
+              ln -s -f /usr/bin/python3 /usr/bin/pip
+
+
+              # Install Node.js
+
+              snap install node --channel=22/stable --classic
+
+
+              # Install AWS CLI
+
+              snap install aws-cli --classic
+
+
+              # Install Fluent Bit
+
+              curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
+
+
+              # Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
+              (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y))   && sudo mkdir -p -m 755 /etc/apt/keyrings   && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg   && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null   && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg   && echo \\"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\\" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null   && sudo apt-get -o DPkg::Lock::Timeout=-1 update   && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
+
+
+              # Configure Git user for ubuntu
+
+              sudo -u ubuntu bash -c 'git config --global user.name \\"remote-swe-app[bot]\\"'
+
+              sudo -u ubuntu bash -c 'git config --global user.email \\"123456+remote-swe-app[bot]@users.noreply.github.com\\"'
+
+
+              # install uv
+
+              sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+
+              aws ssm get-parameter     --name /remote-swe/github/app-private-key     --query \\"Parameter.Value\\"     --output text > /opt/private-key.pem
+
+              curl -L \\"https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64\\" -o gh-token
+
+              chmod +x gh-token
+
+              mv gh-token /usr/bin
+
+              mkdir -p /opt/myapp && cd /opt/myapp
+
+              chown -R ubuntu:ubuntu /opt/myapp
+
+
+              # Install Playwright dependencies
+
+              sudo -u ubuntu bash -c \\"npx playwright install-deps\\"
+
+              sudo -u ubuntu bash -c \\"npx playwright install chromium\\"
+
+
+              # Configure GitHub CLI
+
+              sudo -u ubuntu bash -c \\"gh config set prompt disabled\\"
+
+
+              # Create setup script
+
+              mkdir -p /opt/scripts
+
+              cat << 'EOF' > /opt/scripts/start-app.sh
+
+              #!/bin/bash -l
+
+
+              # Clean up existing files
+
+              rm -rf ./{*,.*}
+
+
+              # Download source code from S3
+
+              aws s3 cp s3://",
+              {
+                "Ref": "WorkerSourceBucket539ACD15",
+              },
+              "/source/source.tar.gz ./source.tar.gz
+
+
+              # Extract and clean up
+
+              tar -xvzf source.tar.gz
+
+              rm -f source.tar.gz
+
+
+              # Install dependencies and build
+
+              npm ci
+
+              npm run build -w packages/agent-core
+
+
+              # Set up dynamic environment variables
+
+              TOKEN=$(curl -X PUT \\"http://169.254.169.254/latest/api/token\\" -H \\"X-aws-ec2-metadata-token-ttl-seconds: 900\\")
+
+              export WORKER_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+              export SLACK_CHANNEL_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
+
+              export SLACK_THREAD_TS=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
+
+              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
+
+              export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
+
+
+              # Start app
+
+              cd packages/worker
+
+              npx tsx src/main.ts
+
+              EOF
+
+
+              # Make script executable and set ownership
+
+              chmod +x /opt/scripts/start-app.sh
+
+              chown ubuntu:ubuntu /opt/scripts/start-app.sh
+
+
+              cat << EOF > /etc/systemd/system/myapp.service
+
+              [Unit]
+
+              Description=My Node.js Application
+
+              After=network.target
+
+
+              [Service]
+
+              Type=simple
+
+              User=ubuntu
+
+              WorkingDirectory=/opt/myapp
+
+
+              ExecStart=/opt/scripts/start-app.sh
+
+              Restart=always
+
+              RestartSec=10
+
+              TimeoutStartSec=600
+
+              TimeoutStopSec=10s
+
+              StandardOutput=journal
+
+              StandardError=journal
+
+              SyslogIdentifier=myapp
+
+              # Static environment variables
+
+              Environment=AWS_REGION=us-east-1
+
+              Environment=EVENT_HTTP_ENDPOINT=https://",
+              {
+                "Fn::GetAtt": [
+                  "WorkerBusApi8460ABC0",
+                  "Dns.Http",
+                ],
+              },
+              "
+
+              Environment=GITHUB_APP_PRIVATE_KEY_PATH=/opt/private-key.pem
+
+              Environment=GITHUB_APP_ID=123456
+
+              Environment=GITHUB_APP_INSTALLATION_ID=9876543
+
+              Environment=TABLE_NAME=",
+              {
+                "Ref": "StorageHistory251A3AE8",
+              },
+              "
+
+              Environment=BUCKET_NAME=",
+              {
+                "Ref": "StorageImageBucket99BA9550",
+              },
+              "
+
+              Environment=BEDROCK_AWS_ACCOUNTS=
+
+              Environment=BEDROCK_AWS_ROLE_NAME=
+
+              # Environment=MODEL_OVERRIDE=nova-pro
+
+
+              [Install]
+
+              WantedBy=multi-user.target
+
+              EOF
+
+
+              # Configure Fluent Bit for CloudWatch Logs
+
+              mkdir -p /etc/fluent-bit
+
+
+              cat << EOF > /etc/fluent-bit/fluent-bit.conf
+
+              [SERVICE]
+
+              \\    Flush        5
+
+              \\    Daemon       Off
+
+              \\    Log_Level    info
+
+
+              [INPUT]
+
+              \\    Name         systemd
+
+              \\    Tag          myapp
+
+              \\    Systemd_Filter    _SYSTEMD_UNIT=myapp.service
+
+
+              [FILTER]
+
+              \\    Name         modify
+
+              \\    Match        myapp
+
+              \\    Remove_regex ^(?!MESSAGE).+$
+
+
+              [OUTPUT]
+
+              \\    Name         cloudwatch_logs
+
+              \\    Match        myapp
+
+              \\    region       us-east-1
+
+              \\    log_group_name    ",
+              {
+                "Ref": "WorkerLogGroup67ABCFFE",
+              },
+              "
+
+              \\    log_stream_name   log-\\\\\${WORKER_ID}
+
+              \\    auto_create_group false
+
+              EOF
+
+
+              # Create Fluent Bit startup script
+
+              cat << 'EOF' > /opt/scripts/start-fluent-bit.sh
+
+              #!/bin/bash
+
+
+              TOKEN=$(curl -X PUT \\"http://169.254.169.254/latest/api/token\\" -H \\"X-aws-ec2-metadata-token-ttl-seconds: 900\\")
+
+              export WORKER_ID=$(curl -H \\"X-aws-ec2-metadata-token: $TOKEN\\" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+
+              exec /opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+
+              EOF
+
+
+              # Make script executable
+
+              chmod +x /opt/scripts/start-fluent-bit.sh
+
+
+              # Create and configure Fluent Bit systemd service
+
+              cat << EOF > /etc/systemd/system/fluent-bit.service
+
+              [Unit]
+
+              Description=Fluent Bit
+
+              After=network.target
+
+
+              [Service]
+
+              Type=simple
+
+              ExecStart=/opt/scripts/start-fluent-bit.sh
+
+              Restart=always
+
+              RestartSec=5
+
+
+              [Install]
+
+              WantedBy=multi-user.target
+
+              EOF
+
+
+              systemctl daemon-reload
+
+              systemctl enable fluent-bit
+
+              systemctl enable myapp
+
+              \\      "
+  - name: validate
+    steps:
+      - name: HelloWorldStep
+        action: ExecuteBash
+        inputs:
+          commands:
+            - aws --version
+            - docker --version
+            - uv --version
+            - uvx --version
+            - python --version
+            - gh --version
+            - node --version
+            - npm --version
+            - npx --version
+  - name: test
+    steps:
+      - name: HelloWorldStep
+        action: ExecuteBash
+        inputs:
+          commands:
+            - aws --version
+            - docker --version
+            - uv --version
+            - uvx --version
+            - python --version
+            - gh --version
+            - node --version
+            - npm --version
+            - npx --version
+",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::ImageBuilderVersioning",
+      "UpdateReplacePolicy": "Delete",
+    },
     "WorkerLaunchTemplateCB68F8E3": {
       "DependsOn": [
         "WorkerRoleDefaultPolicyDBA0F4B7",
@@ -1601,7 +2934,7 @@ exports[`Snapshot test 1`] = `
         "LaunchTemplateData": {
           "BlockDeviceMappings": [
             {
-              "DeviceName": "/dev/xvda",
+              "DeviceName": "/dev/sda1",
               "Ebs": {
                 "Encrypted": true,
                 "VolumeSize": 50,
@@ -1659,7 +2992,6 @@ exports[`Snapshot test 1`] = `
                 "",
                 [
                   "#!/bin/bash
-
 apt-get -o DPkg::Lock::Timeout=-1 update
 apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
@@ -1683,16 +3015,19 @@ sudo -u ubuntu bash -c 'git config --global user.email "123456+remote-swe-app[bo
 
 # install uv
 sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
-
-
 aws ssm get-parameter     --name /remote-swe/github/app-private-key     --query "Parameter.Value"     --output text > /opt/private-key.pem
 curl -L "https://github.com/Link-/gh-token/releases/download/v2.0.4/linux-amd64" -o gh-token
 chmod +x gh-token
 mv gh-token /usr/bin
-
-
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
+
+# Install Playwright dependencies
+sudo -u ubuntu bash -c "npx playwright install-deps"
+sudo -u ubuntu bash -c "npx playwright install chromium"
+
+# Configure GitHub CLI
+sudo -u ubuntu bash -c "gh config set prompt disabled"
 
 # Create setup script
 mkdir -p /opt/scripts
@@ -1716,13 +3051,6 @@ rm -f source.tar.gz
 # Install dependencies and build
 npm ci
 npm run build -w packages/agent-core
-
-# Install Playwright dependencies
-npx playwright install-deps
-npx playwright install chromium
-
-# Configure GitHub CLI
-gh config set prompt disabled
 
 # Set up dynamic environment variables
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
@@ -1790,7 +3118,6 @@ Environment=BEDROCK_AWS_ROLE_NAME=
 WantedBy=multi-user.target
 EOF
 
-
 # Configure Fluent Bit for CloudWatch Logs
 mkdir -p /etc/fluent-bit
 
@@ -1852,13 +3179,12 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-
 systemctl daemon-reload
 systemctl enable fluent-bit
-systemctl start fluent-bit
 systemctl enable myapp
-systemctl start myapp
-",
+      
+systemctl start fluent-bit
+systemctl start myapp",
                 ],
               ],
             },
