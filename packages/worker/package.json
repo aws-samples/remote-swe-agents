@@ -1,0 +1,37 @@
+{
+  "name": "worker",
+  "scripts": {
+    "build": "tsc",
+    "bundle": "esbuild src/main.ts --bundle --outdir=dist --platform=node --charset=utf8",
+    "format": "prettier --write './**/*.ts'",
+    "format:check": "prettier --check './**/*.ts'",
+    "test": "npm run testv -- run --silent",
+    "testv": "vitest --passWithNoTests",
+    "start:local": "tsx src/local.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "esbuild": "^0.25.1",
+    "prettier": "^3.5.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.1.1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.744.0",
+    "@aws-sdk/client-dynamodb": "^3.744.0",
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-sts": "^3.758.0",
+    "@aws-sdk/credential-providers": "^3.750.0",
+    "@aws-sdk/lib-dynamodb": "^3.744.0",
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@remote-swe-agents/agent-core": "file:../agent-core",
+    "@slack/bolt": "^4.2.0",
+    "aws-amplify": "^6.12.3",
+    "p-retry": "^6.2.1",
+    "playwright": "^1.52.0",
+    "sharp": "^0.33.5",
+    "ws": "^8.18.0",
+    "zod": "^3.24.2"
+  }
+}

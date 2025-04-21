@@ -63,7 +63,8 @@ export class Worker extends Construct {
     new BucketDeployment(this, 'SourceDeployment', {
       destinationBucket: sourceBucket,
       sources: [
-        Source.asset(join('..', 'worker'), {
+        // specify a dummy directory. All the input files are already in the image.
+        Source.asset(join('..', 'resources'), {
           bundling: {
             command: [
               'sh',
@@ -71,12 +72,12 @@ export class Worker extends Construct {
               [
                 //
                 'cd /asset-input',
-                "tar --exclude='./node_modules' -zcf source.tar.gz ./*",
+                'tar -zcf source.tar.gz -C /build/ .',
                 'mkdir -p /asset-output/source',
                 'mv source.tar.gz /asset-output/source',
               ].join('&&'),
             ],
-            image: DockerImage.fromRegistry('alpine'),
+            image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
           },
         }),
       ],
@@ -114,27 +115,29 @@ export class Worker extends Construct {
     const userData = launchTemplate.userData!;
 
     userData.addCommands(`
-export AWS_REGION=${Stack.of(this).region}
-while true; do
-  # this sometimes fails. so retry. https://github.com/amazonlinux/amazon-linux-2023/issues/397#issuecomment-1760177301
-  dnf install -y nodejs20 docker git python3.12 python3.12-pip 'dnf-command(config-manager)' && break
-done
-ln -s -f /usr/bin/node-20 /usr/bin/node
-ln -s -f /usr/bin/npm-20 /usr/bin/npm
-ln -s -f /usr/bin/npx-20 /usr/bin/npx
-ln -s -f /usr/bin/python3.12 /usr/bin/python
-ln -s -f /usr/bin/pip3.12 /usr/bin/pip
-service docker start
-usermod -a -G docker ec2-user
+apt-get -o DPkg::Lock::Timeout=-1 update
+apt-get -o DPkg::Lock::Timeout=-1 install -y docker.io python3-pip unzip
+ln -s -f /usr/bin/pip3 /usr/bin/pip
+ln -s -f /usr/bin/python3 /usr/bin/pip
+
+# Install Node.js
+snap install node --channel=22/stable --classic
+
+# Install AWS CLI
+snap install aws-cli --classic
 
 # Install Fluent Bit
 curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 
-# https://github.com/cli/cli/blob/trunk/docs/install_linux.md#dnf4
-dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-while true; do
-  dnf install -y gh --repo gh-cli && break
-done
+# Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+(type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+  && sudo mkdir -p -m 755 /etc/apt/keyrings \
+  && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+  && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  && sudo apt-get -o DPkg::Lock::Timeout=-1 update \
+  && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
 
 # https://github.com/amazonlinux/amazon-linux-2023/discussions/417#discussioncomment-8246163
 while true; do
@@ -163,15 +166,51 @@ mv gh-token /usr/bin
     }
 
     userData.addCommands(`
-TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
-WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-SLACK_CHANNEL_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-SLACK_THREAD_TS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
-SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text)
-GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)` : '""'}
-
 mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
+
+# Create setup script
+mkdir -p /opt/scripts
+cat << 'EOF' > /opt/scripts/start-app.sh
+#!/bin/bash -l
+
+# Clean up existing files
+rm -rf ./{*,.*}
+
+# Download source code from S3
+aws s3 cp s3://${sourceBucket.bucketName}/source/source.tar.gz ./source.tar.gz
+
+# Extract and clean up
+tar -xvzf source.tar.gz
+rm -f source.tar.gz
+
+# Install dependencies and build
+npm ci
+npm run build -w packages/agent-core
+
+# Install Playwright dependencies
+npx playwright install-deps
+npx playwright install chromium
+
+# Configure GitHub CLI
+gh config set prompt disabled
+
+# Set up dynamic environment variables
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
+export WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+export SLACK_CHANNEL_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
+export SLACK_THREAD_TS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
+export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text)
+export GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)` : '""'}
+
+# Start app
+cd packages/worker
+npx tsx src/main.ts
+EOF
+
+# Make script executable and set ownership
+chmod +x /opt/scripts/start-app.sh
+chown ubuntu:ubuntu /opt/scripts/start-app.sh
 
 cat << EOF > /etc/systemd/system/myapp.service
 [Unit]
@@ -183,17 +222,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/myapp
 
-# Pre-start script to download and update source code from S3
-ExecStartPre=/bin/bash -c '\\
-    rm -rf ./{*,.*} && \\
-    aws s3 cp s3://${sourceBucket.bucketName}/source/source.tar.gz ./source.tar.gz && \\
-    tar -xvzf source.tar.gz && \\
-    rm -f source.tar.gz && \\
-    npm install && \\
-    npx playwright install chromium && \\
-    gh config set prompt disabled'
-
-ExecStart=/bin/bash -l -c 'npx tsx src/main.ts'
+ExecStart=/opt/scripts/start-app.sh
 Restart=always
 RestartSec=10
 TimeoutStartSec=600
@@ -201,16 +230,12 @@ TimeoutStopSec=10s
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=myapp
-Environment=AWS_REGION=$AWS_REGION
-Environment=WORKER_ID=$WORKER_ID
-Environment=SLACK_CHANNEL_ID=$SLACK_CHANNEL_ID
-Environment=SLACK_THREAD_TS=$SLACK_THREAD_TS
-Environment=SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN
+# Static environment variables
+Environment=AWS_REGION=${Stack.of(this).region}
 Environment=EVENT_HTTP_ENDPOINT=${bus.httpEndpoint}
 Environment=GITHUB_APP_PRIVATE_KEY_PATH=${privateKey ? '/opt/private-key.pem' : ''}
 Environment=GITHUB_APP_ID=${props.gitHubApp?.appId ?? ''}
 Environment=GITHUB_APP_INSTALLATION_ID=${props.gitHubApp?.installationId ?? ''}
-Environment=GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN
 Environment=TABLE_NAME=${props.storageTable.tableName}
 Environment=BUCKET_NAME=${props.imageBucket.bucketName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
@@ -247,9 +272,22 @@ cat << EOF > /etc/fluent-bit/fluent-bit.conf
     Match        myapp
     region       ${Stack.of(this).region}
     log_group_name    ${this.logGroup.logGroupName}
-    log_stream_name   log-$WORKER_ID
+    log_stream_name   log-\\\${WORKER_ID}
     auto_create_group false
 EOF
+
+# Create Fluent Bit startup script
+cat << 'EOF' > /opt/scripts/start-fluent-bit.sh
+#!/bin/bash
+
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
+export WORKER_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
+
+exec /opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+EOF
+
+# Make script executable
+chmod +x /opt/scripts/start-fluent-bit.sh
 
 # Create and configure Fluent Bit systemd service
 cat << EOF > /etc/systemd/system/fluent-bit.service
@@ -259,10 +297,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+ExecStart=/opt/scripts/start-fluent-bit.sh
 Restart=always
 RestartSec=5
-Environment=WORKER_ID=$WORKER_ID
 
 [Install]
 WantedBy=multi-user.target

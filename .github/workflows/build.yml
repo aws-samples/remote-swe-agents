@@ -36,9 +36,12 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
+          npm run build -w packages/agent-core
+        name: Install dependencies
+      - run: |
           npm run build
           npm run format:check
-        working-directory: ./slack-bolt-app
+        working-directory: ./packages/slack-bolt-app
         name: Run static analyses
   Build-and-Test-Worker:
     runs-on: ubuntu-latest
@@ -50,17 +53,50 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
+          npm run build -w packages/agent-core
+        name: Install dependencies
+      - run: |
           npm run format:check
-        working-directory: ./worker
+        working-directory: ./packages/worker
         name: Run static analyses
       - run: |
           npm run test
-        working-directory: ./worker
+        working-directory: ./packages/worker
         name: Run unit tests
       - run: |
           npm run build
-        working-directory: ./worker
+        working-directory: ./packages/worker
         name: Run next build
+  Build-and-Test-AgentCore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - run: |
+          npm ci
+          npm run format:check -w packages/agent-core
+        name: Run static analyses
+      - run: |
+          npm run test
+        working-directory: ./packages/agent-core
+        name: Run unit tests
+      - run: |
+          npm run build
+        working-directory: ./packages/agent-core
+        name: Run next build
+  Build-and-Test-Dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -f docker/slack-bolt-app.Dockerfile -t slack-bolt-app .
+        name: Build slack-bolt-app docker image
+      - run: |
+          docker run --entrypoint node --env TESTING_BOOTSTRAP=true --env BOT_TOKEN=dummy --env SIGNING_SECRET=dummy slack-bolt-app local.js
+        name: Test if the image can boot successfully
 permissions:
   id-token: write # This is required for requesting the JWT
   contents: read # This is required for actions/checkout

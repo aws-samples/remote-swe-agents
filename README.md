@@ -14,6 +14,19 @@ This is an example implementation of a fully autonomous software development AI 
 * Reads knowledge from your preferred formats (.clinerules, CLAUDE.md, etc.)
 * Can work on OSS forked repositories!
 
+## Examples 
+
+Some of the agent sessions by Remote SWE agents:
+
+| Example 1 | Example 2 | Example 3 | Example 4 |
+|:--------:|:--------:|:--------:|:--------:|
+| ![example1](./docs/imgs/example1.png) | ![example2](./docs/imgs/example2.png) | ![example3](./docs/imgs/example3.png) | ![example4](./docs/imgs/example4.png) |
+| Instruct via GitHub issue. [Resulting PR](https://github.com/aws-samples/remote-swe-agents/pull/17) | single instruction to multiple repos [PR#1](https://github.com/aws-samples/trpc-nextjs-ssr-prisma-lambda/pull/16), [PR#2](https://github.com/aws-samples/prisma-lambda-cdk/pull/37), [PR#3](https://github.com/aws-samples/distributed-load-testing-with-locust-on-ecs/pull/25) | The agent can also input and output images as well. | The agent can speak other languages than English as well. [Resulting PR](https://github.com/tmokmss/deploy-time-build/pull/32) |
+
+### Pull Requests Created by the Remote SWE Agents
+
+You can view all the public pull requests created by the agent [here](https://github.com/search?q=is%3Apr+author%3Aremote-swe-user&type=pullrequests). All of the commits pushed from the GitHub user is written by the agent autonomously.
+
 ## Installation Steps
 
 Since this project is fully self-hosted, the setup process requires several manual operations such as configuring a Slack app.
@@ -25,6 +38,7 @@ Please carefully follow all the steps below. If you encounter any issues, we're 
 - npm (version 9 or higher)
 - AWS CLI
 - AWS IAM profile with appropriate permissions
+- Docker
 - Bedrock Claude Sonnet 3.7 model is [enabled on](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access) us-west-2 regions
 - Slack Workspace
 - GitHub Account
@@ -299,9 +313,10 @@ Here we assume you request 100 sessions per month. The monthly cost is proportio
 | Lambda | Requests: 30 invocations/session | 0.0006 |
 | Lambda | Duration: 128MB, 1s/invocation | 0.00017 |
 | API Gateway | Requests: 20 requests/session | 0.002 |
-| Bedrock | Input: Sonnet 3.7 400k tokens/session | 120.00 |
+| Bedrock | Input (cache write): Sonnet 3.7 100k tokens/session | 37.5 |
+| Bedrock | Input (cache read): Sonnet 3.7 1M tokens/session | 30.00 |
 | Bedrock | Output: Sonnet 3.7 20k tokens/session | 30.00 |
-| TOTAL | | 171.73 |
+| TOTAL | | 120 |
 
 Additionally, when the system is not in use (i.e., no messages are sent to the agents), the ongoing costs are minimal (~0 USD).
 
@@ -319,4 +334,3 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
-
