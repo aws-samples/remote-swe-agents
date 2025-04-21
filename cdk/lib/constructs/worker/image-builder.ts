@@ -102,7 +102,6 @@ export class WorkerImageBuilder extends Construct {
     );
     this.imageRecipeName = (pipeline.node.findChild('ImageRecipe') as CfnImageRecipe).attrName;
 
-    // Run the build pipeline asynchronously
     new AwsCustomResource(this, 'RunPipeline', {
       onUpdate: {
         service: '@aws-sdk/client-imagebuilder',
