@@ -2404,14 +2404,7 @@ phases:
           "Fn::Join": [
             "",
             [
-              "{"components":[{"document":"/Users/mtomooka/Documents/nodejs/remote-swe-agents/cdk/lib/constructs/worker/resources/TestMainStack-image-component.yml","name":"WorkerDependencies","version":"",
-              {
-                "Fn::GetAtt": [
-                  "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
-                  "version",
-                ],
-              },
-              ""}],"parentImage":"{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}","subnetId":"",
+              "{"parentImage":"{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}","subnetId":"",
               {
                 "Ref": "VpcV2PublicSubnet1SubnetD67FC535",
               },
@@ -2422,7 +2415,14 @@ phases:
                   "GroupId",
                 ],
               },
-              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":50,"volumeType":"gp3"}}]}",
+              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":50,"volumeType":"gp3"}}],"componentsVersion":"",
+              {
+                "Fn::GetAtt": [
+                  "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
+                  "version",
+                ],
+              },
+              ""}",
             ],
           ],
         },

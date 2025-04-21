@@ -53,14 +53,7 @@ export class WorkerImageBuilder extends Construct {
       serviceTimeout: Duration.seconds(20),
     });
 
-    const imagePipelineProps: Omit<ImagePipelineProps, 'imageRecipeVersion'> = {
-      components: [
-        {
-          document: join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
-          name: 'WorkerDependencies',
-          version: componentVersion.getAttString('version'),
-        },
-      ],
+    const imagePipelineProps: Omit<ImagePipelineProps, 'imageRecipeVersion' | 'components'> = {
       parentImage: StringParameter.fromStringParameterAttributes(this, 'ParentImageId', {
         parameterName: '/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id',
         forceDynamicReference: true,
@@ -85,12 +78,22 @@ export class WorkerImageBuilder extends Construct {
     const recipeVersion = new CustomResource(this, 'ImageRecipeVersion', {
       serviceToken: versioningHandler.functionArn,
       resourceType: 'Custom::ImageBuilderVersioning',
-      properties: { initialVersion: '0.0.0', key: JSON.stringify(imagePipelineProps) },
+      properties: {
+        initialVersion: '0.0.0',
+        key: JSON.stringify({ ...imagePipelineProps, componentsVersion: componentVersion.getAttString('version') }),
+      },
       serviceTimeout: Duration.seconds(20),
     });
 
     const pipeline = new ImagePipeline(this, 'ImagePipelineV2', {
       ...imagePipelineProps,
+      components: [
+        {
+          document: join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
+          name: 'WorkerDependencies',
+          version: componentVersion.getAttString('version'),
+        },
+      ],
       imageRecipeVersion: recipeVersion.getAttString('version'),
     });
 
