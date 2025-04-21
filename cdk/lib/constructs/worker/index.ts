@@ -130,7 +130,7 @@ sudo -u ubuntu bash -c -i "nvm install 22"
 
 # Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+unzip -q awscliv2.zip
 sudo ./aws/install
 
 # Install Fluent Bit
@@ -176,8 +176,8 @@ mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
 # Install Playwright dependencies
-sudo -u ubuntu bash -c "npx playwright install-deps"
-sudo -u ubuntu bash -c "npx playwright install chromium"
+sudo -u ubuntu bash -i -c "npx playwright install-deps"
+sudo -u ubuntu bash -i -c "npx playwright install chromium"
 
 # Configure GitHub CLI
 sudo -u ubuntu bash -c "gh config set prompt disabled"
@@ -228,7 +228,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/myapp
 
-ExecStart=/opt/scripts/start-app.sh
+ExecStart=/bin/bash -i -c /opt/scripts/start-app.sh
 Restart=always
 RestartSec=10
 TimeoutStartSec=600
