@@ -4,7 +4,7 @@ import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ImagePipeline, ImagePipelineProps } from 'cdk-image-pipeline';
 import { Construct } from 'constructs';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import * as yaml from 'yaml';
 import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
 import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
@@ -30,10 +30,8 @@ export class WorkerImageBuilder extends Construct {
     const componentTemplate = yaml.parse(componentTemplateString);
 
     componentTemplate.phases[0].steps[1].inputs.commands = [installDependenciesCommand];
-    writeFileSync(
-      join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
-      yaml.stringify(componentTemplate, { lineWidth: 0 })
-    );
+    const componentYamlPath = join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`);
+    writeFileSync(componentYamlPath, yaml.stringify(componentTemplate, { lineWidth: 0 }));
 
     const versioningHandler = new SingletonFunction(this, 'ImageBuilderVersioningHandler', {
       runtime: Runtime.NODEJS_22_X,
@@ -89,7 +87,7 @@ export class WorkerImageBuilder extends Construct {
       ...imagePipelineProps,
       components: [
         {
-          document: join(__dirname, 'resources', `${Stack.of(this).stackName}-image-component.yml`),
+          document: relative(process.cwd(), componentYamlPath),
           name: 'WorkerDependencies',
           version: componentVersion.getAttString('version'),
         },

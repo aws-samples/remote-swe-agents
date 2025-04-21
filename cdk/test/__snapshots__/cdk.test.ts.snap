@@ -1782,7 +1782,7 @@ exports.handler = async function (event, context) {
             },
           },
         ],
-        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6D414A87",
+        "Name": "TestMainStackWorkerImageBuilderImagePipelineV2B9301B6D6F803B",
         "ParentImage": "{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}",
         "Version": {
           "Fn::GetAtt": [
