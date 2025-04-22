@@ -1,4 +1,4 @@
-import { CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { CfnOutput, CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { IVpc, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ImagePipeline, ImagePipelineProps } from 'cdk-image-pipeline';
@@ -115,6 +115,10 @@ export class WorkerImageBuilder extends Construct {
       policy: AwsCustomResourcePolicy.fromSdkCalls({
         resources: [pipeline.pipeline.attrArn],
       }),
+    });
+
+    new CfnOutput(this, 'RemoveCachedAmiCommand', {
+      value: `aws ssm delete-parameter --name ${props.amiIdParameterName} --region ${Stack.of(this).region}`,
     });
   }
 }
