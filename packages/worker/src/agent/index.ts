@@ -13,7 +13,7 @@ import {
   updateMessageTokenCount,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
-import { bedrockConverse } from './common/bedrock';
+import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
@@ -215,7 +215,7 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           setKillTimer();
 
-          const res = await bedrockConverse(['sonnet3.7'], {
+          const res = await bedrockConverse(workerId, ['sonnet3.7'], {
             messages,
             system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
             toolConfig,
