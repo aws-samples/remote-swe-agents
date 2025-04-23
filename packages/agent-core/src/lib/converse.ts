@@ -49,7 +49,11 @@ const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>
   },
 };
 
-export const bedrockConverse = async (workerId: string, modelTypes: ModelType[], input: Omit<ConverseCommandInput, 'modelId'>) => {
+export const bedrockConverse = async (
+  workerId: string,
+  modelTypes: ModelType[],
+  input: Omit<ConverseCommandInput, 'modelId'>
+) => {
   const modelOverride = modelTypeSchema
     .optional()
     // empty string to undefined
