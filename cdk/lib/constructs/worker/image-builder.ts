@@ -9,11 +9,14 @@ import * as yaml from 'yaml';
 import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
 import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
+import { IBucket } from 'aws-cdk-lib/aws-s3';
+import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 
 export interface WorkerImageBuilderProps {
   vpc: IVpc;
   installDependenciesCommand: string;
   amiIdParameterName: string;
+  sourceBucket: IBucket;
 }
 
 export class WorkerImageBuilder extends Construct {
@@ -22,7 +25,7 @@ export class WorkerImageBuilder extends Construct {
   constructor(scope: Construct, id: string, props: WorkerImageBuilderProps) {
     super(scope, id);
 
-    const { vpc, installDependenciesCommand } = props;
+    const { vpc, installDependenciesCommand, sourceBucket } = props;
 
     const componentTemplateString = readFileSync(
       join(__dirname, 'resources', 'image-component-template.yml')
@@ -83,6 +86,9 @@ export class WorkerImageBuilder extends Construct {
       serviceTimeout: Duration.seconds(20),
     });
 
+    const additionalInstancePolicy = new ManagedPolicy(this, 'AdditionalInstancePolicy');
+    sourceBucket.grantRead(additionalInstancePolicy);
+
     const pipeline = new ImagePipeline(this, 'ImagePipelineV2', {
       ...imagePipelineProps,
       components: [
@@ -93,13 +99,12 @@ export class WorkerImageBuilder extends Construct {
         },
       ],
       imageRecipeVersion: recipeVersion.getAttString('version'),
+      additionalPolicies: [additionalInstancePolicy],
     });
 
     // avoid duplicated SSM state association
-    (pipeline.node.findChild('ImagePipeline') as CfnResource).addPropertyOverride(
-      'EnhancedImageMetadataEnabled',
-      false
-    );
+    const cfnPipeline = pipeline.node.findChild('ImagePipeline') as CfnResource;
+    cfnPipeline.addPropertyOverride('EnhancedImageMetadataEnabled', false);
     this.imageRecipeName = (pipeline.node.findChild('ImageRecipe') as CfnImageRecipe).attrName;
 
     // Run the build pipeline asynchronously

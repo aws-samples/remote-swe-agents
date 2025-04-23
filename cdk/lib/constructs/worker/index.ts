@@ -389,6 +389,7 @@ systemctl start myapp
       vpc,
       installDependenciesCommand,
       amiIdParameterName: props.amiIdParameterName,
+      sourceBucket,
     });
 
     role.addToPrincipalPolicy(

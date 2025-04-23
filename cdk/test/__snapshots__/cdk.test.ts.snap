@@ -1737,6 +1737,48 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::AppSync::ChannelNamespace",
     },
+    "WorkerImageBuilderAdditionalInstancePolicy4F8E90CE": {
+      "Properties": {
+        "Description": "",
+        "Path": "/",
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetBucket*",
+                "s3:GetObject*",
+                "s3:List*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerSourceBucket539ACD15",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerSourceBucket539ACD15",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::ManagedPolicy",
+    },
     "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA": {
       "Properties": {
         "DisplayName": "Image Builder Notify",
@@ -1888,6 +1930,9 @@ exports.handler = async function (event, context) {
                 ":iam::aws:policy/AmazonSSMManagedInstanceCore",
               ],
             ],
+          },
+          {
+            "Ref": "WorkerImageBuilderAdditionalInstancePolicy4F8E90CE",
           },
         ],
       },
