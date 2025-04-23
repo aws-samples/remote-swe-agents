@@ -36,7 +36,7 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
       const lastItem = res.items.at(-1);
-      if (lastItem == null || lastItem?.role === 'user' || attemptCount > 4) {
+      if (lastItem == null || lastItem.messageType === 'userMessage' || attemptCount > 4) {
         return res;
       }
       throw new Error('Last message is from assistant. Possibly DynamoDB replication delay.');
@@ -374,9 +374,8 @@ Users will primarily request software engineering assistance including bug fixes
 
 export const resume = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items } = await getConversationHistory(workerId);
-  const { messages } = await middleOutFiltering(items);
-  const lastMessage = messages?.at(-1);
-  if (lastMessage?.role == 'user') {
+  const lastItem = items.at(-1);
+  if (lastItem?.messageType == 'userMessage') {
     return await onMessageReceived(workerId, cancellationToken);
   }
 };

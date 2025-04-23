@@ -110,7 +110,7 @@ const main = async () => {
 
   try {
     await sendMessageToSlack('the instance has successfully launched!');
-    tracker.startOnMessageReceived();
+    tracker.startResume();
   } catch (e) {
     await sendMessageToSlack(`An error occurred: ${e}`);
   }
