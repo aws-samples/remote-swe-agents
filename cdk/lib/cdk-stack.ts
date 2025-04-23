@@ -109,6 +109,8 @@ export class MainStack extends cdk.Stack {
       workerAmiIdParameterName: props.workerAmiIdParameterName,
     });
 
-    new EC2GarbageCollector(this, 'EC2GarbageCollector');
+    new EC2GarbageCollector(this, 'EC2GarbageCollector', {
+      imageRecipeName: worker.imageBuilder.imageRecipeName,
+    });
   }
 }
