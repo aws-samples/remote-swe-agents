@@ -29,8 +29,9 @@ import {
   sendImageTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { readMetadata, renderToolResult, sendMessageToSlack, setKillTimer } from '@remote-swe-agents/agent-core/lib';
+import { CancellationToken } from '../common/cancellation-token';
 
-export const onMessageReceived = async (workerId: string) => {
+export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -40,7 +41,7 @@ export const onMessageReceived = async (workerId: string) => {
       }
       throw new Error('Last message is from assistant. Possibly DynamoDB replication delay.');
     },
-    { retries: 5, minTimeout: 100, maxTimeout: 2000 }
+    { retries: 5, minTimeout: 100, maxTimeout: 1000 }
   );
   if (!allItems) return;
 
@@ -199,6 +200,7 @@ Users will primarily request software engineering assistance including bug fixes
 
   let lastReportedTime = 0;
   while (true) {
+    if (cancellationToken.isCancelled) break;
     const items = [...initialItems, ...appendedItems];
     const { totalTokenCount, messages } = await noOpFiltering(items);
     secondCachePoint = messages.length - 1;
@@ -213,6 +215,7 @@ Users will primarily request software engineering assistance including bug fixes
     const res = await pRetry(
       async () => {
         try {
+          if (cancellationToken.isCancelled) return;
           setKillTimer();
 
           const res = await bedrockConverse(workerId, ['sonnet3.7'], {
@@ -235,6 +238,7 @@ Users will primarily request software engineering assistance including bug fixes
       },
       { retries: 100, minTimeout: 1000, maxTimeout: 5000 }
     );
+    if (!res) return;
 
     const lastItem = items.at(-1);
     if (lastItem?.role == 'user') {
@@ -368,11 +372,11 @@ Users will primarily request software engineering assistance including bug fixes
   }
 };
 
-export const resume = async (workerId: string) => {
+export const resume = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items } = await getConversationHistory(workerId);
   const { messages } = await middleOutFiltering(items);
   const lastMessage = messages?.at(-1);
   if (lastMessage?.role == 'user') {
-    return await onMessageReceived(workerId);
+    return await onMessageReceived(workerId, cancellationToken);
   }
 };

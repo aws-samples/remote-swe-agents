@@ -279,6 +279,7 @@ const trackTokenUsage = async (workerId: string, modelId: string, response: Conv
       );
     }
   } catch (error) {
+    // do not throw error to avoid affecting the primary process
     console.error('Error tracking token usage:', error);
   }
 };
