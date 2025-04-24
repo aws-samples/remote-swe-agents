@@ -12,6 +12,7 @@ const workerId = WorkerId;
 
 import { WorkerId } from './common/constants';
 import { renderUserMessage, saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
+import { CancellationToken } from './common/cancellation-token';
 
 async function processInput(input: string) {
   try {
@@ -26,7 +27,7 @@ async function processInput(input: string) {
         'userMessage'
       );
     }
-    await onMessageReceived(workerId);
+    await onMessageReceived(workerId, new CancellationToken());
   } catch (error) {
     console.error('An error occurred:', error);
   }

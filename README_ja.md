@@ -333,6 +333,9 @@ npx cdk deploy
 npx cdk destroy --force
 ```
 
+> [!NOTE]  
+> `cdk deploy` 実行時に非同期でEC2 Image Builderパイプラインが起動します。デプロイ後、スタックを削除する前に少なくとも30分お待ちください。スタックの削除に失敗した場合は、約30分待ってから `cdk destroy` を再実行してください。
+
 ## セキュリティ
 
 詳細については、[CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications)を参照してください。

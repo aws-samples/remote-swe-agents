@@ -5,10 +5,9 @@ import {
   ConverseResponse,
 } from '@aws-sdk/client-bedrock-runtime';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
+import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
-import { WorkerId } from '../../common/constants';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
@@ -50,7 +49,11 @@ const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>
   },
 };
 
-export const bedrockConverse = async (modelTypes: ModelType[], input: Omit<ConverseCommandInput, 'modelId'>) => {
+export const bedrockConverse = async (
+  workerId: string,
+  modelTypes: ModelType[],
+  input: Omit<ConverseCommandInput, 'modelId'>
+) => {
   const modelOverride = modelTypeSchema
     .optional()
     // empty string to undefined
@@ -70,7 +73,7 @@ export const bedrockConverse = async (modelTypes: ModelType[], input: Omit<Conve
   const response = await client.send(command);
 
   // Track token usage for analytics
-  await trackTokenUsage(WorkerId, modelId, response);
+  await trackTokenUsage(workerId, modelId, response);
 
   return response;
 };
@@ -280,6 +283,7 @@ const trackTokenUsage = async (workerId: string, modelId: string, response: Conv
       );
     }
   } catch (error) {
+    // do not throw error to avoid affecting the primary process
     console.error('Error tracking token usage:', error);
   }
 };

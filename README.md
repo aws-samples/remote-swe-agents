@@ -335,6 +335,9 @@ You can clean up all the resources you created by the following commands:
 npx cdk destroy --force
 ```
 
+> [!NOTE]  
+> When executing `cdk deploy`, an EC2 Image Builder pipeline is launched asynchronously. Please wait at least 30 minutes after deployment before destroying the stack. If stack deletion fails, wait about 30 minutes and try `cdk destroy` again.
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.

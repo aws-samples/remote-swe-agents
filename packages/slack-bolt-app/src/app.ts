@@ -11,6 +11,7 @@ import { Message } from '@aws-sdk/client-bedrock-runtime';
 import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { IdempotencyAlreadyInProgressError } from '@aws-lambda-powertools/idempotency';
+import { AsyncHandlerEvent } from './async-handler';
 
 const SigningSecret = process.env.SIGNING_SECRET!;
 const BotToken = process.env.BOT_TOKEN!;
@@ -213,7 +214,7 @@ app.event('app_mention', async ({ event, client, logger }) => {
               workerId,
               slackChannelId: event.channel,
               slackThreadTs: event.ts,
-            }),
+            } satisfies AsyncHandlerEvent),
             InvocationType: 'Event',
           })
         ),
