@@ -209,7 +209,13 @@ export ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
 
 この手順を完了したら、ステップ6に進んで設定でデプロイメントを完了します。
 
-### 6. 設定変数を使用してCDKを再度デプロイ
+### 6. 設定オプション（オプション）
+
+`cdk/cdk.json`の`context`セクションを修正することで、以下の設定をカスタマイズできます：
+
+- `ec2GarbageCollector:expirationInDays`: 未使用のEC2インスタンスとAmazon Machine Images(AMI)が自動的に終了されるまでの日数（デフォルト：1）
+
+### 7. 設定変数を使用してCDKを再度デプロイ
 
 上記のセットアップが完了したら、`cdk deploy`を再度実行します。
 
@@ -237,7 +243,7 @@ npx cdk deploy
 
 ### MCPサーバーとの統合
 
-エージェントはMCPクライアントとして機能できるため、さまざまなMCPサーバーと簡単に統合できます。統合を設定するには、[`claude_desktop_config.json`](./worker/claude_desktop_config.json)を編集してCDK deployを実行します。例えば、
+エージェントはMCPクライアントとして機能できるため、さまざまなMCPサーバーと簡単に統合できます。統合を設定するには、[`claude_desktop_config.json`](./packages/worker/claude_desktop_config.json)を編集してCDK deployを実行します。例えば、
 
 ```json
   "mcpServers": {

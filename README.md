@@ -211,7 +211,13 @@ All users except those with specified user IDs will receive an Unauthorized erro
 
 After completing this step, proceed to Step 6 to finalize the deployment with your configuration.
 
-### 6. Deploy CDK again with configuration variables
+### 6. Configuration Settings (Optional)
+
+You can customize certain settings by modifying the `context` section in `cdk/cdk.json`:
+
+- `ec2GarbageCollector:expirationInDays`: The number of days after which unused EC2 instances and Amazon Machine Images(AMI) will be automatically terminated (default: 1)
+
+### 7. Deploy CDK again with configuration variables
 
 After the above setup is complete, run `cdk deploy` again.
 
@@ -239,7 +245,7 @@ This way the repository is automatically inferred from the URL, and it can also 
 
 ### Integrating with MCP Servers
 
-As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`claude_desktop_config.json`](./worker/claude_desktop_config.json) and run CDK deploy. For example,
+As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`claude_desktop_config.json`](./packages/worker/claude_desktop_config.json) and run CDK deploy. For example,
 
 ```json
   "mcpServers": {

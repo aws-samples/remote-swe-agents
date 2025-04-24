@@ -110,6 +110,7 @@ export class MainStack extends cdk.Stack {
     });
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {
+      expirationInDays: this.node.tryGetContext('ec2GarbageCollector:expirationInDays') ?? 1,
       imageRecipeName: worker.imageBuilder.imageRecipeName,
     });
   }

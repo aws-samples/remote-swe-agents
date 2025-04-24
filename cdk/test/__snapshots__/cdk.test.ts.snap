@@ -546,37 +546,231 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorHandler7804A5C4": {
+    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A": {
+      "DeletionPolicy": "Delete",
       "DependsOn": [
-        "EC2GarbageCollectorHandlerServiceRoleDefaultPolicyB666A478",
-        "EC2GarbageCollectorHandlerServiceRole038CBC88",
+        "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD",
+        "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
       ],
       "Properties": {
-        "Architectures": [
-          "arm64",
+        "DefinitionString": "{
+  "QueryLanguage": "JSONata",
+  "StartAt": "DescribeStoppedInstances",
+  "States": {
+    "DescribeStoppedInstances": {
+      "Next": "TerminateInstances",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:describeInstances",
+      "Arguments": {
+        "Filters": [
+          {
+            "Name": "tag-key",
+            "Values": [
+              "RemoteSweWorkerId"
+            ]
+          },
+          {
+            "Name": "instance-state-name",
+            "Values": [
+              "stopped"
+            ]
+          }
+        ]
+      },
+      "Assign": {
+        "instances": "{% [$states.result.Reservations[].Instances] %}",
+        "expirationThreshold": "\${expirationThreshold}"
+      }
+    },
+    "TerminateInstances": {
+      "Next": "GetCurrentAmiId",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:terminateInstances",
+      "Arguments": {
+        "InstanceIds": "{% [$instances[$toMillis(LaunchTime) < $expirationThreshold].InstanceId] %}"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "GetCurrentAmiId"
+        }
+      ]
+    },
+    "GetCurrentAmiId": {
+      "Next": "DescribeAMIs",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
+      "Arguments": {
+        "Name": "/remote-swe/worker/ami-id"
+      },
+      "Assign": {
+        "workerAmiId": "{% $states.result.Parameter.Value %}"
+      }
+    },
+    "DescribeAMIs": {
+      "Next": "ProcessAMIs",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:describeImages",
+      "Arguments": {
+        "Owners": [
+          "self"
         ],
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
-          "S3Key": "REDACTED",
+        "Filters": [
+          {
+            "Name": "name",
+              "Values": [
+                "\${imageRecipeNamePattern}"
+              ]
+          }
+        ]
+      },
+      "Assign": {
+        "images": "{% $states.result.Images %}"
+      }
+    },
+    "ProcessAMIs": {
+      "Type": "Map",
+      "Items": "{% [$images[ImageId != $workerAmiId and $toMillis(CreationDate) < $expirationThreshold]] %}",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
         },
-        "Environment": {
-          "Variables": {
-            "EXPIRATION_IN_DAYS": "1",
+        "StartAt": "Parallel",
+        "States": {
+          "Parallel": {
+            "Type": "Parallel",
+            "Branches": [
+              {
+                "StartAt": "DeleteImageBuilderImage",
+                "States": {
+                  "DeleteImageBuilderImage": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:imagebuilder:deleteImage",
+                    "Arguments": {
+                      "ImageBuildVersionArn": "{% $states.input.Tags[Key = 'Ec2ImageBuilderArn'].Value %}"
+                    },
+                    "Next": "Pass",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [
+                          "States.ALL"
+                        ],
+                        "Next": "Pass"
+                      }
+                    ]
+                  },
+                  "Pass": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              {
+                "StartAt": "DeregisterImage",
+                "States": {
+                  "DeregisterImage": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:ec2:deregisterImage",
+                    "Arguments": {
+                      "ImageId": "{% $states.input.ImageId %}"
+                    },
+                    "Next": "Pass (1)",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [
+                          "States.ALL"
+                        ],
+                        "Next": "Pass (1)"
+                      }
+                    ]
+                  },
+                  "Pass (1)": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              {
+                "StartAt": "ProcessSnapshots",
+                "States": {
+                  "ProcessSnapshots": {
+                    "Type": "Map",
+                    "Items": "{% [$states.input.BlockDeviceMappings[$exists(Ebs)]] %}",
+                    "ItemProcessor": {
+                      "ProcessorConfig": {
+                        "Mode": "INLINE"
+                      },
+                      "StartAt": "DeleteSnapshotInMap",
+                      "States": {
+                        "DeleteSnapshotInMap": {
+                          "Type": "Task",
+                          "Resource": "arn:aws:states:::aws-sdk:ec2:deleteSnapshot",
+                          "Arguments": {
+                            "SnapshotId": "{% $states.input.Ebs.SnapshotId %}"
+                          },
+                          "Next": "Pass (2)",
+                          "Catch": [
+                            {
+                              "ErrorEquals": [
+                                "States.ALL"
+                              ],
+                              "Next": "Pass (2)"
+                            }
+                          ]
+                        },
+                        "Pass (2)": {
+                          "Type": "Pass",
+                          "End": true
+                        }
+                      }
+                    },
+                    "MaxConcurrency": 5,
+                    "End": true
+                  }
+                }
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "MaxConcurrency": 10,
+      "End": true
+    }
+  },
+  "TimeoutSeconds": 600
+}
+",
+        "DefinitionSubstitutions": {
+          "expirationThreshold": "{% $millis() - 1000 * 60 * 60 * 24 * 1 %}",
+          "imageRecipeNamePattern": {
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
+                    "Name",
+                  ],
+                },
+                "*",
+              ],
+            ],
           },
         },
-        "Handler": "index.handler",
-        "Role": {
+        "RoleArn": {
           "Fn::GetAtt": [
-            "EC2GarbageCollectorHandlerServiceRole038CBC88",
+            "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
-        "Timeout": 300,
       },
-      "Type": "AWS::Lambda::Function",
+      "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
     },
-    "EC2GarbageCollectorHandlerServiceRole038CBC88": {
+    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -584,89 +778,109 @@ exports[`Snapshot test 1`] = `
               "Action": "sts:AssumeRole",
               "Effect": "Allow",
               "Principal": {
-                "Service": "lambda.amazonaws.com",
+                "Service": "events.amazonaws.com",
               },
             },
           ],
           "Version": "2012-10-17",
         },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-              ],
-            ],
-          },
-        ],
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorHandlerServiceRoleDefaultPolicyB666A478": {
+    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRoleDefaultPolicyC0A8C6B7": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
             {
-              "Action": [
-                "ec2:DescribeInstances",
-                "ec2:TerminateInstances",
-              ],
+              "Action": "states:StartExecution",
               "Effect": "Allow",
-              "Resource": "*",
+              "Resource": {
+                "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A",
+              },
             },
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "EC2GarbageCollectorHandlerServiceRoleDefaultPolicyB666A478",
+        "PolicyName": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRoleDefaultPolicyC0A8C6B7",
         "Roles": [
           {
-            "Ref": "EC2GarbageCollectorHandlerServiceRole038CBC88",
+            "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
     },
-    "EC2GarbageCollectorScheduleAllowEventRuleTestMainStackEC2GarbageCollectorHandler9F5B27AB4F33A51A": {
-      "Properties": {
-        "Action": "lambda:InvokeFunction",
-        "FunctionName": {
-          "Fn::GetAtt": [
-            "EC2GarbageCollectorHandler7804A5C4",
-            "Arn",
-          ],
-        },
-        "Principal": "events.amazonaws.com",
-        "SourceArn": {
-          "Fn::GetAtt": [
-            "EC2GarbageCollectorScheduleBA6395AF",
-            "Arn",
-          ],
-        },
-      },
-      "Type": "AWS::Lambda::Permission",
-    },
-    "EC2GarbageCollectorScheduleBA6395AF": {
+    "EC2GarbageCollectorStepFunctionsScheduleForEC2GarbageCollectorE67E22DB": {
       "Properties": {
         "ScheduleExpression": "rate(2 hours)",
         "State": "ENABLED",
         "Targets": [
           {
             "Arn": {
+              "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A",
+            },
+            "Id": "Target0",
+            "RoleArn": {
               "Fn::GetAtt": [
-                "EC2GarbageCollectorHandler7804A5C4",
+                "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015",
                 "Arn",
               ],
             },
-            "Id": "Target0",
           },
         ],
       },
       "Type": "AWS::Events::Rule",
+    },
+    "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "Role for EC2GarbageCollector Step Functions",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ec2:DeleteSnapshot",
+                "ec2:DeregisterImage",
+                "ec2:DescribeImages",
+                "ec2:DescribeInstances",
+                "ec2:TerminateInstances",
+                "imagebuilder:DeleteImage",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "ssm:GetParameter",
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:*:*:parameter/remote-swe/worker/ami-id",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD",
+        "Roles": [
+          {
+            "Ref": "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "ImageBuilderVersioning153e8b47ce274abca3b1ad890c5d81e4CE16D83A": {
       "DependsOn": [

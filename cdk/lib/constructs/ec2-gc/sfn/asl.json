@@ -1,0 +1,189 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "DescribeStoppedInstances",
+  "States": {
+    "DescribeStoppedInstances": {
+      "Next": "TerminateInstances",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:describeInstances",
+      "Arguments": {
+        "Filters": [
+          {
+            "Name": "tag-key",
+            "Values": [
+              "RemoteSweWorkerId"
+            ]
+          },
+          {
+            "Name": "instance-state-name",
+            "Values": [
+              "stopped"
+            ]
+          }
+        ]
+      },
+      "Assign": {
+        "instances": "{% [$states.result.Reservations[].Instances] %}",
+        "expirationThreshold": "${expirationThreshold}"
+      }
+    },
+    "TerminateInstances": {
+      "Next": "GetCurrentAmiId",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:terminateInstances",
+      "Arguments": {
+        "InstanceIds": "{% [$instances[$toMillis(LaunchTime) < $expirationThreshold].InstanceId] %}"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "GetCurrentAmiId"
+        }
+      ]
+    },
+    "GetCurrentAmiId": {
+      "Next": "DescribeAMIs",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
+      "Arguments": {
+        "Name": "/remote-swe/worker/ami-id"
+      },
+      "Assign": {
+        "workerAmiId": "{% $states.result.Parameter.Value %}"
+      }
+    },
+    "DescribeAMIs": {
+      "Next": "ProcessAMIs",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:describeImages",
+      "Arguments": {
+        "Owners": [
+          "self"
+        ],
+        "Filters": [
+          {
+            "Name": "name",
+              "Values": [
+                "${imageRecipeNamePattern}"
+              ]
+          }
+        ]
+      },
+      "Assign": {
+        "images": "{% $states.result.Images %}"
+      }
+    },
+    "ProcessAMIs": {
+      "Type": "Map",
+      "Items": "{% [$images[ImageId != $workerAmiId and $toMillis(CreationDate) < $expirationThreshold]] %}",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Parallel",
+        "States": {
+          "Parallel": {
+            "Type": "Parallel",
+            "Branches": [
+              {
+                "StartAt": "DeleteImageBuilderImage",
+                "States": {
+                  "DeleteImageBuilderImage": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:imagebuilder:deleteImage",
+                    "Arguments": {
+                      "ImageBuildVersionArn": "{% $states.input.Tags[Key = 'Ec2ImageBuilderArn'].Value %}"
+                    },
+                    "Next": "Pass",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [
+                          "States.ALL"
+                        ],
+                        "Next": "Pass"
+                      }
+                    ]
+                  },
+                  "Pass": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              {
+                "StartAt": "DeregisterImage",
+                "States": {
+                  "DeregisterImage": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:ec2:deregisterImage",
+                    "Arguments": {
+                      "ImageId": "{% $states.input.ImageId %}"
+                    },
+                    "Next": "Pass (1)",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [
+                          "States.ALL"
+                        ],
+                        "Next": "Pass (1)"
+                      }
+                    ]
+                  },
+                  "Pass (1)": {
+                    "Type": "Pass",
+                    "End": true
+                  }
+                }
+              },
+              {
+                "StartAt": "ProcessSnapshots",
+                "States": {
+                  "ProcessSnapshots": {
+                    "Type": "Map",
+                    "Items": "{% [$states.input.BlockDeviceMappings[$exists(Ebs)]] %}",
+                    "ItemProcessor": {
+                      "ProcessorConfig": {
+                        "Mode": "INLINE"
+                      },
+                      "StartAt": "DeleteSnapshotInMap",
+                      "States": {
+                        "DeleteSnapshotInMap": {
+                          "Type": "Task",
+                          "Resource": "arn:aws:states:::aws-sdk:ec2:deleteSnapshot",
+                          "Arguments": {
+                            "SnapshotId": "{% $states.input.Ebs.SnapshotId %}"
+                          },
+                          "Next": "Pass (2)",
+                          "Catch": [
+                            {
+                              "ErrorEquals": [
+                                "States.ALL"
+                              ],
+                              "Next": "Pass (2)"
+                            }
+                          ]
+                        },
+                        "Pass (2)": {
+                          "Type": "Pass",
+                          "End": true
+                        }
+                      }
+                    },
+                    "MaxConcurrency": 5,
+                    "End": true
+                  }
+                }
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "MaxConcurrency": 10,
+      "End": true
+    }
+  },
+  "TimeoutSeconds": 600
+}
