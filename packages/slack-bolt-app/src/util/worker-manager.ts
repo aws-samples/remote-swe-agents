@@ -14,6 +14,7 @@ export async function findStoppedWorkerInstance(workerId: string) {
 export async function findRunningWorkerInstance(workerId: string) {
   return findWorkerInstanceWithStatus(workerId, ['running', 'pending']);
 }
+
 async function findWorkerInstanceWithStatus(workerId: string, statuses: string[]): Promise<string | null> {
   const describeCommand = new DescribeInstancesCommand({
     Filters: [
