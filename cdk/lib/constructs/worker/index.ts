@@ -164,7 +164,9 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 
 # Configure Git user for ubuntu
 sudo -u ubuntu bash -c 'git config --global user.name "remote-swe-app[bot]"'
-sudo -u ubuntu bash -c 'git config --global user.email "${props.gitHubApp?.appId ?? '123456'}+remote-swe-app[bot]@users.noreply.github.com"'
+sudo -u ubuntu bash -c 'git config --global user.email "${
+        props.gitHubApp?.appId ?? '123456'
+      }+remote-swe-app[bot]@users.noreply.github.com"'
 
 # install uv
 sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
@@ -261,8 +263,14 @@ TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-m
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 export SLACK_CHANNEL_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
 export SLACK_THREAD_TS=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
-export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text)
-export GITHUB_PERSONAL_ACCESS_TOKEN=${props.githubPersonalAccessTokenParameter ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)` : '""'}
+export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${
+        props.slackBotTokenParameter.parameterName
+      } --query "Parameter.Value" --output text)
+export GITHUB_PERSONAL_ACCESS_TOKEN=${
+        props.githubPersonalAccessTokenParameter
+          ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)`
+          : '""'
+      }
 
 # Start app
 cd packages/worker
