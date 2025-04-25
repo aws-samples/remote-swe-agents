@@ -546,11 +546,32 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A": {
+    "EC2GarbageCollectorScheduleForEC2GarbageCollector64331E22": {
+      "Properties": {
+        "ScheduleExpression": "rate(2 hours)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "EC2GarbageCollectorStateMachine5AE329F9",
+            },
+            "Id": "Target0",
+            "RoleArn": {
+              "Fn::GetAtt": [
+                "EC2GarbageCollectorStateMachineEventsRole5EFB5D90",
+                "Arn",
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "EC2GarbageCollectorStateMachine5AE329F9": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
-        "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD",
-        "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
+        "EC2GarbageCollectorStateMachineRoleDefaultPolicy85987192",
+        "EC2GarbageCollectorStateMachineRole93EEEB7C",
       ],
       "Properties": {
         "DefinitionString": "{
@@ -579,7 +600,7 @@ exports[`Snapshot test 1`] = `
       },
       "Assign": {
         "instances": "{% [$states.result.Reservations[].Instances] %}",
-        "expirationThreshold": "\${expirationThreshold}"
+        "expirationThreshold": "{% $millis() - 1000 * 60 * 60 * 24 * \${expirationInDays} %}"
       }
     },
     "TerminateInstances": {
@@ -744,25 +765,17 @@ exports[`Snapshot test 1`] = `
 }
 ",
         "DefinitionSubstitutions": {
-          "expirationThreshold": "{% $millis() - 1000 * 60 * 60 * 24 * 1 %}",
+          "expirationInDays": "0",
           "imageRecipeNamePattern": {
-            "Fn::Join": [
-              "",
-              [
-                {
-                  "Fn::GetAtt": [
-                    "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
-                    "Name",
-                  ],
-                },
-                "*",
-              ],
+            "Fn::GetAtt": [
+              "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
+              "Name",
             ],
           },
         },
         "RoleArn": {
           "Fn::GetAtt": [
-            "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
+            "EC2GarbageCollectorStateMachineRole93EEEB7C",
             "Arn",
           ],
         },
@@ -770,7 +783,7 @@ exports[`Snapshot test 1`] = `
       "Type": "AWS::StepFunctions::StateMachine",
       "UpdateReplacePolicy": "Delete",
     },
-    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015": {
+    "EC2GarbageCollectorStateMachineEventsRole5EFB5D90": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -787,7 +800,7 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRoleDefaultPolicyC0A8C6B7": {
+    "EC2GarbageCollectorStateMachineEventsRoleDefaultPolicy50859D05": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -795,43 +808,22 @@ exports[`Snapshot test 1`] = `
               "Action": "states:StartExecution",
               "Effect": "Allow",
               "Resource": {
-                "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A",
+                "Ref": "EC2GarbageCollectorStateMachine5AE329F9",
               },
             },
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRoleDefaultPolicyC0A8C6B7",
+        "PolicyName": "EC2GarbageCollectorStateMachineEventsRoleDefaultPolicy50859D05",
         "Roles": [
           {
-            "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015",
+            "Ref": "EC2GarbageCollectorStateMachineEventsRole5EFB5D90",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
     },
-    "EC2GarbageCollectorStepFunctionsScheduleForEC2GarbageCollectorE67E22DB": {
-      "Properties": {
-        "ScheduleExpression": "rate(2 hours)",
-        "State": "ENABLED",
-        "Targets": [
-          {
-            "Arn": {
-              "Ref": "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorE0DEF30A",
-            },
-            "Id": "Target0",
-            "RoleArn": {
-              "Fn::GetAtt": [
-                "EC2GarbageCollectorStepFunctionsEC2GarbageCollectorEventsRole9663D015",
-                "Arn",
-              ],
-            },
-          },
-        ],
-      },
-      "Type": "AWS::Events::Rule",
-    },
-    "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA": {
+    "EC2GarbageCollectorStateMachineRole93EEEB7C": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -845,11 +837,10 @@ exports[`Snapshot test 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "Description": "Role for EC2GarbageCollector Step Functions",
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD": {
+    "EC2GarbageCollectorStateMachineRoleDefaultPolicy85987192": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -873,10 +864,10 @@ exports[`Snapshot test 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "EC2GarbageCollectorStepFunctionsStepFunctionsRoleDefaultPolicyA5BC25BD",
+        "PolicyName": "EC2GarbageCollectorStateMachineRoleDefaultPolicy85987192",
         "Roles": [
           {
-            "Ref": "EC2GarbageCollectorStepFunctionsStepFunctionsRole3E2230EA",
+            "Ref": "EC2GarbageCollectorStateMachineRole93EEEB7C",
           },
         ],
       },
