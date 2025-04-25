@@ -211,13 +211,7 @@ All users except those with specified user IDs will receive an Unauthorized erro
 
 After completing this step, proceed to Step 6 to finalize the deployment with your configuration.
 
-### 6. Configuration Settings (Optional)
-
-You can customize certain settings by modifying the `context` section in `cdk/cdk.json`:
-
-- `ec2GarbageCollector:expirationInDays`: The number of days after which unused EC2 instances and Amazon Machine Images(AMI) will be automatically terminated (default: 1)
-
-### 7. Deploy CDK again with configuration variables
+### 6. Deploy CDK again with configuration variables
 
 After the above setup is complete, run `cdk deploy` again.
 
