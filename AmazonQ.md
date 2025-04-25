@@ -86,3 +86,4 @@ cd slack-bolt-app && npm run build
 
 - **Build errors**: Check that dependencies are up to date (`npm ci` to update)
 - **TypeScript errors**: Ensure type definitions are accurate and use type assertions when necessary
+- **CDK Snapshot Test Failures**: When modifying infrastructure in CDK, snapshot tests may fail. Update snapshots using `cd cdk && npm run test -- -u`

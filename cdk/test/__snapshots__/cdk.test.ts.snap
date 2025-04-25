@@ -1177,12 +1177,28 @@ exports.handler = async function (event, context) {
                 "dynamodb:UpdateItem",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "StorageHistory251A3AE8",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -1408,12 +1424,28 @@ exports.handler = async function (event, context) {
                 "dynamodb:UpdateItem",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "StorageHistory251A3AE8",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -1495,6 +1527,10 @@ exports.handler = async function (event, context) {
             "AttributeName": "SK",
             "AttributeType": "S",
           },
+          {
+            "AttributeName": "LSI1",
+            "AttributeType": "S",
+          },
         ],
         "BillingMode": "PAY_PER_REQUEST",
         "KeySchema": [
@@ -1505,6 +1541,24 @@ exports.handler = async function (event, context) {
           {
             "AttributeName": "SK",
             "KeyType": "RANGE",
+          },
+        ],
+        "LocalSecondaryIndexes": [
+          {
+            "IndexName": "LSI1",
+            "KeySchema": [
+              {
+                "AttributeName": "PK",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "LSI1",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
           },
         ],
         "Replicas": [
@@ -2791,6 +2845,46 @@ phases:
       "Type": "Custom::ImageBuilderVersioning",
       "UpdateReplacePolicy": "Delete",
     },
+    "WorkerImageBuilderPurgeAmiCacheBF0FB7E9": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
+      ],
+      "Properties": {
+        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v1"}}",
+        "InstallLatestAwsSdk": false,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "Arn",
+          ],
+        },
+        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v1"}}",
+      },
+      "Type": "Custom::AWS",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "ssm:DeleteParameter",
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
+        "Roles": [
+          {
+            "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "WorkerImageBuilderRunPipelineA153A00F": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
@@ -2815,7 +2909,7 @@ phases:
                   "version",
                 ],
               },
-              ""}}",
+              "#v1"}}",
             ],
           ],
         },
@@ -2844,7 +2938,7 @@ phases:
                   "version",
                 ],
               },
-              ""}}",
+              "#v1"}}",
             ],
           ],
         },
@@ -3847,12 +3941,28 @@ systemctl start myapp",
                 "dynamodb:UpdateItem",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "StorageHistory251A3AE8",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
             },
             {
               "Action": [

@@ -1,7 +1,7 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { sendEvent } from './util/events';
-import { saveConversationHistory, getConversationHistory, getTokenUsage } from './util/history';
+import { saveConversationHistory, getConversationHistory, getTokenUsage, saveSessionInfo } from './util/history';
 import { makeIdempotent } from './util/idempotency';
 import { ApproveUsers, isAuthorized } from './util/auth';
 import { calculateCost } from './util/cost';
@@ -203,7 +203,7 @@ app.event('app_mention', async ({ event, client, logger }) => {
       const logGroupName = process.env.LOG_GROUP_NAME!;
       const cloudwatchUrl = `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}/log-events/${encodeURIComponent(logStreamName)}`;
 
-      await Promise.all([
+      const promises = [
         saveConversationHistory(workerId, message, userId, imageKeys),
         sendEvent(workerId, 'onMessageReceived'),
         lambda.send(
@@ -218,6 +218,15 @@ app.event('app_mention', async ({ event, client, logger }) => {
             InvocationType: 'Event',
           })
         ),
+      ];
+
+      // スレッドの開始時のみ、メッセージを送信し、セッション情報を保存する
+      if (event.thread_ts === undefined) {
+        promises.push(saveSessionInfo(workerId));
+      }
+
+      await Promise.all([
+        ...promises,
         // スレッドの開始時のみ、メッセージを送信する
         event.thread_ts === undefined
           ? client.chat.postMessage({

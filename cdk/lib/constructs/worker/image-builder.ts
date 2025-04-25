@@ -107,6 +107,9 @@ export class WorkerImageBuilder extends Construct {
     cfnPipeline.addPropertyOverride('EnhancedImageMetadataEnabled', false);
     this.imageRecipeName = (pipeline.node.findChild('ImageRecipe') as CfnImageRecipe).attrName;
 
+    // change this physical id manually when you want to force users to remove the AMI cache
+    // (e.g. when DynamoDB table ARN changed)
+    const amiVersion = 'v1';
     // Run the build pipeline asynchronously
     new AwsCustomResource(this, 'RunPipeline', {
       onUpdate: {
@@ -115,10 +118,30 @@ export class WorkerImageBuilder extends Construct {
         parameters: {
           imagePipelineArn: pipeline.pipeline.attrArn,
         },
-        physicalResourceId: PhysicalResourceId.of(recipeVersion.getAttString('version')),
+        physicalResourceId: PhysicalResourceId.of(`${recipeVersion.getAttString('version')}#${amiVersion}`),
       },
       policy: AwsCustomResourcePolicy.fromSdkCalls({
         resources: [pipeline.pipeline.attrArn],
+      }),
+    });
+
+    new AwsCustomResource(this, 'PurgeAmiCache', {
+      onUpdate: {
+        service: '@aws-sdk/client-ssm',
+        action: 'DeleteParameter',
+        parameters: {
+          Name: props.amiIdParameterName,
+        },
+        ignoreErrorCodesMatching: 'ParameterNotFound',
+        physicalResourceId: PhysicalResourceId.of(amiVersion),
+      },
+      policy: AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [
+          StringParameter.fromStringParameterAttributes(this, 'AmiIdParameter', {
+            parameterName: props.amiIdParameterName,
+            forceDynamicReference: true,
+          }).parameterArn,
+        ],
       }),
     });
 

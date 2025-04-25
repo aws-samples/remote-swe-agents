@@ -13,6 +13,14 @@ type MessageItem = {
   slackUserId: string;
 };
 
+type SessionItem = {
+  PK: string;
+  SK: string;
+  workerId: string;
+  createdAt: number;
+  LSI1: string;
+};
+
 export const saveConversationHistory = async (
   workerId: string,
   message: string,
@@ -89,4 +97,22 @@ export const getTokenUsage = async (workerId: string) => {
     })
   );
   return res.Items ?? [];
+};
+
+export const saveSessionInfo = async (workerId: string) => {
+  const now = Date.now();
+  const timestamp = String(now).padStart(15, '0');
+
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: {
+        PK: 'sessions',
+        SK: workerId,
+        workerId,
+        createdAt: now,
+        LSI1: timestamp,
+      } satisfies SessionItem,
+    })
+  );
 };

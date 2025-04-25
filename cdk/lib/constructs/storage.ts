@@ -1,5 +1,5 @@
 import { CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
-import { AttributeType, Billing, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
+import { AttributeType, Billing, TableV2, ProjectionType } from 'aws-cdk-lib/aws-dynamodb';
 import { BlockPublicAccess, Bucket, IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
@@ -20,6 +20,13 @@ export class Storage extends Construct {
       billing: Billing.onDemand(),
       timeToLiveAttribute: 'TTL',
       removalPolicy: RemovalPolicy.DESTROY,
+      localSecondaryIndexes: [
+        {
+          indexName: 'LSI1',
+          sortKey: { name: 'LSI1', type: AttributeType.STRING },
+          projectionType: ProjectionType.ALL,
+        },
+      ],
     });
 
     const bucket = new Bucket(this, 'ImageBucket', {
