@@ -181,7 +181,7 @@
           }
         }
       },
-      "MaxConcurrency": 10,
+      "MaxConcurrency": 3,
       "End": true
     }
   },

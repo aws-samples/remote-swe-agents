@@ -16,20 +16,14 @@ export class EC2GarbageCollectorStepFunctions extends Construct {
   constructor(scope: Construct, id: string, props: EC2GarbageCollectorStepFunctionsProps) {
     super(scope, id);
 
-    // Set the appropriate calculation formula based on expirationInDays
-    let expirationFormula: string;
-    expirationFormula = `{% $millis() - 1000 * 60 * 60 * 24 * ${props.expirationInDays} %}`;
-
-    // Path to ASL file
     const aslPath = path.join(__dirname, 'asl.json');
 
     // Create state machine (using definitionSubstitutions to replace placeholders)
     this.stateMachine = new sfn.StateMachine(this, 'Resource', {
       definitionBody: sfn.DefinitionBody.fromString(fs.readFileSync(aslPath, 'utf8')),
       definitionSubstitutions: {
-        // expirationThreshold: expirationFormula,
         expirationInDays: props.expirationInDays.toString(),
-        imageRecipeNamePattern: props.imageRecipeName,
+        imageRecipeNamePattern: `${props.imageRecipeName}*`,
       },
       timeout: cdk.Duration.seconds(600),
     });

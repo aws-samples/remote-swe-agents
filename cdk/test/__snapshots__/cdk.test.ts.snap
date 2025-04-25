@@ -757,7 +757,7 @@ exports[`Snapshot test 1`] = `
           }
         }
       },
-      "MaxConcurrency": 10,
+      "MaxConcurrency": 3,
       "End": true
     }
   },
@@ -767,9 +767,17 @@ exports[`Snapshot test 1`] = `
         "DefinitionSubstitutions": {
           "expirationInDays": "1",
           "imageRecipeNamePattern": {
-            "Fn::GetAtt": [
-              "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
-              "Name",
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
+                    "Name",
+                  ],
+                },
+                "*",
+              ],
             ],
           },
         },
