@@ -765,7 +765,7 @@ exports[`Snapshot test 1`] = `
 }
 ",
         "DefinitionSubstitutions": {
-          "expirationInDays": "0",
+          "expirationInDays": "1",
           "imageRecipeNamePattern": {
             "Fn::GetAtt": [
               "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4",
