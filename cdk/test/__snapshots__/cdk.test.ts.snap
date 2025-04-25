@@ -546,7 +546,7 @@ exports[`Snapshot test 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "EC2GarbageCollectorScheduleForEC2GarbageCollector64331E22": {
+    "EC2GarbageCollectorScheduleBA6395AF": {
       "Properties": {
         "ScheduleExpression": "rate(2 hours)",
         "State": "ENABLED",

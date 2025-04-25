@@ -19,7 +19,7 @@ export class EC2GarbageCollector extends Construct {
       expirationInDays: props.expirationInDays,
     });
 
-    const schedule = new events.Rule(this, 'ScheduleForEC2GarbageCollector', {
+    const schedule = new events.Rule(this, 'Schedule', {
       schedule: events.Schedule.rate(Duration.hours(2)),
     });
     schedule.addTarget(new targets.SfnStateMachine(eC2GarbageCollectorStepFunctions.stateMachine));
