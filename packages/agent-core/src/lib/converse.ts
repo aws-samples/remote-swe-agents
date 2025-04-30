@@ -3,6 +3,7 @@ import {
   ConverseCommand,
   ConverseCommandInput,
   ConverseResponse,
+  ThrottlingException,
 } from '@aws-sdk/client-bedrock-runtime';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
@@ -12,6 +13,10 @@ import { z } from 'zod';
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
 const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
+
+// State management for persistent account selection and retry
+let currentAccountIndex: number | null = null; // Currently used account index
+let lastThrottledAccountIndexes: number[] = []; // Recently throttled account indexes
 
 const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro']);
 type ModelType = z.infer<typeof modelTypeSchema>;
@@ -54,28 +59,45 @@ export const bedrockConverse = async (
   modelTypes: ModelType[],
   input: Omit<ConverseCommandInput, 'modelId'>
 ) => {
-  const modelOverride = modelTypeSchema
-    .optional()
-    // empty string to undefined
-    .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
-  const modelType = modelOverride || chooseRandom(modelTypes);
-  const { client, modelId, awsRegion, account } = await getModelClient(modelType);
-  console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
-  const command = new ConverseCommand(
-    preProcessInput(
-      {
-        ...input,
-        modelId,
-      },
-      modelType
-    )
-  );
-  const response = await client.send(command);
+  try {
+    const modelOverride = modelTypeSchema
+      .optional()
+      // empty string to undefined
+      .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
+    const modelType = modelOverride || chooseRandom(modelTypes);
+    const { client, modelId, awsRegion, account } = await getModelClient(modelType);
+    console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
+    const command = new ConverseCommand(
+      preProcessInput(
+        {
+          ...input,
+          modelId,
+        },
+        modelType
+      )
+    );
+    const response = await client.send(command);
 
-  // Track token usage for analytics
-  await trackTokenUsage(workerId, modelId, response);
+    // Track token usage for analytics
+    await trackTokenUsage(workerId, modelId, response);
 
-  return response;
+    return response;
+  } catch (error) {
+    if (error instanceof ThrottlingException && currentAccountIndex !== null) {
+      // Track throttled accounts
+      if (!lastThrottledAccountIndexes.includes(currentAccountIndex)) {
+        console.log(
+          `AWS account ${awsAccounts[currentAccountIndex]} has been throttled. Adding to throttled accounts list.`
+        );
+        lastThrottledAccountIndexes.push(currentAccountIndex);
+        // Remove oldest entries if the history gets too long
+        if (lastThrottledAccountIndexes.length > Math.max(3, awsAccounts.length / 2)) {
+          lastThrottledAccountIndexes.shift();
+        }
+      }
+    }
+    throw error; // Re-throw for handling by upper-level pRetry
+  }
 };
 
 const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
@@ -156,10 +178,43 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
 
 const getModelClient = async (modelType: ModelType) => {
   const { awsRegion, modelId } = chooseModelAndRegion(modelType);
-  const account = chooseRandom(awsAccounts);
-  if (!account) {
+  console.log(`awsAccounts: ${awsAccounts}`);
+
+  if (awsAccounts.length === 0 || !awsAccounts[0]) {
     return { client: new BedrockRuntimeClient({ region: awsRegion }), modelId };
   }
+
+  // Improved account selection logic
+  let account: string;
+
+  const previousAccountIndex = currentAccountIndex;
+
+  if (currentAccountIndex === null || lastThrottledAccountIndexes.includes(currentAccountIndex)) {
+    // Choose a new account for the first request or if the current account is throttled
+    const availableIndexes = Array.from({ length: awsAccounts.length }, (_, i) => i).filter(
+      (i) => !lastThrottledAccountIndexes.includes(i)
+    );
+
+    if (availableIndexes.length === 0) {
+      // Reset if all accounts are throttled
+      console.log(`All AWS accounts have been throttled. Resetting throttling history.`);
+      lastThrottledAccountIndexes = [];
+      currentAccountIndex = Math.floor(Math.random() * awsAccounts.length);
+    } else {
+      currentAccountIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+    }
+
+    // Log account switching
+    if (previousAccountIndex !== null && previousAccountIndex !== currentAccountIndex) {
+      console.log(
+        `Switching AWS account from ${awsAccounts[previousAccountIndex]} to ${awsAccounts[currentAccountIndex]}`
+      );
+    } else if (previousAccountIndex === null) {
+      console.log(`Selected initial AWS account: ${awsAccounts[currentAccountIndex]}`);
+    }
+  }
+
+  account = awsAccounts[currentAccountIndex];
   const cred = await getCredentials(account);
   const client = new BedrockRuntimeClient({
     region: awsRegion,
