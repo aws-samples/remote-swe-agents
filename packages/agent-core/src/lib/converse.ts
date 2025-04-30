@@ -15,8 +15,7 @@ const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
 const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 
 // State management for persistent account selection and retry
-let currentAccountIndex: number | null = null; // Currently used account index
-let lastThrottledAccountIndexes: number[] = []; // Recently throttled account indexes
+let currentAccountIndex: number = 0; // Currently used account index
 
 const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro']);
 type ModelType = z.infer<typeof modelTypeSchema>;
@@ -83,18 +82,13 @@ export const bedrockConverse = async (
 
     return response;
   } catch (error) {
-    if (error instanceof ThrottlingException && currentAccountIndex !== null) {
-      // Track throttled accounts
-      if (!lastThrottledAccountIndexes.includes(currentAccountIndex)) {
-        console.log(
-          `AWS account ${awsAccounts[currentAccountIndex]} has been throttled. Adding to throttled accounts list.`
-        );
-        lastThrottledAccountIndexes.push(currentAccountIndex);
-        // Remove oldest entries if the history gets too long
-        if (lastThrottledAccountIndexes.length > Math.max(3, awsAccounts.length / 2)) {
-          lastThrottledAccountIndexes.shift();
-        }
-      }
+    if (error instanceof ThrottlingException) {
+      // Simple rotation to next account
+      const previousIndex = currentAccountIndex;
+      currentAccountIndex = (currentAccountIndex + 1) % awsAccounts.length;
+      console.log(
+        `AWS account ${awsAccounts[previousIndex]} has been throttled. Switching to ${awsAccounts[currentAccountIndex]}.`
+      );
     }
     throw error; // Re-throw for handling by upper-level pRetry
   }
@@ -187,32 +181,8 @@ const getModelClient = async (modelType: ModelType) => {
   // Improved account selection logic
   let account: string;
 
-  const previousAccountIndex = currentAccountIndex;
-
-  if (currentAccountIndex === null || lastThrottledAccountIndexes.includes(currentAccountIndex)) {
-    // Choose a new account for the first request or if the current account is throttled
-    const availableIndexes = Array.from({ length: awsAccounts.length }, (_, i) => i).filter(
-      (i) => !lastThrottledAccountIndexes.includes(i)
-    );
-
-    if (availableIndexes.length === 0) {
-      // Reset if all accounts are throttled
-      console.log(`All AWS accounts have been throttled. Resetting throttling history.`);
-      lastThrottledAccountIndexes = [];
-      currentAccountIndex = Math.floor(Math.random() * awsAccounts.length);
-    } else {
-      currentAccountIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
-    }
-
-    // Log account switching
-    if (previousAccountIndex !== null && previousAccountIndex !== currentAccountIndex) {
-      console.log(
-        `Switching AWS account from ${awsAccounts[previousAccountIndex]} to ${awsAccounts[currentAccountIndex]}`
-      );
-    } else if (previousAccountIndex === null) {
-      console.log(`Selected initial AWS account: ${awsAccounts[currentAccountIndex]}`);
-    }
-  }
+  // Log the current account being used
+  console.log(`Using AWS account: ${awsAccounts[currentAccountIndex]}`);
 
   account = awsAccounts[currentAccountIndex];
   const cred = await getCredentials(account);
