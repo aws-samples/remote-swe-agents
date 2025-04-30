@@ -17,7 +17,7 @@ const configSchema = z.object({
 let clients: { name: string; client: MCPClient }[] = [];
 
 const initMcp = async () => {
-  const configJson = JSON.parse(readFileSync('./claude_desktop_config.json').toString());
+  const configJson = JSON.parse(readFileSync('./mcp.json').toString());
   const { success, data: config } = configSchema.safeParse(configJson);
   if (!success) {
     // how to handle this?

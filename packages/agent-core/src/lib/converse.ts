@@ -15,7 +15,7 @@ const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
 const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 
 // State management for persistent account selection and retry
-let currentAccountIndex: number = 0; // Currently used account index
+let currentAccountIndex = 0; // Currently used account index
 
 const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro']);
 type ModelType = z.infer<typeof modelTypeSchema>;
@@ -172,19 +172,12 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
 
 const getModelClient = async (modelType: ModelType) => {
   const { awsRegion, modelId } = chooseModelAndRegion(modelType);
-  console.log(`awsAccounts: ${awsAccounts}`);
 
-  if (awsAccounts.length === 0 || !awsAccounts[0]) {
+  if (awsAccounts.length === 0) {
     return { client: new BedrockRuntimeClient({ region: awsRegion }), modelId };
   }
 
-  // Improved account selection logic
-  let account: string;
-
-  // Log the current account being used
-  console.log(`Using AWS account: ${awsAccounts[currentAccountIndex]}`);
-
-  account = awsAccounts[currentAccountIndex];
+  const account = awsAccounts[currentAccountIndex];
   const cred = await getCredentials(account);
   const client = new BedrockRuntimeClient({
     region: awsRegion,

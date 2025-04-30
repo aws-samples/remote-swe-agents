@@ -10,6 +10,7 @@ phases:
       - name: InstallDependencies
         action: ExecuteBash
         inputs:
+          # commands will be replaced from CDK
           commands: 
             - dummy
   - name: validate

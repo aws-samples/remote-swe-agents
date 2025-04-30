@@ -81,7 +81,7 @@ async function createWorkerInstance(
   launchTemplateId: string,
   workerAmiParameterName: string,
   subnetId: string
-): Promise<string> {
+): Promise<{ instanceId: string; usedCache: boolean }> {
   const imageId = await fetchWorkerAmiId(workerAmiParameterName);
 
   const runInstancesCommand = new RunInstancesCommand({
@@ -125,7 +125,7 @@ async function createWorkerInstance(
   try {
     const response = await ec2Client.send(runInstancesCommand);
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
-      return response.Instances[0].InstanceId;
+      return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
     }
     throw new Error('Failed to create EC2 instance');
   } catch (error) {
@@ -138,7 +138,7 @@ export async function getOrCreateWorkerInstance(
   workerId: string,
   slackChannelId: string,
   slackThreadTs: string
-): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running' }> {
+): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
   if (runningInstanceId) {
@@ -155,7 +155,7 @@ export async function getOrCreateWorkerInstance(
   // choose subnet randomly
   const subnetId = SubnetIdList[Math.floor(Math.random() * SubnetIdList.length)];
   // If no instance exists, create a new one
-  const instanceId = await createWorkerInstance(
+  const { instanceId, usedCache } = await createWorkerInstance(
     workerId,
     slackChannelId,
     slackThreadTs,
@@ -163,5 +163,5 @@ export async function getOrCreateWorkerInstance(
     WorkerAmiParameterName,
     subnetId
   );
-  return { instanceId, oldStatus: 'terminated' };
+  return { instanceId, oldStatus: 'terminated', usedCache };
 }

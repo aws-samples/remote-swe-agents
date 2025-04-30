@@ -12,8 +12,8 @@ npm run watch
 ```
 
 ```sh
-export BUCKET_NAME=remoteswestack-sandbox-storageimagebucket99ba9550-lqsrca5cnznn
-export TABLE_NAME=RemoteSweStack-Sandbox-StorageHistory251A3AE8-9XH4C0BO957Q
+export BUCKET_NAME=remoteswestack-sandbox-storageimagebucket99ba9550-xxxxxxx
+export TABLE_NAME=RemoteSweStack-Sandbox-StorageHistory251A3AE8-xxxxxx
 export DISABLE_SLACK=true
 export EVENT_HTTP_ENDPOINT="https://API_ID.appsync-api.ap-northeast-1.amazonaws.com"
 export GITHUB_PERSONAL_ACCESS_TOKEN='dummy'

@@ -239,7 +239,7 @@ This way the repository is automatically inferred from the URL, and it can also 
 
 ### Integrating with MCP Servers
 
-As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`claude_desktop_config.json`](./packages/worker/claude_desktop_config.json) and run CDK deploy. For example,
+As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`mcp.json`](./packages/worker/mcp.json) and run CDK deploy. For example,
 
 ```json
   "mcpServers": {

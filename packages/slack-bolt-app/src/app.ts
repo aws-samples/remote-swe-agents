@@ -286,6 +286,15 @@ app.event('app_mention', async ({ event, client, logger }) => {
                             },
                           ],
                         },
+                        {
+                          type: 'rich_text_section',
+                          elements: [
+                            {
+                              type: 'text',
+                              text: 'You can always interrupt and ask them to stop what they are doing.',
+                            },
+                          ],
+                        },
                       ],
                     },
                   ],

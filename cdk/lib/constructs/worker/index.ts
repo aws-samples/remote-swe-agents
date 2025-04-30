@@ -274,6 +274,7 @@ export GITHUB_PERSONAL_ACCESS_TOKEN=${
 
 # Start app
 cd packages/worker
+npx playwright install chromium
 npx tsx src/main.ts
 EOF
 

@@ -237,7 +237,7 @@ npx cdk deploy
 
 ### MCPサーバーとの統合
 
-エージェントはMCPクライアントとして機能できるため、さまざまなMCPサーバーと簡単に統合できます。統合を設定するには、[`claude_desktop_config.json`](./packages/worker/claude_desktop_config.json)を編集してCDK deployを実行します。例えば、
+エージェントはMCPクライアントとして機能できるため、さまざまなMCPサーバーと簡単に統合できます。統合を設定するには、[`mcp.json`](./packages/worker/mcp.json)を編集してCDK deployを実行します。例えば、
 
 ```json
   "mcpServers": {
