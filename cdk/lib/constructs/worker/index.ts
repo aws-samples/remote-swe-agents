@@ -196,6 +196,10 @@ chown -R ubuntu:ubuntu /opt/myapp
 # Install Playwright dependencies
 sudo -u ubuntu bash -i -c "npx playwright install-deps"
 sudo -u ubuntu bash -i -c "npx playwright install chromium"
+# Disable Ubuntu security feature to get chromium working
+# https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+echo 0 | tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+echo kernel.apparmor_restrict_unprivileged_userns=0 | tee /etc/sysctl.d/60-apparmor-namespace.conf
 
 # Configure GitHub CLI
 sudo -u ubuntu bash -c "gh config set prompt disabled"
