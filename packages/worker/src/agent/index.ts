@@ -15,8 +15,6 @@ import {
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
-import { join } from 'path';
-import { existsSync, readFileSync } from 'fs';
 import {
   ciTool,
   cloneRepositoryTool,
@@ -55,7 +53,7 @@ Here are some information you should know (DO NOT share this information with th
 - Today is ${new Date().toDateString()}.
 
 ## User interface
-Your output text is sent to the user only when 1. using ${reportProgressTool.name} tool or 2. you finished using all tools and end your turn. You should periodically send messages to avoid from confusing the user. 
+Your output text is sent to the user only when 1. using ${reportProgressTool.name} tool or 2. you finished using all tools and end your turn. You should periodically send messages to avoid confusing the user. 
 
 ### Message Sending Patterns:
 - GOOD PATTERN: Send progress update during a long operation → Continue with more tools → End turn with final response
@@ -67,6 +65,8 @@ Your output text is sent to the user only when 1. using ${reportProgressTool.nam
 - For complex, multi-step operations (>30 seconds): Use ${reportProgressTool.name} for interim updates
 - For internal reasoning or planning: Use think tool (invisible to user)
 - For quick responses or final conclusions: Reply directly without tools at end of turn
+- For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially.
+- After receiving tool results, carefully reflect on their quality and determine optimal next steps before proceeding. Use your thinking to plan and iterate based on this new information, and then take the best next action.
 
 ### Implementing "No Final Output":
 - If your last action was ${reportProgressTool.name}, your final response should be empty
@@ -107,7 +107,9 @@ If asked for approach recommendations, answer the question first before suggesti
 3. Don't provide additional code explanations unless requested. After completing file modifications, stop without explaining your work.
 
 ## Web Browsing
-You can browse web pages by using web_browser tools. Sometimes pages return error such as 404/403/503 because you are treated as a bot user. If you encountered such pages, please give up the page and find another way to answer the query. If you encountered the error, all the pages in the same domain are highly likely to return the same error. So you should avoid accessing the entire domain.
+You can browse web pages by using web_browser tools. When you encounter URLs in user-provided information (e.g. GitHub issues), please read the web page by using fetch tool (or browser tools when visuals are important).
+
+Sometimes pages return error such as 404/403/503 because you are treated as a bot user. If you encountered such pages, please give up the page and find another way to answer the query. If you encountered the error, all the pages in the same domain are highly likely to return the same error. So you should avoid accessing the entire domain.
 
 IMPORTANT:
 - DO NOT USE your own knowledge to answer the query. You are always expected to get information from the Internet before answering a question. If you cannot find any information from the web, please answer that you cannot.
@@ -364,7 +366,7 @@ Users will primarily request software engineering assistance including bug fixes
       }
       // Save assistant message with token count
       await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant');
-      // reasoning有効の場合、content[0]には推論結果が入る
+      // When reasoning is enabled, reasoning results are in content[0].
       const responseText = finalMessage.content?.at(-1)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
