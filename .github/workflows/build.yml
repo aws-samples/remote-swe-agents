@@ -67,6 +67,28 @@ jobs:
           npm run build
         working-directory: ./packages/worker
         name: Run next build
+  Build-and-Test-Webapp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '22.x'
+      - run: |
+          npm ci
+          npm run build -w packages/agent-core
+        name: Install dependencies
+      - run: |
+          npm run format:check
+        working-directory: ./webapp
+        name: Install dependencies and run static analysis
+      - run: |
+          cp .env.local.example .env.local
+          npm run build
+        working-directory: ./webapp
+        name: build
+
   Build-and-Test-AgentCore:
     runs-on: ubuntu-latest
     steps:

@@ -2,15 +2,27 @@
 import * as cdk from 'aws-cdk-lib';
 import { MainStack, MainStackProps } from '../lib/cdk-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
+import { UsEast1Stack } from '../lib/us-east-1-stack';
 
 const app = new cdk.App();
 
 const targetEnv = process.env.TARGET_ENV ?? 'Sandbox';
+
+const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: 'us-east-1',
+  },
+  crossRegionReferences: true,
+});
+
 const props: MainStackProps = {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,
   },
+  crossRegionReferences: true,
+  signPayloadHandler: virginia.signPayloadHandler,
   workerAmiIdParameterName: '/remote-swe/worker/ami-id',
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',
