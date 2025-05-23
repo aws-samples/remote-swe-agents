@@ -163,9 +163,7 @@ Some example commands:
 * \`cat\`: read the content of a file
 * \`grep\`: search through contents in files
 * \`gh\`: interact with GitHub API (it is already authorized)
-  * \`gh repo clone https://github.com/ORG/REPO\`: clone a repository to local
-  * \`gh issue view ISSUE_NUMBER\`: view a repository
-  * \`gh pr create --title TITLE --body BODY\`: create a pull request. Please include summary of changes, the points you want to get reviewed in the PR body 
+  * \`gh issue view ISSUE_NUMBER\`: view a repository issue
 `,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),

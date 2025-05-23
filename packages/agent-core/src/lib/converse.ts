@@ -17,7 +17,7 @@ const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 // State management for persistent account selection and retry
 let currentAccountIndex = 0; // Currently used account index
 
-const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro']);
+const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro', 'opus4', 'sonnet4']);
 type ModelType = z.infer<typeof modelTypeSchema>;
 
 const modelConfigSchema = z.object({
@@ -50,6 +50,18 @@ const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>
     maxOutputTokens: 5000,
     cacheSupport: ['system'],
     toolChoiceSupport: ['auto'],
+  },
+  opus4: {
+    maxOutputTokens: 8192,
+    cacheSupport: ['system', 'message', 'tool'],
+    reasoningSupport: true,
+    toolChoiceSupport: ['any', 'auto', 'tool'],
+  },
+  sonnet4: {
+    maxOutputTokens: 8192,
+    cacheSupport: ['system', 'message', 'tool'],
+    reasoningSupport: true,
+    toolChoiceSupport: ['any', 'auto', 'tool'],
   },
 };
 
@@ -172,12 +184,12 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
 
 const getModelClient = async (modelType: ModelType) => {
   const { awsRegion, modelId } = chooseModelAndRegion(modelType);
+  const account = awsAccounts[currentAccountIndex];
 
-  if (awsAccounts.length === 0) {
+  if (awsAccounts.length === 0 || !account) {
     return { client: new BedrockRuntimeClient({ region: awsRegion }), modelId };
   }
 
-  const account = awsAccounts[currentAccountIndex];
   const cred = await getCredentials(account);
   const client = new BedrockRuntimeClient({
     region: awsRegion,
@@ -216,6 +228,12 @@ const chooseModelAndRegion = (modelType: ModelType) => {
       break;
     case 'nova-pro':
       modelId = 'amazon.nova-pro-v1:0';
+      break;
+    case 'opus4':
+      modelId = 'anthropic.claude-opus-4-20250514-v1:0';
+      break;
+    case 'sonnet4':
+      modelId = 'anthropic.claude-sonnet-4-20250514-v1:0';
       break;
     default:
       throw new Error(`Unknown model type: ${modelType}`);
