@@ -11,7 +11,7 @@ import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
 
 const sts = new STSClient();
-const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
+const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',').filter((account) => account.trim() !== '');
 const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 
 // State management for persistent account selection and retry
