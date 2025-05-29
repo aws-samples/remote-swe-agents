@@ -1,8 +1,6 @@
 'use server';
 
 import { authActionClient } from '@/lib/safe-action';
-import { runTranslateJobSchema } from './schemas';
-import { runJob } from '@/lib/jobs';
 import { sendEvent } from '@/lib/events';
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
@@ -11,12 +9,6 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { z } from 'zod';
 
 const lambda = new LambdaClient({});
-
-export const runTranslateJob = authActionClient.schema(runTranslateJobSchema).action(async ({ parsedInput, ctx }) => {
-  await runJob({
-    type: 'example',
-  });
-});
 
 // セッション作成
 export const createNewSession = authActionClient
