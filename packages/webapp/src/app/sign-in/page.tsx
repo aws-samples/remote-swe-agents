@@ -5,7 +5,7 @@ export default function SignInPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">Remote SWE Agents</h2>
-        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">AIエージェントと対話してソフトウェア開発を効率化</p>
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">Streamline software development by interacting with AI agents</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

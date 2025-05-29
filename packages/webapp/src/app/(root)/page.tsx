@@ -18,42 +18,42 @@ export default async function Home() {
               Remote SWE Agents
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              AIエージェントと対話して、ソフトウェア開発タスクを効率的に進めましょう。
-              リアルタイムでコード作成、デバッグ、レビューが可能です。
+              Interact with AI agents to efficiently advance your software development tasks.
+              Real-time code creation, debugging, and review capabilities.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link href="/sessions">
                 <Button size="lg" className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" />
-                  AIエージェントと対話
+                  Chat with AI Agent
                 </Button>
               </Link>
               <Link href="/sessions/new">
                 <Button variant="outline" size="lg" className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
-                  新しいセッション
+                  New Session
                 </Button>
               </Link>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 text-left">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🔧 コード開発</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🔧 Code Development</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  ファイルの作成・編集、バグ修正、機能追加など、様々な開発タスクをAIがサポート
+                  AI supports various development tasks including file creation/editing, bug fixes, and feature additions
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">⚡ リアルタイム</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">⚡ Real-time</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  進捗状況をリアルタイムで確認。ツール実行やコマンド結果を即座に表示
+                  Monitor progress in real-time. Tool execution and command results are displayed instantly
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🚀 高機能</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🚀 Advanced Features</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  GitHub連携、PR作成、テスト実行など、本格的な開発ワークフローに対応
+                  Supports professional development workflows including GitHub integration, PR creation, and test execution
                 </p>
               </div>
             </div>

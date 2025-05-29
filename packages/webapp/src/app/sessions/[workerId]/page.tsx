@@ -35,7 +35,7 @@ export default function SessionPage() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // イベントバスでリアルタイム通信
+  // Real-time communication via event bus
   useEventBus({
     channelName: `session/${workerId}`,
     onReceived: (payload: unknown) => {
@@ -69,7 +69,7 @@ export default function SessionPage() {
     }
   });
 
-  // メッセージ送信
+  // Send message
   const sendMessage = async () => {
     if (!inputMessage.trim() || isSending) return;
 
@@ -100,11 +100,11 @@ export default function SessionPage() {
     } catch (error) {
       console.error('Failed to send message:', error);
       setIsAgentTyping(false);
-      // エラーメッセージを表示
+      // Display error message
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'メッセージの送信に失敗しました。もう一度お試しください。',
+        content: 'Failed to send message. Please try again.',
         timestamp: new Date().toISOString(),
         type: 'message'
       }]);
@@ -113,12 +113,12 @@ export default function SessionPage() {
     }
   };
 
-  // 自動スクロール
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Enter キーでメッセージ送信
+  // Send message on Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -138,26 +138,26 @@ export default function SessionPage() {
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" />
-              セッション一覧
+              Session List
             </Link>
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">セッション: {workerId}</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">AIエージェントとの対話</p>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Session: {workerId}</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Chat with AI Agent</p>
             </div>
           </div>
         </div>
 
-        {/* メッセージ一覧 */}
+        {/* Message list */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 py-6">
             {messages.length === 0 ? (
               <div className="text-center py-12">
                 <Bot className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  対話を開始しましょう
+                  Let&apos;s start the conversation
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  下のメッセージ入力欄から、AIエージェントに質問や依頼を送信してください
+                  Send questions or requests to the AI agent using the message input below
                 </p>
               </div>
             ) : (
@@ -190,7 +190,7 @@ export default function SessionPage() {
                       <div className={`text-xs mt-2 ${
                         message.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                       }`}>
-                        {new Date(message.timestamp).toLocaleTimeString('ja-JP')}
+                        {new Date(message.timestamp).toLocaleTimeString('en-US')}
                       </div>
                     </div>
 
@@ -214,7 +214,7 @@ export default function SessionPage() {
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-gray-600 dark:text-gray-300">AIエージェントが応答中...</span>
+                        <span className="text-gray-600 dark:text-gray-300">AI Agent is responding...</span>
                       </div>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {/* メッセージ入力 */}
+        {/* Message input */}
         <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex gap-4">
@@ -233,7 +233,7 @@ export default function SessionPage() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="メッセージを入力してください..."
+                placeholder="Enter your message..."
                 className="flex-1 resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={3}
                 disabled={isSending}

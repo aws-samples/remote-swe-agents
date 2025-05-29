@@ -38,31 +38,31 @@ export default function NewSessionPage() {
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
-              セッション一覧に戻る
+              Back to Sessions
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">新しいセッション</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">New Session</h1>
           </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8">
             <div className="text-center">
               <MessageSquare className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />
               <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                AIエージェントとの新しい対話を開始
+                Start a New Conversation with AI Agent
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mb-8">
-                新しいセッションを作成すると、専用のワーカーが起動され、
-                AIエージェントとリアルタイムで対話できます。
+                Creating a new session will launch a dedicated worker and enable
+                real-time conversation with AI agents.
               </p>
               
               <div className="space-y-4">
                 <div className="text-left bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h3 className="font-medium mb-2 text-gray-900 dark:text-white">できること：</h3>
+                  <h3 className="font-medium mb-2 text-gray-900 dark:text-white">What you can do:</h3>
                   <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                    <li>• コードの作成・修正・レビュー</li>
-                    <li>• ファイルの読み書き・編集</li>
-                    <li>• コマンド実行・デバッグ</li>
-                    <li>• GitHub操作・PR作成</li>
-                    <li>• リアルタイム進捗確認</li>
+                    <li>• Code creation, modification, and review</li>
+                    <li>• File reading, writing, and editing</li>
+                    <li>• Command execution and debugging</li>
+                    <li>• GitHub operations and PR creation</li>
+                    <li>• Real-time progress monitoring</li>
                   </ul>
                 </div>
 
@@ -72,7 +72,7 @@ export default function NewSessionPage() {
                   className="w-full"
                   size="lg"
                 >
-                  {isCreating ? '作成中...' : 'セッションを作成'}
+                  {isCreating ? 'Creating...' : 'Create Session'}
                 </Button>
               </div>
             </div>
