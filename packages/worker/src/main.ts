@@ -93,7 +93,7 @@ const main = async () => {
     error: (err) => console.error('error', err),
   });
 
-  const unicast = await events.connect(`/event-bus/${workerId}`);
+  const unicast = await events.connect(`/event-bus/worker/${workerId}`);
   unicast.subscribe({
     next: async (data) => {
       setKillTimer();

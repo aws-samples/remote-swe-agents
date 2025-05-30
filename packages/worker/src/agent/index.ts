@@ -11,6 +11,10 @@ import {
   saveConversationHistory,
   saveConversationHistoryAtomic,
   updateMessageTokenCount,
+  readMetadata,
+  renderToolResult,
+  sendMessageToSlack,
+  setKillTimer,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -28,7 +32,7 @@ import {
   sendImageTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
-import { readMetadata, renderToolResult, sendMessageToSlack, setKillTimer } from '@remote-swe-agents/agent-core/lib';
+import { sendWebappEvent } from '@remote-swe-agents/agent-core/aws';
 import { CancellationToken } from '../common/cancellation-token';
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
@@ -261,12 +265,14 @@ Users will primarily request software engineering assistance including bug fixes
       const toolUseMessage = res.output.message;
       const toolUseRequests = toolUseMessage.content?.filter((c) => 'toolUse' in c) ?? [];
       const toolResultMessage: Message = { role: 'user', content: [] };
+
       for (const request of toolUseRequests) {
         const toolUse = request.toolUse;
         const toolUseId = toolUse?.toolUseId;
         if (toolUse == null || toolUseId == null) {
           throw new Error('toolUse is null');
         }
+        await sendWebappEvent(workerId, 'toolUse', { name: toolUse.name, input: toolUse.input });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
         try {
@@ -342,6 +348,7 @@ Users will primarily request software engineering assistance including bug fixes
             ],
           },
         });
+        await sendWebappEvent(workerId, 'toolResult', { name: toolUse.name });
       }
 
       // Save both tool use and tool result messages atomically to DynamoDB
@@ -364,6 +371,7 @@ Users will primarily request software engineering assistance including bug fixes
         }
         break;
       }
+
       // Save assistant message with token count
       await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant');
       // When reasoning is enabled, reasoning results are in content[0].
