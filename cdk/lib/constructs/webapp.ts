@@ -43,10 +43,11 @@ export class Webapp extends Construct {
 
     // Use ContainerImageBuild to inject deploy-time values in the build environment
     const image = new ContainerImageBuild(this, 'Build', {
-      directory: join('..', 'packages', 'webapp'),
+      directory: join('..'),
+      file: join('docker', 'webapp.Dockerfile'),
       platform: Platform.LINUX_ARM64,
       ignoreMode: IgnoreMode.DOCKER,
-      exclude: readFileSync(join('..', 'packages', 'webapp', '.dockerignore'))
+      exclude: readFileSync(join('..', 'docker', 'webapp.Dockerfile.dockerignore'))
         .toString()
         .split('\n'),
       tagPrefix: 'webapp-starter-',
@@ -57,7 +58,6 @@ export class Webapp extends Construct {
         NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
       },
     });
-
     const handler = new DockerImageFunction(this, 'Handler', {
       code: image.toLambdaDockerImageCode(),
       timeout: Duration.minutes(3),
@@ -77,7 +77,7 @@ export class Webapp extends Construct {
     const service = new CloudFrontLambdaFunctionUrlService(this, 'Resource', {
       subDomain,
       handler,
-      serviceName: 'Webapp',
+      serviceName: 'RemoteSweAgentsWebapp',
       hostedZone,
       certificate: props.certificate,
       accessLogBucket: props.accessLogBucket,

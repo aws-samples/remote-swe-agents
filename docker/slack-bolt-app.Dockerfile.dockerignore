@@ -1,8 +1,12 @@
 cdk
 packages/worker
+packages/webapp
+**/node_modules
+**/dist
+**/.next
 docs
 node_modules
 .github
 .git
 resources
-dist
+**/dist

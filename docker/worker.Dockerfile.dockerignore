@@ -1,8 +1,10 @@
 cdk
 packages/slack-bolt-app
+packages/webapp
 docs
 node_modules
+**/node_modules
 .github
 .git
 resources
-dist
+**/dist

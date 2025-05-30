@@ -2,4 +2,4 @@
 
 [ ! -d '/tmp/cache' ] && mkdir -p /tmp/cache
 
-exec node server.js
+exec node packages/webapp/server.js

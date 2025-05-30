@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+.env.local
+cdk
+packages/worker
+packages/slack-bolt-app
+docs
+.github
+.git
+resources

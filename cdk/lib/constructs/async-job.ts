@@ -23,13 +23,13 @@ export class AsyncJob extends Construct {
     const { storage, eventBus } = props;
 
     const handler = new DockerImageFunction(this, 'Handler', {
-      code: DockerImageCode.fromImageAsset(join('..', 'packages', 'webapp'), {
-        cmd: ['async-job-runner.handler'],
-        platform: Platform.LINUX_ARM64,
-        file: 'job.Dockerfile',
-        exclude: readFileSync(join('..', 'packages', 'webapp', '.dockerignore'))
+      code: DockerImageCode.fromImageAsset('..', {
+        file: join('docker', 'job.Dockerfile'),
+        exclude: readFileSync(join('..', 'docker', 'job.Dockerfile.dockerignore'))
           .toString()
           .split('\n'),
+        cmd: ['async-handler.handler'],
+        platform: Platform.LINUX_AMD64,
       }),
       memorySize: 256,
       timeout: Duration.minutes(10),
