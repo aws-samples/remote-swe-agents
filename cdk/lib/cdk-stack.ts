@@ -12,7 +12,6 @@ import { EdgeFunction } from './constructs/cf-lambda-furl-service/edge-function'
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Auth } from './constructs/auth';
-import { EventBus } from './constructs/event-bus';
 import { AsyncJob } from './constructs/async-job';
 import { Webapp } from './constructs/webapp';
 
@@ -120,8 +119,7 @@ export class MainStack extends cdk.Stack {
       launchTemplateId: worker.launchTemplate.launchTemplateId!,
       subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
       workerBus: worker.bus,
-      storageTable: storage.table,
-      storageBucket: storage.bucket,
+      storage,
       adminUserIdList: props.slack.adminUserIdList,
       workerLogGroupName: worker.logGroup.logGroupName,
       workerAmiIdParameterName: props.workerAmiIdParameterName,
@@ -137,10 +135,9 @@ export class MainStack extends cdk.Stack {
       sharedCertificate: props.sharedCertificate,
     });
 
-    const eventBus = new EventBus(this, 'EventBus', {});
-    eventBus.addUserPoolProvider(auth.userPool);
+    worker.bus.addUserPoolProvider(auth.userPool);
 
-    const asyncJob = new AsyncJob(this, 'AsyncJob', { storage, eventBus });
+    const asyncJob = new AsyncJob(this, 'AsyncJob', { storage });
 
     const webapp = new Webapp(this, 'Webapp', {
       storage,
@@ -149,8 +146,11 @@ export class MainStack extends cdk.Stack {
       signPayloadHandler: props.signPayloadHandler,
       accessLogBucket,
       auth,
-      eventBus,
+      launchTemplateId: worker.launchTemplate.launchTemplateId!,
+      subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
+      workerBus: worker.bus,
       asyncJob,
+      workerAmiIdParameterName: props.workerAmiIdParameterName,
     });
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {

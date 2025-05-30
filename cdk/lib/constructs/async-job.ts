@@ -2,7 +2,6 @@ import { Construct } from 'constructs';
 import { CfnOutput, Duration, TimeZone } from 'aws-cdk-lib';
 import { Architecture, DockerImageCode, DockerImageFunction, IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { EventBus } from './event-bus';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { join } from 'path';
 import { Schedule, ScheduleExpression, ScheduleTargetInput } from 'aws-cdk-lib/aws-scheduler';
@@ -12,7 +11,6 @@ import { readFileSync } from 'fs';
 
 export interface AsyncJobProps {
   readonly storage: Storage;
-  readonly eventBus: EventBus;
 }
 
 export class AsyncJob extends Construct {
@@ -20,7 +18,7 @@ export class AsyncJob extends Construct {
 
   constructor(scope: Construct, id: string, props: AsyncJobProps) {
     super(scope, id);
-    const { storage, eventBus } = props;
+    const { storage } = props;
 
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
@@ -36,13 +34,11 @@ export class AsyncJob extends Construct {
       architecture: Architecture.ARM_64,
       environment: {
         TABLE_NAME: storage.table.tableName,
-        EVENT_HTTP_ENDPOINT: eventBus.httpEndpoint,
       },
       // limit concurrency to mitigate any possible EDoS attacks
       reservedConcurrentExecutions: 1,
     });
 
-    eventBus.api.grantPublish(handler);
     storage.table.grantReadWriteData(handler);
 
     handler.addToRolePolicy(

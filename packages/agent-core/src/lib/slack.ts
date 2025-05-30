@@ -3,9 +3,9 @@ import { readFileSync } from 'fs';
 import { sendWebappEvent } from './aws';
 
 const BotToken = process.env.SLACK_BOT_TOKEN!;
-const channelID = process.env.SLACK_CHANNEL_ID!;
+const channelId = process.env.SLACK_CHANNEL_ID!;
 const threadTs = process.env.SLACK_THREAD_TS!;
-const disableSlack = process.env.DISABLE_SLACK == 'true'; // for debugging
+const disableSlack = !(channelId && threadTs)
 
 export const receiver = new AwsLambdaReceiver({
   // We don't need signingSecret because we use slack bolt only to send messages here.
@@ -65,7 +65,7 @@ export const sendMessageToSlack = async (message: string) => {
   const processedMessage = processMessageForLinks(message);
 
   await getApp().client.chat.postMessage({
-    channel: channelID,
+    channel: channelId,
     thread_ts: threadTs,
     // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
     text: processedMessage.slice(0, 40000),
@@ -95,7 +95,7 @@ export const sendFileToSlack = async (imagePath: string, message: string) => {
   const processedMessage = processMessageForLinks(message);
 
   const result = await getApp().client.filesUploadV2({
-    channel_id: channelID,
+    channel_id: channelId,
     thread_ts: threadTs,
     initial_comment: processedMessage,
     filename: fileName,

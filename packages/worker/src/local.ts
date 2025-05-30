@@ -2,8 +2,6 @@ import { createInterface } from 'readline';
 import { onMessageReceived } from './agent';
 import './common/signal-handler';
 
-process.env.DISABLE_SLACK = 'true';
-
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,

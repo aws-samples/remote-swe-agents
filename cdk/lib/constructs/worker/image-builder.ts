@@ -109,7 +109,7 @@ export class WorkerImageBuilder extends Construct {
 
     // change this physical id manually when you want to force users to remove the AMI cache
     // (e.g. when DynamoDB table ARN changed)
-    const amiVersion = 'v1';
+    const amiVersion = 'v2';
     // Run the build pipeline asynchronously
     new AwsCustomResource(this, 'RunPipeline', {
       onUpdate: {

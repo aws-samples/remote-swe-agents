@@ -1,17 +1,16 @@
 import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, DockerImageCode, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { WorkerBus } from '../worker/bus';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
-import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { Storage } from '../storage';
 
 export interface SlackBoltProps {
   signingSecretParameter: IStringParameter;
@@ -19,8 +18,7 @@ export interface SlackBoltProps {
   launchTemplateId: string;
   subnetIdListForWorkers: string;
   workerBus: WorkerBus;
-  storageTable: ITableV2;
-  storageBucket: IBucket;
+  storage: Storage;
   adminUserIdList?: string;
   workerLogGroupName: string;
   workerAmiIdParameterName: string;
@@ -47,13 +45,13 @@ export class SlackBolt extends Construct {
         SUBNET_ID_LIST: props.subnetIdListForWorkers,
         BOT_TOKEN: botTokenParameter.stringValue,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
-        TABLE_NAME: props.storageTable.tableName,
-        BUCKET_NAME: props.storageBucket.bucketName,
+        TABLE_NAME: props.storage.table.tableName,
+        BUCKET_NAME: props.storage.bucket.bucketName,
       },
       architecture: Architecture.X86_64,
     });
-    props.storageTable.grantReadWriteData(asyncHandler);
-    props.storageBucket.grantReadWrite(asyncHandler);
+    props.storage.table.grantReadWriteData(asyncHandler);
+    props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
 
     const workerAmiId = StringParameter.fromStringParameterAttributes(this, 'WorkerAmiId', {
@@ -76,16 +74,16 @@ export class SlackBolt extends Construct {
         BOT_TOKEN: botTokenParameter.stringValue,
         ASYNC_LAMBDA_NAME: asyncHandler.functionName,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
-        TABLE_NAME: props.storageTable.tableName,
-        BUCKET_NAME: props.storageBucket.bucketName,
+        TABLE_NAME: props.storage.table.tableName,
+        BUCKET_NAME: props.storage.bucket.bucketName,
         LOG_GROUP_NAME: props.workerLogGroupName,
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
       architecture: Architecture.X86_64,
     });
     asyncHandler.grantInvoke(handler);
-    props.storageTable.grantReadWriteData(handler);
-    props.storageBucket.grantReadWrite(handler);
+    props.storage.table.grantReadWriteData(handler);
+    props.storage.bucket.grantReadWrite(handler);
     props.workerBus.api.grantPublish(handler);
 
     const api = new HttpApi(this, 'Api', {

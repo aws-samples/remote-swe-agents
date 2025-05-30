@@ -11,19 +11,22 @@ import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Auth } from './auth/';
 import { ContainerImageBuild } from 'deploy-time-build';
 import { join } from 'path';
-import { EventBus } from './event-bus/';
 import { AsyncJob } from './async-job';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { Storage } from './storage';
+import { WorkerBus } from './worker/bus';
 
 export interface WebappProps {
   storage: Storage;
   signPayloadHandler: EdgeFunction;
   accessLogBucket: Bucket;
   auth: Auth;
-  eventBus: EventBus;
   asyncJob: AsyncJob;
+  launchTemplateId: string;
+  subnetIdListForWorkers: string;
+  workerBus: WorkerBus;
+  workerAmiIdParameterName: string;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -39,7 +42,7 @@ export class Webapp extends Construct {
   constructor(scope: Construct, id: string, props: WebappProps) {
     super(scope, id);
 
-    const { storage, hostedZone, auth, subDomain, eventBus, asyncJob } = props;
+    const { storage, hostedZone, auth, subDomain, workerBus, asyncJob } = props;
 
     // Use ContainerImageBuild to inject deploy-time values in the build environment
     const image = new ContainerImageBuild(this, 'Build', {
@@ -54,7 +57,7 @@ export class Webapp extends Construct {
       buildArgs: {
         ALLOWED_ORIGIN_HOST: hostedZone ? `*.${hostedZone.zoneName}` : '*.cloudfront.net',
         SKIP_TS_BUILD: 'true',
-        NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: eventBus.httpEndpoint,
+        NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: workerBus.httpEndpoint,
         NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
       },
     });
@@ -62,11 +65,16 @@ export class Webapp extends Construct {
       code: image.toLambdaDockerImageCode(),
       timeout: Duration.minutes(3),
       environment: {
-        TABLE_NAME: storage.table.tableName,
         COGNITO_DOMAIN: auth.domainName,
         USER_POOL_ID: auth.userPool.userPoolId,
         USER_POOL_CLIENT_ID: auth.client.userPoolClientId,
         ASYNC_JOB_HANDLER_ARN: asyncJob.handler.functionArn,
+        WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
+        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameterName,
+        SUBNET_ID_LIST: props.subnetIdListForWorkers,
+        EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
+        TABLE_NAME: storage.table.tableName,
+        BUCKET_NAME: storage.bucket.bucketName,
       },
       memorySize: 512,
       architecture: Architecture.ARM_64,
