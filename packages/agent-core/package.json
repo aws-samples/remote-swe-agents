@@ -31,6 +31,7 @@
     "@aws-sdk/client-dynamodb": "^3.744.0",
     "@aws-sdk/client-ec2": "^3.746.0",
     "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-ssm": "^3.817.0",
     "@aws-sdk/client-sts": "^3.758.0",
     "@aws-sdk/credential-providers": "^3.750.0",
     "@aws-sdk/lib-dynamodb": "^3.744.0",

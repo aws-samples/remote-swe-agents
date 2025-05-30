@@ -1,30 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import { createNewSession } from '@/app/(root)/actions';
+import { createNewWorker } from './actions';
+import { createNewWorkerSchema } from './schemas';
+import { toast } from 'sonner';
 
 export default function NewSessionPage() {
   const router = useRouter();
-  const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateSession = async () => {
-    setIsCreating(true);
-    try {
-      const result = await createNewSession({});
-      if (result?.data?.workerId) {
-        router.push(`/sessions/${result.data.workerId}`);
-      }
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  const {
+    form: { register, formState, reset },
+    action: { isExecuting },
+    handleSubmitWithAction,
+  } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
+    actionProps: {
+      onSuccess: (args) => {
+        if (args.data) {
+          router.push(`/sessions/${args.data.workerId}`);
+        }
+      },
+      onError: ({ error }) => {
+        toast.error(typeof error === 'string' ? error : 'Failed to create session');
+      },
+    },
+    formProps: {
+      defaultValues: {
+        message: '',
+      },
+    },
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -33,8 +43,8 @@ export default function NewSessionPage() {
       <main className="flex-grow">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <Link 
-              href="/sessions" 
+            <Link
+              href="/sessions"
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -50,10 +60,9 @@ export default function NewSessionPage() {
                 Start a New Conversation with AI Agent
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mb-8">
-                Creating a new session will launch a dedicated worker and enable
-                real-time conversation with AI agents.
+                Creating a new session will launch a dedicated worker and enable real-time conversation with AI agents.
               </p>
-              
+
               <div className="space-y-4">
                 <div className="text-left bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h3 className="font-medium mb-2 text-gray-900 dark:text-white">What you can do:</h3>
@@ -66,14 +75,35 @@ export default function NewSessionPage() {
                   </ul>
                 </div>
 
-                <Button 
-                  onClick={handleCreateSession}
-                  disabled={isCreating}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isCreating ? 'Creating...' : 'Create Session'}
-                </Button>
+                <form onSubmit={handleSubmitWithAction} className="space-y-6">
+                  <div className="text-left">
+                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Initial Message
+                    </label>
+                    <textarea
+                      id="message"
+                      {...register('message')}
+                      placeholder="Enter your initial message to the AI agent (e.g., 'Help me create a React component' or 'Review my code for bugs')..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+                      rows={4}
+                      disabled={isExecuting}
+                    />
+                    {formState.errors.message && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {formState.errors.message.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={isExecuting || !formState.isValid} 
+                    className="w-full" 
+                    size="lg"
+                  >
+                    {isExecuting ? 'Creating Session...' : 'Create Session & Start Conversation'}
+                  </Button>
+                </form>
               </div>
             </div>
           </div>

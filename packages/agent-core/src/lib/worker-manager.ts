@@ -7,11 +7,11 @@ const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
 const ec2Client = new EC2Client({});
 const ssmClient = new SSMClient({});
 
-export async function findStoppedWorkerInstance(workerId: string) {
+async function findStoppedWorkerInstance(workerId: string) {
   return findWorkerInstanceWithStatus(workerId, ['running', 'stopped']);
 }
 
-export async function findRunningWorkerInstance(workerId: string) {
+async function findRunningWorkerInstance(workerId: string) {
   return findWorkerInstanceWithStatus(workerId, ['running', 'pending']);
 }
 

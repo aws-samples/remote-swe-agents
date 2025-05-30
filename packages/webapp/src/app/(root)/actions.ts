@@ -10,29 +10,6 @@ import { z } from 'zod';
 
 const lambda = new LambdaClient({});
 
-// セッション作成
-export const createNewSession = authActionClient
-  .schema(z.object({}))
-  .action(async ({ ctx }) => {
-    const workerId = `session-${Date.now()}`;
-    
-    // セッション情報をDynamoDBに保存
-    await ddb.send(
-      new PutCommand({
-        TableName,
-        Item: {
-          PK: 'sessions',
-          SK: workerId,
-          workerId,
-          createdAt: Date.now(),
-          LSI1: String(Date.now()).padStart(15, '0'),
-        },
-      })
-    );
-
-    return { workerId };
-  });
-
 // メッセージ送信
 export const sendMessageToAgent = authActionClient
   .schema(z.object({

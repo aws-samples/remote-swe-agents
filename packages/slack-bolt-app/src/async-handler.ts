@@ -1,7 +1,7 @@
 import { Handler } from 'aws-lambda';
-import { getOrCreateWorkerInstance } from './util/worker-manager';
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import z from 'zod';
+import { getOrCreateWorkerInstance } from '@remote-swe-agents/agent-core/lib';
 
 const BotToken = process.env.BOT_TOKEN!;
 
