@@ -14,7 +14,6 @@ import {
   readMetadata,
   renderToolResult,
   sendMessageToSlack,
-  setKillTimer,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -32,7 +31,7 @@ import {
   sendImageTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
-import { sendWebappEvent } from '@remote-swe-agents/agent-core/aws';
+import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from '../common/cancellation-token';
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
@@ -219,7 +218,6 @@ Users will primarily request software engineering assistance including bug fixes
       async () => {
         try {
           if (cancellationToken.isCancelled) return;
-          setKillTimer();
 
           const res = await bedrockConverse(workerId, ['sonnet3.7'], {
             messages,
@@ -272,7 +270,10 @@ Users will primarily request software engineering assistance including bug fixes
         if (toolUse == null || toolUseId == null) {
           throw new Error('toolUse is null');
         }
-        await sendWebappEvent(workerId, 'toolUse', { name: toolUse.name, input: toolUse.input });
+        await sendWebappEvent(workerId, {
+          type: 'toolUse',
+          payload: { name: toolUse.name ?? '', input: JSON.stringify(toolUse.input) },
+        });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
         try {
@@ -348,7 +349,7 @@ Users will primarily request software engineering assistance including bug fixes
             ],
           },
         });
-        await sendWebappEvent(workerId, 'toolResult', { name: toolUse.name });
+        await sendWebappEvent(workerId, { type: 'toolResult', payload: { name: toolUse.name ?? '' } });
       }
 
       // Save both tool use and tool result messages atomically to DynamoDB

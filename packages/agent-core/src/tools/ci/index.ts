@@ -1,7 +1,6 @@
 import { setTimeout } from 'timers/promises';
 import { executeCommand } from '../command-execution';
 import { z } from 'zod';
-import { setKillTimer } from '../../lib/kill-timer';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 
 const inputSchema = z.object({
@@ -19,7 +18,6 @@ const getLatestRunResult = async (input: { owner: string; repo: string; pullRequ
       const latestRun = await getLatestRunStatus(owner, repo, pullRequestId);
       if (['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(latestRun.status)) {
         await setTimeout(5000);
-        setKillTimer();
         continue;
       }
       if (latestRun.conclusion == 'success') {

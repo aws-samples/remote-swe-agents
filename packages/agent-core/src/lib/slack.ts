@@ -1,6 +1,6 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import { readFileSync } from 'fs';
-import { sendWebappEvent } from './aws';
+import { sendWebappEvent } from './';
 
 const BotToken = process.env.SLACK_BOT_TOKEN!;
 const channelId = process.env.SLACK_CHANNEL_ID!;
@@ -54,7 +54,8 @@ const processMessageForLinks = (message: string): string => {
 };
 
 export const sendMessageToSlack = async (message: string) => {
-  await sendWebappEvent('slack', message);
+  // TODO
+  await sendWebappEvent('', {type: 'userMessage', payload: {} as any});
 
   if (disableSlack) {
     console.log(`[Slack] ${message}`);

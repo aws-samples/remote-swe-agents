@@ -2,11 +2,12 @@ import { SignatureV4 } from '@smithy/signature-v4';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { HttpRequest } from '@smithy/protocol-http';
 import { Sha256 } from '@aws-crypto/sha256-js';
+import z from 'zod';
 
 const httpEndpoint = process.env.EVENT_HTTP_ENDPOINT!;
 const region = process.env.AWS_REGION!;
 
-export async function sendEvent(channelPath: string, payload: any) {
+async function sendEvent(channelPath: string, payload: any) {
   if (httpEndpoint == null) {
     console.log(`event api is not configured!`);
     return;
@@ -49,18 +50,47 @@ export async function sendEvent(channelPath: string, payload: any) {
   console.log(t);
 }
 
-export async function sendWorkerEvent(workerId: string, type: string, payload: object = {}) {
-  return sendEvent(`worker/${workerId}`, {
-    type,
-    payload,
-  });
+export const workerEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('onMessageReceived'),
+  }),
+]);
+
+export async function sendWorkerEvent(workerId: string, event: z.infer<typeof workerEventSchema>) {
+  return sendEvent(`worker/${workerId}`, event);
 }
 
-export async function sendWebappEvent(workerId: string, type: string, payload: object = {}) {
+export const webappEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('userMessage'),
+    payload: z.object({
+      message: z.string(),
+      userId: z.string(),
+      imageKeys: z.array(z.string()),
+    }),
+    timestamp: z.number(),
+  }),
+  z.object({
+    type: z.literal('toolUse'),
+    payload: z.object({
+      name: z.string(),
+      input: z.string(),
+    }),
+    timestamp: z.number(),
+  }),
+  z.object({
+    type: z.literal('toolResult'),
+    payload: z.object({
+      name: z.string(),
+    }),
+    timestamp: z.number(),
+  }),
+]);
+
+export async function sendWebappEvent(workerId: string, event: Omit<z.infer<typeof webappEventSchema>, 'timestamp'>) {
   try {
-    return sendEvent(`webapp/worker/${workerId}`, {
-      type,
-      payload,
+    await sendEvent(`webapp/worker/${workerId}`, {
+      ...event,
       timestamp: Date.now(),
     });
   } catch (e) {

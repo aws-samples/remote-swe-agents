@@ -5,7 +5,7 @@ import { authActionClient } from '@/lib/safe-action';
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { getOrCreateWorkerInstance } from '@remote-swe-agents/agent-core/lib';
-import { sendWorkerEvent } from '@remote-swe-agents/agent-core/aws';
+import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 
 export const createNewWorker = authActionClient.schema(createNewWorkerSchema).action(async ({ parsedInput, ctx }) => {
   const workerId = `webapp-${Date.now()}`;
@@ -56,7 +56,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
   );
 
   // Send worker event to notify message received
-  await sendWorkerEvent(workerId, 'onMessageReceived');
+  await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
   return { workerId };
 });

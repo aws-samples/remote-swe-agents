@@ -438,7 +438,7 @@ systemctl start myapp
     privateKey?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter.grantRead(role);
-    bus.api.grantSubscribe(role);
+    bus.api.grantPublishAndSubscribe(role);
     bus.api.grantConnect(role);
 
     // Grant permissions to write logs to CloudWatch
