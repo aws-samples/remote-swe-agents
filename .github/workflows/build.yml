@@ -81,12 +81,12 @@ jobs:
         name: Install dependencies
       - run: |
           npm run format:check
-        working-directory: ./webapp
+        working-directory: ./packages/webapp
         name: Install dependencies and run static analysis
       - run: |
           cp .env.local.example .env.local
           npm run build
-        working-directory: ./webapp
+        working-directory: ./packages/webapp
         name: build
 
   Build-and-Test-AgentCore:

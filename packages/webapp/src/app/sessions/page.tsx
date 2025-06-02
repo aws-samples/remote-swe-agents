@@ -7,7 +7,7 @@ import { getSessions } from '@/app/(root)/actions';
 
 export default async function SessionsPage() {
   const { userId } = await getSession();
-  
+
   // セッション一覧を取得
   const result = await getSessions({});
   const sessions = result?.data?.sessions || [];
@@ -30,11 +30,7 @@ export default async function SessionsPage() {
 
           <div className="space-y-4">
             {sessions.map((session) => (
-              <Link
-                key={session.workerId}
-                href={`/sessions/${session.workerId}`}
-                className="block"
-              >
+              <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
                 <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -57,9 +53,7 @@ export default async function SessionsPage() {
           {sessions.length === 0 && (
             <div className="text-center py-12">
               <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No sessions found
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No sessions found</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Create a new session to start chatting with AI agents
               </p>

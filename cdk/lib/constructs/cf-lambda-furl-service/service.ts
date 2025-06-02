@@ -75,7 +75,7 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
         'Origin',
         'X-HTTP-Method-Override',
         'X-HTTP-Method',
-        'X-Method-Override',
+        'X-Method-Override'
       ),
       defaultTtl: Duration.seconds(0),
       cookieBehavior: CacheCookieBehavior.all(),

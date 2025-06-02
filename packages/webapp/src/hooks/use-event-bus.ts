@@ -25,7 +25,7 @@ Amplify.configure(
         },
       },
     },
-  },
+  }
 );
 
 type UseEventBusProps = {

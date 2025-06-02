@@ -3,9 +3,7 @@ import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { sendMessageToSlack } from '../../lib/slack';
 
 const inputSchema = z.object({
-  message: z
-    .string()
-    .describe('The message you want to send to the user.'),
+  message: z.string().describe('The message you want to send to the user.'),
 });
 
 const name = 'sendMessageToUser';

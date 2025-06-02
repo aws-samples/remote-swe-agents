@@ -14,14 +14,12 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center py-16">
             <Bot className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Remote SWE Agents
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Remote SWE Agents</h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Interact with AI agents to efficiently advance your software development tasks.
-              Real-time code creation, debugging, and review capabilities.
+              Interact with AI agents to efficiently advance your software development tasks. Real-time code creation,
+              debugging, and review capabilities.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link href="/sessions">
                 <Button size="lg" className="flex items-center gap-2">
@@ -41,7 +39,8 @@ export default async function Home() {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🔧 Code Development</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  AI supports various development tasks including file creation/editing, bug fixes, and feature additions
+                  AI supports various development tasks including file creation/editing, bug fixes, and feature
+                  additions
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -53,7 +52,8 @@ export default async function Home() {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">🚀 Advanced Features</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Supports professional development workflows including GitHub integration, PR creation, and test execution
+                  Supports professional development workflows including GitHub integration, PR creation, and test
+                  execution
                 </p>
               </div>
             </div>
