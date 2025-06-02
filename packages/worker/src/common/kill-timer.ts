@@ -1,6 +1,6 @@
+import { sendMessageToSlack } from '@remote-swe-agents/agent-core/lib';
+import { stopMyself } from '@remote-swe-agents/agent-core/aws';
 import { randomBytes } from 'crypto';
-import { stopMyself } from '../../../agent-core/src/lib/aws/ec2';
-import { sendMessageToSlack } from '../../../agent-core/src/lib/slack';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
@@ -8,10 +8,10 @@ let paused = false;
 // You can use setKillTimer to kill the process after 30 minutes.
 // If setKillTimer is called before 30 minutes elapsed, the timer count is reset and another
 // 30 minutes is required to kill the process.
-// 
+//
 // You can pause the timer to avoid process termination when a long-running process is executed
-// outside of the control loop (e.g. agent's tool use). 
-// To avoid race condition, a restart token is issued when you call pauseKillTimer, and the current 
+// outside of the control loop (e.g. agent's tool use).
+// To avoid race condition, a restart token is issued when you call pauseKillTimer, and the current
 // restart token is replaced every time pauseKillTimer is called. The restart token
 // is required to match with the latest restart token when you call restartKillTimer.
 

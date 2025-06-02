@@ -272,7 +272,8 @@ Users will primarily request software engineering assistance including bug fixes
         }
         await sendWebappEvent(workerId, {
           type: 'toolUse',
-          payload: { name: toolUse.name ?? '', input: JSON.stringify(toolUse.input) },
+          toolName: toolUse.name ?? '',
+          input: JSON.stringify(toolUse.input),
         });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
@@ -349,7 +350,7 @@ Users will primarily request software engineering assistance including bug fixes
             ],
           },
         });
-        await sendWebappEvent(workerId, { type: 'toolResult', payload: { name: toolUse.name ?? '' } });
+        await sendWebappEvent(workerId, { type: 'toolResult', toolName: toolUse.name ?? '' });
       }
 
       // Save both tool use and tool result messages atomically to DynamoDB

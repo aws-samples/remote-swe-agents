@@ -62,39 +62,35 @@ export async function sendWorkerEvent(workerId: string, event: z.infer<typeof wo
 
 export const webappEventSchema = z.discriminatedUnion('type', [
   z.object({
-    type: z.literal('userMessage'),
-    payload: z.object({
-      message: z.string(),
-      userId: z.string(),
-      imageKeys: z.array(z.string()),
-    }),
+    type: z.literal('message'),
+    role: z.union([z.literal('user'), z.literal('assistant')]),
+    message: z.string(),
     timestamp: z.number(),
   }),
   z.object({
     type: z.literal('toolUse'),
-    payload: z.object({
-      name: z.string(),
-      input: z.string(),
-    }),
+    toolName: z.string(),
+    input: z.string(),
     timestamp: z.number(),
   }),
   z.object({
     type: z.literal('toolResult'),
-    payload: z.object({
-      name: z.string(),
-    }),
+    toolName: z.string(),
     timestamp: z.number(),
   }),
 ]);
 
-export async function sendWebappEvent(workerId: string, event: Omit<z.infer<typeof webappEventSchema>, 'timestamp'>) {
+// Omit does not work below because webappEventSchema is a union type.
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+
+export async function sendWebappEvent(workerId: string, event: DistributiveOmit<z.infer<typeof webappEventSchema>, 'timestamp'>) {
   try {
     await sendEvent(`webapp/worker/${workerId}`, {
       ...event,
       timestamp: Date.now(),
     });
   } catch (e) {
-    // webapp event is not critical so we do not throw.
+    // webapp event is not critical so we do not throw on error.
     console.log(`failed to send event: ${e}`);
   }
 }

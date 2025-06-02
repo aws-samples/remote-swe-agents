@@ -1,11 +1,9 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import { readFileSync } from 'fs';
 import { sendWebappEvent } from './';
+import { SlackBotToken, SlackChannelId, SlackThreadTs, WorkerId } from '../env';
 
-const BotToken = process.env.SLACK_BOT_TOKEN!;
-const channelId = process.env.SLACK_CHANNEL_ID!;
-const threadTs = process.env.SLACK_THREAD_TS!;
-const disableSlack = !(channelId && threadTs)
+const disableSlack = !(SlackChannelId && SlackThreadTs);
 
 export const receiver = new AwsLambdaReceiver({
   // We don't need signingSecret because we use slack bolt only to send messages here.
@@ -17,7 +15,7 @@ let app: App | undefined = undefined;
 const getApp = () => {
   if (app) return app;
   app = new App({
-    token: BotToken,
+    token: SlackBotToken,
     receiver,
     logLevel: LogLevel.DEBUG,
     developerMode: true,
@@ -54,8 +52,7 @@ const processMessageForLinks = (message: string): string => {
 };
 
 export const sendMessageToSlack = async (message: string) => {
-  // TODO
-  await sendWebappEvent('', {type: 'userMessage', payload: {} as any});
+  await sendWebappEvent(WorkerId, { type: 'message', role: 'assistant', message });
 
   if (disableSlack) {
     console.log(`[Slack] ${message}`);
@@ -66,8 +63,8 @@ export const sendMessageToSlack = async (message: string) => {
   const processedMessage = processMessageForLinks(message);
 
   await getApp().client.chat.postMessage({
-    channel: channelId,
-    thread_ts: threadTs,
+    channel: SlackChannelId,
+    thread_ts: SlackThreadTs,
     // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
     text: processedMessage.slice(0, 40000),
     blocks: [
@@ -96,8 +93,8 @@ export const sendFileToSlack = async (imagePath: string, message: string) => {
   const processedMessage = processMessageForLinks(message);
 
   const result = await getApp().client.filesUploadV2({
-    channel_id: channelId,
-    thread_ts: threadTs,
+    channel_id: SlackChannelId,
+    thread_ts: SlackThreadTs,
     initial_comment: processedMessage,
     filename: fileName,
     file: imageBuffer,

@@ -4,18 +4,14 @@ import { sendMessageToAgentSchema } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
+import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
   .action(async ({ parsedInput: { workerId, message, imageKeys = [] }, ctx }) => {
-    const { userId } = ctx;
-
     const content = [];
-    if (message) {
-      content.push({ text: renderUserMessage({ message }) });
-    }
+    content.push({ text: renderUserMessage({ message }) });
     imageKeys.forEach((key) => {
       content.push({
         image: {
@@ -27,18 +23,19 @@ export const sendMessageToAgent = authActionClient
       });
     });
 
+    const item: MessageItem = {
+      PK: `message-${workerId}`,
+      SK: `${String(Date.now()).padStart(15, '0')}`,
+      content: JSON.stringify(content),
+      role: 'user',
+      tokenCount: 0,
+      messageType: 'userMessage',
+    };
+
     await ddb.send(
       new PutCommand({
         TableName,
-        Item: {
-          PK: `message-${workerId}`,
-          SK: `${String(Date.now()).padStart(15, '0')}`,
-          content: JSON.stringify(content),
-          role: 'user',
-          tokenCount: 0,
-          messageType: 'userMessage',
-          slackUserId: userId,
-        },
+        Item: item,
       })
     );
 
@@ -46,5 +43,5 @@ export const sendMessageToAgent = authActionClient
 
     await getOrCreateWorkerInstance(workerId, '', '');
 
-    return { success: true };
+    return { success: true, item };
   });

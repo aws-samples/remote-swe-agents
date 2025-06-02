@@ -1,5 +1,8 @@
 import { createInterface } from 'readline';
 import { onMessageReceived } from './agent';
+import { WorkerId } from '@remote-swe-agents/agent-core/env';
+import { renderUserMessage, saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
+import { CancellationToken } from './common/cancellation-token';
 import './common/signal-handler';
 
 const rl = createInterface({
@@ -7,10 +10,6 @@ const rl = createInterface({
   output: process.stdout,
 });
 const workerId = WorkerId;
-
-import { WorkerId } from './common/constants';
-import { renderUserMessage, saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
-import { CancellationToken } from './common/cancellation-token';
 
 async function processInput(input: string) {
   try {

@@ -1,5 +1,6 @@
-import { getConversationHistory } from '@remote-swe-agents/agent-core/lib';
-import SessionPageClient, { AgentMessage } from './component/SessionPageClient';
+import { getConversationHistory, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
+import SessionPageClient from './component/SessionPageClient';
+import { Message } from './component/MessageList';
 
 interface SessionPageProps {
   params: Promise<{
@@ -12,36 +13,69 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
   // Load conversation history from DynamoDB
   const { items: historyItems } = await getConversationHistory(workerId);
-
-  // Convert history items to AgentMessage format
-  const initialMessages: AgentMessage[] = historyItems.map((item, index) => {
-    let content = '';
-
-    try {
-      if (typeof item.content === 'string') {
-        const parsedContent = JSON.parse(item.content);
-        if (Array.isArray(parsedContent)) {
-          content = parsedContent.map((c: { text?: string }) => c.text || '').join('');
+  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
+  console.log(historyItems);
+  console.log(filteredMessages);
+  const messages: Message[] = filteredMessages.flatMap<Message>((message, i) => {
+    const item = filteredItems[i];
+    switch (item.messageType) {
+      case 'toolUse': {
+        const tools = message.content?.map((block) => block.toolUse?.name).filter((n) => n != undefined);
+        if (tools) {
+          return [
+            {
+              id: `${item.SK}-${i}`,
+              role: 'assistant',
+              content: tools.join(' + '),
+              timestamp: new Date(parseInt(item.SK)),
+              type: 'toolUse',
+            },
+          ];
         }
+        break;
       }
-    } catch (error) {
-      console.error('Error parsing message content:', error);
-      content = typeof item.content === 'string' ? item.content : '';
+      case 'toolResult': {
+        return [];
+        return [
+          {
+            id: `${item.SK}-${i}`,
+            role: 'assistant',
+            content: 'toolResult',
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'toolResult',
+          },
+        ];
+      }
+      case 'userMessage': {
+        const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
+        const extracted = text
+          .slice(text.indexOf('<user_message>') + '<user_message>'.length, text.indexOf('</user_message>'))
+          .trim();
+        return [
+          {
+            id: `${item.SK}-${i}`,
+            role: 'user',
+            content: extracted,
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'message',
+          },
+        ];
+      }
+      case 'assistant': {
+        const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
+        return [
+          {
+            id: `${item.SK}-${i}`,
+            role: 'assistant',
+            content: text,
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'message',
+          },
+        ];
+      }
     }
-
-    return {
-      id: `${item.SK}-${index}`,
-      role: item.role as 'user' | 'assistant',
-      content,
-      timestamp: new Date(parseInt(item.SK)).toISOString(),
-      type: item.messageType === 'toolUse' ? ('tool_use' as const) : ('message' as const),
-    };
+    return [];
   });
 
-  return (
-    <SessionPageClient
-      workerId={workerId}
-      initialMessages={initialMessages}
-    />
-  );
+  return <SessionPageClient workerId={workerId} initialMessages={messages} />;
 }

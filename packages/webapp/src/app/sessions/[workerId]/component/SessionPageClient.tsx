@@ -6,34 +6,26 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
-import MessageList from './MessageList';
-
-export interface AgentMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  type?: 'message' | 'progress' | 'tool_use';
-}
+import MessageList, { Message } from './MessageList';
 
 interface AgentEvent {
-  type: 'message' | 'progress' | 'tool_use';
+  type: 'message' | 'toolResult' | 'toolUse';
   payload:
     | {
         content?: string;
         message?: string;
       }
     | string;
-  timestamp?: string;
+  timestamp: string;
 }
 
 interface SessionPageClientProps {
   workerId: string;
-  initialMessages: AgentMessage[];
+  initialMessages: Message[];
 }
 
 export default function SessionPageClient({ workerId, initialMessages }: SessionPageClientProps) {
-  const [messages, setMessages] = useState<AgentMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
 
   // Real-time communication via event bus
@@ -51,52 +43,23 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
               id: Date.now().toString(),
               role: 'assistant',
               content: typeof event.payload === 'string' ? event.payload : event.payload.content || '',
-              timestamp: event.timestamp || new Date().toISOString(),
+              timestamp: new Date(event.timestamp),
               type: 'message',
             },
           ]);
           setIsAgentTyping(false);
           break;
-        case 'progress':
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: `🔄 ${typeof event.payload === 'string' ? event.payload : event.payload.message || ''}`,
-              timestamp: event.timestamp || new Date().toISOString(),
-              type: 'progress',
-            },
-          ]);
-          break;
-        case 'tool_use':
+        case 'toolResult':
+        case 'toolUse':
           setIsAgentTyping(true);
           break;
       }
     },
   });
 
-  // Send message
-  const sendMessage = async (message?: string) => {
-    // setMessages((prev) => [...prev, userMessage]);
-
-    try {
-      console.log('Message sent successfully');
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      setIsAgentTyping(false);
-      // Display error message
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Failed to send message. Please try again.',
-          timestamp: new Date().toISOString(),
-          type: 'message',
-        },
-      ]);
-    }
+  const onSendMessage = async (message: Message) => {
+    setMessages((prev) => [...prev, message]);
+    setIsAgentTyping(true);
   };
 
   return (
@@ -122,7 +85,7 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
 
         <MessageList messages={messages} isAgentTyping={isAgentTyping} />
 
-        <MessageForm onSubmit={sendMessage} workerId={workerId} />
+        <MessageForm onSubmit={onSendMessage} workerId={workerId} />
       </main>
     </div>
   );

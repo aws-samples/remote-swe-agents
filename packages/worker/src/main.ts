@@ -2,11 +2,11 @@ import { Amplify } from 'aws-amplify';
 import { events } from 'aws-amplify/data';
 import { onMessageReceived, resume } from './agent';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
-import { WorkerId } from './common/constants';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
 import { sendMessageToSlack } from '@remote-swe-agents/agent-core/lib';
+import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 Object.assign(global, { WebSocket: require('ws') });
 

@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
 import { KeyboardEventHandler } from 'react';
+import { Message } from './MessageList';
 
 type MessageFormProps = {
-  onSubmit: (message: string) => void;
+  onSubmit: (message: Message) => void;
   workerId: string;
 };
 
@@ -22,7 +23,15 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   } = useHookFormAction(sendMessageToAgent, zodResolver(sendMessageToAgentSchema), {
     actionProps: {
       onSuccess: (args) => {
-        onSubmit(message);
+        if (args.data) {
+          onSubmit({
+            id: args.data.item.SK,
+            role: 'user',
+            content: args.input.message,
+            timestamp: new Date(parseInt(args.data.item.SK)),
+            type: 'message',
+          });
+        }
         reset();
       },
       onError: ({ error }) => {
