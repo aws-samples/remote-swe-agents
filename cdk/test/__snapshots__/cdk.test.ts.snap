@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Snapshot test 1`] = `
+exports[`Snapshot test: MainStack 1`] = `
 {
   "Description": "Remote SWE Agents stack (uksb-lv52f92xel)",
   "Outputs": {
@@ -1672,6 +1672,78 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::IAM::Role",
     },
+    "LookupVersionArnc866039b737310486254136aff682613982c3fdf9d603A5356": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "LookupVersionArnc866039b737310486254136aff682613982c3fdf9dCustomResourcePolicyAF9059CF",
+      ],
+      "Properties": {
+        "Create": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"SSM","action":"getParameter","parameters":{"Name":"",
+              {
+                "Fn::ImportValue": "TestUsEast1Stack:ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1",
+              },
+              ""},"physicalResourceId":{"id":"1577836800000"},"region":"us-east-1"}",
+            ],
+          ],
+        },
+        "InstallLatestAwsSdk": false,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "Arn",
+          ],
+        },
+        "Update": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"SSM","action":"getParameter","parameters":{"Name":"",
+              {
+                "Fn::ImportValue": "TestUsEast1Stack:ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1",
+              },
+              ""},"physicalResourceId":{"id":"1577836800000"},"region":"us-east-1"}",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::AWS",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "LookupVersionArnc866039b737310486254136aff682613982c3fdf9dCustomResourcePolicyAF9059CF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "ssm:GetParameter",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    {
+                      "Fn::ImportValue": "TestUsEast1Stack:ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "LookupVersionArnc866039b737310486254136aff682613982c3fdf9dCustomResourcePolicyAF9059CF",
+        "Roles": [
+          {
+            "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "RandomStringGenerator11e9c903f11a4989833c985dddef5eb28C5103D0": {
       "DependsOn": [
         "RandomStringGenerator11e9c903f11a4989833c985dddef5eb2ServiceRoleAB6B57A9",
@@ -2848,6 +2920,12 @@ exports.handler = async function (event, context) {
               {
                 "EventType": "origin-request",
                 "IncludeBody": true,
+                "LambdaFunctionARN": {
+                  "Fn::GetAtt": [
+                    "LookupVersionArnc866039b737310486254136aff682613982c3fdf9d603A5356",
+                    "Parameter.Value",
+                  ],
+                },
               },
             ],
             "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
@@ -5879,6 +5957,128 @@ systemctl start myapp",
       },
       "Type": "Custom::CDKBucketDeployment",
       "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`Snapshot test: UsEast1Stack 1`] = `
+{
+  "Outputs": {
+    "ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1": {
+      "Export": {
+        "Name": "TestUsEast1Stack:ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1",
+      },
+      "Value": {
+        "Ref": "SignPayloadHandlerFunctionVersionF9FE430A",
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "SignPayloadHandlerCFEAA14C": {
+      "DependsOn": [
+        "SignPayloadHandlerServiceRole29261232",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "SignPayloadHandlerServiceRole29261232",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "SignPayloadHandlerCurrentVersionF9D1B5C2b714756b2226025fe03626397b33cde4": {
+      "Properties": {
+        "FunctionName": {
+          "Ref": "SignPayloadHandlerCFEAA14C",
+        },
+      },
+      "Type": "AWS::Lambda::Version",
+    },
+    "SignPayloadHandlerFunctionVersionF9FE430A": {
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "SignPayloadHandlerCurrentVersionF9D1B5C2b714756b2226025fe03626397b33cde4",
+        },
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SignPayloadHandlerServiceRole29261232": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "edgelambda.amazonaws.com",
+                  "lambda.amazonaws.com",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
     },
   },
   "Rules": {
