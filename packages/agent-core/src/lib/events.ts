@@ -64,7 +64,10 @@ export async function sendWorkerEvent(workerId: string, event: z.infer<typeof wo
 // Omit does not work below because webappEventSchema is a union type.
 type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 
-export async function sendWebappEvent(workerId: string, event: DistributiveOmit<z.infer<typeof webappEventSchema>, 'timestamp'>) {
+export async function sendWebappEvent(
+  workerId: string,
+  event: DistributiveOmit<z.infer<typeof webappEventSchema>, 'timestamp'>
+) {
   try {
     await sendEvent(`webapp/worker/${workerId}`, {
       ...event,

@@ -12,6 +12,15 @@ test('Snapshot test', () => {
     },
   });
 
+  // Mock EdgeFunction for the test
+  class MockEdgeFunction {
+    versionArn() {
+      return { functionArn: 'arn:aws:lambda:us-east-1:123456789012:function:TestFunction:1' };
+    }
+  }
+
+  const mockSignPayloadHandler = new MockEdgeFunction();
+
   const main = new MainStack(app, `TestMainStack`, {
     env: {
       account: '123456789012',
@@ -28,6 +37,7 @@ test('Snapshot test', () => {
       installationId: '9876543',
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
+    signPayloadHandler: mockSignPayloadHandler as any,
   });
 
   expect(Template.fromStack(main)).toMatchSnapshot();
