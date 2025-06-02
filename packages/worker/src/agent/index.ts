@@ -13,7 +13,7 @@ import {
   updateMessageTokenCount,
   readMetadata,
   renderToolResult,
-  sendMessageToSlack,
+  sendSystemMessage,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -368,11 +368,7 @@ Users will primarily request software engineering assistance including bug fixes
       if (finalMessage?.content == null || finalMessage.content?.length == 0) {
         // It seems this happens sometimes. We can just ignore this message.
         console.log('final message is empty. ignoring...');
-        if (mention) {
-          await sendMessageToSlack(mention);
-        } else {
-          await sendWebappEvent(workerId, { type: 'message', message: '', role: 'assistant' });
-        }
+        await sendSystemMessage(workerId, mention);
         break;
       }
 
@@ -382,7 +378,7 @@ Users will primarily request software engineering assistance including bug fixes
       const responseText = finalMessage.content?.at(-1)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
-      await sendMessageToSlack(`${mention}${responseTextWithoutThinking}`);
+      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`);
       break;
     }
   }

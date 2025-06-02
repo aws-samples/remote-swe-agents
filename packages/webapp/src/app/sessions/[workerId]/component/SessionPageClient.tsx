@@ -27,16 +27,18 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
 
       switch (event.type) {
         case 'message':
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: event.message,
-              timestamp: new Date(event.timestamp),
-              type: 'message',
-            },
-          ]);
+          if (event.message) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: event.message,
+                timestamp: new Date(event.timestamp),
+                type: 'message',
+              },
+            ]);
+          }
           setIsAgentTyping(false);
           break;
         case 'toolResult':

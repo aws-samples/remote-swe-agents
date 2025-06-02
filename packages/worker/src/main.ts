@@ -5,7 +5,7 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
-import { sendMessageToSlack } from '@remote-swe-agents/agent-core/lib';
+import { sendMessageToSlack, sendSystemMessage } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 Object.assign(global, { WebSocket: require('ws') });
@@ -54,7 +54,7 @@ class ConverseSessionTracker {
         session.isFinished = true;
       })
       .catch((e) => {
-        sendMessageToSlack(`An error occurred: ${e}`).catch((e) => console.log(e));
+        sendSystemMessage(workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
       })
       .finally(() => {
         restartKillTimer(restartToken);
@@ -70,7 +70,7 @@ class ConverseSessionTracker {
         session.isFinished = true;
       })
       .catch((e) => {
-        sendMessageToSlack(`An error occurred: ${e}`).catch((e) => console.log(e));
+        sendSystemMessage(workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
       })
       .finally(() => {
         restartKillTimer(restartToken);
@@ -118,10 +118,10 @@ const main = async () => {
   setKillTimer();
 
   try {
-    await sendMessageToSlack('the instance has successfully launched!');
+    await sendSystemMessage(workerId, 'the instance has successfully launched!');
     tracker.startResume();
   } catch (e) {
-    await sendMessageToSlack(`An error occurred: ${e}`);
+    await sendSystemMessage(workerId, `An error occurred: ${e}`);
   }
 };
 

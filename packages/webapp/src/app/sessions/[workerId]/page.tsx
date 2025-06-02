@@ -23,7 +23,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         const ret: Message[] = [];
         const isMsg = (toolName: string | undefined) => toolName == 'sendMessageToUser';
         const messages = message.content?.filter((block) => isMsg(block.toolUse?.name)) ?? [];
-        if (messages) {
+        if (messages && messages.length > 0) {
           ret.push({
             id: `${item.SK}-${i}`,
             role: 'assistant',

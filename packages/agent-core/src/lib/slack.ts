@@ -30,7 +30,7 @@ const getApp = () => {
  */
 const processMessageForLinks = (message: string): string => {
   // Look for http:// or https://
-  const parts = message.split(/(https?:\/\/)/g);
+  const parts = message.trim().split(/(https?:\/\/)/g);
   let result = '';
 
   for (let i = 0; i < parts.length; i++) {
@@ -52,8 +52,6 @@ const processMessageForLinks = (message: string): string => {
 };
 
 export const sendMessageToSlack = async (message: string) => {
-  await sendWebappEvent(WorkerId, { type: 'message', role: 'assistant', message });
-
   if (disableSlack) {
     console.log(`[Slack] ${message}`);
     return;
@@ -61,6 +59,10 @@ export const sendMessageToSlack = async (message: string) => {
 
   // Process message to ensure proper URL linking
   const processedMessage = processMessageForLinks(message);
+
+  if (!processedMessage) {
+    return;
+  }
 
   await getApp().client.chat.postMessage({
     channel: SlackChannelId,

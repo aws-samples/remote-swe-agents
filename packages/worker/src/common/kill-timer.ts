@@ -1,6 +1,7 @@
-import { sendMessageToSlack } from '@remote-swe-agents/agent-core/lib';
+import { sendSystemMessage } from '@remote-swe-agents/agent-core/lib';
 import { stopMyself } from '@remote-swe-agents/agent-core/aws';
 import { randomBytes } from 'crypto';
+import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
@@ -28,7 +29,7 @@ export const setKillTimer = () => {
   }
   killTimer = setTimeout(
     async () => {
-      await sendMessageToSlack('Going to sleep mode. You can wake me up at any time.');
+      await sendSystemMessage(WorkerId, 'Going to sleep mode. You can wake me up at any time.');
       await stopMyself();
     },
     30 * 60 * 1000

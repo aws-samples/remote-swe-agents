@@ -1,6 +1,11 @@
 'use client';
 
 import { Bot, User, Loader2, Clock } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
+import { useTheme } from 'next-themes';
 
 export type Message = {
   id: string;
@@ -16,10 +21,62 @@ type MessageListProps = {
 };
 
 export default function MessageList({ messages, isAgentTyping }: MessageListProps) {
+  const { theme } = useTheme();
+
   // Check if there are any assistant messages and the last message was within 10 minutes
-  const showWaitingMessage = !(
-    messages.some((msg) => msg.role === 'assistant') ||
-    new Date(messages.at(-1)?.timestamp ?? new Date()).getTime() - Date.now() < 10 * 60 * 1000
+  const showWaitingMessage =
+    !messages.some((msg) => msg.role === 'assistant') &&
+    new Date(messages.at(-1)?.timestamp ?? new Date()).getTime() - Date.now() < 10 * 60 * 1000;
+  const MarkdownRenderer = ({ content }: { content: string }) => (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        code(props: any) {
+          const { className, children } = props;
+          const match = /language-(\w+)/.exec(className || '');
+          const isInline = !match;
+          return !isInline ? (
+            <SyntaxHighlighter
+              style={theme === 'dark' ? oneDark : oneLight}
+              language={match[1]}
+              PreTag="div"
+              className="rounded-md"
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          ) : (
+            <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm">{children}</code>
+          );
+        },
+        h1: ({ children }) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-xl font-bold mb-3">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+        p: ({ children }) => <p className="mb-2">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+        li: ({ children }) => <li className="ml-2">{children}</li>,
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-2">
+            {children}
+          </blockquote>
+        ),
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {children}
+          </a>
+        ),
+        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+        em: ({ children }) => <em className="italic">{children}</em>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   );
 
   return (
@@ -47,19 +104,13 @@ export default function MessageList({ messages, isAgentTyping }: MessageListProp
 
               <div
                 className={`max-w-3xl rounded-lg px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : message.type === 'toolUse'
-                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  message.type === 'toolUse'
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                 }`}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
-                <div
-                  className={`text-xs mt-2 ${
-                    message.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
+                <MarkdownRenderer content={message.content} />
+                <div className={`text-xs mt-2 ${'text-gray-500 dark:text-gray-400'}`}>
                   {new Date(message.timestamp).toLocaleTimeString('en-US')}
                 </div>
               </div>
