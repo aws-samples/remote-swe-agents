@@ -1,11 +1,11 @@
-import type { CloudFrontRequestHandler } from 'aws-lambda';
+import type { CloudFrontRequestEvent, CloudFrontRequestHandler } from 'aws-lambda';
 import { createHash } from 'crypto';
 
 const hashPayload = (payload: Buffer) => {
   return createHash('sha256').update(payload).digest('hex');
 };
 
-export const handler: CloudFrontRequestHandler = async (event) => {
+export const handler: CloudFrontRequestHandler = async (event: CloudFrontRequestEvent) => {
   const request = event.Records[0].cf.request;
   const body = request.body?.data ?? '';
 

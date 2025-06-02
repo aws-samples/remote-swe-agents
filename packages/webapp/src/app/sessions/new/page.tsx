@@ -77,7 +77,10 @@ export default function NewSessionPage() {
 
                 <form onSubmit={handleSubmitWithAction} className="space-y-6">
                   <div className="text-left">
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label
+                      htmlFor="message"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
                       Initial Message
                     </label>
                     <textarea
@@ -89,18 +92,11 @@ export default function NewSessionPage() {
                       disabled={isExecuting}
                     />
                     {formState.errors.message && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {formState.errors.message.message}
-                      </p>
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    disabled={isExecuting || !formState.isValid} 
-                    className="w-full" 
-                    size="lg"
-                  >
+
+                  <Button type="submit" disabled={isExecuting || !formState.isValid} className="w-full" size="lg">
                     {isExecuting ? 'Creating Session...' : 'Create Session & Start Conversation'}
                   </Button>
                 </form>

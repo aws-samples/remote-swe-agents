@@ -11,6 +11,6 @@ export async function runJob(props: JobPayloadProps) {
       FunctionName: handlerArn,
       InvocationType: 'Event',
       Payload: JSON.stringify(props),
-    }),
+    })
   );
 }

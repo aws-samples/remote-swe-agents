@@ -5,28 +5,26 @@ import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { z } from 'zod';
 
-export const getSessions = authActionClient
-  .schema(z.object({}))
-  .action(async ({ ctx }) => {
-    const res = await ddb.send(
-      new QueryCommand({
-        TableName,
-        KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: {
-          ':pk': 'sessions',
-        },
-        ScanIndexForward: false, // 新しい順
-        Limit: 50,
-      })
-    );
+export const getSessions = authActionClient.schema(z.object({})).action(async ({ ctx }) => {
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName,
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': 'sessions',
+      },
+      ScanIndexForward: false, // 新しい順
+      Limit: 50,
+    })
+  );
 
-    const sessions = (res.Items || []).map(item => ({
-      workerId: item.workerId,
-      createdAt: item.createdAt,
-      title: `セッション ${item.workerId}`, // TODO: 最初のメッセージから生成
-      lastMessage: '対話を開始してください',
-      updatedAt: new Date(item.createdAt).toISOString(),
-    }));
+  const sessions = (res.Items || []).map((item) => ({
+    workerId: item.workerId,
+    createdAt: item.createdAt,
+    title: `セッション ${item.workerId}`, // TODO: 最初のメッセージから生成
+    lastMessage: '対話を開始してください',
+    updatedAt: new Date(item.createdAt).toISOString(),
+  }));
 
-    return { sessions };
-  });
+  return { sessions };
+});
