@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack -p 3011",
     "build": "next build",
-    "format": "prettier --write './**/*.{ts,tsx,mjs,mts}' && npx prisma format",
-    "format:check": "prettier --check './**/*.{ts,tsx,mjs,mts}' && npx prisma format --check",
+    "format": "prettier --write './**/*.{ts,tsx,mjs,mts}'",
+    "format:check": "prettier --check './**/*.{ts,tsx,mjs,mts}'",
     "start": "next start",
     "lint": "next lint"
   },
