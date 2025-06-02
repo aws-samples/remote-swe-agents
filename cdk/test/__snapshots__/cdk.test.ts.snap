@@ -641,7 +641,7 @@ exports[`Snapshot test: MainStack 1`] = `
           ],
         },
         "AdminCreateUserConfig": {
-          "AllowAdminCreateUserOnly": false,
+          "AllowAdminCreateUserOnly": true,
         },
         "AutoVerifiedAttributes": [
           "email",

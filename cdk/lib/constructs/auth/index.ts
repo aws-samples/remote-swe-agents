@@ -57,7 +57,7 @@ export class Auth extends Construct {
         requireDigits: true,
         minLength: 8,
       },
-      selfSignUpEnabled: true,
+      selfSignUpEnabled: false,
       signInAliases: {
         username: false,
         email: true,
