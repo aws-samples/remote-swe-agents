@@ -370,6 +370,8 @@ Users will primarily request software engineering assistance including bug fixes
         console.log('final message is empty. ignoring...');
         if (mention) {
           await sendMessageToSlack(mention);
+        } else {
+          await sendWebappEvent(workerId, { type: 'message', message: '', role: 'assistant' });
         }
         break;
       }

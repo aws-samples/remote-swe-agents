@@ -41,7 +41,7 @@ export const useEventBus = ({ channelName, onReceived }: UseEventBusProps) => {
 
       channel.subscribe({
         next: (data) => {
-          onReceived(data);
+          onReceived(data.event);
         },
         error: (err) => console.error('error', err),
       });

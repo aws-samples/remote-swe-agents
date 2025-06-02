@@ -16,7 +16,6 @@ type MessageListProps = {
 };
 
 export default function MessageList({ messages, isAgentTyping }: MessageListProps) {
-  console.log(messages);
   // Check if there are any assistant messages and the last message was within 10 minutes
   const showWaitingMessage = !(
     messages.some((msg) => msg.role === 'assistant') ||

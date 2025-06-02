@@ -20,19 +20,32 @@ export default async function SessionPage({ params }: SessionPageProps) {
     const item = filteredItems[i];
     switch (item.messageType) {
       case 'toolUse': {
-        const tools = message.content?.map((block) => block.toolUse?.name).filter((n) => n != undefined);
-        if (tools) {
-          return [
-            {
-              id: `${item.SK}-${i}`,
-              role: 'assistant',
-              content: tools.join(' + '),
-              timestamp: new Date(parseInt(item.SK)),
-              type: 'toolUse',
-            },
-          ];
+        const ret: Message[] = [];
+        const isMsg = (toolName: string | undefined) => toolName == 'sendMessageToUser';
+        const messages = message.content?.filter((block) => isMsg(block.toolUse?.name)) ?? [];
+        if (messages) {
+          ret.push({
+            id: `${item.SK}-${i}`,
+            role: 'assistant',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            content: (messages[0].toolUse?.input as any).message ?? '',
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'message',
+          });
         }
-        break;
+        const tools = message.content
+          ?.map((block) => block.toolUse?.name)
+          .filter((name) => !isMsg(name) && name != undefined);
+        if (tools && tools.length > 0) {
+          ret.push({
+            id: `${item.SK}-${i}`,
+            role: 'assistant',
+            content: tools.join(' + '),
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'toolUse',
+          });
+        }
+        return ret;
       }
       case 'toolResult': {
         return [];

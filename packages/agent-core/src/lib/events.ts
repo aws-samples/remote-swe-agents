@@ -3,6 +3,7 @@ import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { HttpRequest } from '@smithy/protocol-http';
 import { Sha256 } from '@aws-crypto/sha256-js';
 import z from 'zod';
+import { webappEventSchema } from '../schema';
 
 const httpEndpoint = process.env.EVENT_HTTP_ENDPOINT!;
 const region = process.env.AWS_REGION!;
@@ -59,26 +60,6 @@ export const workerEventSchema = z.discriminatedUnion('type', [
 export async function sendWorkerEvent(workerId: string, event: z.infer<typeof workerEventSchema>) {
   return sendEvent(`worker/${workerId}`, event);
 }
-
-export const webappEventSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('message'),
-    role: z.union([z.literal('user'), z.literal('assistant')]),
-    message: z.string(),
-    timestamp: z.number(),
-  }),
-  z.object({
-    type: z.literal('toolUse'),
-    toolName: z.string(),
-    input: z.string(),
-    timestamp: z.number(),
-  }),
-  z.object({
-    type: z.literal('toolResult'),
-    toolName: z.string(),
-    timestamp: z.number(),
-  }),
-]);
 
 // Omit does not work below because webappEventSchema is a union type.
 type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;

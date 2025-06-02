@@ -14,6 +14,10 @@
       "types": "./dist/lib/aws/index.d.ts",
       "default": "./dist/lib/aws/index.js"
     },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
     "./tools": {
       "types": "./dist/tools/index.d.ts",
       "default": "./dist/tools/index.js"

@@ -33,13 +33,13 @@ export default function ThemeToggle() {
   const getTooltip = () => {
     switch (theme) {
       case 'light':
-        return 'ライトモード';
+        return 'Light mode';
       case 'dark':
-        return 'ダークモード';
+        return 'Dark mode';
       case 'system':
-        return 'システム設定';
+        return 'System theme';
       default:
-        return 'テーマ切り替え';
+        return 'Toggle theme';
     }
   };
 
@@ -50,6 +50,7 @@ export default function ThemeToggle() {
       onClick={cycleTheme}
       className="w-9 h-9"
       title={getTooltip()}
+      suppressHydrationWarning={true}
     >
       {getIcon()}
     </Button>

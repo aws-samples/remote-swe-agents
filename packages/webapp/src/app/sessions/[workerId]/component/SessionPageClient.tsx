@@ -7,17 +7,7 @@ import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { Message } from './MessageList';
-
-interface AgentEvent {
-  type: 'message' | 'toolResult' | 'toolUse';
-  payload:
-    | {
-        content?: string;
-        message?: string;
-      }
-    | string;
-  timestamp: string;
-}
+import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -32,8 +22,8 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
   useEventBus({
     channelName: `webapp/worker/${workerId}`,
     onReceived: (payload: unknown) => {
-      const event = payload as AgentEvent;
-      console.log('Received event:', event);
+      console.log('Received event:', payload);
+      const event = webappEventSchema.parse(payload);
 
       switch (event.type) {
         case 'message':
@@ -42,7 +32,7 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
             {
               id: Date.now().toString(),
               role: 'assistant',
-              content: typeof event.payload === 'string' ? event.payload : event.payload.content || '',
+              content: event.message,
               timestamp: new Date(event.timestamp),
               type: 'message',
             },
@@ -50,7 +40,31 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
           setIsAgentTyping(false);
           break;
         case 'toolResult':
+          break;
         case 'toolUse':
+          if (event.toolName === 'sendMessageToUser') {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: JSON.parse(event.input).message,
+                timestamp: new Date(event.timestamp),
+                type: 'message',
+              },
+            ]);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: event.toolName,
+                timestamp: new Date(event.timestamp),
+                type: 'toolUse',
+              },
+            ]);
+          }
           setIsAgentTyping(true);
           break;
       }
