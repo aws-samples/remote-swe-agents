@@ -19,7 +19,7 @@ type SessionItem = {
   workerId: string;
   createdAt: number;
   LSI1: string;
-  initialMessage?: string;
+  initialMessage: string;
 };
 
 export const saveConversationHistory = async (
@@ -100,7 +100,7 @@ export const getTokenUsage = async (workerId: string) => {
   return res.Items ?? [];
 };
 
-export const saveSessionInfo = async (workerId: string, initialMessage?: string) => {
+export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
   const now = Date.now();
   const timestamp = String(now).padStart(15, '0');
 
