@@ -46,22 +46,24 @@ export default async function SessionsPage() {
                         </div>
                         {session.instanceStatus && (
                           <div className="flex items-center gap-2">
-                            <span className={`inline-block w-2 h-2 rounded-full ${
-                              session.instanceStatus === 'running' 
-                                ? 'bg-green-500' 
-                                : session.instanceStatus === 'starting' 
-                                  ? 'bg-yellow-500' 
-                                  : session.instanceStatus === 'sleeping' 
-                                    ? 'bg-blue-500' 
-                                    : 'bg-gray-500'
-                            }`} />
+                            <span
+                              className={`inline-block w-2 h-2 rounded-full ${
+                                session.instanceStatus === 'running'
+                                  ? 'bg-green-500'
+                                  : session.instanceStatus === 'starting'
+                                    ? 'bg-yellow-500'
+                                    : session.instanceStatus === 'sleeping'
+                                      ? 'bg-blue-500'
+                                      : 'bg-gray-500'
+                              }`}
+                            />
                             <span>
-                              {session.instanceStatus === 'running' 
-                                ? 'Running' 
-                                : session.instanceStatus === 'starting' 
-                                  ? 'Starting' 
-                                  : session.instanceStatus === 'sleeping' 
-                                    ? 'Sleeping' 
+                              {session.instanceStatus === 'running'
+                                ? 'Running'
+                                : session.instanceStatus === 'starting'
+                                  ? 'Starting'
+                                  : session.instanceStatus === 'sleeping'
+                                    ? 'Sleeping'
                                     : 'Terminated'}
                             </span>
                           </div>

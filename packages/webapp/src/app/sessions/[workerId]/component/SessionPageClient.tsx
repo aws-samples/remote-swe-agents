@@ -103,18 +103,20 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
                 <p className="text-sm text-gray-600 dark:text-gray-300">Chat with AI Agent</p>
                 {instanceStatus && (
                   <div className="flex items-center gap-2 ml-4">
-                    <span className={`inline-block w-2 h-2 rounded-full ${
-                      instanceStatus === 'running' 
-                        ? 'bg-green-500' 
-                        : instanceStatus === 'starting' 
-                          ? 'bg-yellow-500' 
-                          : 'bg-blue-500'
-                    }`} />
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full ${
+                        instanceStatus === 'running'
+                          ? 'bg-green-500'
+                          : instanceStatus === 'starting'
+                            ? 'bg-yellow-500'
+                            : 'bg-blue-500'
+                      }`}
+                    />
                     <span className="text-sm font-medium">
-                      {instanceStatus === 'running' 
-                        ? 'Instance running' 
-                        : instanceStatus === 'starting' 
-                          ? 'Instance starting' 
+                      {instanceStatus === 'running'
+                        ? 'Instance running'
+                        : instanceStatus === 'starting'
+                          ? 'Instance starting'
                           : 'Instance sleeping'}
                     </span>
                   </div>
