@@ -16,7 +16,7 @@ export default function SignInPage() {
             <p className="mb-6 text-center text-sm text-gray-600 dark:text-gray-300">
               Please sign in with your Cognito account to continue
             </p>
-            
+
             {/* use a instead of Link because Link uses fetch to navigate  */}
             <a
               href="/api/auth/sign-in?lang=ja"
