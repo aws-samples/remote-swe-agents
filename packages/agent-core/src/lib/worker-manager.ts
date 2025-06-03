@@ -55,21 +55,22 @@ async function restartWorkerInstance(instanceId: string) {
 
   try {
     await ec2Client.send(startCommand);
-    
+
     // Find worker ID for this instance to update status
     const describeCommand = new DescribeInstancesCommand({
       InstanceIds: [instanceId],
     });
-    
+
     const response = await ec2Client.send(describeCommand);
     if (response.Reservations && response.Reservations.length > 0) {
       const instances = response.Reservations[0].Instances;
       if (instances && instances.length > 0 && instances[0].Tags) {
-        const workerIdTag = instances[0].Tags.find(tag => tag.Key === 'RemoteSweWorkerId');
+        const workerIdTag = instances[0].Tags.find((tag) => tag.Key === 'RemoteSweWorkerId');
         if (workerIdTag && workerIdTag.Value) {
           // Set a timeout to update status to running after a reasonable time
+          const workerValue = workerIdTag.Value;
           setTimeout(async () => {
-            await updateInstanceStatus(workerIdTag.Value, 'running');
+            await updateInstanceStatus(workerValue, 'running');
           }, 60000); // 60 seconds delay
         }
       }
@@ -123,8 +124,9 @@ async function createWorkerInstance(
 # Update instance status to running once instance is fully initialized
 # This will be added to the EC2 user data to signal when instance is ready
 export AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+export TABLE_NAME=${TableName || ''}
 aws dynamodb update-item \\
-  --table-name ${TableName} \\
+  --table-name $TABLE_NAME \\
   --key '{"PK": {"S": "sessions"}, "SK": {"S": "${workerId}"}}' \\
   --update-expression "SET instanceStatus = :status" \\
   --expression-attribute-values '{":status": {"S": "running"}}' \\
@@ -187,7 +189,7 @@ async function updateInstanceStatus(workerId: string, status: 'starting' | 'runn
         },
       })
     );
-    
+
     // Send event to webapp
     await sendWebappEvent(workerId, {
       type: 'instanceStatusChanged',
