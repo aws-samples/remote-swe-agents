@@ -222,7 +222,7 @@ app.event('app_mention', async ({ event, client, logger }) => {
 
       // スレッドの開始時のみ、メッセージを送信し、セッション情報を保存する
       if (event.thread_ts === undefined) {
-        promises.push(saveSessionInfo(workerId));
+        promises.push(saveSessionInfo(workerId, message));
       }
 
       await Promise.all([
