@@ -5,8 +5,10 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
-import { sendMessageToSlack, sendSystemMessage } from '@remote-swe-agents/agent-core/lib';
+import { sendMessageToSlack, sendSystemMessage, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
+import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -93,6 +95,38 @@ class ConverseSessionTracker {
   }
 }
 
+/**
+ * Updates the instance status in DynamoDB and sends a webapp event
+ */
+async function updateInstanceStatus(workerId: string, status: 'running' | 'starting' | 'sleeping') {
+  try {
+    // Update instanceStatus in DynamoDB
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET instanceStatus = :status',
+        ExpressionAttributeValues: {
+          ':status': status,
+        },
+      })
+    );
+
+    // Send event to webapp
+    await sendWebappEvent(workerId, {
+      type: 'instanceStatusChanged',
+      status,
+    });
+
+    console.log(`Instance status updated to ${status}`);
+  } catch (error) {
+    console.error(`Error updating instance status for workerId ${workerId}:`, error);
+  }
+}
+
 const main = async () => {
   const tracker = new ConverseSessionTracker(workerId);
   const broadcast = await events.connect('/event-bus/broadcast');
@@ -118,6 +152,9 @@ const main = async () => {
   setKillTimer();
 
   try {
+    // Update instance status to "running" in DynamoDB
+    await updateInstanceStatus(workerId, 'running');
+
     await sendSystemMessage(workerId, 'the instance has successfully launched!');
     tracker.startResume();
   } catch (e) {

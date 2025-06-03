@@ -54,27 +54,8 @@ async function restartWorkerInstance(instanceId: string) {
   });
 
   try {
+    // Just start the instance - status will be updated by the worker process itself
     await ec2Client.send(startCommand);
-
-    // Find worker ID for this instance to update status
-    const describeCommand = new DescribeInstancesCommand({
-      InstanceIds: [instanceId],
-    });
-
-    const response = await ec2Client.send(describeCommand);
-    if (response.Reservations && response.Reservations.length > 0) {
-      const instances = response.Reservations[0].Instances;
-      if (instances && instances.length > 0 && instances[0].Tags) {
-        const workerIdTag = instances[0].Tags.find((tag) => tag.Key === 'RemoteSweWorkerId');
-        if (workerIdTag && workerIdTag.Value) {
-          // Set a timeout to update status to running after a reasonable time
-          const workerValue = workerIdTag.Value;
-          setTimeout(async () => {
-            await updateInstanceStatus(workerValue, 'running');
-          }, 60000); // 60 seconds delay
-        }
-      }
-    }
   } catch (error) {
     console.error('Error starting stopped instance:', error);
     throw error;
@@ -117,20 +98,12 @@ async function createWorkerInstance(
     MaxCount: 1,
     SubnetId: subnetId,
     // Remove UserData if launching from our AMI, where all the dependencies are already installed.
+    // Note: Instance status will be updated by the worker process itself
     UserData: imageId
       ? Buffer.from(
           `
 #!/bin/bash
-# Update instance status to running once instance is fully initialized
-# This will be added to the EC2 user data to signal when instance is ready
-export AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
-export TABLE_NAME=${TableName || ''}
-aws dynamodb update-item \\
-  --table-name $TABLE_NAME \\
-  --key '{"PK": {"S": "sessions"}, "SK": {"S": "${workerId}"}}' \\
-  --update-expression "SET instanceStatus = :status" \\
-  --expression-attribute-values '{":status": {"S": "running"}}' \\
-  --region $AWS_REGION
+# Basic setup only - status updates handled by worker process
     `.trim()
         ).toString('base64')
       : undefined,
@@ -158,12 +131,7 @@ aws dynamodb update-item \\
   try {
     const response = await ec2Client.send(runInstancesCommand);
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
-      // Set a timeout to update status to running after a reasonable time if UserData fails
-      // This is a fallback mechanism
-      setTimeout(async () => {
-        await updateInstanceStatus(workerId, 'running');
-      }, 60000); // 60 seconds delay
-
+      // Status will be updated by the worker process itself when it starts up
       return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
     }
     throw new Error('Failed to create EC2 instance');
