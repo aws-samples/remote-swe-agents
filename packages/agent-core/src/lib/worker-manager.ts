@@ -29,13 +29,13 @@ export async function updateInstanceStatus(workerId: string, status: 'starting' 
         },
       })
     );
-    
+
     // Send event to webapp
     await sendWebappEvent(workerId, {
       type: 'instanceStatusChanged',
       status,
     });
-    
+
     console.log(`Instance status updated to ${status}`);
   } catch (error) {
     console.error(`Error updating instance status for workerId ${workerId}:`, error);
@@ -172,8 +172,6 @@ async function createWorkerInstance(
     throw error;
   }
 }
-
-
 
 export async function getOrCreateWorkerInstance(
   workerId: string,

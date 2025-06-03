@@ -93,8 +93,6 @@ class ConverseSessionTracker {
   }
 }
 
-
-
 const main = async () => {
   const tracker = new ConverseSessionTracker(workerId);
   const broadcast = await events.connect('/event-bus/broadcast');
