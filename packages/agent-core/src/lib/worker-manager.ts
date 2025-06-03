@@ -10,6 +10,38 @@ const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
 const ec2Client = new EC2Client({});
 const ssmClient = new SSMClient({});
 
+/**
+ * Updates the instance status in DynamoDB and sends a webapp event
+ */
+export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'sleeping') {
+  try {
+    // Update the instanceStatus in DynamoDB
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET instanceStatus = :status',
+        ExpressionAttributeValues: {
+          ':status': status,
+        },
+      })
+    );
+    
+    // Send event to webapp
+    await sendWebappEvent(workerId, {
+      type: 'instanceStatusChanged',
+      status,
+    });
+    
+    console.log(`Instance status updated to ${status}`);
+  } catch (error) {
+    console.error(`Error updating instance status for workerId ${workerId}:`, error);
+  }
+}
+
 async function findStoppedWorkerInstance(workerId: string) {
   return findWorkerInstanceWithStatus(workerId, ['running', 'stopped']);
 }
@@ -141,32 +173,7 @@ async function createWorkerInstance(
   }
 }
 
-async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'sleeping') {
-  try {
-    // Update the instanceStatus in DynamoDB
-    await ddb.send(
-      new UpdateCommand({
-        TableName,
-        Key: {
-          PK: 'sessions',
-          SK: workerId,
-        },
-        UpdateExpression: 'SET instanceStatus = :status',
-        ExpressionAttributeValues: {
-          ':status': status,
-        },
-      })
-    );
 
-    // Send event to webapp
-    await sendWebappEvent(workerId, {
-      type: 'instanceStatusChanged',
-      status,
-    });
-  } catch (error) {
-    console.error(`Error updating instance status for workerId ${workerId}:`, error);
-  }
-}
 
 export async function getOrCreateWorkerInstance(
   workerId: string,
