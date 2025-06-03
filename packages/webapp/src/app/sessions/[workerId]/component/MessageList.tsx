@@ -18,15 +18,18 @@ export type Message = {
 type MessageListProps = {
   messages: Message[];
   isAgentTyping: boolean;
+  instanceStatus?: 'starting' | 'running' | 'sleeping';
 };
 
-export default function MessageList({ messages, isAgentTyping }: MessageListProps) {
+export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
 
-  // Check if there are any assistant messages and the last message was within 10 minutes
+  // Show waiting message when instance is starting or 
+  // when we don't have status info but there are no assistant messages yet
   const showWaitingMessage =
-    !messages.some((msg) => msg.role === 'assistant') &&
-    new Date(messages.at(-1)?.timestamp ?? new Date()).getTime() - Date.now() < 10 * 60 * 1000;
+    instanceStatus === 'starting' || 
+    (!instanceStatus && !messages.some((msg) => msg.role === 'assistant') &&
+    new Date(messages.at(-1)?.timestamp ?? new Date()).getTime() - Date.now() < 10 * 60 * 1000);
   const MarkdownRenderer = ({ content }: { content: string }) => (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}

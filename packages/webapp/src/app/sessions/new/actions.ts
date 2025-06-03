@@ -30,6 +30,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
               initialMessage: message,
               createdAt: now,
               LSI1: String(now).padStart(15, '0'),
+              instanceStatus: 'starting',
             },
           },
         },

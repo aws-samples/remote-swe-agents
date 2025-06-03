@@ -1,5 +1,8 @@
 import { EC2Client, DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
 import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/client-ssm';
+import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { ddb, TableName } from './aws';
+import { sendWebappEvent } from './events';
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
@@ -52,6 +55,25 @@ async function restartWorkerInstance(instanceId: string) {
 
   try {
     await ec2Client.send(startCommand);
+    
+    // Find worker ID for this instance to update status
+    const describeCommand = new DescribeInstancesCommand({
+      InstanceIds: [instanceId],
+    });
+    
+    const response = await ec2Client.send(describeCommand);
+    if (response.Reservations && response.Reservations.length > 0) {
+      const instances = response.Reservations[0].Instances;
+      if (instances && instances.length > 0 && instances[0].Tags) {
+        const workerIdTag = instances[0].Tags.find(tag => tag.Key === 'RemoteSweWorkerId');
+        if (workerIdTag && workerIdTag.Value) {
+          // Set a timeout to update status to running after a reasonable time
+          setTimeout(async () => {
+            await updateInstanceStatus(workerIdTag.Value, 'running');
+          }, 60000); // 60 seconds delay
+        }
+      }
+    }
   } catch (error) {
     console.error('Error starting stopped instance:', error);
     throw error;
@@ -98,6 +120,15 @@ async function createWorkerInstance(
       ? Buffer.from(
           `
 #!/bin/bash
+# Update instance status to running once instance is fully initialized
+# This will be added to the EC2 user data to signal when instance is ready
+export AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+aws dynamodb update-item \\
+  --table-name ${TableName} \\
+  --key '{"PK": {"S": "sessions"}, "SK": {"S": "${workerId}"}}' \\
+  --update-expression "SET instanceStatus = :status" \\
+  --expression-attribute-values '{":status": {"S": "running"}}' \\
+  --region $AWS_REGION
     `.trim()
         ).toString('base64')
       : undefined,
@@ -125,12 +156,45 @@ async function createWorkerInstance(
   try {
     const response = await ec2Client.send(runInstancesCommand);
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
+      // Set a timeout to update status to running after a reasonable time if UserData fails
+      // This is a fallback mechanism
+      setTimeout(async () => {
+        await updateInstanceStatus(workerId, 'running');
+      }, 60000); // 60 seconds delay
+
       return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
     }
     throw new Error('Failed to create EC2 instance');
   } catch (error) {
     console.error('Error creating worker instance:', error);
     throw error;
+  }
+}
+
+async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'sleeping') {
+  try {
+    // Update the instanceStatus in DynamoDB
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET instanceStatus = :status',
+        ExpressionAttributeValues: {
+          ':status': status,
+        },
+      })
+    );
+    
+    // Send event to webapp
+    await sendWebappEvent(workerId, {
+      type: 'instanceStatusChanged',
+      status,
+    });
+  } catch (error) {
+    console.error(`Error updating instance status for workerId ${workerId}:`, error);
   }
 }
 
@@ -142,12 +206,14 @@ export async function getOrCreateWorkerInstance(
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
   if (runningInstanceId) {
+    await updateInstanceStatus(workerId, 'running');
     return { instanceId: runningInstanceId, oldStatus: 'running' };
   }
 
   // Then, check if a stopped instance exists and start it
   const stoppedInstanceId = await findStoppedWorkerInstance(workerId);
   if (stoppedInstanceId) {
+    await updateInstanceStatus(workerId, 'starting');
     await restartWorkerInstance(stoppedInstanceId);
     return { instanceId: stoppedInstanceId, oldStatus: 'stopped' };
   }
@@ -155,6 +221,7 @@ export async function getOrCreateWorkerInstance(
   // choose subnet randomly
   const subnetId = SubnetIdList[Math.floor(Math.random() * SubnetIdList.length)];
   // If no instance exists, create a new one
+  await updateInstanceStatus(workerId, 'starting');
   const { instanceId, usedCache } = await createWorkerInstance(
     workerId,
     slackChannelId,

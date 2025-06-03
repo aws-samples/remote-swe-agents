@@ -24,6 +24,7 @@ export const getSessions = authActionClient.schema(z.object({})).action(async ({
     title: `セッション ${item.workerId}`, // TODO: 最初のメッセージから生成
     lastMessage: '対話を開始してください',
     updatedAt: new Date(item.createdAt).toISOString(),
+    instanceStatus: item.instanceStatus || 'terminated',
   }));
 
   return { sessions };

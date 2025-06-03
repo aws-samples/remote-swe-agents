@@ -17,6 +17,7 @@ interface SessionPageClientProps {
 export default function SessionPageClient({ workerId, initialMessages }: SessionPageClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | undefined>(undefined);
 
   // Real-time communication via event bus
   useEventBus({
@@ -40,6 +41,10 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
             ]);
           }
           setIsAgentTyping(false);
+          break;
+        case 'instanceStatusChanged':
+          console.log('Instance status changed:', event.status);
+          setInstanceStatus(event.status);
           break;
         case 'toolResult':
           break;
@@ -94,12 +99,32 @@ export default function SessionPageClient({ workerId, initialMessages }: Session
             </Link>
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Session: {workerId}</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Chat with AI Agent</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">Chat with AI Agent</p>
+                {instanceStatus && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className={`inline-block w-2 h-2 rounded-full ${
+                      instanceStatus === 'running' 
+                        ? 'bg-green-500' 
+                        : instanceStatus === 'starting' 
+                          ? 'bg-yellow-500' 
+                          : 'bg-blue-500'
+                    }`} />
+                    <span className="text-sm font-medium">
+                      {instanceStatus === 'running' 
+                        ? 'Instance running' 
+                        : instanceStatus === 'starting' 
+                          ? 'Instance starting' 
+                          : 'Instance sleeping'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <MessageList messages={messages} isAgentTyping={isAgentTyping} />
+        <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
       </main>

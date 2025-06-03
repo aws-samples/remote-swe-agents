@@ -39,9 +39,33 @@ export default async function SessionsPage() {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{session.title}</h3>
                       </div>
                       <p className="text-gray-600 dark:text-gray-300 mb-3">{session.lastMessage}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        <Clock className="w-4 h-4" />
-                        {new Date(session.updatedAt).toLocaleString('en-US')}
+                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          {new Date(session.updatedAt).toLocaleString('en-US')}
+                        </div>
+                        {session.instanceStatus && (
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block w-2 h-2 rounded-full ${
+                              session.instanceStatus === 'running' 
+                                ? 'bg-green-500' 
+                                : session.instanceStatus === 'starting' 
+                                  ? 'bg-yellow-500' 
+                                  : session.instanceStatus === 'sleeping' 
+                                    ? 'bg-blue-500' 
+                                    : 'bg-gray-500'
+                            }`} />
+                            <span>
+                              {session.instanceStatus === 'running' 
+                                ? 'Running' 
+                                : session.instanceStatus === 'starting' 
+                                  ? 'Starting' 
+                                  : session.instanceStatus === 'sleeping' 
+                                    ? 'Sleeping' 
+                                    : 'Terminated'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
