@@ -86,7 +86,6 @@ async function restartWorkerInstance(instanceId: string) {
   });
 
   try {
-    // Just start the instance - status will be updated by the worker process itself
     await ec2Client.send(startCommand);
   } catch (error) {
     console.error('Error starting stopped instance:', error);
@@ -130,12 +129,10 @@ async function createWorkerInstance(
     MaxCount: 1,
     SubnetId: subnetId,
     // Remove UserData if launching from our AMI, where all the dependencies are already installed.
-    // Note: Instance status will be updated by the worker process itself
     UserData: imageId
       ? Buffer.from(
           `
 #!/bin/bash
-# Basic setup only - status updates handled by worker process
     `.trim()
         ).toString('base64')
       : undefined,
@@ -163,7 +160,6 @@ async function createWorkerInstance(
   try {
     const response = await ec2Client.send(runInstancesCommand);
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
-      // Status will be updated by the worker process itself when it starts up
       return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
     }
     throw new Error('Failed to create EC2 instance');
@@ -181,7 +177,6 @@ export async function getOrCreateWorkerInstance(
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
   if (runningInstanceId) {
-    await updateInstanceStatus(workerId, 'running');
     return { instanceId: runningInstanceId, oldStatus: 'running' };
   }
 
