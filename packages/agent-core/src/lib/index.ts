@@ -6,3 +6,4 @@ export * from './converse';
 export * from './sessions';
 export * from './worker-manager';
 export * from './events';
+export * from './cost';

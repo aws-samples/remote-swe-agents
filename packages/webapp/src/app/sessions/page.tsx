@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock } from 'lucide-react';
+import { Plus, MessageSquare, Clock, DollarSign } from 'lucide-react';
 import { getSessions } from '@remote-swe-agents/agent-core/lib';
 
 export default async function SessionsPage() {
@@ -39,30 +39,32 @@ export default async function SessionsPage() {
                           <Clock className="w-4 h-4" />
                           {new Date(session.createdAt).toLocaleString('en-US')}
                         </div>
-                        {session.instanceStatus && (
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`inline-block w-2 h-2 rounded-full ${
-                                session.instanceStatus === 'running'
-                                  ? 'bg-green-500'
-                                  : session.instanceStatus === 'starting'
-                                    ? 'bg-yellow-500'
-                                    : session.instanceStatus === 'sleeping'
-                                      ? 'bg-blue-500'
-                                      : 'bg-gray-500'
-                              }`}
-                            />
-                            <span>
-                              {session.instanceStatus === 'running'
-                                ? 'Running'
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full ${
+                              session.instanceStatus === 'running'
+                                ? 'bg-green-500'
                                 : session.instanceStatus === 'starting'
-                                  ? 'Starting'
-                                  : session.instanceStatus === 'sleeping'
-                                    ? 'Sleeping'
-                                    : 'Terminated'}
-                            </span>
-                          </div>
-                        )}
+                                  ? 'bg-yellow-500'
+                                  : session.instanceStatus === 'stopped'
+                                    ? 'bg-blue-500'
+                                    : 'bg-gray-500'
+                            }`}
+                          />
+                          <span>
+                            {session.instanceStatus === 'running'
+                              ? 'Running'
+                              : session.instanceStatus === 'starting'
+                                ? 'Starting'
+                                : session.instanceStatus === 'stopped'
+                                  ? 'Stopped'
+                                  : 'Terminated'}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4" />
+                          <span>{(session.sessionCost ?? 0).toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

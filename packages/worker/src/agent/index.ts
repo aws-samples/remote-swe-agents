@@ -14,6 +14,7 @@ import {
   readMetadata,
   renderToolResult,
   sendSystemMessage,
+  updateSessionCost,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -255,6 +256,9 @@ Users will primarily request software engineering assistance including bug fixes
 
     console.log(JSON.stringify(res.usage));
     const outputTokenCount = res.usage?.outputTokens ?? 0;
+
+    // Update session cost in DynamoDB with token usage from DynamoDB
+    await updateSessionCost(workerId);
 
     if (res.stopReason == 'tool_use') {
       if (res.output?.message == null) {

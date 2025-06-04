@@ -4,6 +4,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { z } from 'zod';
 import { ToolDefinition, truncate, zodToJsonSchemaBody } from '../../private/common/lib';
+import { generateSuggestion } from './suggestion';
 
 const inputSchema = z.object({
   command: z.string().describe('The command to execute.'),
@@ -23,99 +24,109 @@ export const executeCommand = async (command: string, cwd?: string, timeout = 60
   const token = await authorizeGitHubCli();
   cwd = cwd ?? DefaultWorkingDirectory;
 
-  return new Promise<{ stdout: string; stderr: string; error?: string; exitCode?: number; isLongRunning?: boolean }>(
-    (resolve) => {
-      console.log(`Executing command: ${command} in ${cwd}`);
-      const childProcess = spawn(command, [], {
-        cwd,
-        shell: true,
-        env: {
-          ...process.env,
-          GITHUB_TOKEN: token,
-        },
-      });
+  return new Promise<{
+    stdout: string;
+    stderr: string;
+    error?: string;
+    exitCode?: number;
+    suggestion?: string;
+    isLongRunning?: boolean;
+  }>((resolve) => {
+    console.log(`Executing command: ${command} in ${cwd}`);
+    const childProcess = spawn(command, [], {
+      cwd,
+      shell: true,
+      env: {
+        ...process.env,
+        GITHUB_TOKEN: token,
+      },
+    });
 
-      let stdout = '';
-      let stderr = '';
-      let timer: NodeJS.Timeout;
-      let longRunningTimer: NodeJS.Timeout | undefined;
-      let hasExited = false;
+    let stdout = '';
+    let stderr = '';
+    let timer: NodeJS.Timeout;
+    let longRunningTimer: NodeJS.Timeout | undefined;
+    let hasExited = false;
 
-      const resetTimer = () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          // Only kill the process if it's not a long-running one
-          if (!longRunningProcess) {
-            childProcess.kill();
-            resolve({
-              error: `Command execution timed out after ${Math.round(timeout / 1000)} seconds of inactivity`,
-              stdout: truncate(stdout, 40e3),
-              stderr: truncate(stderr),
-            });
-          }
-        }, timeout);
-      };
-
-      resetTimer();
-
-      // For long-running processes, we wait for 10 seconds and then return control to the agent
-      if (longRunningProcess) {
-        longRunningTimer = setTimeout(() => {
-          if (!hasExited) {
-            console.log(`Returning control to agent after 10 seconds for long-running process: ${command}`);
-            resolve({
-              stdout: truncate(stdout, 40e3),
-              stderr: truncate(stderr),
-              isLongRunning: true,
-            });
-          }
-        }, 10000); // 10 seconds
-      }
-
-      childProcess.on('error', (error) => {
-        clearTimeout(timer);
-        if (longRunningTimer) clearTimeout(longRunningTimer);
-        hasExited = true;
-        resolve({
-          error: `Failed to interact with the process: ${error.message}`,
-          stdout: truncate(stdout, 40e3),
-          stderr: truncate(stderr),
-        });
-      });
-
-      childProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
-        resetTimer();
-      });
-
-      childProcess.stderr.on('data', (data) => {
-        stderr += data.toString();
-        resetTimer();
-      });
-
-      childProcess.on('close', (code) => {
-        clearTimeout(timer);
-        if (longRunningTimer) clearTimeout(longRunningTimer);
-        hasExited = true;
-
-        // If the process exits within the 10 seconds window for long-running processes,
-        // we should report that instead of leaving it running
-        if (code === 0) {
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        // Only kill the process if it's not a long-running one
+        if (!longRunningProcess) {
+          childProcess.kill();
           resolve({
+            error: `Command execution timed out after ${Math.round(timeout / 1000)} seconds of inactivity`,
             stdout: truncate(stdout, 40e3),
             stderr: truncate(stderr),
-          });
-        } else {
-          resolve({
-            error: `Command failed with exit code ${code}`,
-            exitCode: code!,
-            stdout: truncate(stdout, 40e3),
-            stderr: truncate(stderr),
+            suggestion: generateSuggestion(command, false),
           });
         }
-      });
+      }, timeout);
+    };
+
+    resetTimer();
+
+    // For long-running processes, we wait for 10 seconds and then return control to the agent
+    if (longRunningProcess) {
+      longRunningTimer = setTimeout(() => {
+        if (!hasExited) {
+          console.log(`Returning control to agent after 10 seconds for long-running process: ${command}`);
+          resolve({
+            stdout: truncate(stdout, 40e3),
+            stderr: truncate(stderr),
+            isLongRunning: true,
+            suggestion: generateSuggestion(command, true),
+          });
+        }
+      }, 10000); // 10 seconds
     }
-  );
+
+    childProcess.on('error', (error) => {
+      clearTimeout(timer);
+      if (longRunningTimer) clearTimeout(longRunningTimer);
+      hasExited = true;
+      resolve({
+        error: `Failed to interact with the process: ${error.message}`,
+        stdout: truncate(stdout, 40e3),
+        stderr: truncate(stderr),
+        suggestion: generateSuggestion(command, false),
+      });
+    });
+
+    childProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      resetTimer();
+    });
+
+    childProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      resetTimer();
+    });
+
+    childProcess.on('close', (code) => {
+      clearTimeout(timer);
+      if (longRunningTimer) clearTimeout(longRunningTimer);
+      hasExited = true;
+
+      // If the process exits within the 10 seconds window for long-running processes,
+      // we should report that instead of leaving it running
+      if (code === 0) {
+        resolve({
+          stdout: truncate(stdout, 40e3),
+          stderr: truncate(stderr),
+          suggestion: generateSuggestion(command, true),
+        });
+      } else {
+        resolve({
+          error: `Command failed with exit code ${code}`,
+          exitCode: code!,
+          stdout: truncate(stdout, 40e3),
+          stderr: truncate(stderr),
+          suggestion: generateSuggestion(command, false),
+        });
+      }
+    });
+  });
 };
 
 const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean }) => {
