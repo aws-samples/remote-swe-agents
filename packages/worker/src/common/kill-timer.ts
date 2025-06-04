@@ -1,4 +1,4 @@
-import { sendSystemMessage } from '@remote-swe-agents/agent-core/lib';
+import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
 import { stopMyself } from '@remote-swe-agents/agent-core/aws';
 import { randomBytes } from 'crypto';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
@@ -30,6 +30,8 @@ export const setKillTimer = () => {
   killTimer = setTimeout(
     async () => {
       await sendSystemMessage(WorkerId, 'Going to sleep mode. You can wake me up at any time.');
+      // Update instance status to stopped in DynamoDB before stopping the instance
+      await updateInstanceStatus(WorkerId, 'stopped');
       await stopMyself();
     },
     30 * 60 * 1000
