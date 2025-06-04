@@ -2,7 +2,7 @@ import { getSession } from '@/lib/auth';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock } from 'lucide-react';
+import { Plus, MessageSquare, Clock, DollarSign } from 'lucide-react';
 import { getSessions } from '@/app/(root)/actions';
 
 export default async function SessionsPage() {
@@ -65,6 +65,16 @@ export default async function SessionsPage() {
                                   : session.instanceStatus === 'stopped'
                                     ? 'Stopped'
                                     : 'Terminated'}
+                            </span>
+                          </div>
+                        )}
+                        {session.sessionCost !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" />
+                            <span>
+                              {typeof session.sessionCost === 'number'
+                                ? `${session.sessionCost.toFixed(2)}`
+                                : `${Number(session.sessionCost).toFixed(2)}`}
                             </span>
                           </div>
                         )}
