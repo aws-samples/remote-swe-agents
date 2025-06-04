@@ -42,10 +42,6 @@ export async function updateInstanceStatus(workerId: string, status: 'starting' 
   }
 }
 
-/**
- * Updates the session cost in DynamoDB
- */
-
 async function findStoppedWorkerInstance(workerId: string) {
   return findWorkerInstanceWithStatus(workerId, ['running', 'stopped']);
 }
