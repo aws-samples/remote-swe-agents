@@ -17,7 +17,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
   const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
 
   // Get session info including instance status
-  const sessionResult = await getSession({ workerId }) as { session: SessionInfo };
+  const sessionResult = (await getSession({ workerId })) as { session: SessionInfo };
   const session = sessionResult.session;
 
   const messages: Message[] = filteredMessages.flatMap<Message>((message, i) => {
