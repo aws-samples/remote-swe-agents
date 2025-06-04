@@ -46,11 +46,18 @@ export async function updateInstanceStatus(workerId: string, status: 'starting' 
 /**
  * Updates the session cost in DynamoDB
  */
-export async function updateSessionCost(workerId: string, modelId: string, inputTokens: number, outputTokens: number, cacheReadTokens: number, cacheWriteTokens: number) {
+export async function updateSessionCost(
+  workerId: string,
+  modelId: string,
+  inputTokens: number,
+  outputTokens: number,
+  cacheReadTokens: number,
+  cacheWriteTokens: number
+) {
   try {
     // Calculate cost in USD
     const cost = calculateCost(modelId, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens);
-    
+
     // Update the cost in DynamoDB
     await ddb.send(
       new UpdateCommand({

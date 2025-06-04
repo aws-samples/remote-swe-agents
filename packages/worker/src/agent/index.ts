@@ -259,9 +259,16 @@ Users will primarily request software engineering assistance including bug fixes
     const inputTokenCount = res.usage?.inputTokens ?? 0;
     const cacheReadTokenCount = res.usage?.cacheReadInputTokens ?? 0;
     const cacheWriteTokenCount = res.usage?.cacheWriteInputTokens ?? 0;
-    
+
     // Update session cost in DynamoDB
-    await updateSessionCost(workerId, 'sonnet3.7', inputTokenCount, outputTokenCount, cacheReadTokenCount, cacheWriteTokenCount);
+    await updateSessionCost(
+      workerId,
+      'sonnet3.7',
+      inputTokenCount,
+      outputTokenCount,
+      cacheReadTokenCount,
+      cacheWriteTokenCount
+    );
 
     if (res.stopReason == 'tool_use') {
       if (res.output?.message == null) {
