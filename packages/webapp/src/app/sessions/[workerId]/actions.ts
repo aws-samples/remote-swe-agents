@@ -57,33 +57,39 @@ export type SessionInfo = {
   createdAt?: number;
 };
 
-export const getSession = authActionClient.schema(getSessionSchema).action(async ({ parsedInput }) => {
-  const { workerId } = parsedInput;
+export type GetSessionResult = {
+  session: SessionInfo;
+};
 
-  try {
-    const result = await ddb.send(
-      new GetCommand({
-        TableName,
-        Key: {
-          PK: 'sessions',
-          SK: workerId,
-        },
-      })
-    );
+export const getSession = authActionClient
+  .schema(getSessionSchema)
+  .action(async ({ parsedInput }): Promise<GetSessionResult> => {
+    const { workerId } = parsedInput;
 
-    if (!result.Item) {
+    try {
+      const result = await ddb.send(
+        new GetCommand({
+          TableName,
+          Key: {
+            PK: 'sessions',
+            SK: workerId,
+          },
+        })
+      );
+
+      if (!result.Item) {
+        return { session: { workerId } as SessionInfo };
+      }
+
+      return {
+        session: {
+          workerId: result.Item.workerId,
+          instanceStatus: result.Item.instanceStatus || 'terminated',
+          createdAt: result.Item.createdAt,
+        } as SessionInfo,
+      };
+    } catch (error) {
+      console.error('Error fetching session:', error);
       return { session: { workerId } as SessionInfo };
     }
-
-    return {
-      session: {
-        workerId: result.Item.workerId,
-        instanceStatus: result.Item.instanceStatus || 'terminated',
-        createdAt: result.Item.createdAt,
-      } as SessionInfo,
-    };
-  } catch (error) {
-    console.error('Error fetching session:', error);
-    return { session: { workerId } as SessionInfo };
-  }
-});
+  });
