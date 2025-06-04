@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { getCookie, setCookie } from 'cookies-next';
+import { useState } from 'react';
+import { useRouter, usePathname } from '@/i18n/navigation';
+import { locales } from '@/i18n/config';
 
 type Language = 'en' | 'ja';
 
@@ -19,20 +19,13 @@ const translations = {
 
 export default function LanguageSwitcher() {
   const router = useRouter();
+  const pathname = usePathname();
   const [language, setLanguage] = useState<Language>('en');
-
-  useEffect(() => {
-    const savedLang = getCookie('language') as Language;
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value as Language;
     setLanguage(newLanguage);
-    setCookie('language', newLanguage, { maxAge: 60 * 60 * 24 * 365 }); // 1 year
-    router.refresh();
+    router.replace(pathname, { locale: newLanguage });
   };
 
   return (
