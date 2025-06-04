@@ -1,16 +1,11 @@
-import { getSession } from '@/lib/auth';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Clock } from 'lucide-react';
-import { getSessions } from '@/app/(root)/actions';
+import { getSessions } from '@remote-swe-agents/agent-core/lib';
 
 export default async function SessionsPage() {
-  const { userId } = await getSession();
-
-  // セッション一覧を取得
-  const result = await getSessions({});
-  const sessions = result?.data?.sessions || [];
+  const sessions = await getSessions();
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -36,13 +31,13 @@ export default async function SessionsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{session.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{session.SK}</h3>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-300 mb-3">{session.lastMessage}</p>
+                      <p className="text-gray-600 dark:text-gray-300 mb-3">{session.initialMessage}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          {new Date(session.updatedAt).toLocaleString('en-US')}
+                          {new Date(session.createdAt).toLocaleString('en-US')}
                         </div>
                         {session.instanceStatus && (
                           <div className="flex items-center gap-2">

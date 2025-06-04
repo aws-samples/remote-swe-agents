@@ -3,19 +3,19 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import Cookies from 'js-cookie';
+import { setUserLocale } from '@/i18n/db';
 
 export default function LanguageSwitcher() {
   const [isPending, startTransition] = useTransition();
   const locale = useLocale();
   const router = useRouter();
 
-  function changeLocale(newLocale: string) {
+  async function changeLocale(newLocale: string) {
     // Store the preference in a cookie
-    Cookies.set('NEXT_LOCALE', newLocale, { expires: 365 });
-
+    
     // Refresh the page to get the new messages
     startTransition(() => {
+      setUserLocale(newLocale);
       router.refresh();
     });
   }

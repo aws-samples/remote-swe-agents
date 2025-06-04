@@ -4,27 +4,10 @@ import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
-import { cookies } from 'next/headers';
-import { locales, Locale } from '@/i18n/config';
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Get the locale from the request
-  let locale = await getLocale();
-
-  // Try to get locale from cookie if available
-  try {
-    const cookieStore = await cookies();
-    const localeCookie = cookieStore.get('NEXT_LOCALE');
-    if (localeCookie?.value && locales.includes(localeCookie.value as Locale)) {
-      locale = localeCookie.value;
-    }
-  } catch (e) {
-    // If cookies() fails, fall back to the locale from getLocale()
-    console.error('Error reading locale cookie:', e);
-  }
-
-  // Load messages
-  const messages = await getMessages();
+  const locale = await getLocale();
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -32,7 +15,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <title>Remote SWE Agents</title>
       </head>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
             <Toaster position="top-right" />
