@@ -1,29 +1,3 @@
-diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignInSignUpRequest.js b/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignInSignUpRequest.js
-index 3734a1f..241bc52 100644
---- a/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignInSignUpRequest.js
-+++ b/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignInSignUpRequest.js
-@@ -20,7 +20,7 @@ const handleSignInSignUpRequest = ({ request, userPoolClientId, oAuthConfig, cus
-         ? (0, utils_1.createAuthorizeEndpoint)(oAuthConfig.domain, redirectUrlSearchParams)
-         : (0, utils_1.createSignUpEndpoint)(oAuthConfig.domain, redirectUrlSearchParams));
-     (0, utils_1.appendSetCookieHeaders)(headers, (0, utils_1.createSignInFlowProofCookies)({ state, pkce: codeVerifier.value }), (0, utils_1.createAuthFlowProofCookiesSetOptions)(setCookieOptions, origin));
--    return new Response(null, {
-+    return new Response("ok", {
-         status: 302,
-         headers,
-     });
-diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignOutRequest.js b/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignOutRequest.js
-index 9143d01..7d4a1a7 100644
---- a/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignOutRequest.js
-+++ b/node_modules/@aws-amplify/adapter-nextjs/dist/cjs/auth/handlers/handleSignOutRequest.js
-@@ -13,7 +13,7 @@ const handleSignOutRequest = ({ oAuthConfig, userPoolClientId, origin, setCookie
-     const headers = new Headers();
-     headers.set('Location', (0, utils_1.createLogoutEndpoint)(oAuthConfig.domain, urlSearchParams));
-     (0, utils_1.appendSetCookieHeaders)(headers, (0, utils_1.createSignOutFlowProofCookies)(), (0, utils_1.createAuthFlowProofCookiesSetOptions)(setCookieOptions, origin));
--    return new Response(null, {
-+    return new Response("ok", {
-         status: 302,
-         headers,
-     });
 diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs
 index 6ccb4b8..7828a45 100644
 --- a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs
