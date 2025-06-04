@@ -10,6 +10,8 @@ export default getRequestConfig(async ({ locale: defaultLocale }) => {
   const locale = (localeCookie?.value as Locale) || defaultLocale;
 
   return {
+    locale,
     messages: (await import(`../messages/${locale}.json`)).default,
+    timeZone: 'Asia/Tokyo',
   };
 });
