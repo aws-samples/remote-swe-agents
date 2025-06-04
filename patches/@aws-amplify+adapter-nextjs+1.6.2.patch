@@ -1,0 +1,39 @@
+diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs
+index 6ccb4b8..7828a45 100644
+--- a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs
++++ b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInCallbackRequest.mjs
+@@ -22,7 +22,7 @@ const handleSignInCallbackRequest = async ({ request, handlerInput, userPoolClie
+             error,
+             errorDescription,
+         });
+-        return new Response(null, {
++        return new Response("ok", {
+             status: 302,
+             headers: new Headers({
+                 location: `${getRedirectOrDefault(handlerInput.redirectOnSignOutComplete)}?${searchParamsString}`,
+diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInSignUpRequest.mjs b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInSignUpRequest.mjs
+index 3634acf..985f49d 100644
+--- a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInSignUpRequest.mjs
++++ b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignInSignUpRequest.mjs
+@@ -24,7 +24,7 @@ const handleSignInSignUpRequest = ({ request, userPoolClientId, oAuthConfig, cus
+         ? createAuthorizeEndpoint(oAuthConfig.domain, redirectUrlSearchParams)
+         : createSignUpEndpoint(oAuthConfig.domain, redirectUrlSearchParams));
+     appendSetCookieHeaders(headers, createSignInFlowProofCookies({ state, pkce: codeVerifier.value }), createAuthFlowProofCookiesSetOptions(setCookieOptions, origin));
+-    return new Response(null, {
++    return new Response("ok", {
+         status: 302,
+         headers,
+     });
+diff --git a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignOutRequest.mjs b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignOutRequest.mjs
+index 0238bb4..cc53f9a 100644
+--- a/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignOutRequest.mjs
++++ b/node_modules/@aws-amplify/adapter-nextjs/dist/esm/auth/handlers/handleSignOutRequest.mjs
+@@ -16,7 +16,7 @@ const handleSignOutRequest = ({ oAuthConfig, userPoolClientId, origin, setCookie
+     const headers = new Headers();
+     headers.set('Location', createLogoutEndpoint(oAuthConfig.domain, urlSearchParams));
+     appendSetCookieHeaders(headers, createSignOutFlowProofCookies(), createAuthFlowProofCookiesSetOptions(setCookieOptions, origin));
+-    return new Response(null, {
++    return new Response("ok", {
+         status: 302,
+         headers,
+     });
