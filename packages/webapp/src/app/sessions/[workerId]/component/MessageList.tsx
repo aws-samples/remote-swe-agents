@@ -24,13 +24,7 @@ type MessageListProps = {
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
 
-  // Show waiting message when instance is starting or
-  // when we don't have status info but there are no assistant messages yet
-  const showWaitingMessage =
-    instanceStatus === 'starting' ||
-    (!instanceStatus &&
-      !messages.some((msg) => msg.role === 'assistant') &&
-      new Date(messages.at(-1)?.timestamp ?? new Date()).getTime() - Date.now() < 10 * 60 * 1000);
+  const showWaitingMessage = instanceStatus === 'starting';
   const MarkdownRenderer = ({ content }: { content: string }) => (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -87,9 +81,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {showWaitingMessage && (
-          <div className="text-center py-12 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="text-center py-4 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-2">Instance Starting</h3>
             <p className="text-yellow-700 dark:text-yellow-300">
               The AI agent is starting up. This may take up to 2 minutes. Please wait...
             </p>
