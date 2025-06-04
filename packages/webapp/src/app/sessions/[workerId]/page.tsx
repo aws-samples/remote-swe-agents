@@ -1,6 +1,7 @@
 import { getConversationHistory, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { Message } from './component/MessageList';
+import { getSession, SessionInfo } from './actions';
 
 interface SessionPageProps {
   params: Promise<{
@@ -14,8 +15,10 @@ export default async function SessionPage({ params }: SessionPageProps) {
   // Load conversation history from DynamoDB
   const { items: historyItems } = await getConversationHistory(workerId);
   const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
-  console.log(historyItems);
-  console.log(filteredMessages);
+  
+  // Get session info including instance status
+  const { session } = await getSession({ workerId });
+
   const messages: Message[] = filteredMessages.flatMap<Message>((message, i) => {
     const item = filteredItems[i];
     switch (item.messageType) {
@@ -90,5 +93,9 @@ export default async function SessionPage({ params }: SessionPageProps) {
     return [];
   });
 
-  return <SessionPageClient workerId={workerId} initialMessages={messages} />;
+  return <SessionPageClient 
+    workerId={workerId} 
+    initialMessages={messages} 
+    initialInstanceStatus={session.instanceStatus}
+  />;
 }

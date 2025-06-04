@@ -2,10 +2,11 @@
 
 import { sendMessageToAgentSchema } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
-import { PutCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
+import { z } from 'zod';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
@@ -45,3 +46,44 @@ export const sendMessageToAgent = authActionClient
 
     return { success: true, item };
   });
+
+export const getSessionSchema = z.object({
+  workerId: z.string(),
+});
+
+export type SessionInfo = {
+  workerId: string;
+  instanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
+  createdAt?: number;
+};
+
+export const getSession = authActionClient.schema(getSessionSchema).action(async ({ parsedInput }) => {
+  const { workerId } = parsedInput;
+
+  try {
+    const result = await ddb.send(
+      new GetCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+      })
+    );
+
+    if (!result.Item) {
+      return { session: { workerId } as SessionInfo };
+    }
+
+    return {
+      session: {
+        workerId: result.Item.workerId,
+        instanceStatus: result.Item.instanceStatus || 'terminated',
+        createdAt: result.Item.createdAt,
+      } as SessionInfo,
+    };
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    return { session: { workerId } as SessionInfo };
+  }
+});
