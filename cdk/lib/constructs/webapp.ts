@@ -12,10 +12,11 @@ import { Auth } from './auth/';
 import { ContainerImageBuild } from 'deploy-time-build';
 import { join } from 'path';
 import { AsyncJob } from './async-job';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { Storage } from './storage';
 import { WorkerBus } from './worker/bus';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
 export interface WebappProps {
   storage: Storage;
@@ -26,7 +27,7 @@ export interface WebappProps {
   launchTemplateId: string;
   subnetIdListForWorkers: string;
   workerBus: WorkerBus;
-  workerAmiIdParameterName: string;
+  workerAmiIdParameter: IStringParameter;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -70,7 +71,7 @@ export class Webapp extends Construct {
         USER_POOL_CLIENT_ID: auth.client.userPoolClientId,
         ASYNC_JOB_HANDLER_ARN: asyncJob.handler.functionArn,
         WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
-        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameterName,
+        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameter.parameterName,
         SUBNET_ID_LIST: props.subnetIdListForWorkers,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: storage.table.tableName,
@@ -79,8 +80,25 @@ export class Webapp extends Construct {
       memorySize: 512,
       architecture: Architecture.ARM_64,
     });
+    props.workerAmiIdParameter.grantRead(handler);
     asyncJob.handler.grantInvoke(handler);
     storage.table.grantReadWriteData(handler);
+    storage.bucket.grantReadWrite(handler);
+    workerBus.api.grantPublish(handler);
+
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          // required to run instances from launch template
+          'ec2:RunInstances',
+          'ec2:DescribeInstances',
+          'iam:PassRole',
+          'ec2:CreateTags',
+          'ec2:StartInstances',
+        ],
+        resources: ['*'],
+      })
+    );
 
     const service = new CloudFrontLambdaFunctionUrlService(this, 'Resource', {
       subDomain,

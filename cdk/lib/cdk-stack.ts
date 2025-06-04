@@ -55,6 +55,11 @@ export class MainStack extends cdk.Stack {
       forceDynamicReference: true,
     });
 
+    const workerAmiIdParameter = StringParameter.fromStringParameterAttributes(this, 'WorkerAmiId', {
+      parameterName: props.workerAmiIdParameterName,
+      forceDynamicReference: true,
+    });
+
     const hostedZone = props.domainName
       ? HostedZone.fromLookup(this, 'HostedZone', {
           domainName: props.domainName,
@@ -110,7 +115,7 @@ export class MainStack extends cdk.Stack {
           }),
       loadBalancing: props.loadBalancing,
       accessLogBucket,
-      amiIdParameterName: props.workerAmiIdParameterName,
+      amiIdParameterName: workerAmiIdParameter.parameterName,
     });
 
     new SlackBolt(this, 'SlackBolt', {
@@ -122,7 +127,7 @@ export class MainStack extends cdk.Stack {
       storage,
       adminUserIdList: props.slack.adminUserIdList,
       workerLogGroupName: worker.logGroup.logGroupName,
-      workerAmiIdParameterName: props.workerAmiIdParameterName,
+      workerAmiIdParameter,
     });
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {
@@ -150,7 +155,7 @@ export class MainStack extends cdk.Stack {
       subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
       workerBus: worker.bus,
       asyncJob,
-      workerAmiIdParameterName: props.workerAmiIdParameterName,
+      workerAmiIdParameter,
     });
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {

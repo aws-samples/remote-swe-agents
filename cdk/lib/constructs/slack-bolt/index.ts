@@ -21,7 +21,7 @@ export interface SlackBoltProps {
   storage: Storage;
   adminUserIdList?: string;
   workerLogGroupName: string;
-  workerAmiIdParameterName: string;
+  workerAmiIdParameter: IStringParameter;
 }
 
 export class SlackBolt extends Construct {
@@ -41,7 +41,7 @@ export class SlackBolt extends Construct {
       timeout: Duration.minutes(10),
       environment: {
         WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
-        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameterName,
+        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameter.parameterName,
         SUBNET_ID_LIST: props.subnetIdListForWorkers,
         BOT_TOKEN: botTokenParameter.stringValue,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
@@ -50,15 +50,10 @@ export class SlackBolt extends Construct {
       },
       architecture: Architecture.X86_64,
     });
+    props.workerAmiIdParameter.grantRead(asyncHandler);
     props.storage.table.grantReadWriteData(asyncHandler);
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
-
-    const workerAmiId = StringParameter.fromStringParameterAttributes(this, 'WorkerAmiId', {
-      parameterName: props.workerAmiIdParameterName,
-      forceDynamicReference: true,
-    });
-    workerAmiId.grantRead(asyncHandler);
 
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {

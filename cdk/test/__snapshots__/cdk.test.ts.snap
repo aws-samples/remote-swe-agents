@@ -2105,6 +2105,16 @@ exports.handler = async function (event, context) {
           "Statement": [
             {
               "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+            },
+            {
+              "Action": [
                 "dynamodb:BatchGetItem",
                 "dynamodb:BatchWriteItem",
                 "dynamodb:ConditionCheckItem",
@@ -2197,16 +2207,6 @@ exports.handler = async function (event, context) {
                   ],
                 ],
               },
-            },
-            {
-              "Action": [
-                "ssm:DescribeParameters",
-                "ssm:GetParameter",
-                "ssm:GetParameterHistory",
-                "ssm:GetParameters",
-              ],
-              "Effect": "Allow",
-              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
             },
             {
               "Action": [
@@ -3338,6 +3338,29 @@ exports.handler = async function (event, context) {
         "PolicyDocument": {
           "Statement": [
             {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "WebappOriginSourceParameterD87E143B",
+                      },
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
               "Action": "lambda:InvokeFunction",
               "Effect": "Allow",
               "Resource": [
@@ -3404,23 +3427,70 @@ exports.handler = async function (event, context) {
             },
             {
               "Action": [
-                "ssm:DescribeParameters",
-                "ssm:GetParameter",
-                "ssm:GetParameterHistory",
-                "ssm:GetParameters",
+                "s3:Abort*",
+                "s3:DeleteObject*",
+                "s3:GetBucket*",
+                "s3:GetObject*",
+                "s3:List*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
               ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageImageBucket99BA9550",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "appsync:EventPublish",
               "Effect": "Allow",
               "Resource": {
                 "Fn::Join": [
                   "",
                   [
-                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
                     {
-                      "Ref": "WebappOriginSourceParameterD87E143B",
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
                     },
+                    "/channelNamespace/*",
                   ],
                 ],
               },
+            },
+            {
+              "Action": [
+                "ec2:CreateTags",
+                "ec2:DescribeInstances",
+                "ec2:RunInstances",
+                "ec2:StartInstances",
+                "iam:PassRole",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
             },
           ],
           "Version": "2012-10-17",
