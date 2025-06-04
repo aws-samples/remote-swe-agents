@@ -15,10 +15,16 @@ interface SessionPageClientProps {
   initialInstanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
 }
 
-export default function SessionPageClient({ workerId, initialMessages, initialInstanceStatus }: SessionPageClientProps) {
+export default function SessionPageClient({
+  workerId,
+  initialMessages,
+  initialInstanceStatus,
+}: SessionPageClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
-  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | undefined>(initialInstanceStatus);
+  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | undefined>(
+    initialInstanceStatus
+  );
 
   // Real-time communication via event bus
   useEventBus({

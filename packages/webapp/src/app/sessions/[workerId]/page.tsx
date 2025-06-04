@@ -15,7 +15,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
   // Load conversation history from DynamoDB
   const { items: historyItems } = await getConversationHistory(workerId);
   const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
-  
+
   // Get session info including instance status
   const { session } = await getSession({ workerId });
 
@@ -93,9 +93,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
     return [];
   });
 
-  return <SessionPageClient 
-    workerId={workerId} 
-    initialMessages={messages} 
-    initialInstanceStatus={session.instanceStatus}
-  />;
+  return (
+    <SessionPageClient workerId={workerId} initialMessages={messages} initialInstanceStatus={session.instanceStatus} />
+  );
 }
