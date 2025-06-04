@@ -15,12 +15,10 @@ const intlMiddleware = createIntlMiddleware({
 export async function middleware(request: NextRequest) {
   // First, handle internationalization
   const intlResponse = intlMiddleware(request);
-  
+
   // Extract the response to work with it
-  const response = (intlResponse instanceof Response) 
-    ? intlResponse
-    : NextResponse.next();
-  
+  const response = intlResponse instanceof Response ? intlResponse : NextResponse.next();
+
   // For auth-protected routes, check authentication
   if (!shouldSkipAuth(request.nextUrl.pathname)) {
     const authenticated = await runWithAmplifyServerContext({
@@ -35,18 +33,16 @@ export async function middleware(request: NextRequest) {
         }
       },
     });
-  
+
     if (!authenticated) {
       // Handle locale in the redirect URL
       const locale = request.nextUrl.pathname.split('/')[1];
-      const signInUrl = isValidLocale(locale) 
-        ? `/${locale}/sign-in` 
-        : '/sign-in';
-      
+      const signInUrl = isValidLocale(locale) ? `/${locale}/sign-in` : '/sign-in';
+
       return NextResponse.redirect(new URL(signInUrl, request.url));
     }
   }
-  
+
   return response;
 }
 
@@ -59,12 +55,12 @@ function isValidLocale(locale: string): boolean {
 function shouldSkipAuth(pathname: string): boolean {
   // Skip auth check for sign-in page and static assets
   const pathSegments = pathname.split('/').filter(Boolean);
-  
+
   // If first segment is a locale, look at the second segment
   if (pathSegments.length > 0 && isValidLocale(pathSegments[0])) {
     return pathSegments[1] === 'sign-in';
   }
-  
+
   return pathname.includes('/sign-in');
 }
 

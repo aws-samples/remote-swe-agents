@@ -6,7 +6,7 @@ import { getTranslations } from 'next-intl/server';
 
 export default async function SessionsPage() {
   const t = await getTranslations('sessions');
-  
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />

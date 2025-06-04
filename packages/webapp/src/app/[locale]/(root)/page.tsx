@@ -9,7 +9,7 @@ export default async function Home() {
   const { userId } = await getSession();
   const t = await getTranslations('home');
   const sessionsT = await getTranslations('sessions');
-  
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -19,9 +19,7 @@ export default async function Home() {
           <div className="text-center py-16">
             <Bot className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t('title')}</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              {t('description')}
-            </p>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">{t('description')}</p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link href="/sessions">

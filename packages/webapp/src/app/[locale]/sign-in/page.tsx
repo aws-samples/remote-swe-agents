@@ -4,7 +4,7 @@ import { Link } from '@/i18n/navigation';
 export default async function SignInPage() {
   const t = await getTranslations('auth');
   const headerT = await getTranslations('header');
-  
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function generateStaticParams() {
-  return locales.map(locale => ({ locale }));
+  return locales.map((locale) => ({ locale }));
 }
 
 export default async function RootLayout({ children, params: { locale } }: Props) {
@@ -20,7 +20,7 @@ export default async function RootLayout({ children, params: { locale } }: Props
   if (!locales.includes(locale as any)) {
     notFound();
   }
-  
+
   // Enable static rendering
   unstable_setRequestLocale(locale);
 
