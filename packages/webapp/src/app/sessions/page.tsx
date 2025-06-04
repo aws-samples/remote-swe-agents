@@ -3,9 +3,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Clock, DollarSign } from 'lucide-react';
 import { getSessions } from '@remote-swe-agents/agent-core/lib';
+import { getTranslations } from 'next-intl/server';
 
 export default async function SessionsPage() {
   const sessions = await getSessions();
+  const t = await getTranslations('sessions');
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -14,11 +16,11 @@ export default async function SessionsPage() {
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Agent Sessions</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('aiAgentSessions')}</h1>
             <Link href="/sessions/new">
               <Button className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
-                New Session
+                {t('newSession')}
               </Button>
             </Link>
           </div>
@@ -37,7 +39,7 @@ export default async function SessionsPage() {
                       <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          {new Date(session.createdAt).toLocaleString('en-US')}
+                          {new Date(session.createdAt).toLocaleString()}
                         </div>
                         <div className="flex items-center gap-2">
                           <span
@@ -53,12 +55,12 @@ export default async function SessionsPage() {
                           />
                           <span>
                             {session.instanceStatus === 'running'
-                              ? 'Running'
+                              ? t('sessionStatus.running')
                               : session.instanceStatus === 'starting'
-                                ? 'Starting'
+                                ? t('sessionStatus.starting')
                                 : session.instanceStatus === 'stopped'
-                                  ? 'Stopped'
-                                  : 'Terminated'}
+                                  ? t('sessionStatus.stopped')
+                                  : t('sessionStatus.terminated')}
                           </span>
                         </div>
                         <div className="flex items-center">
@@ -76,14 +78,14 @@ export default async function SessionsPage() {
           {sessions.length === 0 && (
             <div className="text-center py-12">
               <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No sessions found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('noSessionsFound')}</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Create a new session to start chatting with AI agents
+                {t('createSessionToStart')}
               </p>
               <Link href="/sessions/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  New Session
+                  {t('newSession')}
                 </Button>
               </Link>
             </div>

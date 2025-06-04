@@ -9,6 +9,7 @@ import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
 import { KeyboardEventHandler } from 'react';
 import { Message } from './MessageList';
+import { useTranslations } from 'next-intl';
 
 type MessageFormProps = {
   onSubmit: (message: Message) => void;
@@ -16,6 +17,7 @@ type MessageFormProps = {
 };
 
 export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
+  const t = useTranslations('sessions');
   const {
     form: { register, formState, reset, watch },
     action: { isExecuting },
@@ -61,7 +63,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
         <form onSubmit={handleSubmitWithAction} className="flex gap-4">
           <textarea
             {...register('message')}
-            placeholder="Enter your message..."
+            placeholder={t('enterYourMessage')}
             className="flex-1 resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             rows={3}
             disabled={isExecuting}

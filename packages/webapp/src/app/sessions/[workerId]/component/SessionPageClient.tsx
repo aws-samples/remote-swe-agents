@@ -8,6 +8,7 @@ import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { Message } from './MessageList';
 import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import { useTranslations } from 'next-intl';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -20,6 +21,7 @@ export default function SessionPageClient({
   initialMessages,
   initialInstanceStatus,
 }: SessionPageClientProps) {
+  const t = useTranslations('sessions');
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
@@ -102,12 +104,12 @@ export default function SessionPageClient({
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" />
-              Session List
+              {t('sessionList')}
             </Link>
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Session: {workerId}</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">Chat with AI Agent</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{t('chatWithAIAgent')}</p>
                 {instanceStatus && (
                   <div className="flex items-center gap-2 ml-4">
                     <span
@@ -121,10 +123,10 @@ export default function SessionPageClient({
                     />
                     <span className="text-sm font-medium">
                       {instanceStatus === 'running'
-                        ? 'Instance running'
+                        ? t('instanceRunning')
                         : instanceStatus === 'starting'
-                          ? 'Instance starting'
-                          : 'Instance stopped'}
+                          ? t('instanceStarting')
+                          : t('instanceStopped')}
                     </span>
                   </div>
                 )}

@@ -19,7 +19,25 @@
     "loading": "読み込み中...",
     "enterMessage": "メッセージを入力してください",
     "newSessionTitle": "新規セッションの作成",
-    "start": "セッション開始"
+    "start": "セッション開始",
+    "aiAgentSessions": "AIエージェントセッション",
+    "backToSessions": "セッション一覧に戻る",
+    "sessionList": "セッション一覧",
+    "chatWithAIAgent": "AIエージェントとチャット",
+    "instanceRunning": "インスタンス実行中",
+    "instanceStarting": "インスタンス起動中",
+    "instanceStopped": "インスタンス停止",
+    "sessionStatus": {
+      "running": "実行中",
+      "starting": "起動中",
+      "stopped": "停止",
+      "terminated": "終了"
+    },
+    "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
+    "aiAgentResponding": "AIエージェントが応答中...",
+    "enterYourMessage": "メッセージを入力...",
+    "noSessionsFound": "セッションが見つかりません",
+    "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
@@ -34,5 +52,22 @@
     "light": "ライト",
     "dark": "ダーク",
     "system": "システム"
+  },
+  "new_session": {
+    "title": "新規セッション",
+    "heading": "AIエージェントとの新しい会話を開始",
+    "description": "新規セッションを作成すると専用ワーカーが起動し、AIエージェントとリアルタイムで会話できるようになります。",
+    "whatYouCanDo": "できること：",
+    "features": {
+      "code": "コードの作成、修正、レビュー",
+      "file": "ファイルの読み込み、書き込み、編集",
+      "command": "コマンド実行とデバッグ",
+      "github": "GitHub操作とPR作成",
+      "monitoring": "リアルタイム進捗モニタリング"
+    },
+    "initialMessage": "初期メッセージ",
+    "placeholder": "AIエージェントへの初期メッセージを入力してください（例：「Reactコンポーネントの作成を手伝って」や「コードのバグをレビューして」など）...",
+    "creatingSession": "セッション作成中...",
+    "createSessionButton": "セッションを作成して会話を開始"
   }
 }

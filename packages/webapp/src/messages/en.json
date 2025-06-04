@@ -19,7 +19,25 @@
     "loading": "Loading...",
     "enterMessage": "Please enter a message",
     "newSessionTitle": "Create New Session",
-    "start": "Start Session"
+    "start": "Start Session",
+    "aiAgentSessions": "AI Agent Sessions",
+    "backToSessions": "Back to Sessions",
+    "sessionList": "Session List",
+    "chatWithAIAgent": "Chat with AI Agent",
+    "instanceRunning": "Instance running",
+    "instanceStarting": "Instance starting",
+    "instanceStopped": "Instance stopped",
+    "sessionStatus": {
+      "running": "Running",
+      "starting": "Starting",
+      "stopped": "Stopped",
+      "terminated": "Terminated"
+    },
+    "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
+    "aiAgentResponding": "AI Agent is responding...",
+    "enterYourMessage": "Enter your message...",
+    "noSessionsFound": "No sessions found",
+    "createSessionToStart": "Create a new session to start chatting with AI agents"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
@@ -34,5 +52,22 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "new_session": {
+    "title": "New Session",
+    "heading": "Start a New Conversation with AI Agent",
+    "description": "Creating a new session will launch a dedicated worker and enable real-time conversation with AI agents.",
+    "whatYouCanDo": "What you can do:",
+    "features": {
+      "code": "Code creation, modification, and review",
+      "file": "File reading, writing, and editing",
+      "command": "Command execution and debugging",
+      "github": "GitHub operations and PR creation",
+      "monitoring": "Real-time progress monitoring"
+    },
+    "initialMessage": "Initial Message",
+    "placeholder": "Enter your initial message to the AI agent (e.g., 'Help me create a React component' or 'Review my code for bugs')...",
+    "creatingSession": "Creating Session...",
+    "createSessionButton": "Create Session & Start Conversation"
   }
 }

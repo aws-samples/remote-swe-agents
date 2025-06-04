@@ -6,6 +6,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
+import { useTranslations } from 'next-intl';
 
 export type Message = {
   id: string;
@@ -23,6 +24,7 @@ type MessageListProps = {
 
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
+  const t = useTranslations('sessions');
 
   const showWaitingMessage = instanceStatus === 'starting';
   const MarkdownRenderer = ({ content }: { content: string }) => (
@@ -84,7 +86,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           <div className="text-center py-4 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
             <p className="text-yellow-700 dark:text-yellow-300">
-              The AI agent is starting up. This may take up to 2 minutes. Please wait...
+              {t('agentStartingMessage')}
             </p>
           </div>
         )}
@@ -108,7 +110,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
               >
                 <MarkdownRenderer content={message.content} />
                 <div className={`text-xs mt-2 ${'text-gray-500 dark:text-gray-400'}`}>
-                  {new Date(message.timestamp).toLocaleTimeString('en-US')}
+                  {new Date(message.timestamp).toLocaleTimeString()}
                 </div>
               </div>
 
@@ -132,7 +134,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-gray-600 dark:text-gray-300">AI Agent is responding...</span>
+                  <span className="text-gray-600 dark:text-gray-300">{t('aiAgentResponding')}</span>
                 </div>
               </div>
             </div>
