@@ -52,7 +52,7 @@ export default async function SessionsPage() {
                                   ? 'bg-green-500'
                                   : session.instanceStatus === 'starting'
                                     ? 'bg-yellow-500'
-                                    : session.instanceStatus === 'sleeping'
+                                    : session.instanceStatus === 'stopped'
                                       ? 'bg-blue-500'
                                       : 'bg-gray-500'
                               }`}
@@ -62,8 +62,8 @@ export default async function SessionsPage() {
                                 ? 'Running'
                                 : session.instanceStatus === 'starting'
                                   ? 'Starting'
-                                  : session.instanceStatus === 'sleeping'
-                                    ? 'Sleeping'
+                                  : session.instanceStatus === 'stopped'
+                                    ? 'Stopped'
                                     : 'Terminated'}
                             </span>
                           </div>

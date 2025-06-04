@@ -18,7 +18,7 @@ export type Message = {
 type MessageListProps = {
   messages: Message[];
   isAgentTyping: boolean;
-  instanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
+  instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
 };
 
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
