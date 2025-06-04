@@ -1,8 +1,7 @@
 import { getConversationHistory, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { Message } from './component/MessageList';
-import { getSession } from './actions';
-import { SessionInfo } from './schemas';
+import { getSession, SessionInfo } from '@/lib/sessions';
 
 interface SessionPageProps {
   params: Promise<{
@@ -18,8 +17,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
   const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
 
   // Get session info including instance status
-  const sessionResult = (await getSession({ workerId })) as { session: SessionInfo };
-  const session = sessionResult.session;
+  const session = await getSession(workerId);
 
   const messages: Message[] = filteredMessages.flatMap<Message>((message, i) => {
     const item = filteredItems[i];
