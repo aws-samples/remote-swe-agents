@@ -12,7 +12,7 @@ import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 interface SessionPageClientProps {
   workerId: string;
   initialMessages: Message[];
-  initialInstanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
+  initialInstanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
 }
 
 export default function SessionPageClient({
@@ -22,7 +22,7 @@ export default function SessionPageClient({
 }: SessionPageClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
-  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | 'terminated' | undefined>(
+  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
 
@@ -124,7 +124,7 @@ export default function SessionPageClient({
                         ? 'Instance running'
                         : instanceStatus === 'starting'
                           ? 'Instance starting'
-                          : 'Instance sleeping'}
+                          : 'Instance stopped'}
                     </span>
                   </div>
                 )}
