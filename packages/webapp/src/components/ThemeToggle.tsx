@@ -3,9 +3,11 @@
 import { useTheme } from 'next-themes';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations('theme');
 
   const cycleTheme = () => {
     if (theme === 'light') {
@@ -33,13 +35,13 @@ export default function ThemeToggle() {
   const getTooltip = () => {
     switch (theme) {
       case 'light':
-        return 'Light mode';
+        return t('light');
       case 'dark':
-        return 'Dark mode';
+        return t('dark');
       case 'system':
-        return 'System theme';
+        return t('system');
       default:
-        return 'Toggle theme';
+        return t('light');
     }
   };
 

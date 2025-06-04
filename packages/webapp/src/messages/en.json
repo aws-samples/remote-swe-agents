@@ -1,0 +1,38 @@
+{
+  "common": {
+    "locale": "English"
+  },
+  "header": {
+    "title": "Remote SWE Agents",
+    "signOut": "Sign Out"
+  },
+  "sessions": {
+    "title": "Sessions",
+    "newSession": "New Session",
+    "noSessions": "No sessions found.",
+    "createSession": "Create new session",
+    "form": {
+      "message": "Message",
+      "send": "Send",
+      "placeholder": "Type your message here..."
+    },
+    "loading": "Loading...",
+    "enterMessage": "Please enter a message",
+    "newSessionTitle": "Create New Session",
+    "start": "Start Session"
+  },
+  "home": {
+    "title": "Welcome to Remote SWE Agents",
+    "description": "Remote SWE Agents allows you to collaborate with AI-powered software engineers to help with your projects.",
+    "getStarted": "Get Started"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signInWith": "Sign in with {provider}"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}
