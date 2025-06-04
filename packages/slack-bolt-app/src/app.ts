@@ -1,6 +1,6 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { saveConversationHistory, getConversationHistory, getTokenUsage, saveSessionInfo } from './util/history';
+import { saveConversationHistory, getConversationHistory, getTokenUsage } from './util/history';
 import { makeIdempotent } from './util/idempotency';
 import { ApproveUsers, isAuthorized } from './util/auth';
 import { calculateCost } from './util/cost';
@@ -12,6 +12,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { IdempotencyAlreadyInProgressError } from '@aws-lambda-powertools/idempotency';
 import { AsyncHandlerEvent } from './async-handler';
 import { sendWorkerEvent } from '../../agent-core/src/lib';
+import { saveSessionInfo } from '@remote-swe-agents/agent-core/lib';
 
 const SigningSecret = process.env.SIGNING_SECRET!;
 const BotToken = process.env.BOT_TOKEN!;

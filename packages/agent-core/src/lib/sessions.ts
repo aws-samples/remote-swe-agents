@@ -8,7 +8,8 @@ type SessionItem = {
   createdAt: number;
   LSI1: string;
   initialMessage: string;
-  instanceStatus: 'starting' | 'running' | 'sleeping' | 'terminated';
+  instanceStatus: 'starting' | 'running' | 'stopped' | 'terminated';
+  sessionCost: number;
 };
 
 export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
@@ -26,6 +27,7 @@ export const saveSessionInfo = async (workerId: string, initialMessage: string) 
         LSI1: timestamp,
         initialMessage,
         instanceStatus: 'terminated',
+        sessionCost: 0,
       } satisfies SessionItem,
     })
   );
