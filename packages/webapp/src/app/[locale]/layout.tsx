@@ -3,7 +3,7 @@ import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
-import { getMessages, unstable_setRequestLocale } from 'next-intl/server';
+import { getMessages } from 'next-intl/server';
 import { locales } from '@/i18n/config';
 
 type Props = {
@@ -21,8 +21,7 @@ export default async function RootLayout({ children, params: { locale } }: Props
     notFound();
   }
 
-  // Enable static rendering
-  unstable_setRequestLocale(locale);
+  // No need to set locale explicitly with newer versions
 
   const messages = await getMessages();
 
