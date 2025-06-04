@@ -64,7 +64,7 @@ export default async function SessionsPage() {
                           </span>
                         </div>
                         <div className="flex items-center">
-                           <DollarSign className="w-4 h-4" />
+                          <DollarSign className="w-4 h-4" />
                           <span>{(session.sessionCost ?? 0).toFixed(2)}</span>
                         </div>
                       </div>
