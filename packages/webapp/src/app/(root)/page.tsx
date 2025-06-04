@@ -1,9 +1,9 @@
 import { getSession } from '@/lib/auth';
 import Header from '@/components/Header';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, Zap } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
 
 export default async function Home() {
   const { userId } = await getSession();

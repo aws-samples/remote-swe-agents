@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
-const withNextIntl = createNextIntlPlugin('./src/i18n/config.ts');
+const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
     serverActions: {
-      allowedOrigins: ['localhost:3011', 'example.com'],
+      allowedOrigins: ['localhost:3011', process.env.ALLOWED_ORIGIN_HOST!],
     },
   },
   typescript: {
