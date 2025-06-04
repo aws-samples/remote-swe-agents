@@ -78,7 +78,7 @@ aws ssm put-parameter \
 ```bash
 cd cdk && npm ci
 npx cdk bootstrap
-npx cdk deploy
+npx cdk deploy --all
 ```
 
 デプロイには通常約5分かかります。デプロイ後、Slack Boltアプリのエンドポイントが表示されます。次のステップで必要になるため、CDK出力の`SlackBoltEndpointUrl`をメモしておいてください。
