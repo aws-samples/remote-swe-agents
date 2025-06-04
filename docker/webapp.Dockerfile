@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/nodejs:22 AS builder
 WORKDIR /build
 COPY package*.json ./
-COPY ./patches ./
+COPY ./patches ./patches
 COPY packages/agent-core/package*.json ./packages/agent-core/
 COPY packages/webapp/package*.json ./packages/webapp/
 RUN --mount=type=cache,target=/root/.npm npm ci
