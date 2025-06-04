@@ -29,17 +29,17 @@ export const calculateCost = (
 };
 
 /**
- * Calculate total cost from DynamoDB records for a session
+ * Calculate total cost from token usage records in DynamoDB
  */
 async function calculateTotalSessionCost(workerId: string) {
   try {
-    // Use simple query instead of paginator since we don't expect a large number of records
+    // Query token usage records from DynamoDB
     const result = await ddb.send(
       new QueryCommand({
         TableName,
         KeyConditionExpression: 'PK = :pk',
         ExpressionAttributeValues: {
-          ':pk': `message-${workerId}`,
+          ':pk': `token-${workerId}`,
         },
       })
     );
@@ -47,49 +47,20 @@ async function calculateTotalSessionCost(workerId: string) {
     const items = result.Items || [];
     let totalCost = 0;
 
-    // Group tokens by modelId to calculate cost separately for each model
-    const tokensByModel: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {};
-
-    // Process each item
+    // Calculate cost for each model from token usage records
     for (const item of items) {
-      if (!item.tokenCount) continue;
+      const modelId = item.SK; // model ID is stored in SK
+      const inputTokens = item.inputToken || 0;
+      const outputTokens = item.outputToken || 0;
+      const cacheReadTokens = item.cacheReadInputTokens || 0;
+      const cacheWriteTokens = item.cacheWriteInputTokens || 0;
 
-      // Extract modelId from the item, default to 'sonnet3.7' if not present
-      const modelId = item.modelId || 'sonnet3.7';
+      const modelCost = calculateCost(modelId, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens);
 
-      // Initialize model entry if doesn't exist
-      if (!tokensByModel[modelId]) {
-        tokensByModel[modelId] = {
-          input: 0,
-          output: 0,
-          cacheRead: 0,
-          cacheWrite: 0,
-        };
-      }
-
-      // Accumulate tokens by type
-      if (item.messageType === 'toolUse') {
-        tokensByModel[modelId].output += item.tokenCount;
-      } else if (item.messageType === 'userMessage' || item.messageType === 'toolResult') {
-        tokensByModel[modelId].input += item.tokenCount;
-      }
-
-      // Add cache tokens if available
-      if (item.cacheReadTokens) {
-        tokensByModel[modelId].cacheRead += item.cacheReadTokens;
-      }
-      if (item.cacheWriteTokens) {
-        tokensByModel[modelId].cacheWrite += item.cacheWriteTokens;
-      }
-    }
-
-    // Calculate cost for each model
-    for (const [modelId, tokens] of Object.entries(tokensByModel)) {
-      const modelCost = calculateCost(modelId, tokens.input, tokens.output, tokens.cacheRead, tokens.cacheWrite);
       totalCost += modelCost;
 
       console.log(
-        `Model ${modelId}: ${tokens.input} input, ${tokens.output} output, ${tokens.cacheRead} cache read, ${tokens.cacheWrite} cache write tokens = ${modelCost.toFixed(6)}`
+        `Model ${modelId}: ${inputTokens} input, ${outputTokens} output, ${cacheReadTokens} cache read, ${cacheWriteTokens} cache write tokens = ${modelCost.toFixed(6)}`
       );
     }
 
