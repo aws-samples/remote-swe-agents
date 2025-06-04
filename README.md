@@ -82,7 +82,7 @@ Then you can run cdk deploy. Note that the above parameter names are referenced 
 ```bash
 cd cdk && npm ci
 npx cdk bootstrap
-npx cdk deploy
+npx cdk deploy --all
 ```
 
 Deployment usually takes about 5 minutes. After the deployment, you should see the endpoint of your Slack Bolt app. Make note of the `SlackBoltEndpointUrl` from the CDK output as you'll need it in the next step.
