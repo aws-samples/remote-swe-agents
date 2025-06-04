@@ -10,7 +10,7 @@ const modelPricing = {
 };
 
 // Calculate cost in USD based on token usage
-const calculateCost = (
+export const calculateCost = (
   modelId: string,
   inputTokens: number,
   outputTokens: number,
