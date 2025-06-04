@@ -10,7 +10,7 @@ import { locales, Locale } from '@/i18n/config';
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Get the locale from the request
   let locale = await getLocale();
-  
+
   // Try to get locale from cookie if available
   try {
     const cookieStore = cookies();
