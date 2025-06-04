@@ -5,3 +5,4 @@ export * from './metadata';
 export * from './converse';
 export * from './worker-manager';
 export * from './events';
+export * from './cost';

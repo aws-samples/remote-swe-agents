@@ -3,6 +3,7 @@ import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/clie
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 import { sendWebappEvent } from './events';
+import { calculateCost } from './cost';
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
@@ -39,6 +40,35 @@ export async function updateInstanceStatus(workerId: string, status: 'starting' 
     console.log(`Instance status updated to ${status}`);
   } catch (error) {
     console.error(`Error updating instance status for workerId ${workerId}:`, error);
+  }
+}
+
+/**
+ * Updates the session cost in DynamoDB
+ */
+export async function updateSessionCost(workerId: string, modelId: string, inputTokens: number, outputTokens: number, cacheReadTokens: number, cacheWriteTokens: number) {
+  try {
+    // Calculate cost in USD
+    const cost = calculateCost(modelId, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens);
+    
+    // Update the cost in DynamoDB
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET sessionCost = :cost',
+        ExpressionAttributeValues: {
+          ':cost': cost,
+        },
+      })
+    );
+
+    console.log(`Session cost updated to ${cost} USD for workerId ${workerId}`);
+  } catch (error) {
+    console.error(`Error updating session cost for workerId ${workerId}:`, error);
   }
 }
 

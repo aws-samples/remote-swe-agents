@@ -14,6 +14,7 @@ import {
   readMetadata,
   renderToolResult,
   sendSystemMessage,
+  updateSessionCost,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -255,6 +256,12 @@ Users will primarily request software engineering assistance including bug fixes
 
     console.log(JSON.stringify(res.usage));
     const outputTokenCount = res.usage?.outputTokens ?? 0;
+    const inputTokenCount = res.usage?.inputTokens ?? 0;
+    const cacheReadTokenCount = res.usage?.cacheReadInputTokens ?? 0;
+    const cacheWriteTokenCount = res.usage?.cacheWriteInputTokens ?? 0;
+    
+    // Update session cost in DynamoDB
+    await updateSessionCost(workerId, 'sonnet3.7', inputTokenCount, outputTokenCount, cacheReadTokenCount, cacheWriteTokenCount);
 
     if (res.stopReason == 'tool_use') {
       if (res.output?.message == null) {
