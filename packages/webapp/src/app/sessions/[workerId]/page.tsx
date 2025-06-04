@@ -1,7 +1,8 @@
 import { getConversationHistory, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { Message } from './component/MessageList';
-import { getSession, SessionInfo } from './actions';
+import { getSession } from './actions';
+import { SessionInfo } from './schemas';
 
 interface SessionPageProps {
   params: Promise<{

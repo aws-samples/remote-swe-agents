@@ -1,12 +1,11 @@
 'use server';
 
-import { sendMessageToAgentSchema } from './schemas';
+import { sendMessageToAgentSchema, getSessionSchema, SessionInfo, GetSessionResult } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
-import { z } from 'zod';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
@@ -46,20 +45,6 @@ export const sendMessageToAgent = authActionClient
 
     return { success: true, item };
   });
-
-export const getSessionSchema = z.object({
-  workerId: z.string(),
-});
-
-export type SessionInfo = {
-  workerId: string;
-  instanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
-  createdAt?: number;
-};
-
-export type GetSessionResult = {
-  session: SessionInfo;
-};
 
 export const getSession = authActionClient
   .schema(getSessionSchema)
