@@ -1,9 +1,8 @@
 import { EC2Client, DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
 import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/client-ssm';
-import { UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 import { sendWebappEvent } from './events';
-import { calculateCost } from './cost';
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
@@ -46,10 +45,8 @@ export async function updateInstanceStatus(workerId: string, status: 'starting' 
 /**
  * Updates the session cost in DynamoDB
  */
-/**
- * Get token usage from DynamoDB for all messages in the session
- */
-export async function getTokenUsage(workerId: string) {
+// See packages/agent-core/src/lib/cost.ts for token usage and cost calculation
+async function _deprecated() {
   try {
     const paginator = paginateQuery(
       {
@@ -106,10 +103,8 @@ export async function getTokenUsage(workerId: string) {
   }
 }
 
-/**
- * Updates the session cost in DynamoDB by retrieving the latest token usage
- */
-export async function updateSessionCost(workerId: string) {
+// Function moved to packages/agent-core/src/lib/cost.ts
+async function _deprecatedUpdateSessionCost(workerId: string) {
   try {
     // Get total token usage from DynamoDB
     const { modelId, totalInputTokens, totalOutputTokens, totalCacheReadTokens, totalCacheWriteTokens } =
