@@ -2,13 +2,12 @@ import { getSession } from '@/lib/auth';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, Zap } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
-export default async function Home() {
-  const { userId } = await getSession();
-  const t = await getTranslations('home');
-  const sessionsT = await getTranslations('sessions');
+export default function Home() {
+  const t = useTranslations('home');
+  const sessionsT = useTranslations('sessions');
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">

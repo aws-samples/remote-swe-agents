@@ -1,6 +1,6 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
-import { unstable_setRequestLocale } from 'next-intl/server';
+import { getMessages } from 'next-intl/server';
 import { locales } from '@/i18n/config';
 import '../../app/globals.css';
 import { Toaster } from 'sonner';
@@ -21,11 +21,8 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
     notFound();
   }
 
-  // Enable static rendering
-  unstable_setRequestLocale(locale);
-
   // Load messages for the current locale
-  const messages = (await import(`../../messages/${locale}.json`)).default;
+  const messages = await getMessages({ locale });
 
   return (
     <html lang={locale} suppressHydrationWarning>
