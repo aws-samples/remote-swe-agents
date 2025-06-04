@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import ThemeToggle from './ThemeToggle';
-import LocaleSwitcher from './LocaleSwitcher';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Header() {
   const t = useTranslations('header');
@@ -18,7 +18,7 @@ export default function Header() {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <LocaleSwitcher />
+            <LanguageSwitcher />
             <ThemeToggle />
             <Link
               href="/api/auth/sign-out"
