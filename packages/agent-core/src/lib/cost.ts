@@ -29,9 +29,9 @@ export const calculateCost = (
 };
 
 /**
- * Get token usage from DynamoDB for all messages in the session
+ * Calculate total cost from DynamoDB records for a session
  */
-async function getTokenUsage(workerId: string) {
+async function calculateTotalSessionCost(workerId: string) {
   try {
     // Use simple query instead of paginator since we don't expect a large number of records
     const result = await ddb.send(
@@ -44,61 +44,69 @@ async function getTokenUsage(workerId: string) {
       })
     );
 
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-    let totalCacheReadTokens = 0;
-    let totalCacheWriteTokens = 0;
-    let modelId = 'sonnet3.7'; // Default model ID
-
     const items = result.Items || [];
+    let totalCost = 0;
 
+    // Group tokens by modelId to calculate cost separately for each model
+    const tokensByModel: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {};
+
+    // Process each item
     for (const item of items) {
-      // Sum up token counts based on message type
-      if (item.tokenCount) {
-        if (item.messageType === 'toolUse') {
-          totalOutputTokens += item.tokenCount;
-        } else if (item.messageType === 'userMessage' || item.messageType === 'toolResult') {
-          totalInputTokens += item.tokenCount;
-        }
+      if (!item.tokenCount) continue;
+
+      // Extract modelId from the item, default to 'sonnet3.7' if not present
+      const modelId = item.modelId || 'sonnet3.7';
+
+      // Initialize model entry if doesn't exist
+      if (!tokensByModel[modelId]) {
+        tokensByModel[modelId] = {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        };
+      }
+
+      // Accumulate tokens by type
+      if (item.messageType === 'toolUse') {
+        tokensByModel[modelId].output += item.tokenCount;
+      } else if (item.messageType === 'userMessage' || item.messageType === 'toolResult') {
+        tokensByModel[modelId].input += item.tokenCount;
+      }
+
+      // Add cache tokens if available
+      if (item.cacheReadTokens) {
+        tokensByModel[modelId].cacheRead += item.cacheReadTokens;
+      }
+      if (item.cacheWriteTokens) {
+        tokensByModel[modelId].cacheWrite += item.cacheWriteTokens;
       }
     }
 
-    return {
-      modelId,
-      totalInputTokens,
-      totalOutputTokens,
-      totalCacheReadTokens,
-      totalCacheWriteTokens,
-    };
+    // Calculate cost for each model
+    for (const [modelId, tokens] of Object.entries(tokensByModel)) {
+      const modelCost = calculateCost(modelId, tokens.input, tokens.output, tokens.cacheRead, tokens.cacheWrite);
+      totalCost += modelCost;
+
+      console.log(
+        `Model ${modelId}: ${tokens.input} input, ${tokens.output} output, ${tokens.cacheRead} cache read, ${tokens.cacheWrite} cache write tokens = ${modelCost.toFixed(6)}`
+      );
+    }
+
+    return totalCost;
   } catch (error) {
-    console.error(`Error getting token usage for workerId ${workerId}:`, error);
-    return {
-      modelId: 'sonnet3.7',
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      totalCacheReadTokens: 0,
-      totalCacheWriteTokens: 0,
-    };
+    console.error(`Error calculating session cost for workerId ${workerId}:`, error);
+    return 0;
   }
 }
 
 /**
- * Updates the session cost in DynamoDB by retrieving the latest token usage
+ * Updates the session cost in DynamoDB by calculating cost for each model
  */
 export async function updateSessionCost(workerId: string) {
   try {
-    // Get total token usage from DynamoDB
-    const { modelId, totalInputTokens, totalOutputTokens, totalCacheReadTokens, totalCacheWriteTokens } =
-      await getTokenUsage(workerId);
-
-    // Calculate cost in USD
-    const cost = calculateCost(
-      modelId,
-      totalInputTokens,
-      totalOutputTokens,
-      totalCacheReadTokens,
-      totalCacheWriteTokens
-    );
+    // Calculate total cost across all models
+    const totalCost = await calculateTotalSessionCost(workerId);
 
     // Update the cost in DynamoDB
     await ddb.send(
@@ -110,14 +118,12 @@ export async function updateSessionCost(workerId: string) {
         },
         UpdateExpression: 'SET sessionCost = :cost',
         ExpressionAttributeValues: {
-          ':cost': cost,
+          ':cost': totalCost,
         },
       })
     );
 
-    console.log(
-      `Session cost updated to ${cost} USD for workerId ${workerId} (${totalInputTokens} input, ${totalOutputTokens} output tokens)`
-    );
+    console.log(`Session cost updated to ${totalCost.toFixed(6)} USD for workerId ${workerId}`);
   } catch (error) {
     console.error(`Error updating session cost for workerId ${workerId}:`, error);
   }
