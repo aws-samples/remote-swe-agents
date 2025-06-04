@@ -22,7 +22,7 @@ export default function SessionPageClient({
 }: SessionPageClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
-  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | undefined>(
+  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'sleeping' | 'terminated' | undefined>(
     initialInstanceStatus
   );
 
