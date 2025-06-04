@@ -5,5 +5,4 @@ export type SessionInfo = {
   workerId: string;
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   createdAt?: number;
-  
 };

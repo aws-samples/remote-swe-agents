@@ -12,7 +12,7 @@ export default function LanguageSwitcher() {
 
   async function changeLocale(newLocale: string) {
     // Store the preference in a cookie
-    
+
     // Refresh the page to get the new messages
     startTransition(() => {
       setUserLocale(newLocale);
