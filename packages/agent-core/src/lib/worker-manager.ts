@@ -13,7 +13,7 @@ const ssmClient = new SSMClient({});
 /**
  * Updates the instance status in DynamoDB and sends a webapp event
  */
-export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'sleeping') {
+export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'stopped') {
   try {
     // Update the instanceStatus in DynamoDB
     await ddb.send(

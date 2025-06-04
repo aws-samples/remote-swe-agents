@@ -3,7 +3,7 @@ import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 
 export type SessionInfo = {
   workerId: string;
-  instanceStatus?: 'starting' | 'running' | 'sleeping' | 'terminated';
+  instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   createdAt?: number;
 };
 
