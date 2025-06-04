@@ -25,6 +25,7 @@ export const getSessions = authActionClient.schema(z.object({})).action(async ({
     lastMessage: item.initialMessage || '対話を開始してください',
     updatedAt: new Date(item.createdAt).toISOString(),
     instanceStatus: item.instanceStatus || 'terminated',
+    sessionCost: item.sessionCost, // 各セッションのコスト情報を追加
   }));
 
   return { sessions };
