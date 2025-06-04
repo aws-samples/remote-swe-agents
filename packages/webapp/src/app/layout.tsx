@@ -13,7 +13,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   // Try to get locale from cookie if available
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const localeCookie = cookieStore.get('NEXT_LOCALE');
     if (localeCookie?.value && locales.includes(localeCookie.value as Locale)) {
       locale = localeCookie.value;
