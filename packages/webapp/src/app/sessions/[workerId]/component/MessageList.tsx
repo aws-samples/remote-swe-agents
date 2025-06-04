@@ -85,9 +85,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
         {showWaitingMessage && (
           <div className="text-center py-4 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
-            <p className="text-yellow-700 dark:text-yellow-300">
-              {t('agentStartingMessage')}
-            </p>
+            <p className="text-yellow-700 dark:text-yellow-300">{t('agentStartingMessage')}</p>
           </div>
         )}
         <div className="space-y-6">

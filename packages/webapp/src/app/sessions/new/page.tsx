@@ -59,12 +59,8 @@ export default function NewSessionPage() {
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8">
             <div className="text-center">
               <MessageSquare className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                {t('heading')}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-8">
-                {t('description')}
-              </p>
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{t('heading')}</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-8">{t('description')}</p>
 
               <div className="space-y-4">
                 <div className="text-left bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">

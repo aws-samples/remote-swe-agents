@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
     serverActions: {
-      allowedOrigins: ['localhost:3011', 'localhost'],
+      allowedOrigins: ['localhost:3011', process.env.ALLOWED_ORIGIN_HOST!],
     },
   },
   typescript: {

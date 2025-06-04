@@ -79,9 +79,7 @@ export default async function SessionsPage() {
             <div className="text-center py-12">
               <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('noSessionsFound')}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                {t('createSessionToStart')}
-              </p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">{t('createSessionToStart')}</p>
               <Link href="/sessions/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
