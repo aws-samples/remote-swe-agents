@@ -88,7 +88,7 @@ exports[`Snapshot test: MainStack 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -1072,7 +1072,7 @@ exports[`Snapshot test: MainStack 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1117,7 +1117,7 @@ exports[`Snapshot test: MainStack 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -2519,6 +2519,25 @@ exports.handler = async function (event, context) {
     "StorageImageBucket99BA9550": {
       "DeletionPolicy": "Delete",
       "Properties": {
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*",
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "PUT",
+                "POST",
+              ],
+              "AllowedOrigins": [
+                "*",
+              ],
+              "MaxAge": 3000,
+            },
+          ],
+        },
         "LoggingConfiguration": {
           "DestinationBucketName": {
             "Ref": "AccessLogD598EBE9",
@@ -3731,6 +3750,7 @@ exports.handler = async function (event, context) {
           ],
         },
         "CodeS3Location": "s3://cdk-hnb659fds-assets-123456789012-us-east-1/36c61e7309cc4bdcaf9588fb5231788dcd2eb0c5703e91445fac3a6896fa83ed.mjs",
+        "HandlerConfigs": {},
         "Name": "event-bus",
       },
       "Type": "AWS::AppSync::ChannelNamespace",

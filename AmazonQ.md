@@ -10,13 +10,19 @@ This project consists of the following main components:
    - Infrastructure provisioning code
    - AWS resource definitions (Lambda, DynamoDB, EC2, etc.)
 
-2. **Slack Bolt App** - `/slack-bolt-app` directory
+2. **Agent-core** - `/packages/agent-core` directory
+   - A common module that is imported from slack-bolt-app/worker/webapp
+   - 
+3. **Slack Bolt App** - `/packages/slack-bolt-app` directory
    - Slack integration interface
    - API for processing user requests
 
-3. **Worker** - `/worker` directory
+4. **Worker** - `/packages/worker` directory
    - AI agent implementation
    - Tool suite (GitHub operations, file editing, command execution, etc.)
+
+5. **Webapp** - `/packages/webapp` directory
+   - A Next.js web UI to interact with agents
 
 ## Coding Conventions
 
@@ -24,22 +30,10 @@ This project consists of the following main components:
 - Use Promise-based patterns for asynchronous operations
 - Use Prettier for code formatting
 - Prefer function-based implementations over classes
-- DO NOT write code comment unless the implementation is so complicated or difficult to understand without comments.
+- DO NOT write code comments unless the implementation is so complicated or difficult to understand without comments.
+- If writing code comments, ALWAYS USE English language.
 
 ## Commonly Used Commands
-
-### Common
-
-```bash
-# Format check
-npm run format:check
-
-# Code formatting
-npm run format
-
-# Build
-npm run build
-```
 
 ### CDK
 
@@ -54,24 +48,42 @@ cd cdk && npx cdk list
 cd cdk && npx cdk diff
 ```
 
+### Common module
+
+You have to ALWAYS build the agent-core module before building worker/slack-bolt-app/webapp.
+
+```bash
+cd packages/agent-core && npm run build
+```
+
 ### Worker
 
 ```bash
 # Local execution
-cd worker && npm run start:local
+cd packages/worker && npm run start:local
 
 # TypeScript-only build
-cd worker && npm run build
+cd packages/worker && npm run build
 ```
 
 ### Slack Bolt App
 
 ```bash
 # Run in development mode (watch for changes)
-cd slack-bolt-app && npm run dev
+cd packages/slack-bolt-app && npm run dev
 
 # Build
-cd slack-bolt-app && npm run build
+cd packages/slack-bolt-app && npm run build
+```
+
+### Webapp
+
+```bash
+# Run in development mode
+cd packages/webapp && npm run dev
+
+# Build
+cd packages/webapp && npm run build
 ```
 
 ## Development Flow

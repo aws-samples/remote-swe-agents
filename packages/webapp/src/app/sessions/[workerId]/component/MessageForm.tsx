@@ -7,26 +7,27 @@ import { Loader2, Send, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler, useState, useRef, ChangeEvent } from 'react';
+import { KeyboardEventHandler, useState, useRef, ChangeEvent, useEffect } from 'react';
 import { Message } from './MessageList';
 import { useTranslations } from 'next-intl';
-import { getUploadUrl } from '@/lib/actions/s3';
+import { getUploadUrl } from '@/actions/upload/action';
+import Image from 'next/image';
 
 type MessageFormProps = {
   onSubmit: (message: Message) => void;
   workerId: string;
 };
 
-type UploadingImage = {
+type UploadedImages = {
+  id: string;
   file: File;
   previewUrl: string;
-  key?: string;
-  uploading: boolean;
+  key?: string; // undefined means it is being uploaded
 };
 
 export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   const t = useTranslations('sessions');
-  const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState<UploadedImages[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -46,7 +47,6 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           });
         }
         reset();
-        // 送信後に画像をクリア
         setUploadingImages([]);
       },
       onError: ({ error }) => {
@@ -79,81 +79,63 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newImages: UploadingImage[] = [];
-    const imageKeys: string[] = [];
-
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const previewUrl = URL.createObjectURL(file);
-
-      newImages.push({
+      const image: UploadedImages = {
+        id: self.crypto.randomUUID(),
         file,
         previewUrl,
-        uploading: true,
-      });
+      };
+
+      setUploadingImages((prev) => [...prev, image]);
 
       try {
-        // S3への署名付きURLを取得
         const result = await getUploadUrl({
-          fileName: file.name,
+          workerId,
           contentType: file.type,
         });
-
-        if (result && !result.validationErrors && result.data) {
-          const { url, key } = result.data;
-
-          if (url && key) {
-            // S3に直接アップロード
-            await fetch(url, {
-              method: 'PUT',
-              body: file,
-              headers: {
-                'Content-Type': file.type,
-              },
-            });
-
-            // 成功したらキーを保存
-            imageKeys.push(key);
-
-            // アップロード完了状態を更新
-            setUploadingImages((prev) =>
-              prev.map((img, idx) => (idx === i + uploadingImages.length ? { ...img, key, uploading: false } : img))
-            );
-          }
+        if (!result?.data || result?.validationErrors) {
+          throw new Error('Failed to get upload URL');
         }
+
+        const { url, key } = result.data;
+
+        await fetch(url, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+
+        image.key = key;
+        setUploadingImages((prev) => [...prev]);
       } catch (error) {
         console.error('Image upload failed:', error);
         toast.error(`Failed to upload image: ${file.name}`);
       }
     }
 
-    // すでにあるimageKeysと新しいものを結合
-    const existingKeys = watch('imageKeys') || [];
-    setValue('imageKeys', [...existingKeys, ...imageKeys]);
-
-    setUploadingImages((prev) => [...prev, ...newImages]);
-
-    // ファイル選択をリセット
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removeImage = (index: number) => {
-    const removedImage = uploadingImages[index];
+  useEffect(() => {
+    setValue(
+      'imageKeys',
+      uploadingImages.map((i) => i.key).filter((k) => k !== undefined)
+    );
+  }, [uploadingImages, setValue]);
 
-    // プレビューURLの解放
+  const removeImage = (imageId: string) => {
+    const removedImage = uploadingImages.find((image) => image.id == imageId);
+    if (!removedImage) return;
+
     if (removedImage.previewUrl) {
       URL.revokeObjectURL(removedImage.previewUrl);
     }
 
-    // アップロード済みの場合は、imageKeysからも削除
-    if (removedImage.key) {
-      const currentKeys = watch('imageKeys') || [];
-      const filteredKeys = currentKeys.filter((key) => key !== removedImage.key);
-      setValue('imageKeys', filteredKeys);
-    }
-
-    // 画像リストから削除
-    setUploadingImages(uploadingImages.filter((_, i) => i !== index));
+    setUploadingImages((prev) => prev.filter((image) => image.id !== imageId));
   };
 
   return (
@@ -162,21 +144,23 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
         <form onSubmit={handleSubmitWithAction} className="flex flex-col gap-4">
           {uploadingImages.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
-              {uploadingImages.map((img, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={img.previewUrl}
+              {uploadingImages.map((image) => (
+                <div key={image.id} className="relative">
+                  <Image
+                    src={image.previewUrl}
                     alt="Upload preview"
+                    width={80}
+                    height={80}
                     className="h-20 w-20 object-cover rounded-md border border-gray-300"
                   />
-                  {img.uploading && (
+                  {!image.key && (
                     <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-md">
                       <Loader2 className="w-6 h-6 animate-spin text-white" />
                     </div>
                   )}
                   <button
                     type="button"
-                    onClick={() => removeImage(index)}
+                    onClick={() => removeImage(image.id)}
                     className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1"
                   >
                     <X className="w-3 h-3" />
@@ -207,15 +191,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="outline">
                 <ImageIcon className="w-4 h-4" />
               </Button>
-              <Button
-                type="submit"
-                disabled={
-                  (!message.trim() && uploadingImages.length === 0) ||
-                  isExecuting ||
-                  uploadingImages.some((img) => img.uploading)
-                }
-                size="icon"
-              >
+              <Button type="submit" disabled={!message.trim() || isExecuting} size="icon">
                 {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
