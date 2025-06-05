@@ -118,8 +118,8 @@ export default function SessionPageClient({
                         instanceStatus === 'running'
                           ? 'bg-green-500'
                           : instanceStatus === 'starting'
-                            ? 'bg-yellow-500'
-                            : 'bg-blue-500'
+                            ? 'bg-blue-500'
+                            : 'bg-gray-500'
                       }`}
                     />
                     <span className="text-sm font-medium">
