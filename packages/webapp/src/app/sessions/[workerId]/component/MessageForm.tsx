@@ -50,7 +50,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
         setUploadingImages([]);
       },
       onError: ({ error }) => {
-        toast.error(typeof error === 'string' ? error : 'Failed to create session');
+        toast.error(typeof error === 'string' ? error : 'Failed to send the message');
       },
     },
     formProps: {

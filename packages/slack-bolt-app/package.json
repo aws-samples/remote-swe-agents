@@ -21,7 +21,6 @@
     "@aws-sdk/client-ssm": "^3.787.0",
     "@aws-sdk/credential-provider-node": "^3.750.0",
     "@aws-sdk/lib-dynamodb": "^3.751.0",
-    "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@remote-swe-agents/agent-core": "file:../agent-core",
     "@slack/bolt": "^4.0.0",
     "@slack/web-api": "^7.8.0",
