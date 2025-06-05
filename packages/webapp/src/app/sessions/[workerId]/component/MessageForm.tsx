@@ -129,12 +129,12 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      
+
       // Check if the pasted content is an image
       if (item.type.indexOf('image') !== -1) {
         // Don't prevent default when pasting text
         e.preventDefault();
-        
+
         const file = item.getAsFile();
         if (file) {
           await processAndUploadImage(file);
