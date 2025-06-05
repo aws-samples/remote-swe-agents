@@ -99,7 +99,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           contentType: file.type,
         });
 
-        if (result.success) {
+        if (result && result.success) {
           // S3に直接アップロード
           await fetch(result.url, {
             method: 'PUT',
