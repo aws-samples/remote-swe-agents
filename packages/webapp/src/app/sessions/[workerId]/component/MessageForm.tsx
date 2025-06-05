@@ -138,7 +138,6 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
         const file = item.getAsFile();
         if (file) {
           await processAndUploadImage(file);
-          toast.success('Image pasted from clipboard');
         }
       }
     }
