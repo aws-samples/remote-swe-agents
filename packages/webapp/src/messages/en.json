@@ -37,7 +37,10 @@
     "aiAgentResponding": "AI Agent is responding...",
     "enterYourMessage": "Enter your message...",
     "noSessionsFound": "No sessions found",
-    "createSessionToStart": "Create a new session to start chatting with AI agents"
+    "createSessionToStart": "Create a new session to start chatting with AI agents",
+    "usingTool": "Using Tool",
+    "showRawJson": "Show raw JSON",
+    "hideRawJson": "Hide raw JSON"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

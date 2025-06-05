@@ -37,7 +37,10 @@
     "aiAgentResponding": "AIエージェントが応答中...",
     "enterYourMessage": "メッセージを入力...",
     "noSessionsFound": "セッションが見つかりません",
-    "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください"
+    "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
+    "usingTool": "ツール使用中",
+    "showRawJson": "JSONを表示",
+    "hideRawJson": "JSONを隠す"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
