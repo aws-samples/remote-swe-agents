@@ -49,7 +49,7 @@ export default async function SessionsPage() {
                                 : session.instanceStatus === 'starting'
                                   ? 'bg-yellow-500'
                                   : session.instanceStatus === 'stopped'
-                                    ? 'bg-blue-500'
+                                    ? 'bg-gray-500'
                                     : 'bg-gray-500'
                             }`}
                           />
