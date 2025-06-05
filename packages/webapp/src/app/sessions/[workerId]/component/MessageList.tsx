@@ -84,11 +84,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const ToolUseRenderer = ({ content, input }: { content: string; input: string | undefined }) => {
     const [showRawJson, setShowRawJson] = useState(false);
 
-    // ツール名と主要パラメータを表示
     const toolName = content;
-    const params = input;
 
-    // ツールのアイコンを選択
     const getToolIcon = (name: string) => {
       if (name.includes('execute') || name.includes('Command')) return <Terminal className="w-4 h-4" />;
       if (name.includes('file') || name.includes('edit')) return <Code className="w-4 h-4" />;
@@ -102,23 +99,20 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           <span className="font-semibold">
             {t('usingTool')}: {toolName}
           </span>
-        </div>
-
-        {input && (
-          <div className="mt-3 text-xs">
+          {input && (
             <button
               onClick={() => setShowRawJson(!showRawJson)}
-              className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline"
+              className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
             >
               <Info className="w-3 h-3" />
               {showRawJson ? t('hideRawJson') : t('showRawJson')}
             </button>
+          )}
+        </div>
 
-            {showRawJson && (
-              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-                <pre className="text-xs">{input}</pre>
-              </div>
-            )}
+        {input && showRawJson && (
+          <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+            <pre className="text-xs">{input}</pre>
           </div>
         )}
       </div>

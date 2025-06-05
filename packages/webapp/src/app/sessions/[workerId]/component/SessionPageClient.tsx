@@ -76,7 +76,7 @@ export default function SessionPageClient({
                 id: Date.now().toString(),
                 role: 'assistant',
                 content: event.toolName,
-                detail: `${event.toolName}\n${JSON.stringify(event.input, undefined, 2)}`,
+                detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
                 timestamp: new Date(event.timestamp),
                 type: 'toolUse',
               },
