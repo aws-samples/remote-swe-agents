@@ -99,9 +99,9 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           contentType: file.type,
         });
 
-        if (result && result.success) {
+        if (result && !result.validationError && result.data) {
           // S3に直接アップロード
-          await fetch(result.url, {
+          await fetch(result.data.url, {
             method: 'PUT',
             body: file,
             headers: {
@@ -110,12 +110,12 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           });
 
           // 成功したらキーを保存
-          imageKeys.push(result.key);
+          imageKeys.push(result.data.key);
 
           // アップロード完了状態を更新
           setUploadingImages((prev) =>
             prev.map((img, idx) =>
-              idx === i + uploadingImages.length ? { ...img, key: result.key, uploading: false } : img
+              idx === i + uploadingImages.length ? { ...img, key: result.data.key, uploading: false } : img
             )
           );
         }

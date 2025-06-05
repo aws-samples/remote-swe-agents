@@ -21,6 +21,12 @@ const getUploadUrlSchema = z.object({
   contentType: z.string(),
 });
 
+// 戻り値の型定義
+type UploadUrlResult = {
+  url: string;
+  key: string;
+};
+
 // S3アップロード用のpresigned URLを取得するサーバーアクション
 export const getUploadUrl = authActionClient
   .schema(getUploadUrlSchema)
@@ -45,10 +51,9 @@ export const getUploadUrl = authActionClient
       const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1時間有効
 
       return {
-        success: true,
         url: signedUrl,
         key,
-      };
+      } satisfies UploadUrlResult;
     } catch (error) {
       console.error('Error generating presigned URL:', error);
       throw new Error('Failed to generate upload URL');
@@ -64,7 +69,6 @@ const completeUploadSchema = z.object({
 export const completeUpload = authActionClient.schema(completeUploadSchema).action(async ({ parsedInput: { key } }) => {
   // アップロードが完了したファイルのキーを返す
   return {
-    success: true,
     key,
   };
 });
