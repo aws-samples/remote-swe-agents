@@ -34,7 +34,8 @@ const app = new App({
 app.event('app_mention', async ({ event, client, logger }) => {
   console.log('app_mention event received');
   console.log(JSON.stringify(event));
-  const message = event.text.slice(event.text.indexOf('>') + 1).trim();
+  // Replace all mentions in the format <@USER_ID> with empty string, then trim whitespace
+  const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
   try {
