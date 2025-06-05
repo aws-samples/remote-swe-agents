@@ -13,6 +13,7 @@ export type Message = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  detail?: string;
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse';
 };
@@ -80,80 +81,46 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     </ReactMarkdown>
   );
 
-  const ToolUseRenderer = ({ content }: { content: string }) => {
+  const ToolUseRenderer = ({ content, input }: { content: string; input: string }) => {
     const [showRawJson, setShowRawJson] = useState(false);
 
-    try {
-      // ツール使用情報を抽出
-      const match = content.match(/```json\s*([\s\S]*?)\s*```/);
+    // ツール名と主要パラメータを表示
+    const toolName = content;
+    const params = input;
 
-      if (!match) {
-        return <MarkdownRenderer content={content} />;
-      }
+    // ツールのアイコンを選択
+    const getToolIcon = (name: string) => {
+      if (name.includes('execute') || name.includes('Command')) return <Terminal className="w-4 h-4" />;
+      if (name.includes('file') || name.includes('edit')) return <Code className="w-4 h-4" />;
+      return <Settings className="w-4 h-4" />;
+    };
 
-      const jsonContent = match[1];
-      let toolData: any;
-
-      try {
-        toolData = JSON.parse(jsonContent);
-      } catch (e) {
-        return <MarkdownRenderer content={content} />;
-      }
-
-      // ツール名と主要パラメータを表示
-      const toolName = toolData.name || 'unknown';
-      const params = toolData.parameters || {};
-
-      // ツールのアイコンを選択
-      const getToolIcon = (name: string) => {
-        if (name.includes('execute') || name.includes('Command')) return <Terminal className="w-4 h-4" />;
-        if (name.includes('file') || name.includes('edit')) return <Code className="w-4 h-4" />;
-        return <Settings className="w-4 h-4" />;
-      };
-
-      return (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            {getToolIcon(toolName)}
-            <span className="font-semibold">
-              {t('usingTool')}: {toolName}
-            </span>
-          </div>
-
-          <div className="pl-2 border-l-2 border-yellow-400 dark:border-yellow-600">
-            {Object.entries(params).map(([key, value]: [string, any]) => (
-              <div key={key} className="mb-1">
-                <span className="font-medium">{key}:</span>{' '}
-                {typeof value === 'string' && value.length > 100
-                  ? `${value.substring(0, 100)}...`
-                  : typeof value === 'object'
-                    ? JSON.stringify(value).substring(0, 100) + (JSON.stringify(value).length > 100 ? '...' : '')
-                    : String(value)}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 text-xs">
-            <button
-              onClick={() => setShowRawJson(!showRawJson)}
-              className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline"
-            >
-              <Info className="w-3 h-3" />
-              {showRawJson ? t('hideRawJson') : t('showRawJson')}
-            </button>
-
-            {showRawJson && (
-              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-                <pre className="text-xs">{JSON.stringify(toolData, null, 2)}</pre>
-              </div>
-            )}
-          </div>
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          {getToolIcon(toolName)}
+          <span className="font-semibold">
+            {t('usingTool')}: {toolName}
+          </span>
         </div>
-      );
-    } catch (error) {
-      // エラーが発生した場合は元のマークダウンレンダラーにフォールバック
-      return <MarkdownRenderer content={content} />;
-    }
+
+        <div className="mt-3 text-xs">
+          <button
+            onClick={() => setShowRawJson(!showRawJson)}
+            className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline"
+          >
+            <Info className="w-3 h-3" />
+            {showRawJson ? t('hideRawJson') : t('showRawJson')}
+          </button>
+
+          {showRawJson && (
+            <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+              <pre className="text-xs">{input}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -184,7 +151,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 }`}
               >
                 {message.type === 'toolUse' ? (
-                  <ToolUseRenderer content={message.content} />
+                  <ToolUseRenderer content={message.content} input={message.detail} />
                 ) : (
                   <MarkdownRenderer content={message.content} />
                 )}

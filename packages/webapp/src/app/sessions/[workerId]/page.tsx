@@ -41,14 +41,18 @@ export default async function SessionPage({ params }: SessionPageProps) {
             type: 'message',
           });
         }
-        const tools = message.content
-          ?.map((block) => block.toolUse?.name)
-          .filter((name) => !isMsg(name) && name != undefined);
+
+        const tools = (message.content ?? []).filter((c) => c.toolUse?.name != undefined && !isMsg(c.toolUse.name));
+        const content = tools.map((block) => block.toolUse?.name).join(' + ');
+        const detail = tools
+          .map((block) => `${block.toolUse?.name}\n${JSON.stringify(block.toolUse?.input, undefined, 2)}`)
+          .join('\n\n');
         if (tools && tools.length > 0) {
           ret.push({
             id: `${item.SK}-${i}`,
             role: 'assistant',
-            content: tools.join(' + '),
+            content,
+            detail,
             timestamp: new Date(parseInt(item.SK)),
             type: 'toolUse',
           });
