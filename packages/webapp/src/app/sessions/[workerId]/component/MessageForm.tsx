@@ -100,24 +100,26 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
         });
 
         if (result && !result.validationErrors && result.data) {
-          // S3に直接アップロード
-          await fetch(result.data.url, {
-            method: 'PUT',
-            body: file,
-            headers: {
-              'Content-Type': file.type,
-            },
-          });
+          const { url, key } = result.data;
 
-          // 成功したらキーを保存
-          imageKeys.push(result.data.key);
+          if (url && key) {
+            // S3に直接アップロード
+            await fetch(url, {
+              method: 'PUT',
+              body: file,
+              headers: {
+                'Content-Type': file.type,
+              },
+            });
 
-          // アップロード完了状態を更新
-          setUploadingImages((prev) =>
-            prev.map((img, idx) =>
-              idx === i + uploadingImages.length ? { ...img, key: result.data.key, uploading: false } : img
-            )
-          );
+            // 成功したらキーを保存
+            imageKeys.push(key);
+
+            // アップロード完了状態を更新
+            setUploadingImages((prev) =>
+              prev.map((img, idx) => (idx === i + uploadingImages.length ? { ...img, key, uploading: false } : img))
+            );
+          }
         }
       } catch (error) {
         console.error('Image upload failed:', error);
