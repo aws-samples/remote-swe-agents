@@ -81,7 +81,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     </ReactMarkdown>
   );
 
-  const ToolUseRenderer = ({ content, input }: { content: string; input: string }) => {
+  const ToolUseRenderer = ({ content, input }: { content: string; input: string | undefined }) => {
     const [showRawJson, setShowRawJson] = useState(false);
 
     // ツール名と主要パラメータを表示
@@ -104,21 +104,23 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           </span>
         </div>
 
-        <div className="mt-3 text-xs">
-          <button
-            onClick={() => setShowRawJson(!showRawJson)}
-            className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline"
-          >
-            <Info className="w-3 h-3" />
-            {showRawJson ? t('hideRawJson') : t('showRawJson')}
-          </button>
+        {input && (
+          <div className="mt-3 text-xs">
+            <button
+              onClick={() => setShowRawJson(!showRawJson)}
+              className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline"
+            >
+              <Info className="w-3 h-3" />
+              {showRawJson ? t('hideRawJson') : t('showRawJson')}
+            </button>
 
-          {showRawJson && (
-            <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-              <pre className="text-xs">{input}</pre>
-            </div>
-          )}
-        </div>
+            {showRawJson && (
+              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+                <pre className="text-xs">{input}</pre>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
