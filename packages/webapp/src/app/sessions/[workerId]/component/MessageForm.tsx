@@ -7,7 +7,7 @@ import { Loader2, Send, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler, useState, useRef, ChangeEvent, useEffect } from 'react';
+import { KeyboardEventHandler, useState, useRef, ChangeEvent, useEffect, ClipboardEvent } from 'react';
 import { Message } from './MessageList';
 import { useTranslations } from 'next-intl';
 import { getUploadUrl } from '@/actions/upload/action';
@@ -75,49 +75,72 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
     fileInputRef.current?.click();
   };
 
+  const processAndUploadImage = async (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    const image: UploadedImages = {
+      id: self.crypto.randomUUID(),
+      file,
+      previewUrl,
+    };
+
+    setUploadingImages((prev) => [...prev, image]);
+
+    try {
+      const result = await getUploadUrl({
+        workerId,
+        contentType: file.type,
+      });
+      if (!result?.data || result?.validationErrors) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, key } = result.data;
+
+      await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      image.key = key;
+      setUploadingImages((prev) => [...prev]);
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error(`Failed to upload image: ${file.name}`);
+    }
+  };
+
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const previewUrl = URL.createObjectURL(file);
-      const image: UploadedImages = {
-        id: self.crypto.randomUUID(),
-        file,
-        previewUrl,
-      };
-
-      setUploadingImages((prev) => [...prev, image]);
-
-      try {
-        const result = await getUploadUrl({
-          workerId,
-          contentType: file.type,
-        });
-        if (!result?.data || result?.validationErrors) {
-          throw new Error('Failed to get upload URL');
-        }
-
-        const { url, key } = result.data;
-
-        await fetch(url, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
-        });
-
-        image.key = key;
-        setUploadingImages((prev) => [...prev]);
-      } catch (error) {
-        console.error('Image upload failed:', error);
-        toast.error(`Failed to upload image: ${file.name}`);
-      }
+      await processAndUploadImage(files[i]);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePaste = async (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const clipboardData = e.clipboardData;
+    const items = clipboardData.items;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      // Check if the pasted content is an image
+      if (item.type.indexOf('image') !== -1) {
+        // Don't prevent default when pasting text
+        e.preventDefault();
+
+        const file = item.getAsFile();
+        if (file) {
+          await processAndUploadImage(file);
+        }
+      }
+    }
   };
 
   useEffect(() => {
@@ -178,6 +201,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               rows={3}
               disabled={isExecuting}
               onKeyDown={enterPost}
+              onPaste={handlePaste}
             />
             <div className="flex flex-col gap-2 self-end">
               <input
