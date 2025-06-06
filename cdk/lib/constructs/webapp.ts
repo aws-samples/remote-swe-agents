@@ -77,7 +77,7 @@ export class Webapp extends Construct {
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
       },
-      memorySize: 512,
+      memorySize: 1769,
       architecture: Architecture.ARM_64,
     });
     props.workerAmiIdParameter.grantRead(handler);
