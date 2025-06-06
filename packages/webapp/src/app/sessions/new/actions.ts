@@ -14,7 +14,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
 
   const content = [];
   content.push({ text: renderUserMessage({ message }) });
-  
+
   // Add image keys if present
   if (imageKeys && imageKeys.length > 0) {
     for (const key of imageKeys) {

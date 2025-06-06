@@ -104,9 +104,7 @@ export default function ImageUploader({ workerId, onImagesChange, onPasteOverrid
   };
 
   useEffect(() => {
-    const imageKeys = uploadingImages
-      .map((i) => i.key)
-      .filter((k): k is string => k !== undefined);
+    const imageKeys = uploadingImages.map((i) => i.key).filter((k): k is string => k !== undefined);
     onImagesChange(imageKeys);
   }, [uploadingImages, onImagesChange]);
 

@@ -60,13 +60,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
     }
   };
 
-  const {
-    uploadingImages,
-    fileInputRef,
-    handleImageSelect,
-    handlePaste,
-    ImagePreviewList,
-  } = ImageUploader({
+  const { uploadingImages, fileInputRef, handleImageSelect, handlePaste, ImagePreviewList } = ImageUploader({
     workerId,
     onImagesChange: (imageKeys) => {
       setValue('imageKeys', imageKeys);

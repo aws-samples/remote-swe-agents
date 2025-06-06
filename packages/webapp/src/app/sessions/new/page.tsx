@@ -43,19 +43,13 @@ export default function NewSessionPage() {
     },
   });
 
-  const {
-    uploadingImages,
-    fileInputRef,
-    handleImageSelect,
-    handleImageChange,
-    handlePaste,
-    ImagePreviewList,
-  } = ImageUploader({
-    onImagesChange: (keys) => {
-      setImageKeys(keys);
-      setValue('imageKeys', keys);
-    },
-  });
+  const { uploadingImages, fileInputRef, handleImageSelect, handleImageChange, handlePaste, ImagePreviewList } =
+    ImageUploader({
+      onImagesChange: (keys) => {
+        setImageKeys(keys);
+        setValue('imageKeys', keys);
+      },
+    });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -95,27 +89,24 @@ export default function NewSessionPage() {
                 <form onSubmit={handleSubmitWithAction} className="space-y-6">
                   <div className="text-left">
                     <ImagePreviewList />
-                    
+
                     <div className="flex items-center justify-between mb-2">
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('initialMessage')}
                       </label>
-                      <Button 
-                        type="button" 
-                        onClick={handleImageSelect} 
-                        disabled={isExecuting} 
-                        size="sm" 
+                      <Button
+                        type="button"
+                        onClick={handleImageSelect}
+                        disabled={isExecuting}
+                        size="sm"
                         variant="outline"
                         className="flex gap-2 items-center"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        {uploadingImages.length > 0 ? `${uploadingImages.length} 枚の画像` : "画像を追加"}
+                        {uploadingImages.length > 0 ? `${uploadingImages.length} 枚の画像` : '画像を追加'}
                       </Button>
                     </div>
-                    
+
                     <textarea
                       id="message"
                       {...register('message')}
@@ -132,12 +123,7 @@ export default function NewSessionPage() {
 
                   <input type="hidden" {...register('imageKeys')} />
 
-                  <Button 
-                    type="submit" 
-                    disabled={isExecuting || !formState.isValid} 
-                    className="w-full" 
-                    size="lg"
-                  >
+                  <Button type="submit" disabled={isExecuting || !formState.isValid} className="w-full" size="lg">
                     {isExecuting ? t('creatingSession') : t('createSessionButton')}
                   </Button>
                 </form>
