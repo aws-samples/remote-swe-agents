@@ -5,7 +5,7 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
-import { sendMessageToSlack, sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
+import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 Object.assign(global, { WebSocket: require('ws') });

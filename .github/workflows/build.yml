@@ -66,7 +66,7 @@ jobs:
       - run: |
           npm run build
         working-directory: ./packages/worker
-        name: Run next build
+        name: Run build
   Build-and-Test-Webapp:
     runs-on: ubuntu-latest
     steps:
