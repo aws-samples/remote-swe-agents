@@ -7,7 +7,8 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { useScrollPosition } from '@/hooks/use-scroll-position';
 
 export type Message = {
   id: string;
@@ -27,35 +28,13 @@ type MessageListProps = {
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
   const t = useTranslations('sessions');
-  const messageEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const positionRatio = useScrollPosition();
 
-  // Check if the user is near the bottom of the scroll area
-  const checkIfShouldAutoScroll = useCallback(() => {
-    if (!scrollAreaRef.current) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
-    // Consider user "at bottom" if within 100px of bottom
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    setShouldAutoScroll(isNearBottom);
-  }, []);
-
-  // Add scroll event listener to detect user scroll position
   useEffect(() => {
-    const scrollArea = scrollAreaRef.current;
-    if (scrollArea) {
-      scrollArea.addEventListener('scroll', checkIfShouldAutoScroll);
-      return () => scrollArea.removeEventListener('scroll', checkIfShouldAutoScroll);
+    if (positionRatio > 0.95) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
-  }, [checkIfShouldAutoScroll]);
-
-  // Auto-scroll only if user is already at the bottom or it's the first load
-  useEffect(() => {
-    if (shouldAutoScroll && messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, shouldAutoScroll]);
+  }, [messages]);
 
   const showWaitingMessage = instanceStatus === 'starting';
   const MarkdownRenderer = ({ content }: { content: string }) => (
@@ -149,7 +128,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   };
 
   return (
-    <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
+    <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {showWaitingMessage && (
           <div className="text-center py-4 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
@@ -211,7 +190,6 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             </div>
           )}
         </div>
-        <div ref={messageEndRef} /> {/* This empty div serves as a scroll marker */}
       </div>
     </div>
   );

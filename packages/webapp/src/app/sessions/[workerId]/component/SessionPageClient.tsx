@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import MessageForm from './MessageForm';
 import MessageList, { Message } from './MessageList';
 import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
+import { useScrollPosition } from '@/hooks/use-scroll-position';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -31,7 +32,7 @@ export default function SessionPageClient({
   // Real-time communication via event bus
   useEventBus({
     channelName: `webapp/worker/${workerId}`,
-    onReceived: (payload: unknown) => {
+    onReceived: useCallback((payload: unknown) => {
       console.log('Received event:', payload);
       const event = webappEventSchema.parse(payload);
 
@@ -52,7 +53,6 @@ export default function SessionPageClient({
           setIsAgentTyping(false);
           break;
         case 'instanceStatusChanged':
-          console.log('Instance status changed:', event.status);
           setInstanceStatus(event.status);
           break;
         case 'toolResult':
@@ -85,7 +85,7 @@ export default function SessionPageClient({
           setIsAgentTyping(true);
           break;
       }
-    },
+    }, []),
   });
 
   const onSendMessage = async (message: Message) => {
