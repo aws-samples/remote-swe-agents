@@ -31,11 +31,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const messageEndRef = React.useRef<HTMLDivElement>(null);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
-  
+
   // Check if the user is near the bottom of the scroll area
   const checkIfShouldAutoScroll = React.useCallback(() => {
     if (!scrollAreaRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
     // Consider user "at bottom" if within 100px of bottom
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
