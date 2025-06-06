@@ -5,11 +5,8 @@ import { runWithAmplifyServerContext } from '@/lib/amplifyServerUtils';
 
 // This file is critical for webapp authentication mechanism.
 // DO NOT remove any existing logic if you are not sure!
-console.log('load middleware');
 
 export async function middleware(request: NextRequest) {
-  console.log('enter middleware');
-
   const response = NextResponse.next();
 
   const authenticated = await runWithAmplifyServerContext({
@@ -24,8 +21,6 @@ export async function middleware(request: NextRequest) {
       }
     },
   });
-
-  console.log('exit middleware');
 
   if (authenticated) {
     return response;

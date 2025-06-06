@@ -4,14 +4,10 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, Zap } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
-console.log('load home');
-
 export default async function Home() {
-  console.log('home entered')
   const t = await getTranslations('home');
   const sessionsT = await getTranslations('sessions');
 
-  console.log('returning home')
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
