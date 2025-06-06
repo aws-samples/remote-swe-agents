@@ -33,13 +33,6 @@ export default function ImageUploader({ workerId, onImagesChange, onPasteOverrid
 
     setUploadingImages((prev) => [...prev, image]);
 
-    // If we don't have a workerId yet, just store the image locally
-    if (!workerId) {
-      image.key = `local-${image.id}`;
-      setUploadingImages((prev) => [...prev]);
-      return;
-    }
-
     try {
       const result = await getUploadUrl({
         workerId,

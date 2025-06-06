@@ -11,14 +11,12 @@ import { createNewWorker } from './actions';
 import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import ImageUploader from '@/components/shared/ImageUploader';
-import { useState } from 'react';
+import ImageUploader from '@/components/ImageUploader';
 
 export default function NewSessionPage() {
   const router = useRouter();
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
-  const [imageKeys, setImageKeys] = useState<string[]>([]);
 
   const {
     form: { register, formState, reset, setValue },
@@ -46,7 +44,6 @@ export default function NewSessionPage() {
   const { uploadingImages, fileInputRef, handleImageSelect, handleImageChange, handlePaste, ImagePreviewList } =
     ImageUploader({
       onImagesChange: (keys) => {
-        setImageKeys(keys);
         setValue('imageKeys', keys);
       },
     });
@@ -120,9 +117,6 @@ export default function NewSessionPage() {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-
-                  <input type="hidden" {...register('imageKeys')} />
-
                   <Button type="submit" disabled={isExecuting || !formState.isValid} className="w-full" size="lg">
                     {isExecuting ? t('creatingSession') : t('createSessionButton')}
                   </Button>

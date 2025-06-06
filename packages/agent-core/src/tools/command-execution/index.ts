@@ -175,6 +175,8 @@ Some example commands:
 * \`grep\`: search through contents in files
 * \`gh\`: interact with GitHub API (it is already authorized)
   * \`gh issue view ISSUE_NUMBER\`: view a repository issue
+
+IMPORTANT: Sometimes the tool result object contains "suggestion" property reflecting the command execution result. When you see it, you must follow the suggested actions.
 `,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),

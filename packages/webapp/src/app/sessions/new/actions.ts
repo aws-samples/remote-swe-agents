@@ -18,7 +18,14 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
   // Add image keys if present
   if (imageKeys && imageKeys.length > 0) {
     for (const key of imageKeys) {
-      content.push({ image: { key } });
+      content.push({
+        image: {
+          format: 'webp',
+          source: {
+            s3Key: key,
+          },
+        },
+      });
     }
   }
 

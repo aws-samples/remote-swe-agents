@@ -10,7 +10,7 @@ import { sendMessageToAgentSchema } from '../schemas';
 import { KeyboardEventHandler } from 'react';
 import { Message } from './MessageList';
 import { useTranslations } from 'next-intl';
-import ImageUploader from '@/components/shared/ImageUploader';
+import ImageUploader from '@/components/ImageUploader';
 
 type MessageFormProps = {
   onSubmit: (message: Message) => void;
