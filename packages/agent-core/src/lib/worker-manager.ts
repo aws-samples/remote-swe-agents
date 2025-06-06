@@ -1,14 +1,12 @@
-import { EC2Client, DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
-import { GetParameterCommand, ParameterNotFound, SSMClient } from '@aws-sdk/client-ssm';
+import { DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
+import { GetParameterCommand, ParameterNotFound } from '@aws-sdk/client-ssm';
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { ddb, TableName } from './aws';
+import { ddb, ec2, ssm, TableName } from './aws';
 import { sendWebappEvent } from './events';
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
 const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
-const ec2Client = new EC2Client({});
-const ssmClient = new SSMClient({});
 
 /**
  * Updates the instance status in DynamoDB and sends a webapp event
@@ -65,7 +63,7 @@ async function findWorkerInstanceWithStatus(workerId: string, statuses: string[]
   });
 
   try {
-    const response = await ec2Client.send(describeCommand);
+    const response = await ec2.send(describeCommand);
 
     if (response.Reservations && response.Reservations.length > 0) {
       const instances = response.Reservations[0].Instances;
@@ -86,7 +84,7 @@ async function restartWorkerInstance(instanceId: string) {
   });
 
   try {
-    await ec2Client.send(startCommand);
+    await ec2.send(startCommand);
   } catch (error) {
     console.error('Error starting stopped instance:', error);
     throw error;
@@ -95,7 +93,7 @@ async function restartWorkerInstance(instanceId: string) {
 
 async function fetchWorkerAmiId(workerAmiParameterName: string): Promise<string | undefined> {
   try {
-    const result = await ssmClient.send(
+    const result = await ssm.send(
       new GetParameterCommand({
         Name: workerAmiParameterName,
       })
@@ -158,7 +156,7 @@ async function createWorkerInstance(
   });
 
   try {
-    const response = await ec2Client.send(runInstancesCommand);
+    const response = await ec2.send(runInstancesCommand);
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
       return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
     }

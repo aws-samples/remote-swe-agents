@@ -1,26 +1,28 @@
-import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
+import type { App } from '@slack/bolt';
 import { readFileSync } from 'fs';
 import { SlackBotToken, SlackChannelId, SlackThreadTs } from '../env';
 
 const disableSlack = !(SlackChannelId && SlackThreadTs);
 
-export const receiver = new AwsLambdaReceiver({
-  // We don't need signingSecret because we use slack bolt only to send messages here.
-  signingSecret: 'dummy',
-});
+let _app: App | undefined = undefined;
 
-let app: App | undefined = undefined;
+const getApp = async () => {
+  if (_app) return _app;
+  const { App, AwsLambdaReceiver, LogLevel } = await import('@slack/bolt');
 
-const getApp = () => {
-  if (app) return app;
-  app = new App({
+  const receiver = new AwsLambdaReceiver({
+    // We don't need signingSecret because we use slack bolt only to send messages here.
+    signingSecret: 'dummy',
+  });
+
+  _app = new App({
     token: SlackBotToken,
     receiver,
     logLevel: LogLevel.DEBUG,
     developerMode: true,
     socketMode: false,
   });
-  return app;
+  return _app;
 };
 
 /**
@@ -62,8 +64,9 @@ export const sendMessageToSlack = async (message: string) => {
   if (!processedMessage) {
     return;
   }
+  const app = await getApp();
 
-  await getApp().client.chat.postMessage({
+  await app.client.chat.postMessage({
     channel: SlackChannelId,
     thread_ts: SlackThreadTs,
     // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
@@ -92,8 +95,9 @@ export const sendFileToSlack = async (imagePath: string, message: string) => {
 
   // Process message to ensure proper URL linking
   const processedMessage = processMessageForLinks(message);
+  const app = await getApp();
 
-  const result = await getApp().client.filesUploadV2({
+  const result = await app.client.filesUploadV2({
     channel_id: SlackChannelId,
     thread_ts: SlackThreadTs,
     initial_comment: processedMessage,

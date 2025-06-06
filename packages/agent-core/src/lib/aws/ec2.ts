@@ -1,5 +1,6 @@
 import { EC2Client, StopInstancesCommand, TerminateInstancesCommand } from '@aws-sdk/client-ec2';
 const client = new EC2Client();
+export const ec2 = client;
 
 export const terminateMyself = async () => {
   const instanceId = await getInstanceId();
