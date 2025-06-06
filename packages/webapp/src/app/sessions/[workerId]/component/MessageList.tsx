@@ -29,11 +29,34 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const { theme } = useTheme();
   const t = useTranslations('sessions');
   const messageEndRef = React.useRef<HTMLDivElement>(null);
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
+  
+  // Check if the user is near the bottom of the scroll area
+  const checkIfShouldAutoScroll = React.useCallback(() => {
+    if (!scrollAreaRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
+    // Consider user "at bottom" if within 100px of bottom
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShouldAutoScroll(isNearBottom);
+  }, []);
 
+  // Add scroll event listener to detect user scroll position
   React.useEffect(() => {
-    // Scroll to bottom when component mounts or messages change
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const scrollArea = scrollAreaRef.current;
+    if (scrollArea) {
+      scrollArea.addEventListener('scroll', checkIfShouldAutoScroll);
+      return () => scrollArea.removeEventListener('scroll', checkIfShouldAutoScroll);
+    }
+  }, [checkIfShouldAutoScroll]);
+
+  // Auto-scroll only if user is already at the bottom or it's the first load
+  React.useEffect(() => {
+    if (shouldAutoScroll && messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, shouldAutoScroll]);
 
   const showWaitingMessage = instanceStatus === 'starting';
   const MarkdownRenderer = ({ content }: { content: string }) => (
@@ -127,7 +150,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
       <div className="max-w-4xl mx-auto px-4 py-6">
         {showWaitingMessage && (
           <div className="text-center py-4 mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
