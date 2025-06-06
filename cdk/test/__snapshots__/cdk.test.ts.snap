@@ -3296,7 +3296,7 @@ exports.handler = async function (event, context) {
             },
           },
         },
-        "MemorySize": 512,
+        "MemorySize": 1769,
         "PackageType": "Image",
         "Role": {
           "Fn::GetAtt": [
