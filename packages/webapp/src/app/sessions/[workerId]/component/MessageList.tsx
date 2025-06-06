@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import * as React from 'react';
 
 export type Message = {
   id: string;
@@ -27,6 +28,12 @@ type MessageListProps = {
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
   const t = useTranslations('sessions');
+  const messageEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    // Scroll to bottom when component mounts or messages change
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const showWaitingMessage = instanceStatus === 'starting';
   const MarkdownRenderer = ({ content }: { content: string }) => (
@@ -182,6 +189,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             </div>
           )}
         </div>
+        <div ref={messageEndRef} /> {/* This empty div serves as a scroll marker */}
       </div>
     </div>
   );
