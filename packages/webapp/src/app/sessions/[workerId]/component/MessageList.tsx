@@ -7,8 +7,7 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import * as React from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export type Message = {
   id: string;
@@ -28,12 +27,12 @@ type MessageListProps = {
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
   const t = useTranslations('sessions');
-  const messageEndRef = React.useRef<HTMLDivElement>(null);
-  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   // Check if the user is near the bottom of the scroll area
-  const checkIfShouldAutoScroll = React.useCallback(() => {
+  const checkIfShouldAutoScroll = useCallback(() => {
     if (!scrollAreaRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
@@ -43,7 +42,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   }, []);
 
   // Add scroll event listener to detect user scroll position
-  React.useEffect(() => {
+  useEffect(() => {
     const scrollArea = scrollAreaRef.current;
     if (scrollArea) {
       scrollArea.addEventListener('scroll', checkIfShouldAutoScroll);
@@ -52,7 +51,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   }, [checkIfShouldAutoScroll]);
 
   // Auto-scroll only if user is already at the bottom or it's the first load
-  React.useEffect(() => {
+  useEffect(() => {
     if (shouldAutoScroll && messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }

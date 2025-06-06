@@ -40,7 +40,9 @@
     "createSessionToStart": "Create a new session to start chatting with AI agents",
     "usingTool": "Using Tool",
     "showRawJson": "Show raw JSON",
-    "hideRawJson": "Hide raw JSON"
+    "hideRawJson": "Hide raw JSON",
+    "scrollToTop": "Scroll to top",
+    "scrollToBottom": "Scroll to bottom"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

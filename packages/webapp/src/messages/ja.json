@@ -40,7 +40,9 @@
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
     "usingTool": "ツール使用中",
     "showRawJson": "JSONを表示",
-    "hideRawJson": "JSONを隠す"
+    "hideRawJson": "JSONを隠す",
+    "scrollToTop": "一番上までスクロール",
+    "scrollToBottom": "一番下までスクロール"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

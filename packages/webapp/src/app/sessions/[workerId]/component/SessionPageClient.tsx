@@ -155,6 +155,7 @@ export default function SessionPageClient({
             onClick={scrollToTop}
             className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
             title={t('scrollToTop')}
+            aria-label={t('scrollToTop')}
           >
             <ArrowLeft className="w-5 h-5 rotate-90" />
           </button>
@@ -162,6 +163,7 @@ export default function SessionPageClient({
             onClick={scrollToBottom}
             className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
             title={t('scrollToBottom')}
+            aria-label={t('scrollToBottom')}
           >
             <ArrowLeft className="w-5 h-5 -rotate-90" />
           </button>
