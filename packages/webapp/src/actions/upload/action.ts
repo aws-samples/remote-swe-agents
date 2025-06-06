@@ -11,7 +11,7 @@ const s3 = new S3Client({});
 const bucketName = process.env.BUCKET_NAME;
 
 const getUploadUrlSchema = z.object({
-  workerId: z.string(),
+  workerId: z.string().optional(),
   contentType: z.string(),
 });
 
@@ -26,7 +26,12 @@ export const getUploadUrl = authActionClient
     }
 
     const extension = contentType.split('/')[1];
-    const key = `${workerId}/${randomBytes(8).toString('hex')}.${extension}`;
+    const randomId = randomBytes(8).toString('hex');
+    
+    // If workerId is provided, use it in the path, otherwise use webapp_init prefix
+    const key = workerId 
+      ? `${workerId}/${randomId}.${extension}` 
+      : `webapp_init/${randomId}.${extension}`;
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
