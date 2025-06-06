@@ -1,14 +1,6 @@
 import { IgnoreMode, Duration, CfnOutput, Stack } from 'aws-cdk-lib';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import {
-  Function,
-  DockerImageFunction,
-  DockerImageCode,
-  Architecture,
-  Code,
-  Runtime,
-  LayerVersion,
-} from 'aws-cdk-lib/aws-lambda';
+import { DockerImageFunction, DockerImageCode, Architecture } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { readFileSync } from 'fs';
 import { CloudFrontLambdaFunctionUrlService } from './cf-lambda-furl-service/service';
@@ -54,33 +46,26 @@ export class Webapp extends Construct {
     const { storage, hostedZone, auth, subDomain, workerBus, asyncJob } = props;
 
     // Use ContainerImageBuild to inject deploy-time values in the build environment
-    // const image = new ContainerImageBuild(this, 'Build', {
-    //   directory: join('..'),
-    //   file: join('docker', 'webapp.Dockerfile'),
-    //   platform: Platform.LINUX_ARM64,
-    //   ignoreMode: IgnoreMode.DOCKER,
-    //   exclude: readFileSync(join('..', 'docker', 'webapp.Dockerfile.dockerignore'))
-    //     .toString()
-    //     .split('\n'),
-    //   tagPrefix: 'webapp-starter-',
-    //   buildArgs: {
-    //     ALLOWED_ORIGIN_HOST: hostedZone ? `*.${hostedZone.zoneName}` : '*.cloudfront.net',
-    //     SKIP_TS_BUILD: 'true',
-    //     NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: workerBus.httpEndpoint,
-    //     NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
-    //   },
-    // });
-    const handler = new Function(this, 'Handler', {
-      code: Code.fromAsset('../packages/webapp/dist/standalone'),
-      handler: 'run.sh',
-      runtime: Runtime.NODEJS_22_X,
+    const image = new ContainerImageBuild(this, 'Build', {
+      directory: join('..'),
+      file: join('docker', 'webapp.Dockerfile'),
+      platform: Platform.LINUX_ARM64,
+      ignoreMode: IgnoreMode.DOCKER,
+      exclude: readFileSync(join('..', 'docker', 'webapp.Dockerfile.dockerignore'))
+        .toString()
+        .split('\n'),
+      tagPrefix: 'webapp-starter-',
+      buildArgs: {
+        ALLOWED_ORIGIN_HOST: hostedZone ? `*.${hostedZone.zoneName}` : '*.cloudfront.net',
+        SKIP_TS_BUILD: 'true',
+        NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: workerBus.httpEndpoint,
+        NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
+      },
+    });
+    const handler = new DockerImageFunction(this, 'Handler', {
+      code: image.toLambdaDockerImageCode(),
       timeout: Duration.minutes(3),
       environment: {
-        AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
-        AWS_LWA_PORT: '3000',
-        AWS_LWA_READINESS_CHECK_PATH: '/api/health',
-        AWS_LWA_INVOKE_MODE: 'response_stream',
-        RUST_LOG: 'debug',
         COGNITO_DOMAIN: auth.domainName,
         USER_POOL_ID: auth.userPool.userPoolId,
         USER_POOL_CLIENT_ID: auth.client.userPoolClientId,
@@ -94,14 +79,6 @@ export class Webapp extends Construct {
       },
       memorySize: 512,
       architecture: Architecture.ARM_64,
-      layers: [
-        LayerVersion.fromLayerVersionArn(
-          this,
-          'LwaLayer',
-          // https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file#lambda-functions-packaged-as-zip-package-for-aws-managed-runtimes
-          `arn:aws:lambda:${Stack.of(this).region}:753240598075:layer:LambdaAdapterLayerArm64:25`
-        ),
-      ],
     });
     props.workerAmiIdParameter.grantRead(handler);
     asyncJob.handler.grantInvoke(handler);
