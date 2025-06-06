@@ -1,5 +1,6 @@
 import { createServerRunner } from '@aws-amplify/adapter-nextjs';
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+console.log('load1 amplifyServerUtils');
 
 if (process.env.AMPLIFY_APP_ORIGIN_SOURCE_PARAMETER) {
   const ssm = new SSMClient({});
@@ -10,6 +11,7 @@ if (process.env.AMPLIFY_APP_ORIGIN_SOURCE_PARAMETER) {
     console.log(e);
   }
 }
+console.log('load2 amplifyServerUtils');
 
 export const { runWithAmplifyServerContext, createAuthRouteHandlers } = createServerRunner({
   config: {
