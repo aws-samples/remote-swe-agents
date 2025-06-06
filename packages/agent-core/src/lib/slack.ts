@@ -1,7 +1,6 @@
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import { readFileSync } from 'fs';
-import { sendWebappEvent } from './';
-import { SlackBotToken, SlackChannelId, SlackThreadTs, WorkerId } from '../env';
+import { SlackBotToken, SlackChannelId, SlackThreadTs } from '../env';
 
 const disableSlack = !(SlackChannelId && SlackThreadTs);
 
