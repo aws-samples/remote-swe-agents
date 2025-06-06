@@ -5,20 +5,23 @@ import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hoo
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { createNewWorker } from './actions';
 import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import ImageUploader from '@/components/shared/ImageUploader';
+import { useState } from 'react';
 
 export default function NewSessionPage() {
   const router = useRouter();
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
+  const [imageKeys, setImageKeys] = useState<string[]>([]);
 
   const {
-    form: { register, formState, reset },
+    form: { register, formState, reset, setValue },
     action: { isExecuting },
     handleSubmitWithAction,
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
@@ -35,7 +38,22 @@ export default function NewSessionPage() {
     formProps: {
       defaultValues: {
         message: '',
+        imageKeys: [],
       },
+    },
+  });
+
+  const {
+    uploadingImages,
+    fileInputRef,
+    handleImageSelect,
+    handleImageChange,
+    handlePaste,
+    ImagePreviewList,
+  } = ImageUploader({
+    onImagesChange: (keys) => {
+      setImageKeys(keys);
+      setValue('imageKeys', keys);
     },
   });
 
@@ -76,12 +94,28 @@ export default function NewSessionPage() {
 
                 <form onSubmit={handleSubmitWithAction} className="space-y-6">
                   <div className="text-left">
-                    <label
-                      htmlFor="message"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                    >
-                      {t('initialMessage')}
-                    </label>
+                    <ImagePreviewList />
+                    
+                    <div className="flex items-center justify-between mb-2">
+                      <label
+                        htmlFor="message"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        {t('initialMessage')}
+                      </label>
+                      <Button 
+                        type="button" 
+                        onClick={handleImageSelect} 
+                        disabled={isExecuting} 
+                        size="sm" 
+                        variant="outline"
+                        className="flex gap-2 items-center"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {uploadingImages.length > 0 ? `${uploadingImages.length} 枚の画像` : "画像を追加"}
+                      </Button>
+                    </div>
+                    
                     <textarea
                       id="message"
                       {...register('message')}
@@ -89,13 +123,21 @@ export default function NewSessionPage() {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
                       rows={4}
                       disabled={isExecuting}
+                      onPaste={handlePaste}
                     />
                     {formState.errors.message && (
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
 
-                  <Button type="submit" disabled={isExecuting || !formState.isValid} className="w-full" size="lg">
+                  <input type="hidden" {...register('imageKeys')} />
+
+                  <Button 
+                    type="submit" 
+                    disabled={isExecuting || !formState.isValid} 
+                    className="w-full" 
+                    size="lg"
+                  >
                     {isExecuting ? t('creatingSession') : t('createSessionButton')}
                   </Button>
                 </form>

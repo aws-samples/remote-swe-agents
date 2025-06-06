@@ -9,11 +9,19 @@ import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 
 export const createNewWorker = authActionClient.schema(createNewWorkerSchema).action(async ({ parsedInput, ctx }) => {
   const workerId = `webapp-${Date.now()}`;
-  const { message } = parsedInput;
+  const { message, imageKeys = [] } = parsedInput;
   const now = Date.now();
 
   const content = [];
   content.push({ text: renderUserMessage({ message }) });
+  
+  // Add image keys if present
+  if (imageKeys && imageKeys.length > 0) {
+    for (const key of imageKeys) {
+      if (key.startsWith('local-')) continue; // Skip local image keys
+      content.push({ image: { key } });
+    }
+  }
 
   // Create session and initial message in a single transaction
   await ddb.send(
