@@ -106,40 +106,43 @@ export default function SessionPageClient({
       <div className="sticky top-0 z-10">
         <Header />
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center gap-4">
-            <Link
-              href="/sessions"
-              className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {t('sessionList')}
-            </Link>
-            <div className="flex-1">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/sessions"
+                className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {t('sessionList')}
+              </Link>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Session: {workerId}</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">{t('chatWithAIAgent')}</p>
-                {instanceStatus && (
-                  <div className="flex items-center gap-2 ml-4">
-                    <span
-                      className={`inline-block w-2 h-2 rounded-full ${
-                        instanceStatus === 'running'
-                          ? 'bg-green-500'
-                          : instanceStatus === 'starting'
-                            ? 'bg-blue-500'
-                            : 'bg-gray-500'
-                      }`}
-                    />
-                    <span className="text-sm font-medium">
-                      {instanceStatus === 'running'
-                        ? t('instanceRunning')
+              {instanceStatus && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-block w-2 h-2 rounded-full ${
+                      instanceStatus === 'running'
+                        ? 'bg-green-500'
                         : instanceStatus === 'starting'
-                          ? t('instanceStarting')
-                          : t('instanceStopped')}
-                    </span>
-                  </div>
-                )}
-              </div>
+                          ? 'bg-blue-500'
+                          : 'bg-gray-500'
+                    }`}
+                  />
+                  <span className="text-sm font-medium">
+                    {instanceStatus === 'running'
+                      ? t('instanceRunning')
+                      : instanceStatus === 'starting'
+                        ? t('instanceStarting')
+                        : t('instanceStopped')}
+                  </span>
+                </div>
+              )}
             </div>
+            <Link
+              href="/sessions/new"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {t('newSession')}
+            </Link>
           </div>
         </div>
       </div>
