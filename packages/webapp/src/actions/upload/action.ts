@@ -27,11 +27,9 @@ export const getUploadUrl = authActionClient
 
     const extension = contentType.split('/')[1];
     const randomId = randomBytes(8).toString('hex');
-    
+
     // If workerId is provided, use it in the path, otherwise use webapp_init prefix
-    const key = workerId 
-      ? `${workerId}/${randomId}.${extension}` 
-      : `webapp_init/${randomId}.${extension}`;
+    const key = workerId ? `${workerId}/${randomId}.${extension}` : `webapp_init/${randomId}.${extension}`;
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
