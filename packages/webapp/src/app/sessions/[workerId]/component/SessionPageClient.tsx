@@ -96,7 +96,7 @@ export default function SessionPageClient({
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
@@ -148,18 +148,18 @@ export default function SessionPageClient({
         <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
-        
+
         {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
-          <button 
-            onClick={scrollToTop} 
+          <button
+            onClick={scrollToTop}
             className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
             title={t('scrollToTop')}
           >
             <ArrowLeft className="w-5 h-5 rotate-90" />
           </button>
-          <button 
-            onClick={scrollToBottom} 
+          <button
+            onClick={scrollToBottom}
             className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
             title={t('scrollToBottom')}
           >
