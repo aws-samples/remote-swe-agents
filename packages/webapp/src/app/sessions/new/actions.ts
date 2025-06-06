@@ -18,7 +18,6 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
   // Add image keys if present
   if (imageKeys && imageKeys.length > 0) {
     for (const key of imageKeys) {
-      if (key.startsWith('local-')) continue; // Skip local image keys
       content.push({ image: { key } });
     }
   }
