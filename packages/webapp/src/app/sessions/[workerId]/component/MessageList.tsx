@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Bot, User, Loader2, Clock, Info, Settings, Code, Terminal } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -41,6 +42,22 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        p: ({ children }) => {
+          if (typeof children === 'string') {
+            const parts = children.split('\n');
+            return (
+              <p className="mb-2">
+                {parts.map((part, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 && <br />}
+                    {part}
+                  </React.Fragment>
+                ))}
+              </p>
+            );
+          }
+          return <p className="mb-2">{children}</p>;
+        },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         code(props: any) {
           const { className, children } = props;
@@ -62,7 +79,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
         h1: ({ children }) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
         h2: ({ children }) => <h2 className="text-xl font-bold mb-3">{children}</h2>,
         h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
-        p: ({ children }) => <p className="mb-2">{children}</p>,
+
         ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
         li: ({ children }) => <li className="ml-2">{children}</li>,
