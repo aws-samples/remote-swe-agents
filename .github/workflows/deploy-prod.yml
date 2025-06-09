@@ -12,6 +12,7 @@ env:
   AWS_ACCOUNT_ID_LIST_FOR_LB: ${{ secrets.PROD_AWS_ACCOUNT_ID_LIST_FOR_LB }}
   ADMIN_USER_ID_LIST: ${{ vars.PROD_ADMIN_USER_ID_LIST }}
   ROLE_NAME_FOR_LB: ${{ vars.PROD_ROLE_NAME_FOR_LB }}
+  WORKER_ADDITIONAL_POLICIES: ${{ secrets.PROD_WORKER_ADDITIONAL_POLICIES }}
 jobs:
   Deploy-cdk:
     runs-on: ubuntu-latest
