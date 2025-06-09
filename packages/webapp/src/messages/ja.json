@@ -73,6 +73,8 @@
     "initialMessage": "初期メッセージ",
     "placeholder": "AIエージェントへの初期メッセージを入力してください（例：「Reactコンポーネントの作成を手伝って」や「コードのバグをレビューして」など）...",
     "creatingSession": "セッション作成中...",
-    "createSessionButton": "セッションを作成して会話を開始"
+    "createSessionButton": "セッションを作成して会話を開始",
+    "addImage": "画像を追加",
+    "imagesCount": "{count} 枚の画像"
   }
 }

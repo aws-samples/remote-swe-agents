@@ -73,6 +73,8 @@
     "initialMessage": "Initial Message",
     "placeholder": "Enter your initial message to the AI agent (e.g., 'Help me create a React component' or 'Review my code for bugs')...",
     "creatingSession": "Creating Session...",
-    "createSessionButton": "Create Session & Start Conversation"
+    "createSessionButton": "Create Session & Start Conversation",
+    "addImage": "Add Image",
+    "imagesCount": "{count} images"
   }
 }

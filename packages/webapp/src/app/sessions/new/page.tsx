@@ -101,7 +101,9 @@ export default function NewSessionPage() {
                         className="flex gap-2 items-center"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        {uploadingImages.length > 0 ? `${uploadingImages.length} 枚の画像` : '画像を追加'}
+                        {uploadingImages.length > 0 
+                          ? t('imagesCount', { count: uploadingImages.length }) 
+                          : t('addImage')}
                       </Button>
                     </div>
 
