@@ -12,6 +12,7 @@ import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { KeyboardEventHandler } from 'react';
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -112,6 +113,11 @@ export default function NewSessionPage() {
                       rows={4}
                       disabled={isExecuting}
                       onPaste={handlePaste}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.altKey) && !isExecuting && formState.isValid) {
+                          handleSubmitWithAction();
+                        }
+                      }}
                     />
                     {formState.errors.message && (
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
