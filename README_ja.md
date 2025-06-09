@@ -95,6 +95,7 @@ npx cdk deploy --all
 2. 「Create New App」（新しいアプリを作成）をクリック
 3. 「From manifest」（マニフェストから）を選択
 4. 提供されているSlackアプリのマニフェストYAMLファイルを使用：[manifest.json](./resources/slack-app-manifest.json)
+   - Slackワークスペース管理者がより広い権限をボットに付与することを許可している場合は、[slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json)も利用できます。これを使うと、botにメンションをしなくても、Slackスレッド内でエージェントと会話することができます。
    - エンドポイントURL（`https://redacted.execute-api.us-east-1.amazonaws.com`）を実際のURLに置き換えてください
    - 実際のURLはCDKデプロイメント出力の`SlackBoltEndpointUrl`で確認できます
 5. 以下の値を必ずメモしておいてください：
@@ -102,8 +103,6 @@ npx cdk deploy --all
    - ボットトークン（OAuth & Permissions内、ワークスペースにインストール後に確認可能）
 
 詳細については、こちらのドキュメントを参照してください：[マニフェストでアプリを作成および設定する](https://api.slack.com/reference/manifests)
-
-Slackワークスペース管理者がより広い権限をボットに付与することを許可している場合は、[slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json)も利用できます。これを使うと、botにメンションをしなくても、Slackスレッド内でエージェントと会話することができます。
 
 > [!NOTE]
 > 共有（個人ではなく）Slackワークスペースを使用している場合は、エージェントへのアクセスを制御するために`ADMIN_USER_ID_LIST`環境変数（以下を参照）の設定を検討してください。この制限がないと、ワークスペース内の誰でもエージェントにアクセスでき、潜在的にあなたのGitHubコンテンツにもアクセスできてしまいます。

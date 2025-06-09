@@ -99,6 +99,7 @@ Now, you need to set up a Slack App to control agents through the Slack interfac
 2. Click "Create New App"
 3. Choose "From manifest"
 4. Use the provided Slack app manifest YAML file: [manifest.json](./resources/slack-app-manifest.json)
+   - If your Slack workspace administrator permits granting broader permissions to bots, you can also use [slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json). This allows users to converse with the agent in Slack threads without having to mention the bot.
    - Please replace the endpoint URL (`https://redacted.execute-api.us-east-1.amazonaws.com`) with your actual URL
    - You can find your actual URL in the CDK deployment outputs as `SlackBoltEndpointUrl`
 5. Please make note of the following values:
@@ -106,8 +107,6 @@ Now, you need to set up a Slack App to control agents through the Slack interfac
    - Bot Token (found in OAuth & Permissions, after installing to your workspace)
 
 Please also refer to this document for more details: [Create and configure apps with manifests](https://api.slack.com/reference/manifests)
-
-If your Slack workspace administrator permits granting broader permissions to bots, you can also use [slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json). This allows users to converse with the agent in Slack threads without having to mention the bot.
 
 > [!NOTE]
 > If you're using a shared (rather than personal) Slack workspace, consider setting the `ADMIN_USER_ID_LIST` environment variable (see below) to control agent access. Without this restriction, anyone in the workspace can access the agents and potentially your GitHub content.
