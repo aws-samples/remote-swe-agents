@@ -57,7 +57,19 @@ export const todoTools = {
   todoUpdate: todoUpdateTool,
 };
 
-export const todoToolDefs = [todoInitDef, todoUpdateDef];
+// Export tool definitions for direct use
+export const todoToolDefs = [
+  {
+    name: 'todoInit',
+    description: 'Initialize a new todo list or replace the existing one',
+    parameters: todoInitInputSchema,
+  },
+  {
+    name: 'todoUpdate',
+    description: 'Update an existing task in the todo list',
+    parameters: todoUpdateInputSchema,
+  },
+];
 
 /**
  * Get the current todo list as markdown string to include in messages
