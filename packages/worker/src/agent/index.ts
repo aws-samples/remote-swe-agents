@@ -30,6 +30,7 @@ import {
   replyPRCommentTool,
   reportProgressTool,
   sendImageTool,
+  todoTools,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -154,6 +155,16 @@ Users will primarily request software engineering assistance including bug fixes
 
   let systemPrompt = baseSystemPrompt;
 
+  // Import and use the prompt modifier if available
+  let modifySystemPrompt;
+  try {
+    const promptModifiers = require('@remote-swe-agents/agent-core/lib/prompt-modifiers');
+    modifySystemPrompt = promptModifiers.modifySystemPrompt;
+  } catch (error) {
+    console.error('Error importing prompt modifiers:', error);
+    modifySystemPrompt = null;
+  }
+
   const tryAppendRepositoryKnowledge = async () => {
     try {
       const repo = await readMetadata('repo', workerId);
@@ -186,6 +197,8 @@ Users will primarily request software engineering assistance including bug fixes
     getPRCommentsTool,
     replyPRCommentTool,
     readImageTool,
+    todoTools.todoInit,
+    todoTools.todoUpdate,
   ];
   const toolConfig: ConverseCommandInput['toolConfig'] = {
     tools: [
@@ -221,9 +234,19 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           if (cancellationToken.isCancelled) return;
 
+          // Apply prompt modifiers if available
+          let finalSystemPrompt = systemPrompt;
+          if (modifySystemPrompt) {
+            try {
+              finalSystemPrompt = await modifySystemPrompt(systemPrompt);
+            } catch (error) {
+              console.error('Error modifying system prompt:', error);
+            }
+          }
+
           const res = await bedrockConverse(workerId, ['sonnet3.7'], {
             messages,
-            system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
+            system: [{ text: finalSystemPrompt }, { cachePoint: { type: 'default' } }],
             toolConfig,
           });
           return res;
@@ -350,7 +373,7 @@ Users will primarily request software engineering assistance including bug fixes
             toolUseId,
             content: toolResultObject ?? [
               {
-                text: renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
+                text: await renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
               },
             ],
           },

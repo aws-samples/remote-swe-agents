@@ -11,10 +11,21 @@ ${props.forceReport ? `Long time has passed since you sent the last message. Ple
 `.trim();
 };
 
-export const renderUserMessage = (props: { message: string }) => {
+export const renderUserMessage = async (props: { message: string }) => {
+  // Import and use the prompt modifier if available
+  let modifiedMessage = props.message;
+  try {
+    const promptModifiers = require('./prompt-modifiers');
+    if (promptModifiers && promptModifiers.modifyUserMessage) {
+      modifiedMessage = await promptModifiers.modifyUserMessage(props.message);
+    }
+  } catch (error) {
+    console.error('Error applying user message modifier:', error);
+  }
+
   return `
 <user_message>
-${props.message}
+${modifiedMessage}
 </user_message>
 <command>
 User sent you a message. Please use ${reportProgressTool.name} tool to send a response asap.
