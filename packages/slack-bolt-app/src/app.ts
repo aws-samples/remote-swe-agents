@@ -31,10 +31,10 @@ const app = new App({
   socketMode: false,
 });
 
-// アプリのボットIDを保存する変数
+// Variable to store the bot's own ID
 let botId: string | undefined;
 
-// アプリ起動時にbotIdを取得
+// Retrieve the bot ID on app startup
 (async () => {
   try {
     const authInfo = await app.client.auth.test();
@@ -45,7 +45,7 @@ let botId: string | undefined;
   }
 })();
 
-// 共通の処理を行う関数を定義
+// Common message processing function for both app_mention and message events
 async function processMessage(
   event: {
     text: string;
@@ -63,13 +63,12 @@ async function processMessage(
   console.log(`${eventType} event received`);
   console.log(JSON.stringify(event));
 
-  // Replace all mentions in the format <@USER_ID> with empty string, then trim whitespace
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
 
   try {
-    // idempotency keyにイベントタイプを含める（重複防止のため）
+    // Include event type in idempotency key to prevent duplicate processing
     await makeIdempotent(async (_: string) => {
       const authorized = await isAuthorized(userId, channel);
       if (!authorized) {
@@ -113,7 +112,6 @@ async function processMessage(
           } & Message
         ) => {
           const stripAnsiSequences = (text: string) => {
-            // Remove all ANSI escape sequences (color, formatting, cursor movement, etc.)
             return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
           };
 
@@ -200,7 +198,7 @@ async function processMessage(
 
       const workerId = (event.thread_ts ?? event.ts).replace('.', '');
 
-      // Check if there are any image attachments
+      // Process image attachments if present
       const imageKeys = (
         await Promise.all(
           event.files
@@ -253,14 +251,14 @@ async function processMessage(
         ),
       ];
 
-      // スレッドの開始時のみ、メッセージを送信し、セッション情報を保存する
+      // Save session info only when starting a new thread
       if (event.thread_ts === undefined) {
         promises.push(saveSessionInfo(workerId, message));
       }
 
       await Promise.all([
         ...promises,
-        // スレッドの開始時のみ、メッセージを送信する
+        // Send initial message only when starting a new thread
         event.thread_ts === undefined
           ? client.chat.postMessage({
               channel: channel,
@@ -340,7 +338,7 @@ async function processMessage(
               timestamp: event.ts,
             }),
       ]);
-    })(`${eventType}_${event.ts}`); // イベントタイプを含めたキーを使用
+    })(`${eventType}_${event.ts}`); // Use event type in key to avoid duplicates
   } catch (e: any) {
     console.log(e);
     if (e.message.includes('already_reacted')) return;
@@ -354,14 +352,13 @@ async function processMessage(
   }
 }
 
-// app_mentionイベントハンドラ
 app.event('app_mention', async ({ event, client, logger }) => {
   await processMessage(event, client, logger, 'app_mention');
 });
 
-// messageイベントハンドラ（メンションなしでもメッセージを処理）
+// Message event handler for processing messages without @mentions
 app.event('message', async ({ event, client, logger }) => {
-  // TypeScriptの型を扱うために、必要なプロパティをチェック
+  // Cast event to a type with properties we need
   const messageEvent = event as {
     text?: string;
     bot_id?: string;
@@ -375,36 +372,28 @@ app.event('message', async ({ event, client, logger }) => {
     files?: any[];
   };
 
-  // DMのメッセージ、または特定のスレッド内のメッセージの場合のみ処理
-  // ただし、自分自身へのメンションを含むメッセージは除外（app_mentionで処理するため）
-
+  // Skip if message has no text, is from a bot, or has a subtype
   if (!messageEvent.text || messageEvent.bot_id || messageEvent.subtype) {
-    // botからのメッセージ、またはサブタイプのあるメッセージ（編集など）はスキップ
     return;
   }
 
-  // 自分自身へのメンションを含むメッセージはapp_mentionで既に処理されるためスキップ
+  // Skip if message mentions this bot (will be handled by app_mention)
   if (botId && messageEvent.text.includes(`<@${botId}>`)) {
     console.log('Message contains mention to this bot, skipping to avoid duplication');
     return;
   }
 
-  // 安全のために、text プロパティが確実に存在することを確認
-  if (!messageEvent.text) {
-    return;
-  }
-
-  // text プロパティが確実に存在する安全な型のオブジェクトを作成
+  // Create event object with guaranteed non-undefined text property
   const safeEvent = {
     ...messageEvent,
-    text: messageEvent.text, // これで text は undefined ではなく string になる
+    text: messageEvent.text,
   };
 
-  // スレッド内のメッセージである場合のみ処理（親が存在するメッセージ）
+  // Process thread replies
   if (messageEvent.thread_ts) {
     await processMessage(safeEvent, client, logger, 'message');
   }
-  // DMの場合は常に処理
+  // Process direct messages
   else if (messageEvent.channel_type === 'im') {
     await processMessage(safeEvent, client, logger, 'message');
   }
