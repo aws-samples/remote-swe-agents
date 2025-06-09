@@ -46,7 +46,20 @@ let botId: string | undefined;
 })();
 
 // 共通の処理を行う関数を定義
-async function processMessage(event: any, client: any, logger: any, eventType: 'app_mention' | 'message') {
+async function processMessage(
+  event: { 
+    text: string; 
+    user?: string; 
+    channel: string; 
+    ts: string; 
+    thread_ts?: string;
+    blocks?: any[];
+    files?: any[];
+  }, 
+  client: any, 
+  logger: any, 
+  eventType: 'app_mention' | 'message'
+) {
   console.log(`${eventType} event received`);
   console.log(JSON.stringify(event));
   
@@ -69,8 +82,8 @@ async function processMessage(event: any, client: any, logger: any, eventType: '
           if (element.type == 'rich_text_section') {
             const users = element.elements
               .slice(1)
-              .filter((e) => e.type == 'user')
-              .map((e) => e.user_id);
+              .filter((elem: any) => elem.type == 'user')
+              .map((elem: any) => elem.user_id);
             if (users.length >= 25) {
               throw new Error('too many users.');
             }
@@ -191,14 +204,14 @@ async function processMessage(event: any, client: any, logger: any, eventType: '
       const imageKeys = (
         await Promise.all(
           event.files
-            ?.filter((file) => (file as any)?.mimetype?.startsWith('image/'))
-            .map(async (file) => {
+            ?.filter((file: { mimetype?: string }) => file?.mimetype?.startsWith('image/'))
+            .map(async (file: { id: string; mimetype?: string }) => {
               const image = await client.files.info({
                 file: file.id,
               });
 
               if (image.file?.url_private_download && image.file.filetype && image.file.mimetype) {
-                const fileContent = await fetch((image.file as any).url_private_download, {
+                const fileContent = await fetch(image.file.url_private_download, {
                   headers: { Authorization: `Bearer ${BotToken}` },
                 }).then((res) => res.arrayBuffer());
 
@@ -348,27 +361,41 @@ app.event('app_mention', async ({ event, client, logger }) => {
 
 // messageイベントハンドラ（メンションなしでもメッセージを処理）
 app.event('message', async ({ event, client, logger }) => {
+  // TypeScriptの型を扱うために、必要なプロパティをチェック
+  const messageEvent = event as {
+    text?: string;
+    bot_id?: string;
+    subtype?: string;
+    channel_type?: string;
+    thread_ts?: string;
+    user?: string;
+    channel: string;
+    ts: string;
+    blocks?: any[];
+    files?: any[];
+  };
+  
   // DMのメッセージ、または特定のスレッド内のメッセージの場合のみ処理
   // ただし、自分自身へのメンションを含むメッセージは除外（app_mentionで処理するため）
   
-  if (!event.text || event.bot_id || event.subtype) {
+  if (!messageEvent.text || messageEvent.bot_id || messageEvent.subtype) {
     // botからのメッセージ、またはサブタイプのあるメッセージ（編集など）はスキップ
     return;
   }
 
   // 自分自身へのメンションを含むメッセージはapp_mentionで既に処理されるためスキップ
-  if (botId && event.text.includes(`<@${botId}>`)) {
+  if (botId && messageEvent.text.includes(`<@${botId}>`)) {
     console.log('Message contains mention to this bot, skipping to avoid duplication');
     return;
   }
 
   // スレッド内のメッセージである場合のみ処理（親が存在するメッセージ）
-  if (event.thread_ts) {
-    await processMessage(event, client, logger, 'message');
+  if (messageEvent.thread_ts) {
+    await processMessage(messageEvent, client, logger, 'message');
   } 
   // DMの場合は常に処理
-  else if (event.channel_type === 'im') {
-    await processMessage(event, client, logger, 'message');
+  else if (messageEvent.channel_type === 'im') {
+    await processMessage(messageEvent, client, logger, 'message');
   }
 });
 
