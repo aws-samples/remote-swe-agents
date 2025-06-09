@@ -10,4 +10,3 @@ export interface TodoList {
   items: TodoItem[];
   lastUpdated: number;
 }
-
