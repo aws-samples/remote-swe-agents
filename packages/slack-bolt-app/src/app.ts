@@ -1,4 +1,4 @@
-import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
+import { App, AwsLambdaReceiver, LogLevel, SlackEventMiddlewareArgs } from '@slack/bolt';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { saveConversationHistory, getConversationHistory, getTokenUsage } from './util/history';
 import { makeIdempotent } from './util/idempotency';
@@ -31,14 +31,32 @@ const app = new App({
   socketMode: false,
 });
 
-app.event('app_mention', async ({ event, client, logger }) => {
-  console.log('app_mention event received');
+// アプリのボットIDを保存する変数
+let botId: string | undefined;
+
+// アプリ起動時にbotIdを取得
+(async () => {
+  try {
+    const authInfo = await app.client.auth.test();
+    botId = authInfo.user_id;
+    console.log(`Bot ID retrieved: ${botId}`);
+  } catch (error) {
+    console.error('Failed to retrieve bot ID:', error);
+  }
+})();
+
+// 共通の処理を行う関数を定義
+async function processMessage(event: any, client: any, logger: any, eventType: 'app_mention' | 'message') {
+  console.log(`${eventType} event received`);
   console.log(JSON.stringify(event));
+  
   // Replace all mentions in the format <@USER_ID> with empty string, then trim whitespace
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
+  
   try {
+    // idempotency keyにイベントタイプを含める（重複防止のため）
     await makeIdempotent(async (_: string) => {
       const authorized = await isAuthorized(userId, channel);
       if (!authorized) {
@@ -309,7 +327,7 @@ app.event('app_mention', async ({ event, client, logger }) => {
               timestamp: event.ts,
             }),
       ]);
-    })(`${event.ts}`);
+    })(`${eventType}_${event.ts}`); // イベントタイプを含めたキーを使用
   } catch (e: any) {
     console.log(e);
     if (e.message.includes('already_reacted')) return;
@@ -320,6 +338,37 @@ app.event('app_mention', async ({ event, client, logger }) => {
       text: `<@${userId}> Error occurred ${e.message}`,
       thread_ts: event.thread_ts ?? event.ts,
     });
+  }
+}
+
+// app_mentionイベントハンドラ
+app.event('app_mention', async ({ event, client, logger }) => {
+  await processMessage(event, client, logger, 'app_mention');
+});
+
+// messageイベントハンドラ（メンションなしでもメッセージを処理）
+app.event('message', async ({ event, client, logger }) => {
+  // DMのメッセージ、または特定のスレッド内のメッセージの場合のみ処理
+  // ただし、自分自身へのメンションを含むメッセージは除外（app_mentionで処理するため）
+  
+  if (!event.text || event.bot_id || event.subtype) {
+    // botからのメッセージ、またはサブタイプのあるメッセージ（編集など）はスキップ
+    return;
+  }
+
+  // 自分自身へのメンションを含むメッセージはapp_mentionで既に処理されるためスキップ
+  if (botId && event.text.includes(`<@${botId}>`)) {
+    console.log('Message contains mention to this bot, skipping to avoid duplication');
+    return;
+  }
+
+  // スレッド内のメッセージである場合のみ処理（親が存在するメッセージ）
+  if (event.thread_ts) {
+    await processMessage(event, client, logger, 'message');
+  } 
+  // DMの場合は常に処理
+  else if (event.channel_type === 'im') {
+    await processMessage(event, client, logger, 'message');
   }
 });
 
