@@ -1,0 +1,49 @@
+{
+    "display_information": {
+        "name": "remoteSWE",
+        "description": "They work hard, you chill.",
+        "background_color": "#070708"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "remote-swe",
+            "always_online": true
+        }
+    },
+    "oauth_config": {
+        "redirect_urls": [
+            "https://redacted.execute-api.ap-northeast-1.amazonaws.com"
+        ],
+        "scopes": {
+            "bot": [
+                "app_mentions:read",
+                "chat:write",
+                "files:read",
+                "files:write",
+                "reactions:read",
+                "reactions:write",
+                "channels:history",
+                "groups:history",
+                "im:history"
+            ]
+        }
+    },
+    "settings": {
+        "event_subscriptions": {
+            "request_url": "https://redacted.execute-api.ap-northeast-1.amazonaws.com",
+            "bot_events": [
+                "app_mention",
+                "message.channels",
+                "message.groups",
+                "message.im"
+            ]
+        },
+        "interactivity": {
+            "is_enabled": true,
+            "request_url": "https://redacted.execute-api.ap-northeast-1.amazonaws.com"
+        },
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false
+    }
+}

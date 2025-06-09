@@ -95,7 +95,7 @@ Now, you need to set up a Slack App to control agents through the Slack interfac
 
 #### Create a Slack App
 
-1. Go to [Slack API Dashboard](https://api.slack.com/apps)
+1. Go to [Slack Apps Dashboard](https://api.slack.com/apps)
 2. Click "Create New App"
 3. Choose "From manifest"
 4. Use the provided Slack app manifest YAML file: [manifest.json](./resources/slack-app-manifest.json)
