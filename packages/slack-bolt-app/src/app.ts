@@ -47,27 +47,27 @@ let botId: string | undefined;
 
 // 共通の処理を行う関数を定義
 async function processMessage(
-  event: { 
-    text: string; 
-    user?: string; 
-    channel: string; 
-    ts: string; 
+  event: {
+    text: string;
+    user?: string;
+    channel: string;
+    ts: string;
     thread_ts?: string;
     blocks?: any[];
     files?: any[];
-  }, 
-  client: any, 
-  logger: any, 
+  },
+  client: any,
+  logger: any,
   eventType: 'app_mention' | 'message'
 ) {
   console.log(`${eventType} event received`);
   console.log(JSON.stringify(event));
-  
+
   // Replace all mentions in the format <@USER_ID> with empty string, then trim whitespace
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
-  
+
   try {
     // idempotency keyにイベントタイプを含める（重複防止のため）
     await makeIdempotent(async (_: string) => {
@@ -374,10 +374,10 @@ app.event('message', async ({ event, client, logger }) => {
     blocks?: any[];
     files?: any[];
   };
-  
+
   // DMのメッセージ、または特定のスレッド内のメッセージの場合のみ処理
   // ただし、自分自身へのメンションを含むメッセージは除外（app_mentionで処理するため）
-  
+
   if (!messageEvent.text || messageEvent.bot_id || messageEvent.subtype) {
     // botからのメッセージ、またはサブタイプのあるメッセージ（編集など）はスキップ
     return;
@@ -403,7 +403,7 @@ app.event('message', async ({ event, client, logger }) => {
   // スレッド内のメッセージである場合のみ処理（親が存在するメッセージ）
   if (messageEvent.thread_ts) {
     await processMessage(safeEvent, client, logger, 'message');
-  } 
+  }
   // DMの場合は常に処理
   else if (messageEvent.channel_type === 'im') {
     await processMessage(safeEvent, client, logger, 'message');
