@@ -8,12 +8,12 @@ import { getCurrentTodoList } from '../tools/todo';
 export async function addContextToText(text: string): Promise<string> {
   // Get the current todo list
   const todoList = await getCurrentTodoList();
-  
+
   // If there's no todo list, return the original text
   if (!todoList) {
     return text;
   }
-  
+
   // Append the todo list to the text
   return `${text}\n\n${todoList}`;
 }

@@ -2,9 +2,24 @@ import { todoInit, todoInitDef } from './todo-init';
 import { todoUpdate, todoUpdateDef } from './todo-update';
 import { getTodoList, formatTodoListMarkdown } from './todo-service';
 
+// Create ToolDefinition objects to match the interface of other tools
+export const todoInitTool = {
+  handler: todoInit,
+  name: todoInitDef.name,
+  schema: todoInitDef,
+  toolSpec: async () => todoInitDef,
+};
+
+export const todoUpdateTool = {
+  handler: todoUpdate,
+  name: todoUpdateDef.name,
+  schema: todoUpdateDef,
+  toolSpec: async () => todoUpdateDef,
+};
+
 export const todoTools = {
-  todoInit,
-  todoUpdate,
+  todoInit: todoInitTool,
+  todoUpdate: todoUpdateTool,
 };
 
 export const todoToolDefs = [todoInitDef, todoUpdateDef];

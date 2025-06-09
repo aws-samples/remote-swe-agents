@@ -373,7 +373,7 @@ Users will primarily request software engineering assistance including bug fixes
             toolUseId,
             content: toolResultObject ?? [
               {
-                text: await renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
+                text: renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
               },
             ],
           },

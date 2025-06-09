@@ -22,10 +22,7 @@ export async function getTodoList(workerId: string = process.env.WORKER_ID!): Pr
  * Save a todo list to session metadata
  * @param todoList The todo list to save
  */
-export async function saveTodoList(
-  todoList: TodoList,
-  workerId: string = process.env.WORKER_ID!
-): Promise<void> {
+export async function saveTodoList(todoList: TodoList, workerId: string = process.env.WORKER_ID!): Promise<void> {
   try {
     await writeMetadata(TODO_METADATA_KEY, todoList, workerId);
   } catch (error) {
@@ -44,7 +41,7 @@ export async function initializeTodoList(
   workerId: string = process.env.WORKER_ID!
 ): Promise<TodoList> {
   const now = Date.now();
-  
+
   const todoList: TodoList = {
     items: items.map((description, index) => ({
       id: `task-${index + 1}`,
@@ -79,9 +76,9 @@ export async function updateTodoItem(
   }
 
   const now = Date.now();
-  
+
   // Find and update the task
-  const updatedItems = todoList.items.map(item => {
+  const updatedItems = todoList.items.map((item) => {
     if (item.id === id) {
       return {
         ...item,
@@ -113,19 +110,19 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
   }
 
   let markdown = '## Todo List\n\n';
-  
+
   todoList.items.forEach((item) => {
     const checked = item.status === 'completed' ? 'x' : ' ';
     let statusLabel = '';
-    
+
     if (item.status === 'in_progress') {
       statusLabel = ' [進行中]';
     } else if (item.status === 'cancelled') {
       statusLabel = ' [キャンセル]';
     }
-    
+
     markdown += `- [${checked}] ${item.description}${statusLabel} (${item.id})\n`;
   });
-  
+
   return markdown;
 }

@@ -17,25 +17,25 @@ interface TodoUpdateResult {
  */
 export async function todoUpdate(params: TodoUpdateParams): Promise<TodoUpdateResult> {
   const { id, status, description } = params;
-  
+
   // Validate status
   if (!['pending', 'in_progress', 'completed', 'cancelled'].includes(status)) {
     throw new Error('Status must be one of: pending, in_progress, completed, cancelled');
   }
-  
+
   // Update the todo item
   const updatedList = await updateTodoItem(id, status, description);
-  
+
   if (!updatedList) {
     return {
       todoList: 'No todo list found. Please create one first using todoInit.',
       success: false,
     };
   }
-  
+
   // Format the updated list as markdown
   const formattedList = formatTodoListMarkdown(updatedList);
-  
+
   return {
     todoList: formattedList,
     success: true,

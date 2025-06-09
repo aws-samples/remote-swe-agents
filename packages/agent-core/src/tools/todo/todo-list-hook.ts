@@ -7,10 +7,10 @@ import { getCurrentTodoList } from './index';
  */
 export async function appendTodoList(message: string): Promise<string> {
   const todoList = await getCurrentTodoList();
-  
+
   if (!todoList) {
     return message;
   }
-  
+
   return `${message}\n\n${todoList}`;
 }

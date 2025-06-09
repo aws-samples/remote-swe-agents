@@ -13,17 +13,17 @@ interface TodoInitResult {
  */
 export async function todoInit(params: TodoInitParams): Promise<TodoInitResult> {
   const { items } = params;
-  
+
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Items parameter must be a non-empty array of task descriptions');
   }
-  
+
   // Initialize the todo list
   const todoList = await initializeTodoList(items);
-  
+
   // Format the todo list as markdown
   const formattedList = formatTodoListMarkdown(todoList);
-  
+
   return {
     todoList: formattedList,
   };
