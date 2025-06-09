@@ -1,20 +1,55 @@
-import { todoInit, todoInitDef } from './todo-init';
-import { todoUpdate, todoUpdateDef } from './todo-update';
-import { getTodoList, formatTodoListMarkdown } from './todo-service';
+import { z } from 'zod';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
+import { getTodoList, formatTodoListMarkdown, initializeTodoList, updateTodoItem } from './todo-service';
+import { TodoItem } from './types';
 
-// Create ToolDefinition objects to match the interface of other tools
-export const todoInitTool = {
-  handler: todoInit,
-  name: todoInitDef.name,
-  schema: todoInitDef,
-  toolSpec: async () => todoInitDef,
+// Input schema for todoInit
+const todoInitInputSchema = z.object({
+  items: z.array(z.string()).describe('Array of task descriptions to initialize the list with'),
+});
+
+// Input schema for todoUpdate
+const todoUpdateInputSchema = z.object({
+  id: z.string().describe('The ID of the task to update'),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).describe('The new status for the task'),
+  description: z.string().optional().describe('Optional new description for the task'),
+});
+
+// TodoInit tool implementation
+export const todoInitTool: ToolDefinition<z.infer<typeof todoInitInputSchema>> = {
+  name: 'todoInit',
+  handler: async (input: z.infer<typeof todoInitInputSchema>) => {
+    const todoList = await initializeTodoList(input.items);
+    const formattedList = formatTodoListMarkdown(todoList);
+    return `Todo list initialized with ${input.items.length} item(s):\n\n${formattedList}`;
+  },
+  schema: todoInitInputSchema,
+  toolSpec: async () => ({
+    name: 'todoInit',
+    description: `Initialize a new todo list or replace the existing one. 
+Use this when starting a new multi-step task or when you need to reset the current list.`,
+    inputSchema: zodToJsonSchemaBody(todoInitInputSchema),
+  }),
 };
 
-export const todoUpdateTool = {
-  handler: todoUpdate,
-  name: todoUpdateDef.name,
-  schema: todoUpdateDef,
-  toolSpec: async () => todoUpdateDef,
+// TodoUpdate tool implementation
+export const todoUpdateTool: ToolDefinition<z.infer<typeof todoUpdateInputSchema>> = {
+  name: 'todoUpdate',
+  handler: async (input: z.infer<typeof todoUpdateInputSchema>) => {
+    const updatedList = await updateTodoItem(input.id, input.status, input.description);
+    if (!updatedList) {
+      return 'No todo list found. Please create one first using todoInit.';
+    }
+    const formattedList = formatTodoListMarkdown(updatedList);
+    return `Task ${input.id} updated to status: ${input.status}\n\n${formattedList}`;
+  },
+  schema: todoUpdateInputSchema,
+  toolSpec: async () => ({
+    name: 'todoUpdate',
+    description: `Update an existing task in the todo list. 
+Use this to mark tasks as completed, in progress, or to modify task descriptions.`,
+    inputSchema: zodToJsonSchemaBody(todoUpdateInputSchema),
+  }),
 };
 
 export const todoTools = {
