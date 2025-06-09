@@ -389,13 +389,24 @@ app.event('message', async ({ event, client, logger }) => {
     return;
   }
 
+  // 安全のために、text プロパティが確実に存在することを確認
+  if (!messageEvent.text) {
+    return;
+  }
+
+  // text プロパティが確実に存在する安全な型のオブジェクトを作成
+  const safeEvent = {
+    ...messageEvent,
+    text: messageEvent.text, // これで text は undefined ではなく string になる
+  };
+
   // スレッド内のメッセージである場合のみ処理（親が存在するメッセージ）
   if (messageEvent.thread_ts) {
-    await processMessage(messageEvent, client, logger, 'message');
+    await processMessage(safeEvent, client, logger, 'message');
   } 
   // DMの場合は常に処理
   else if (messageEvent.channel_type === 'im') {
-    await processMessage(messageEvent, client, logger, 'message');
+    await processMessage(safeEvent, client, logger, 'message');
   }
 });
 
