@@ -1,6 +1,6 @@
-import { WorkerId } from '../../env';
-import { readMetadata, writeMetadata } from '../../lib/metadata';
-import { TodoItem, TodoList } from './types';
+import { WorkerId } from '../env';
+import { readMetadata, writeMetadata } from './metadata';
+import { TodoItem, TodoList } from '../schema/todo';
 
 export const TODO_METADATA_KEY = 'todo-list';
 

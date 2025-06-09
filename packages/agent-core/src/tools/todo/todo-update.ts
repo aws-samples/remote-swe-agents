@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
-import { updateTodoItem, formatTodoListMarkdown } from './todo-service';
+import { updateTodoItem, formatTodoListMarkdown } from '../../lib/todo';
 import { todoInitTool } from './todo-init';
 
 const todoUpdateInputSchema = z.object({
