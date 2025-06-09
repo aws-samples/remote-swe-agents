@@ -93,14 +93,14 @@ export class Worker extends Construct {
 
     // Create a list of managed policies with the base SSM policy
     const managedPolicies = [iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')];
-    
+
     // Add any additional AWS managed policies if specified
     if (props.additionalAwsManagedPolicies && props.additionalAwsManagedPolicies.length > 0) {
-      props.additionalAwsManagedPolicies.forEach(policyName => {
+      props.additionalAwsManagedPolicies.forEach((policyName) => {
         managedPolicies.push(iam.ManagedPolicy.fromAwsManagedPolicyName(policyName));
       });
     }
-    
+
     const role = new iam.Role(this, 'Role', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: managedPolicies,

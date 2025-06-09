@@ -17,8 +17,10 @@ const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
 });
 
 // Parse additional AWS managed policies from environment variable if provided
-const additionalAwsManagedPolicies = process.env.WORKER_ADDITIONAL_POLICIES 
-  ? process.env.WORKER_ADDITIONAL_POLICIES.split(',').map(p => p.trim()).filter(p => p) 
+const additionalAwsManagedPolicies = process.env.WORKER_ADDITIONAL_POLICIES
+  ? process.env.WORKER_ADDITIONAL_POLICIES.split(',')
+      .map((p) => p.trim())
+      .filter((p) => p)
   : undefined;
 
 const props: MainStackProps = {
