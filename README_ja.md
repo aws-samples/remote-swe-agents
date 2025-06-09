@@ -91,7 +91,7 @@ npx cdk deploy --all
 
 #### Slackアプリの作成
 
-1. [Slack APIダッシュボード](https://api.slack.com/apps)にアクセス
+1. [Slack Appsダッシュボード](https://api.slack.com/apps)にアクセス
 2. 「Create New App」（新しいアプリを作成）をクリック
 3. 「From manifest」（マニフェストから）を選択
 4. 提供されているSlackアプリのマニフェストYAMLファイルを使用：[manifest.json](./resources/slack-app-manifest.json)
