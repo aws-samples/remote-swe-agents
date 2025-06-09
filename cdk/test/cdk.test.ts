@@ -41,6 +41,7 @@ test('Snapshot test', () => {
       installationId: '9876543',
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
+    additionalAwsManagedPolicies: ['AmazonS3ReadOnlyAccess', 'AmazonDynamoDBReadOnlyAccess'],
   });
 
   // Test both stacks

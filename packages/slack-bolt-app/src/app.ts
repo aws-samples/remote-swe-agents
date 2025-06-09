@@ -1,4 +1,4 @@
-import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
+import { App, AwsLambdaReceiver, LogLevel, SlackEventMiddlewareArgs } from '@slack/bolt';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { saveConversationHistory, getConversationHistory, getTokenUsage } from './util/history';
 import { makeIdempotent } from './util/idempotency';
@@ -31,14 +31,44 @@ const app = new App({
   socketMode: false,
 });
 
-app.event('app_mention', async ({ event, client, logger }) => {
-  console.log('app_mention event received');
+// Variable to store the bot's own ID
+let botId: string | undefined;
+
+// Retrieve the bot ID on app startup
+(async () => {
+  try {
+    const authInfo = await app.client.auth.test();
+    botId = authInfo.user_id;
+    console.log(`Bot ID retrieved: ${botId}`);
+  } catch (error) {
+    console.error('Failed to retrieve bot ID:', error);
+  }
+})();
+
+// Common message processing function for both app_mention and message events
+async function processMessage(
+  event: {
+    text: string;
+    user?: string;
+    channel: string;
+    ts: string;
+    thread_ts?: string;
+    blocks?: any[];
+    files?: any[];
+  },
+  client: any,
+  logger: any,
+  eventType: 'app_mention' | 'message'
+) {
+  console.log(`${eventType} event received`);
   console.log(JSON.stringify(event));
-  // Replace all mentions in the format <@USER_ID> with empty string, then trim whitespace
+
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
+
   try {
+    // Include event type in idempotency key to prevent duplicate processing
     await makeIdempotent(async (_: string) => {
       const authorized = await isAuthorized(userId, channel);
       if (!authorized) {
@@ -51,8 +81,8 @@ app.event('app_mention', async ({ event, client, logger }) => {
           if (element.type == 'rich_text_section') {
             const users = element.elements
               .slice(1)
-              .filter((e) => e.type == 'user')
-              .map((e) => e.user_id);
+              .filter((elem: any) => elem.type == 'user')
+              .map((elem: any) => elem.user_id);
             if (users.length >= 25) {
               throw new Error('too many users.');
             }
@@ -82,7 +112,6 @@ app.event('app_mention', async ({ event, client, logger }) => {
           } & Message
         ) => {
           const stripAnsiSequences = (text: string) => {
-            // Remove all ANSI escape sequences (color, formatting, cursor movement, etc.)
             return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
           };
 
@@ -169,18 +198,18 @@ app.event('app_mention', async ({ event, client, logger }) => {
 
       const workerId = (event.thread_ts ?? event.ts).replace('.', '');
 
-      // Check if there are any image attachments
+      // Process image attachments if present
       const imageKeys = (
         await Promise.all(
           event.files
-            ?.filter((file) => (file as any)?.mimetype?.startsWith('image/'))
-            .map(async (file) => {
+            ?.filter((file: { mimetype?: string }) => file?.mimetype?.startsWith('image/'))
+            .map(async (file: { id: string; mimetype?: string }) => {
               const image = await client.files.info({
                 file: file.id,
               });
 
               if (image.file?.url_private_download && image.file.filetype && image.file.mimetype) {
-                const fileContent = await fetch((image.file as any).url_private_download, {
+                const fileContent = await fetch(image.file.url_private_download, {
                   headers: { Authorization: `Bearer ${BotToken}` },
                 }).then((res) => res.arrayBuffer());
 
@@ -222,14 +251,14 @@ app.event('app_mention', async ({ event, client, logger }) => {
         ),
       ];
 
-      // スレッドの開始時のみ、メッセージを送信し、セッション情報を保存する
+      // Save session info only when starting a new thread
       if (event.thread_ts === undefined) {
         promises.push(saveSessionInfo(workerId, message));
       }
 
       await Promise.all([
         ...promises,
-        // スレッドの開始時のみ、メッセージを送信する
+        // Send initial message only when starting a new thread
         event.thread_ts === undefined
           ? client.chat.postMessage({
               channel: channel,
@@ -309,7 +338,7 @@ app.event('app_mention', async ({ event, client, logger }) => {
               timestamp: event.ts,
             }),
       ]);
-    })(`${event.ts}`);
+    })(`${eventType}_${event.ts}`); // Use event type in key to avoid duplicates
   } catch (e: any) {
     console.log(e);
     if (e.message.includes('already_reacted')) return;
@@ -320,6 +349,53 @@ app.event('app_mention', async ({ event, client, logger }) => {
       text: `<@${userId}> Error occurred ${e.message}`,
       thread_ts: event.thread_ts ?? event.ts,
     });
+  }
+}
+
+app.event('app_mention', async ({ event, client, logger }) => {
+  await processMessage(event, client, logger, 'app_mention');
+});
+
+// Message event handler for processing messages without @mentions
+app.event('message', async ({ event, client, logger }) => {
+  // Cast event to a type with properties we need
+  const messageEvent = event as {
+    text?: string;
+    bot_id?: string;
+    subtype?: string;
+    channel_type?: string;
+    thread_ts?: string;
+    user?: string;
+    channel: string;
+    ts: string;
+    blocks?: any[];
+    files?: any[];
+  };
+
+  // Skip if message has no text, is from a bot, or has a subtype
+  if (!messageEvent.text || messageEvent.bot_id || messageEvent.subtype) {
+    return;
+  }
+
+  // Skip if message mentions this bot (will be handled by app_mention)
+  if (botId && messageEvent.text.includes(`<@${botId}>`)) {
+    console.log('Message contains mention to this bot, skipping to avoid duplication');
+    return;
+  }
+
+  // Create event object with guaranteed non-undefined text property
+  const safeEvent = {
+    ...messageEvent,
+    text: messageEvent.text,
+  };
+
+  // Process thread replies
+  if (messageEvent.thread_ts) {
+    await processMessage(safeEvent, client, logger, 'message');
+  }
+  // Process direct messages
+  else if (messageEvent.channel_type === 'im') {
+    await processMessage(safeEvent, client, logger, 'message');
   }
 });
 

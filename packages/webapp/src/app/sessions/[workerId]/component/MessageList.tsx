@@ -30,6 +30,19 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const { theme } = useTheme();
   const t = useTranslations('sessions');
   const positionRatio = useScrollPosition();
+  const [visibleRawJsonMessages, setVisibleRawJsonMessages] = useState<Set<string>>(new Set());
+
+  const toggleRawJsonVisibility = (messageId: string) => {
+    setVisibleRawJsonMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     if (positionRatio > 0.95) {
@@ -106,9 +119,15 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     </ReactMarkdown>
   );
 
-  const ToolUseRenderer = ({ content, input }: { content: string; input: string | undefined }) => {
-    const [showRawJson, setShowRawJson] = useState(false);
-
+  const ToolUseRenderer = ({
+    content,
+    input,
+    messageId,
+  }: {
+    content: string;
+    input: string | undefined;
+    messageId: string;
+  }) => {
     const toolName = content;
 
     const getToolIcon = (name: string) => {
@@ -126,16 +145,16 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           </span>
           {input && (
             <button
-              onClick={() => setShowRawJson(!showRawJson)}
+              onClick={() => toggleRawJsonVisibility(messageId)}
               className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
             >
               <Info className="w-3 h-3" />
-              {showRawJson ? t('hideRawJson') : t('showRawJson')}
+              {visibleRawJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}
             </button>
           )}
         </div>
 
-        {input && showRawJson && (
+        {input && visibleRawJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
             <pre className="text-xs">{input}</pre>
           </div>
@@ -172,7 +191,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 }`}
               >
                 {message.type === 'toolUse' ? (
-                  <ToolUseRenderer content={message.content} input={message.detail} />
+                  <ToolUseRenderer content={message.content} input={message.detail} messageId={message.id} />
                 ) : (
                   <MarkdownRenderer content={message.content} />
                 )}

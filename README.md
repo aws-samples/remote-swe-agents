@@ -95,10 +95,11 @@ Now, you need to set up a Slack App to control agents through the Slack interfac
 
 #### Create a Slack App
 
-1. Go to [Slack API Dashboard](https://api.slack.com/apps)
+1. Go to [Slack Apps Dashboard](https://api.slack.com/apps)
 2. Click "Create New App"
 3. Choose "From manifest"
 4. Use the provided Slack app manifest YAML file: [manifest.json](./resources/slack-app-manifest.json)
+   - If your Slack workspace administrator permits granting broader permissions to bots, you can also use [slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json). This allows users to converse with the agent in Slack threads without having to mention the bot.
    - Please replace the endpoint URL (`https://redacted.execute-api.us-east-1.amazonaws.com`) with your actual URL
    - You can find your actual URL in the CDK deployment outputs as `SlackBoltEndpointUrl`
 5. Please make note of the following values:
@@ -191,6 +192,14 @@ When you use GitHub App integration (option 2 above), you must set the below two
 ```sh
 export GITHUB_APP_ID=your-github-app-id
 export GITHUB_INSTALLATION_ID=your-github-installation-id
+```
+
+#### For Worker Instance Configuration:
+
+You can configure additional AWS managed policies to be attached to the worker instance role:
+
+```sh
+export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
 ```
 
 > [!NOTE]

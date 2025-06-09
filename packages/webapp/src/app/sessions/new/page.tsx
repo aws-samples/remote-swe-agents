@@ -12,6 +12,7 @@ import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { KeyboardEventHandler } from 'react';
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -100,7 +101,9 @@ export default function NewSessionPage() {
                         className="flex gap-2 items-center"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        {uploadingImages.length > 0 ? `${uploadingImages.length} 枚の画像` : '画像を追加'}
+                        {uploadingImages.length > 0
+                          ? t('imagesCount', { count: uploadingImages.length })
+                          : t('addImage')}
                       </Button>
                     </div>
 
@@ -112,6 +115,11 @@ export default function NewSessionPage() {
                       rows={4}
                       disabled={isExecuting}
                       onPaste={handlePaste}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.altKey) && !isExecuting && formState.isValid) {
+                          handleSubmitWithAction();
+                        }
+                      }}
                     />
                     {formState.errors.message && (
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>

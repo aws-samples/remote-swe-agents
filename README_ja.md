@@ -91,10 +91,11 @@ npx cdk deploy --all
 
 #### Slackアプリの作成
 
-1. [Slack APIダッシュボード](https://api.slack.com/apps)にアクセス
+1. [Slack Appsダッシュボード](https://api.slack.com/apps)にアクセス
 2. 「Create New App」（新しいアプリを作成）をクリック
 3. 「From manifest」（マニフェストから）を選択
 4. 提供されているSlackアプリのマニフェストYAMLファイルを使用：[manifest.json](./resources/slack-app-manifest.json)
+   - Slackワークスペース管理者がより広い権限をボットに付与することを許可している場合は、[slack-app-manifest-relaxed.json](./resources/slack-app-manifest-relaxed.json)も利用できます。これを使うと、botにメンションをしなくても、Slackスレッド内でエージェントと会話することができます。
    - エンドポイントURL（`https://redacted.execute-api.us-east-1.amazonaws.com`）を実際のURLに置き換えてください
    - 実際のURLはCDKデプロイメント出力の`SlackBoltEndpointUrl`で確認できます
 5. 以下の値を必ずメモしておいてください：

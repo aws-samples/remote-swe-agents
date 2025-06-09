@@ -16,6 +16,13 @@ const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   crossRegionReferences: true,
 });
 
+// Parse additional AWS managed policies from environment variable if provided
+const additionalAwsManagedPolicies = process.env.WORKER_ADDITIONAL_POLICIES
+  ? process.env.WORKER_ADDITIONAL_POLICIES.split(',')
+      .map((p) => p.trim())
+      .filter((p) => p)
+  : undefined;
+
 const props: MainStackProps = {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -48,6 +55,7 @@ const props: MainStackProps = {
         },
       }
     : {}),
+  ...(additionalAwsManagedPolicies ? { additionalAwsManagedPolicies } : {}),
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {

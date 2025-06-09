@@ -39,6 +39,7 @@ export interface MainStackProps extends cdk.StackProps {
     roleName: string;
   };
   readonly workerAmiIdParameterName: string;
+  readonly additionalAwsManagedPolicies?: string[];
 }
 
 export class MainStack extends cdk.Stack {
@@ -116,6 +117,7 @@ export class MainStack extends cdk.Stack {
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
+      additionalAwsManagedPolicies: props.additionalAwsManagedPolicies,
     });
 
     new SlackBolt(this, 'SlackBolt', {
