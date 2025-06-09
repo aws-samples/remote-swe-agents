@@ -1,21 +1,15 @@
+import { z } from 'zod';
+import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { updateTodoItem, formatTodoListMarkdown } from './todo-service';
-import { TodoItem } from './types';
+import { todoInitTool } from './todo-init';
 
-interface TodoUpdateParams {
-  id: string;
-  status: TodoItem['status'];
-  description?: string;
-}
+const todoUpdateInputSchema = z.object({
+  id: z.string().describe('The ID of the task to update'),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).describe('The new status for the task'),
+  description: z.string().optional().describe('Optional new description for the task'),
+});
 
-interface TodoUpdateResult {
-  todoList: string;
-  success: boolean;
-}
-
-/**
- * Tool to update a task in the todo list
- */
-export async function todoUpdate(params: TodoUpdateParams): Promise<TodoUpdateResult> {
+async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promise<string> {
   const { id, status, description } = params;
 
   // Validate status
@@ -24,58 +18,34 @@ export async function todoUpdate(params: TodoUpdateParams): Promise<TodoUpdateRe
   }
 
   // Update the todo item
-  const updatedList = await updateTodoItem(id, status, description);
+  const result = await updateTodoItem(id, status, description);
 
-  if (!updatedList) {
-    return {
-      todoList: 'No todo list found. Please create one first using todoInit.',
-      success: false,
-    };
+  if (!result.success) {
+    return `Update failed: ${result.error}\n\n${result.currentList ? `Current todo list:\n${formatTodoListMarkdown(result.currentList)}` : ''}`.trim();
   }
 
   // Format the updated list as markdown
-  const formattedList = formatTodoListMarkdown(updatedList);
+  const formattedList = formatTodoListMarkdown(result.updatedList);
 
-  return {
-    todoList: formattedList,
-    success: true,
-  };
+  return `Task ${id} updated to status: ${status}\n\n${formattedList}`;
 }
 
-export const todoUpdateDef = {
-  name: 'todoUpdate',
-  description: `Update an existing task in the todo list. 
-Use this to mark tasks as completed, in progress, or to modify task descriptions.`,
-  parameters: {
-    type: 'object',
-    properties: {
-      id: {
-        type: 'string',
-        description: 'The ID of the task to update',
-      },
-      status: {
-        type: 'string',
-        enum: ['pending', 'in_progress', 'completed', 'cancelled'],
-        description: 'The new status for the task',
-      },
-      description: {
-        type: 'string',
-        description: 'Optional new description for the task',
-      },
-    },
-    required: ['id', 'status'],
-  },
-  returns: {
-    type: 'object',
-    properties: {
-      todoList: {
-        type: 'string',
-        description: 'The updated todo list formatted as markdown',
-      },
-      success: {
-        type: 'boolean',
-        description: 'Whether the update was successful',
-      },
-    },
-  },
-} as const;
+const name = 'todoUpdate';
+
+/**
+ * Tool to update a task in the todo list
+ */
+export const todoUpdateTool: ToolDefinition<z.infer<typeof todoUpdateInputSchema>> = {
+  name,
+  handler: todoUpdate,
+  schema: todoUpdateInputSchema,
+  toolSpec: async () => ({
+    name,
+    description: `Update an existing task in the todo list created by ${todoInitTool.name}.
+Use this to mark tasks as completed, in progress, or to modify task descriptions.
+
+If your update request is invalid, an error will be returned.
+`.trim(),
+    inputSchema: { json: zodToJsonSchemaBody(todoUpdateInputSchema) },
+  }),
+};

@@ -30,7 +30,8 @@ import {
   replyPRCommentTool,
   reportProgressTool,
   sendImageTool,
-  todoTools,
+  todoInitTool,
+  todoUpdateTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -142,6 +143,7 @@ Users will primarily request software engineering assistance including bug fixes
    - Files to modify and how
    - Potential risks or challenges
    - REMEMBER: Only start implementation after receiving explicit confirmation from the user on your plan
+   - Use ${todoInitTool.name} tool to manage your execution plan as a todo list.
 2. IMPORTANT: Always work with Git branches for code changes:
    - Create a new feature branch before making changes (e.g. feature/fix-login-bug)
    - Make your changes in this branch, not directly on the default branch to ensure changes are isolated
@@ -154,16 +156,6 @@ Users will primarily request software engineering assistance including bug fixes
 `;
 
   let systemPrompt = baseSystemPrompt;
-
-  // Import and use the prompt modifier if available
-  let modifySystemPrompt;
-  try {
-    const promptModifiers = require('@remote-swe-agents/agent-core/lib/prompt-modifiers');
-    modifySystemPrompt = promptModifiers.modifySystemPrompt;
-  } catch (error) {
-    console.error('Error importing prompt modifiers:', error);
-    modifySystemPrompt = null;
-  }
 
   const tryAppendRepositoryKnowledge = async () => {
     try {
@@ -197,8 +189,8 @@ Users will primarily request software engineering assistance including bug fixes
     getPRCommentsTool,
     replyPRCommentTool,
     readImageTool,
-    todoTools.todoInit,
-    todoTools.todoUpdate,
+    todoInitTool,
+    todoUpdateTool,
   ];
   const toolConfig: ConverseCommandInput['toolConfig'] = {
     tools: [
@@ -234,19 +226,9 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           if (cancellationToken.isCancelled) return;
 
-          // Apply prompt modifiers if available
-          let finalSystemPrompt = systemPrompt;
-          if (modifySystemPrompt) {
-            try {
-              finalSystemPrompt = await modifySystemPrompt(systemPrompt);
-            } catch (error) {
-              console.error('Error modifying system prompt:', error);
-            }
-          }
-
           const res = await bedrockConverse(workerId, ['sonnet3.7'], {
             messages,
-            system: [{ text: finalSystemPrompt }, { cachePoint: { type: 'default' } }],
+            system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
             toolConfig,
           });
           return res;

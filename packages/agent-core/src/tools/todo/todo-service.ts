@@ -1,34 +1,27 @@
+import { WorkerId } from '../../env';
 import { readMetadata, writeMetadata } from '../../lib/metadata';
-import { TodoItem, TodoList, TODO_METADATA_KEY } from './types';
+import { TodoItem, TodoList } from './types';
+
+export const TODO_METADATA_KEY = 'todo-list';
 
 /**
  * Retrieve the current todo list for the session
  * @returns The current todo list or null if none exists
  */
-export async function getTodoList(workerId: string = process.env.WORKER_ID!): Promise<TodoList | null> {
-  try {
-    const metadata = await readMetadata(TODO_METADATA_KEY, workerId);
-    if (!metadata?.items) {
-      return null;
-    }
-    return metadata as TodoList;
-  } catch (error) {
-    console.error('Error retrieving todo list:', error);
+export async function getTodoList(): Promise<TodoList | null> {
+  const metadata = await readMetadata(TODO_METADATA_KEY, WorkerId);
+  if (!metadata?.items) {
     return null;
   }
+  return metadata as TodoList;
 }
 
 /**
  * Save a todo list to session metadata
  * @param todoList The todo list to save
  */
-export async function saveTodoList(todoList: TodoList, workerId: string = process.env.WORKER_ID!): Promise<void> {
-  try {
-    await writeMetadata(TODO_METADATA_KEY, todoList, workerId);
-  } catch (error) {
-    console.error('Error saving todo list:', error);
-    throw new Error(`Failed to save todo list: ${error}`);
-  }
+export async function saveTodoList(todoList: TodoList): Promise<void> {
+  await writeMetadata(TODO_METADATA_KEY, todoList, WorkerId);
 }
 
 /**
@@ -36,10 +29,7 @@ export async function saveTodoList(todoList: TodoList, workerId: string = proces
  * @param items Array of task descriptions to initialize
  * @returns The newly created todo list
  */
-export async function initializeTodoList(
-  items: string[],
-  workerId: string = process.env.WORKER_ID!
-): Promise<TodoList> {
+export async function initializeTodoList(items: string[]): Promise<TodoList> {
   const now = Date.now();
 
   const todoList: TodoList = {
@@ -53,7 +43,7 @@ export async function initializeTodoList(
     lastUpdated: now,
   };
 
-  await saveTodoList(todoList, workerId);
+  await saveTodoList(todoList);
   return todoList;
 }
 
@@ -67,12 +57,11 @@ export async function initializeTodoList(
 export async function updateTodoItem(
   id: string,
   status: TodoItem['status'],
-  description?: string,
-  workerId: string = process.env.WORKER_ID!
-): Promise<TodoList | null> {
-  const todoList = await getTodoList(workerId);
+  description?: string
+): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
+  const todoList = await getTodoList();
   if (!todoList) {
-    return null;
+    return { success: false, currentList: null, error: 'No todo list exists. Please create one first.' };
   }
 
   const now = Date.now();
@@ -94,9 +83,17 @@ export async function updateTodoItem(
     items: updatedItems,
     lastUpdated: now,
   };
+  try {
+    await validateTodoList(updatedList);
+  } catch (e) {
+    if (e instanceof TodoListValidationError) {
+      return { success: false, error: e.message, currentList: todoList };
+    }
+    throw e;
+  }
 
-  await saveTodoList(updatedList, workerId);
-  return updatedList;
+  await saveTodoList(updatedList);
+  return { success: true, updatedList };
 }
 
 /**
@@ -109,20 +106,33 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
     return '';
   }
 
-  let markdown = '## Todo List\n\n';
+  let markdown = '## Todo List\n';
 
   todoList.items.forEach((item) => {
     const checked = item.status === 'completed' ? 'x' : ' ';
-    let statusLabel = '';
-
-    if (item.status === 'in_progress') {
-      statusLabel = ' [進行中]';
-    } else if (item.status === 'cancelled') {
-      statusLabel = ' [キャンセル]';
-    }
-
-    markdown += `- [${checked}] ${item.description}${statusLabel} (${item.id})\n`;
+    let statusLabel = item.status;
+    markdown += `- [${checked}] ${item.description}${statusLabel}\n`;
   });
 
   return markdown;
+}
+
+/**
+ * Get the current todo list as markdown string to include in messages
+ * @returns Formatted markdown string of the todo list or empty string if none exists
+ */
+export async function getCurrentTodoList(): Promise<string> {
+  const todoList = await getTodoList();
+  return formatTodoListMarkdown(todoList);
+}
+
+class TodoListValidationError extends Error {}
+
+async function validateTodoList(todoList: TodoList): Promise<true> {
+  // Rule1. Only have ONE task in_progress at any time
+  if (todoList.items.filter((item) => item.status === 'in_progress').length > 1) {
+    throw new TodoListValidationError('Only one task can be in progress at a time.');
+  }
+
+  return true;
 }

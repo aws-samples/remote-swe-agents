@@ -62,7 +62,8 @@ cd packages/agent-core && npm run build
 # Local execution
 cd packages/worker && npm run start:local
 
-# TypeScript-only build
+# build
+npm run build -w @remote-swe-agents/agent-core
 cd packages/worker && npm run build
 ```
 
@@ -73,6 +74,7 @@ cd packages/worker && npm run build
 cd packages/slack-bolt-app && npm run dev
 
 # Build
+npm run build -w @remote-swe-agents/agent-core
 cd packages/slack-bolt-app && npm run build
 ```
 
@@ -83,6 +85,7 @@ cd packages/slack-bolt-app && npm run build
 cd packages/webapp && npm run dev
 
 # Build
+npm run build -w @remote-swe-agents/agent-core
 cd packages/webapp && npm run build
 ```
 

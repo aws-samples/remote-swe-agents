@@ -93,8 +93,6 @@ export async function updateSessionCost(workerId: string) {
         },
       })
     );
-
-    console.log(`Session cost updated to ${totalCost.toFixed(6)} USD for workerId ${workerId}`);
   } catch (error) {
     console.error(`Error updating session cost for workerId ${workerId}:`, error);
   }

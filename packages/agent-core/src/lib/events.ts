@@ -9,7 +9,7 @@ const httpEndpoint = process.env.EVENT_HTTP_ENDPOINT!;
 const region = process.env.AWS_REGION!;
 
 async function sendEvent(channelPath: string, payload: any) {
-  if (httpEndpoint == null) {
+  if (!httpEndpoint) {
     console.log(`event api is not configured!`);
     return;
   }

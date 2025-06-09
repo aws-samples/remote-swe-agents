@@ -11,4 +11,3 @@ export interface TodoList {
   lastUpdated: number;
 }
 
-export const TODO_METADATA_KEY = 'todo-list';
