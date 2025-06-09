@@ -193,6 +193,14 @@ export GITHUB_APP_ID=your-github-app-id
 export GITHUB_INSTALLATION_ID=your-github-installation-id
 ```
 
+#### For Worker Instance Configuration:
+
+You can configure additional AWS managed policies to be attached to the worker instance role:
+
+```sh
+export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+```
+
 > [!NOTE]
 > We use environment variables here to inject configuration from GitHub Actions variables. If this isn't convenient for you, you can simply hard-code the values in [`bin/cdk.ts`](cdk/bin/cdk.ts).
 
