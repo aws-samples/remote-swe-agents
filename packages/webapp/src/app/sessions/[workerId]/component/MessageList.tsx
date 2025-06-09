@@ -33,7 +33,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const [visibleRawJsonMessages, setVisibleRawJsonMessages] = useState<Set<string>>(new Set());
 
   const toggleRawJsonVisibility = (messageId: string) => {
-    setVisibleRawJsonMessages(prev => {
+    setVisibleRawJsonMessages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
         newSet.delete(messageId);
@@ -119,7 +119,15 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     </ReactMarkdown>
   );
 
-  const ToolUseRenderer = ({ content, input, messageId }: { content: string; input: string | undefined; messageId: string }) => {
+  const ToolUseRenderer = ({
+    content,
+    input,
+    messageId,
+  }: {
+    content: string;
+    input: string | undefined;
+    messageId: string;
+  }) => {
     const toolName = content;
 
     const getToolIcon = (name: string) => {
