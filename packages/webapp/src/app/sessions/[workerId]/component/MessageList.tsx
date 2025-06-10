@@ -166,9 +166,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 onClick={() => toggleInputJsonVisibility(messageId)}
                 className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
               >
-                <Info className="w-3 h-3" />
-                <span>{visibleInputJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}</span>
-                <span className="ml-1">({t('input')})</span>
+                {visibleInputJsonMessages.has(messageId) ? (
+                  <span className="transform rotate-90">&#9654;</span>
+                ) : (
+                  <span>&#9654;</span>
+                )}
+                <span>{t('input')}</span>
               </button>
             )}
             {output && (
@@ -176,9 +179,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 onClick={() => toggleOutputJsonVisibility(messageId)}
                 className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs ml-2"
               >
-                <Info className="w-3 h-3" />
-                <span>{visibleOutputJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}</span>
-                <span className="ml-1">({t('output')})</span>
+                {visibleOutputJsonMessages.has(messageId) ? (
+                  <span className="transform rotate-90">&#9654;</span>
+                ) : (
+                  <span>&#9654;</span>
+                )}
+                <span>{t('output')}</span>
               </button>
             )}
           </div>
