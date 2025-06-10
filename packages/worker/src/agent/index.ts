@@ -200,10 +200,6 @@ Users will primarily request software engineering assistance including bug fixes
     ],
   };
 
-  // We would use model-specific tokens here, but for now we'll use a default value
-  const maxInputTokens = 200000; // Default to 200k tokens
-  const middleOutMaxTokens = maxInputTokens * 0.4; // Use 40% of max input tokens as specified
-
   const { items: initialItems } = await middleOutFiltering(allItems);
   // usually cache was created with the last user message (including toolResult), so try to get at(-3) here.
   // at(-1) is usually the latest user message received, at(-2) is usually the last assistant output
@@ -217,7 +213,7 @@ Users will primarily request software engineering assistance including bug fixes
     const items = [...initialItems, ...appendedItems];
 
     // Check if token count exceeds the threshold (95% of maxInputTokens)
-    const tokenThreshold = maxInputTokens * 0.95;
+    const tokenThreshold = 190_000; // TODO: use model specific parameters
     const totalBeforeFiltering = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
 
     let result;
