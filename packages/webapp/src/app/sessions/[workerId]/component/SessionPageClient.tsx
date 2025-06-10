@@ -172,12 +172,12 @@ export default function SessionPageClient({
       </div>
 
       <main className="flex-grow flex flex-col relative">
-        {/* Todo List Modal */}
+        {/* Todo List Popup */}
         {todoList && showTodoModal && (
-          <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-lg font-semibold">{t('todoList')}</h2>
+          <div className="absolute top-16 right-4 z-50 max-w-sm w-full">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
+              <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-md font-medium">{t('todoList')}</h2>
                 <button
                   onClick={() => setShowTodoModal(false)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -185,7 +185,7 @@ export default function SessionPageClient({
                   ✕
                 </button>
               </div>
-              <div className="p-4">
+              <div className="p-3 max-h-[70vh] overflow-y-auto">
                 <TodoList todoList={todoList} />
               </div>
             </div>
