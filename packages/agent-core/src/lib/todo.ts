@@ -67,20 +67,16 @@ export async function updateTodoItem(
   const now = Date.now();
 
   // Find and update the task
-  const updatedItems = todoList.items.map((item) => {
-    if (item.id === id) {
-      return {
-        ...item,
-        status,
-        description: description || item.description,
-        updatedAt: now,
-      };
-    }
-    return item;
-  });
+  const task = todoList.items.find((task) => task.id == id);
+  if (!task) {
+    return { success: false, currentList: null, error: `Task id ${id} was not found.` };
+  }
+  task.status = status;
+  task.description = description ?? task.description;
+  task.updatedAt = now;
 
   const updatedList: TodoList = {
-    items: updatedItems,
+    items: todoList.items,
     lastUpdated: now,
   };
   try {
@@ -101,7 +97,7 @@ export async function updateTodoItem(
  * @param todoList The todo list to format
  * @returns Formatted markdown string
  */
-export function formatTodoListMarkdown(todoList: TodoList | null): string {
+export function formatTodoList(todoList: TodoList | null): string {
   if (!todoList || todoList.items.length === 0) {
     return '';
   }
@@ -109,9 +105,7 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
   let markdown = '## Todo List\n';
 
   todoList.items.forEach((item) => {
-    const checked = item.status === 'completed' ? 'x' : ' ';
-    let statusLabel = item.status;
-    markdown += `- [${checked}] ${item.description}${statusLabel}\n`;
+    markdown += `- id:${item.id} (${item.status}) ${item.description}\n`;
   });
 
   return markdown;
@@ -123,7 +117,7 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
  */
 export async function getCurrentTodoList(workerId = WorkerId): Promise<string> {
   const todoList = await getTodoList(workerId);
-  return formatTodoListMarkdown(todoList);
+  return formatTodoList(todoList);
 }
 
 class TodoListValidationError extends Error {}
