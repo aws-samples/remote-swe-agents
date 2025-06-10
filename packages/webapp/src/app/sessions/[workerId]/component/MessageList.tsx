@@ -196,7 +196,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                   <MarkdownRenderer content={message.content} />
                 )}
                 <div className={`text-xs mt-2 ${'text-gray-500 dark:text-gray-400'}`}>
-                  {new Date(message.timestamp).toLocaleTimeString()}
+                  {new Date(message.timestamp).toLocaleDateString()} {new Date(message.timestamp).toLocaleTimeString()}
                 </div>
               </div>
 
