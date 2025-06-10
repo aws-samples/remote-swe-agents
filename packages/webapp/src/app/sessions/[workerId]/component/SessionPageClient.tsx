@@ -174,7 +174,7 @@ export default function SessionPageClient({
       <main className="flex-grow flex flex-col relative">
         {/* Todo List Popup */}
         {todoList && showTodoModal && (
-          <div className="absolute top-16 right-4 z-50 max-w-sm w-full">
+          <div className="fixed top-20 right-4 z-50 max-w-sm w-full">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 className="text-md font-medium">{t('todoList')}</h2>
