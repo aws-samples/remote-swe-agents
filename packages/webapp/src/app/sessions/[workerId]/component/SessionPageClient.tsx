@@ -10,17 +10,21 @@ import MessageList, { Message } from './MessageList';
 import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import TodoList from './TodoList';
+import { TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema/todo';
 
 interface SessionPageClientProps {
   workerId: string;
   initialMessages: Message[];
   initialInstanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
+  initialTodoList?: TodoListType | null;
 }
 
 export default function SessionPageClient({
   workerId,
   initialMessages,
   initialInstanceStatus,
+  initialTodoList,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -28,6 +32,7 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
+  const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList || null);
 
   // Real-time communication via event bus
   useEventBus({
@@ -148,6 +153,12 @@ export default function SessionPageClient({
       </div>
 
       <main className="flex-grow flex flex-col relative">
+        {todoList && (
+          <div className="max-w-4xl w-full mx-auto px-4 py-3">
+            <TodoList todoList={todoList} />
+          </div>
+        )}
+        
         <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
