@@ -177,7 +177,10 @@ export default function SessionPageClient({
           <div className="fixed top-20 right-4 z-50 max-w-sm w-full">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-md font-medium">{t('todoList')}</h2>
+                <h2 className="text-md font-medium">
+                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                  {todoList.items.length})
+                </h2>
                 <button
                   onClick={() => setShowTodoModal(false)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
