@@ -169,6 +169,14 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     </ReactMarkdown>
   );
 
+  // Utility function to compare timestamps (hour:minute format)
+  const isSameTime = (timestamp1: Date, timestamp2: Date): boolean => {
+    return (
+      timestamp1.getHours() === timestamp2.getHours() &&
+      timestamp1.getMinutes() === timestamp2.getMinutes()
+    );
+  };
+
   const ToolUseRenderer = ({
     content,
     input,
@@ -242,10 +250,10 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     );
   };
 
-  const MessageItem = ({ message }: { message: MessageView }) => (
+  const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => (
     <div className="flex items-start gap-3 py-1">
-      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1">
-        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1" style={{ minWidth: '55px' }}>
+        {showTimestamp && new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
       <div className="flex-1">
         {message.type === 'toolUse' ? (
@@ -295,10 +303,13 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
         </div>
 
         {/* Messages */}
-        <div className="ml-11 space-y-1">
-          {group.messages.map((message) => (
-            <MessageItem key={message.id} message={message} />
-          ))}
+        <div className="space-y-1">
+          {group.messages.map((message, index) => {
+            const showTimestamp = index === 0 || !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
+            return (
+              <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} />
+            );
+          })}
         </div>
       </div>
     );
