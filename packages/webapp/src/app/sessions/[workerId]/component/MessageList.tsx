@@ -171,10 +171,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
   // Utility function to compare timestamps (hour:minute format)
   const isSameTime = (timestamp1: Date, timestamp2: Date): boolean => {
-    return (
-      timestamp1.getHours() === timestamp2.getHours() &&
-      timestamp1.getMinutes() === timestamp2.getMinutes()
-    );
+    return timestamp1.getHours() === timestamp2.getHours() && timestamp1.getMinutes() === timestamp2.getMinutes();
   };
 
   const ToolUseRenderer = ({
@@ -201,9 +198,15 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {getToolIcon(toolName)}
-            <span className="text-gray-600 dark:text-gray-400">
+            <button
+              onClick={() => {
+                toggleInputJsonVisibility(messageId);
+                toggleOutputJsonVisibility(messageId);
+              }}
+              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+            >
               {t('usingTool')}: {toolName}
-            </span>
+            </button>
           </div>
           <div className="flex items-center gap-2">
             {input && (
@@ -277,7 +280,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     const firstMessageDate = new Date(firstMessage.timestamp);
 
     return (
-      <div className="mb-6">
+      <div className="mb-3">
         {/* Group Header */}
         <div className="flex items-center gap-3 mb-2">
           <div className="flex-shrink-0">
@@ -305,10 +308,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
         {/* Messages */}
         <div className="space-y-1">
           {group.messages.map((message, index) => {
-            const showTimestamp = index === 0 || !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
-            return (
-              <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} />
-            );
+            const showTimestamp =
+              index === 0 || !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
+            return <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} />;
           })}
         </div>
       </div>
