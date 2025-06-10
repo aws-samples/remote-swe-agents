@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 
-export type Message = {
+export type MessageView = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -22,7 +22,7 @@ export type Message = {
 };
 
 type MessageListProps = {
-  messages: Message[];
+  messages: MessageView[];
   isAgentTyping: boolean;
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
 };

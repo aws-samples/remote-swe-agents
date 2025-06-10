@@ -8,12 +8,12 @@ import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
 import { KeyboardEventHandler } from 'react';
-import { Message } from './MessageList';
+import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 
 type MessageFormProps = {
-  onSubmit: (message: Message) => void;
+  onSubmit: (message: MessageView) => void;
   workerId: string;
 };
 
