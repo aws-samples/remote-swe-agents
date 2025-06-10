@@ -66,8 +66,8 @@ export default function TodoList({ todoList }: TodoListProps) {
                   item.status === 'in_progress'
                     ? 'bg-blue-50 dark:bg-blue-900/20'
                     : item.status === 'completed'
-                      ? 'bg-green-50 dark:bg-green-900/20'
-                      : ''
+                    ? 'bg-green-50 dark:bg-green-900/20'
+                    : ''
                 }`}
               >
                 <div className="mt-0.5">{getStatusIcon(item.status)}</div>
