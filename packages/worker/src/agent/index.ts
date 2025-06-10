@@ -211,7 +211,27 @@ Users will primarily request software engineering assistance including bug fixes
   while (true) {
     if (cancellationToken.isCancelled) break;
     const items = [...initialItems, ...appendedItems];
-    const { totalTokenCount, messages } = await noOpFiltering(items);
+
+    // Check if token count exceeds the threshold (95% of maxInputTokens)
+    const tokenThreshold = 190_000; // TODO: use model specific parameters
+    const totalBeforeFiltering = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
+
+    let result;
+    if (totalBeforeFiltering > tokenThreshold) {
+      // Apply middle out filtering if token count exceeds threshold
+      console.log(
+        `Applying middle-out during agent turn. Total tokens: ${totalBeforeFiltering}, threshold: ${tokenThreshold}`
+      );
+      result = await middleOutFiltering(items);
+      // cache was purged anyway after middle-out
+      firstCachePoint = result.messages.length - 1;
+      secondCachePoint = firstCachePoint;
+    } else {
+      // Otherwise use noOpFiltering as before
+      result = await noOpFiltering(items);
+    }
+
+    const { totalTokenCount, messages } = result;
     secondCachePoint = messages.length - 1;
     [...new Set([firstCachePoint, secondCachePoint])].forEach((cp) => {
       const message = messages[cp];

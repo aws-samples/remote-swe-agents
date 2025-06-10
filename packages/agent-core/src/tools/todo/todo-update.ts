@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
-import { updateTodoItem, formatTodoListMarkdown } from '../../lib/todo';
+import { updateTodoItem, formatTodoList } from '../../lib/todo';
 import { todoInitTool } from './todo-init';
 
 const todoUpdateInputSchema = z.object({
@@ -21,11 +21,11 @@ async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promis
   const result = await updateTodoItem(id, status, description);
 
   if (!result.success) {
-    return `Update failed: ${result.error}\n\n${result.currentList ? `Current todo list:\n${formatTodoListMarkdown(result.currentList)}` : ''}`.trim();
+    return `Update failed: ${result.error}\n\n${result.currentList ? `Current todo list:\n${formatTodoList(result.currentList)}` : ''}`.trim();
   }
 
   // Format the updated list as markdown
-  const formattedList = formatTodoListMarkdown(result.updatedList);
+  const formattedList = formatTodoList(result.updatedList);
 
   return `Task ${id} updated to status: ${status}\n\n${formattedList}`;
 }

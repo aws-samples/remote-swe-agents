@@ -44,7 +44,16 @@
     "input": "入力",
     "output": "出力",
     "scrollToTop": "一番上までスクロール",
-    "scrollToBottom": "一番下までスクロール"
+    "scrollToBottom": "一番下までスクロール",
+    "todoList": "Todoリスト",
+    "showTodoList": "Todoリストを表示",
+    "hideTodoList": "Todoリストを非表示",
+    "todoStatus": "ステータス",
+    "todoStatus_pending": "未着手",
+    "todoStatus_in_progress": "進行中",
+    "todoStatus_completed": "完了",
+    "todoStatus_cancelled": "取り消し",
+    "lastUpdated": "最終更新"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

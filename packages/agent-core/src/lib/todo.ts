@@ -8,8 +8,8 @@ export const TODO_METADATA_KEY = 'todo-list';
  * Retrieve the current todo list for the session
  * @returns The current todo list or null if none exists
  */
-export async function getTodoList(): Promise<TodoList | null> {
-  const metadata = await readMetadata(TODO_METADATA_KEY, WorkerId);
+export async function getTodoList(workerId = WorkerId): Promise<TodoList | null> {
+  const metadata = await readMetadata(TODO_METADATA_KEY, workerId);
   if (!metadata?.items) {
     return null;
   }
@@ -20,8 +20,8 @@ export async function getTodoList(): Promise<TodoList | null> {
  * Save a todo list to session metadata
  * @param todoList The todo list to save
  */
-export async function saveTodoList(todoList: TodoList): Promise<void> {
-  await writeMetadata(TODO_METADATA_KEY, todoList, WorkerId);
+export async function saveTodoList(todoList: TodoList, workerId = WorkerId): Promise<void> {
+  await writeMetadata(TODO_METADATA_KEY, todoList, workerId);
 }
 
 /**
@@ -67,20 +67,16 @@ export async function updateTodoItem(
   const now = Date.now();
 
   // Find and update the task
-  const updatedItems = todoList.items.map((item) => {
-    if (item.id === id) {
-      return {
-        ...item,
-        status,
-        description: description || item.description,
-        updatedAt: now,
-      };
-    }
-    return item;
-  });
+  const task = todoList.items.find((task) => task.id == id);
+  if (!task) {
+    return { success: false, currentList: null, error: `Task id ${id} was not found.` };
+  }
+  task.status = status;
+  task.description = description ?? task.description;
+  task.updatedAt = now;
 
   const updatedList: TodoList = {
-    items: updatedItems,
+    items: todoList.items,
     lastUpdated: now,
   };
   try {
@@ -101,7 +97,7 @@ export async function updateTodoItem(
  * @param todoList The todo list to format
  * @returns Formatted markdown string
  */
-export function formatTodoListMarkdown(todoList: TodoList | null): string {
+export function formatTodoList(todoList: TodoList | null): string {
   if (!todoList || todoList.items.length === 0) {
     return '';
   }
@@ -109,9 +105,7 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
   let markdown = '## Todo List\n';
 
   todoList.items.forEach((item) => {
-    const checked = item.status === 'completed' ? 'x' : ' ';
-    let statusLabel = item.status;
-    markdown += `- [${checked}] ${item.description}${statusLabel}\n`;
+    markdown += `- id:${item.id} (${item.status}) ${item.description}\n`;
   });
 
   return markdown;
@@ -121,9 +115,9 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
  * Get the current todo list as markdown string to include in messages
  * @returns Formatted markdown string of the todo list or empty string if none exists
  */
-export async function getCurrentTodoList(): Promise<string> {
-  const todoList = await getTodoList();
-  return formatTodoListMarkdown(todoList);
+export async function getCurrentTodoList(workerId = WorkerId): Promise<string> {
+  const todoList = await getTodoList(workerId);
+  return formatTodoList(todoList);
 }
 
 class TodoListValidationError extends Error {}

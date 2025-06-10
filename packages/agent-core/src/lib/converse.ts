@@ -22,6 +22,7 @@ type ModelType = z.infer<typeof modelTypeSchema>;
 
 const modelConfigSchema = z.object({
   maxOutputTokens: z.number().default(4096),
+  maxInputTokens: z.number(),
   cacheSupport: z.array(z.enum(['system', 'tool', 'message'])).default([]),
   reasoningSupport: z.boolean().default(false),
   toolChoiceSupport: z.array(z.enum(['any', 'auto', 'tool'])).default([]),
@@ -30,35 +31,42 @@ const modelConfigSchema = z.object({
 const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>> = {
   'sonnet3.5v1': {
     maxOutputTokens: 4096,
+    maxInputTokens: 200_000,
     toolChoiceSupport: ['any', 'auto', 'tool'],
   },
   'sonnet3.5': {
     maxOutputTokens: 4096,
+    maxInputTokens: 200_000,
     toolChoiceSupport: ['any', 'auto', 'tool'],
   },
   'sonnet3.7': {
     maxOutputTokens: 8192,
+    maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
   },
   'haiku3.5': {
     maxOutputTokens: 4096,
+    maxInputTokens: 200_000,
     toolChoiceSupport: ['any', 'auto', 'tool'],
   },
   'nova-pro': {
     maxOutputTokens: 5000,
+    maxInputTokens: 300_000,
     cacheSupport: ['system'],
     toolChoiceSupport: ['auto'],
   },
   opus4: {
     maxOutputTokens: 8192,
+    maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
   },
   sonnet4: {
     maxOutputTokens: 8192,
+    maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],

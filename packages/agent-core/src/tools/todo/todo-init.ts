@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
-import { initializeTodoList, formatTodoListMarkdown } from '../../lib/todo';
+import { initializeTodoList, formatTodoList } from '../../lib/todo';
 import { fileEditTool } from '../editor';
 
 const todoInitInputSchema = z.object({
@@ -17,7 +17,7 @@ async function todoInit(params: z.infer<typeof todoInitInputSchema>) {
   const { items } = params;
 
   const todoList = await initializeTodoList(items);
-  const formattedList = formatTodoListMarkdown(todoList);
+  const formattedList = formatTodoList(todoList);
 
   return formattedList;
 }

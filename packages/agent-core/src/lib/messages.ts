@@ -6,7 +6,6 @@ import path from 'path';
 import { tmpdir } from 'os';
 import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey } from './aws/s3';
-import { renderUserMessage } from './prompt';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
 

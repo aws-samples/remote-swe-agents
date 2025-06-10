@@ -12,7 +12,13 @@ This project consists of the following main components:
 
 2. **Agent-core** - `/packages/agent-core` directory
    - A common module that is imported from slack-bolt-app/worker/webapp
-   - 
+   - Provides shared functionality through the following export paths:
+     - `@remote-swe-agents/agent-core` - Main module
+     - `@remote-swe-agents/agent-core/lib` - Common library functions
+     - `@remote-swe-agents/agent-core/aws` - AWS related functionality
+     - `@remote-swe-agents/agent-core/schema` - Schema definitions (including TodoList types)
+     - `@remote-swe-agents/agent-core/tools` - Tool-related functionality
+     - `@remote-swe-agents/agent-core/env` - Environment-related functionality
 3. **Slack Bolt App** - `/packages/slack-bolt-app` directory
    - Slack integration interface
    - API for processing user requests
@@ -102,3 +108,4 @@ cd packages/webapp && npm run build
 - **Build errors**: Check that dependencies are up to date (`npm ci` to update)
 - **TypeScript errors**: Ensure type definitions are accurate and use type assertions when necessary
 - **CDK Snapshot Test Failures**: When modifying infrastructure in CDK, snapshot tests may fail. Update snapshots using `cd cdk && npm run test -- -u`
+- **Import errors from agent-core**: Always use the official export paths defined in agent-core's package.json. Do not directly import from internal paths like `@remote-swe-agents/agent-core/lib/todo` or `@remote-swe-agents/agent-core/schema/todo` as these are not officially exported and may cause build failures.

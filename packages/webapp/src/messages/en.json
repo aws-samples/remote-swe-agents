@@ -44,7 +44,16 @@
     "input": "input",
     "output": "output",
     "scrollToTop": "Scroll to top",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "todoList": "Todo List",
+    "showTodoList": "Show Todo List",
+    "hideTodoList": "Hide Todo List",
+    "todoStatus": "Status",
+    "todoStatus_pending": "Pending",
+    "todoStatus_in_progress": "In Progress",
+    "todoStatus_completed": "Completed",
+    "todoStatus_cancelled": "Cancelled",
+    "lastUpdated": "Last Updated"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

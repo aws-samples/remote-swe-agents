@@ -2,24 +2,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
-import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import { webappEventSchema, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
+import TodoList from './TodoList';
 
 interface SessionPageClientProps {
   workerId: string;
   initialMessages: MessageView[];
   initialInstanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
+  initialTodoList: TodoListType | null;
 }
 
 export default function SessionPageClient({
   workerId,
   initialMessages,
   initialInstanceStatus,
+  initialTodoList,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
@@ -27,6 +30,8 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
+  const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+  const [showTodoModal, setShowTodoModal] = useState(false);
 
   // Real-time communication via event bus
   useEventBus({
@@ -143,17 +148,53 @@ export default function SessionPageClient({
                 </div>
               )}
             </div>
-            <Link
-              href="/sessions/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {t('newSession')}
-            </Link>
+            <div className="flex items-center gap-2">
+              {todoList && (
+                <button
+                  onClick={() => setShowTodoModal(!showTodoModal)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                  {todoList.items.length})
+                </button>
+              )}
+              <Link
+                href="/sessions/new"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {t('newSession')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       <main className="flex-grow flex flex-col relative">
+        {/* Todo List Popup */}
+        {todoList && showTodoModal && (
+          <div className="fixed top-20 right-4 z-50 max-w-sm w-full">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
+              <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-md font-medium">
+                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                  {todoList.items.length})
+                </h2>
+                <button
+                  onClick={() => setShowTodoModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-3 max-h-[70vh] overflow-y-auto">
+                <TodoList todoList={todoList} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />

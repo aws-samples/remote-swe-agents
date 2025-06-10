@@ -1,4 +1,4 @@
-import { getConversationHistory, getSession, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
+import { getConversationHistory, getSession, getTodoList, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
@@ -121,7 +121,15 @@ export default async function SessionPage({ params }: SessionPageProps) {
     }
   }
 
+  // Get todo list for this session
+  const todoList = await getTodoList(workerId);
+
   return (
-    <SessionPageClient workerId={workerId} initialMessages={messages} initialInstanceStatus={session.instanceStatus} />
+    <SessionPageClient
+      workerId={workerId}
+      initialMessages={messages}
+      initialInstanceStatus={session.instanceStatus}
+      initialTodoList={todoList}
+    />
   );
 }
