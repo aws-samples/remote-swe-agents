@@ -42,7 +42,6 @@ export default function TodoList({ todoList }: TodoListProps) {
         onClick={toggleCollapse}
       >
         <h3 className="text-md font-medium text-gray-900 dark:text-white flex items-center gap-2">
-          {t('todoList')}
           <span className="text-sm text-gray-500 dark:text-gray-400">
             ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
           </span>
