@@ -388,7 +388,7 @@ app.event('message', async ({ event, client, logger }) => {
   }
 
   // Skip if message mentions this bot (will be handled by app_mention)
-  if (botId && messageEvent.text.includes(`<@${botId}>`)) {
+  if (botId && messageEvent.text && messageEvent.text.includes(`<@${botId}>`)) {
     console.log('Message contains mention to this bot, skipping to avoid duplication');
     return;
   }
