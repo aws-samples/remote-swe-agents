@@ -156,7 +156,8 @@ export default function SessionPageClient({
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
                   <ListChecks className="h-4 w-4 mr-2" />
-                  {t('todoList')} ({todoList.items.filter(item => item.status === 'completed').length}/{todoList.items.length})
+                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                  {todoList.items.length})
                 </button>
               )}
               <Link
