@@ -94,7 +94,7 @@ cd packages/webapp && npm run build
 1. Create a branch for a new feature or bug fix
 2. Implement changes and test
 3. Run format and type checks
-4. Create a PR and ensure CI passes. The PR title should always be in English.
+4. Create a PR and ensure CI passes. The PR title and description must always written in English.
 5. Request review when the PR is ready (i.e. when you implemented all the requested features and all the CI passes.)
 
 ## Troubleshooting
