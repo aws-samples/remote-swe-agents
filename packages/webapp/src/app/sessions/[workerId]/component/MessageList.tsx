@@ -46,7 +46,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
       return newSet;
     });
   };
-  
+
   const toggleOutputJsonVisibility = (messageId: string) => {
     setVisibleOutputJsonMessages((prev) => {
       const newSet = new Set(prev);
@@ -227,11 +227,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 }`}
               >
                 {message.type === 'toolUse' ? (
-                  <ToolUseRenderer 
-                    content={message.content} 
-                    input={message.detail} 
+                  <ToolUseRenderer
+                    content={message.content}
+                    input={message.detail}
                     output={message.output}
-                    messageId={message.id} 
+                    messageId={message.id}
                   />
                 ) : (
                   <MarkdownRenderer content={message.content} />

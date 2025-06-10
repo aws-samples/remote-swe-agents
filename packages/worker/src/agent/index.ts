@@ -360,10 +360,10 @@ Users will primarily request software engineering assistance including bug fixes
             ],
           },
         });
-        await sendWebappEvent(workerId, { 
-          type: 'toolResult', 
+        await sendWebappEvent(workerId, {
+          type: 'toolResult',
           toolName: toolUse.name ?? '',
-          output: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResultObject) 
+          output: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResultObject),
         });
       }
 
