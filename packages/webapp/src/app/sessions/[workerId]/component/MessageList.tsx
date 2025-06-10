@@ -189,11 +189,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     };
 
     return (
-      <div className="bg-gray-50/50 dark:bg-gray-800/20 rounded-md ">
+      <div className="rounded-md">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {getToolIcon(toolName)}
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-gray-600 dark:text-gray-400">
               {t('usingTool')}: {toolName}
             </span>
           </div>
@@ -201,7 +201,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {input && (
               <button
                 onClick={() => toggleInputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs"
+                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs cursor-pointer"
               >
                 {visibleInputJsonMessages.has(messageId) ? (
                   <ChevronDown className="w-3 h-3" />
@@ -214,7 +214,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {output && (
               <button
                 onClick={() => toggleOutputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs"
+                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs cursor-pointer"
               >
                 {visibleOutputJsonMessages.has(messageId) ? (
                   <ChevronDown className="w-3 h-3" />
