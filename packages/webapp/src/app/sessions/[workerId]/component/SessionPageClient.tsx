@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
@@ -31,6 +31,7 @@ export default function SessionPageClient({
     initialInstanceStatus
   );
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+  const [showTodoModal, setShowTodoModal] = useState(false);
 
   // Real-time communication via event bus
   useEventBus({
@@ -147,20 +148,46 @@ export default function SessionPageClient({
                 </div>
               )}
             </div>
-            <Link
-              href="/sessions/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {t('newSession')}
-            </Link>
+            <div className="flex items-center gap-2">
+              {todoList && (
+                <button
+                  onClick={() => setShowTodoModal(!showTodoModal)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  {t('todoList')} ({todoList.items.filter(item => item.status === 'completed').length}/{todoList.items.length})
+                </button>
+              )}
+              <Link
+                href="/sessions/new"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {t('newSession')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       <main className="flex-grow flex flex-col relative">
-        {todoList && (
-          <div className="max-w-4xl w-full mx-auto px-4 py-3">
-            <TodoList todoList={todoList} />
+        {/* Todo List Modal */}
+        {todoList && showTodoModal && (
+          <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-semibold">{t('todoList')}</h2>
+                <button
+                  onClick={() => setShowTodoModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-4">
+                <TodoList todoList={todoList} />
+              </div>
+            </div>
           </div>
         )}
 
