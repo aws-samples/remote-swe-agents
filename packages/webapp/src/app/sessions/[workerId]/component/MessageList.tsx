@@ -198,7 +198,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
         {output && visibleOutputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs">{output}</pre>
+            <pre className="text-xs text-green-600 dark:text-green-400">{output}</pre>
           </div>
         )}
       </div>
