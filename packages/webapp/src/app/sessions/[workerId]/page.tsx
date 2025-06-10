@@ -122,7 +122,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
   }
 
   // Get todo list for this session
-  const todoList = await getTodoList();
+  const todoList = await getTodoList(workerId);
 
   return (
     <SessionPageClient

@@ -8,8 +8,8 @@ export const TODO_METADATA_KEY = 'todo-list';
  * Retrieve the current todo list for the session
  * @returns The current todo list or null if none exists
  */
-export async function getTodoList(): Promise<TodoList | null> {
-  const metadata = await readMetadata(TODO_METADATA_KEY, WorkerId);
+export async function getTodoList(workerId = WorkerId): Promise<TodoList | null> {
+  const metadata = await readMetadata(TODO_METADATA_KEY, workerId);
   if (!metadata?.items) {
     return null;
   }
@@ -20,8 +20,8 @@ export async function getTodoList(): Promise<TodoList | null> {
  * Save a todo list to session metadata
  * @param todoList The todo list to save
  */
-export async function saveTodoList(todoList: TodoList): Promise<void> {
-  await writeMetadata(TODO_METADATA_KEY, todoList, WorkerId);
+export async function saveTodoList(todoList: TodoList, workerId = WorkerId): Promise<void> {
+  await writeMetadata(TODO_METADATA_KEY, todoList, workerId);
 }
 
 /**
@@ -121,8 +121,8 @@ export function formatTodoListMarkdown(todoList: TodoList | null): string {
  * Get the current todo list as markdown string to include in messages
  * @returns Formatted markdown string of the todo list or empty string if none exists
  */
-export async function getCurrentTodoList(): Promise<string> {
-  const todoList = await getTodoList();
+export async function getCurrentTodoList(workerId = WorkerId): Promise<string> {
+  const todoList = await getTodoList(workerId);
   return formatTodoListMarkdown(todoList);
 }
 

@@ -15,7 +15,7 @@ interface SessionPageClientProps {
   workerId: string;
   initialMessages: MessageView[];
   initialInstanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
-  initialTodoList?: TodoListType | null;
+  initialTodoList: TodoListType | null;
 }
 
 export default function SessionPageClient({
@@ -30,7 +30,7 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
-  const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList || null);
+  const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
 
   // Real-time communication via event bus
   useEventBus({
