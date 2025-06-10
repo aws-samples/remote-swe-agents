@@ -19,7 +19,6 @@ export type Message = {
   output?: string; // Added for toolResult output JSON
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse';
-  toolUseIds?: string[]; // Added to help match toolUse with toolResult
 };
 
 type MessageListProps = {
