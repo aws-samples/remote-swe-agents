@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { Bot, User, Loader2, Clock, Info, Settings, Code, Terminal, ChevronRight, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -39,8 +39,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   // Track visibility of input and output JSON for each message
   const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
   const [visibleOutputJsonMessages, setVisibleOutputJsonMessages] = useState<Set<string>>(new Set());
+  const scrollPositionRef = useRef<number>(0);
 
   const toggleInputJsonVisibility = (messageId: string) => {
+    scrollPositionRef.current = window.scrollY;
+
     setVisibleInputJsonMessages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
@@ -53,6 +56,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   };
 
   const toggleOutputJsonVisibility = (messageId: string) => {
+    scrollPositionRef.current = window.scrollY;
+
     setVisibleOutputJsonMessages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
@@ -64,22 +69,27 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     });
   };
 
+  // to keep scroll position before/after toggle
+  useLayoutEffect(() => {
+    window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
+  }, [visibleInputJsonMessages, visibleOutputJsonMessages]);
+
   const groupMessages = (messages: MessageView[]): MessageGroup[] => {
     const groups: MessageGroup[] = [];
     let currentGroup: MessageGroup | null = null;
-    
-    messages.forEach(message => {
+
+    messages.forEach((message) => {
       if (!currentGroup || currentGroup.role !== message.role) {
         currentGroup = {
           role: message.role,
-          messages: [message]
+          messages: [message],
         };
         groups.push(currentGroup);
       } else {
         currentGroup.messages.push(message);
       }
     });
-    
+
     return groups;
   };
 
@@ -257,15 +267,17 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const MessageGroup = ({ group }: { group: MessageGroup }) => {
     const firstMessage = group.messages[0];
     const firstMessageDate = new Date(firstMessage.timestamp);
-    
+
     return (
       <div className="mb-6">
         {/* Group Header */}
         <div className="flex items-center gap-3 mb-2">
           <div className="flex-shrink-0">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
-            }`}>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
+            >
               {group.role === 'assistant' ? (
                 <Bot className="w-4 h-4 text-white" />
               ) : (
@@ -277,10 +289,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {group.role === 'assistant' ? 'Assistant' : 'User'}
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {firstMessageDate.toLocaleDateString()} {firstMessageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {firstMessageDate.toLocaleDateString()}{' '}
+            {firstMessageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
-        
+
         {/* Messages */}
         <div className="ml-11 space-y-1">
           {group.messages.map((message) => (
@@ -302,7 +315,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             <p className="text-yellow-700 dark:text-yellow-300">{t('agentStartingMessage')}</p>
           </div>
         )}
-        
+
         <div>
           {messageGroups.map((group, index) => (
             <MessageGroup key={`group-${index}`} group={group} />
