@@ -21,6 +21,11 @@ export type MessageView = {
   type: 'message' | 'toolResult' | 'toolUse';
 };
 
+type MessageGroup = {
+  role: 'user' | 'assistant';
+  messages: MessageView[];
+};
+
 type MessageListProps = {
   messages: MessageView[];
   isAgentTyping: boolean;
@@ -59,6 +64,25 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     });
   };
 
+  const groupMessages = (messages: MessageView[]): MessageGroup[] => {
+    const groups: MessageGroup[] = [];
+    let currentGroup: MessageGroup | null = null;
+    
+    messages.forEach(message => {
+      if (!currentGroup || currentGroup.role !== message.role) {
+        currentGroup = {
+          role: message.role,
+          messages: [message]
+        };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.messages.push(message);
+      }
+    });
+    
+    return groups;
+  };
+
   useEffect(() => {
     if (positionRatio > 0.95) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -66,6 +90,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   }, [messages]);
 
   const showWaitingMessage = instanceStatus === 'starting';
+
   const MarkdownRenderer = ({ content }: { content: string }) => (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -154,17 +179,19 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     };
 
     return (
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          {getToolIcon(toolName)}
-          <span className="font-semibold">
-            {t('usingTool')}: {toolName}
-          </span>
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {getToolIcon(toolName)}
+            <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+              {t('usingTool')}: {toolName}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             {input && (
               <button
                 onClick={() => toggleInputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
+                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs"
               >
                 {visibleInputJsonMessages.has(messageId) ? (
                   <ChevronDown className="w-3 h-3" />
@@ -177,7 +204,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {output && (
               <button
                 onClick={() => toggleOutputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs ml-2"
+                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs"
               >
                 {visibleOutputJsonMessages.has(messageId) ? (
                   <ChevronDown className="w-3 h-3" />
@@ -192,18 +219,79 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
         {input && visibleInputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs">{input}</pre>
+            <pre className="text-xs text-yellow-600 dark:text-yellow-400 whitespace-pre-wrap break-words">{input}</pre>
           </div>
         )}
 
         {output && visibleOutputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-green-600 dark:text-green-400">{output}</pre>
+            <pre className="text-xs text-green-600 dark:text-green-400 whitespace-pre-wrap break-words">{output}</pre>
           </div>
         )}
       </div>
     );
   };
+
+  const MessageItem = ({ message }: { message: MessageView }) => (
+    <div className="flex items-start gap-3 py-1">
+      <div className="flex-1">
+        {message.type === 'toolUse' ? (
+          <ToolUseRenderer
+            content={message.content}
+            input={message.detail}
+            output={message.output}
+            messageId={message.id}
+          />
+        ) : (
+          <div className="text-gray-900 dark:text-white">
+            <MarkdownRenderer content={message.content} />
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1">
+        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </div>
+    </div>
+  );
+
+  const MessageGroup = ({ group }: { group: MessageGroup }) => {
+    const firstMessage = group.messages[0];
+    const firstMessageDate = new Date(firstMessage.timestamp);
+    
+    return (
+      <div className="mb-6">
+        {/* Group Header */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex-shrink-0">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
+            }`}>
+              {group.role === 'assistant' ? (
+                <Bot className="w-4 h-4 text-white" />
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
+            </div>
+          </div>
+          <div className="font-semibold text-gray-900 dark:text-white">
+            {group.role === 'assistant' ? 'Assistant' : 'User'}
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {firstMessageDate.toLocaleDateString()} {firstMessageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+        
+        {/* Messages */}
+        <div className="ml-11 space-y-1">
+          {group.messages.map((message) => (
+            <MessageItem key={message.id} message={message} />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const messageGroups = groupMessages(messages);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -214,58 +302,24 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             <p className="text-yellow-700 dark:text-yellow-300">{t('agentStartingMessage')}</p>
           </div>
         )}
-        <div className="space-y-6">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {message.role === 'assistant' && (
+        
+        <div>
+          {messageGroups.map((group, index) => (
+            <MessageGroup key={`group-${index}`} group={group} />
+          ))}
+
+          {isAgentTyping && (
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 </div>
-              )}
-
-              <div
-                className={`max-w-3xl rounded-lg px-4 py-3 ${
-                  message.type === 'toolUse'
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                }`}
-              >
-                {message.type === 'toolUse' ? (
-                  <ToolUseRenderer
-                    content={message.content}
-                    input={message.detail}
-                    output={message.output}
-                    messageId={message.id}
-                  />
-                ) : (
-                  <MarkdownRenderer content={message.content} />
-                )}
-                <div className={`text-xs mt-2 ${'text-gray-500 dark:text-gray-400'}`}>
-                  {new Date(message.timestamp).toLocaleDateString()} {new Date(message.timestamp).toLocaleTimeString()}
-                </div>
+                <div className="font-semibold text-gray-900 dark:text-white">Assistant</div>
               </div>
-
-              {message.role === 'user' && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isAgentTyping && (
-            <div className="flex gap-4 justify-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-              </div>
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-2">
+              <div className="ml-11">
+                <div className="flex items-center gap-2 py-1">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-gray-600 dark:text-gray-300">{t('aiAgentResponding')}</span>
                 </div>
