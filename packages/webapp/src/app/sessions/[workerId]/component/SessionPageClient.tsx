@@ -152,7 +152,7 @@ export default function SessionPageClient({
               {todoList && (
                 <button
                   onClick={() => setShowTodoModal(!showTodoModal)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
                   <ListChecks className="h-4 w-4 mr-2" />
@@ -174,7 +174,7 @@ export default function SessionPageClient({
       <main className="flex-grow flex flex-col relative">
         {/* Todo List Popup */}
         {todoList && showTodoModal && (
-          <div className="fixed top-20 right-4 z-50 max-w-sm w-full">
+          <div className="fixed top-30 right-4 z-50 max-w-sm w-full">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 className="text-md font-medium">
@@ -203,7 +203,7 @@ export default function SessionPageClient({
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
           <button
             onClick={scrollToTop}
-            className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
+            className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
             title={t('scrollToTop')}
             aria-label={t('scrollToTop')}
           >
@@ -211,7 +211,7 @@ export default function SessionPageClient({
           </button>
           <button
             onClick={scrollToBottom}
-            className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none"
+            className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
             title={t('scrollToBottom')}
             aria-label={t('scrollToBottom')}
           >
