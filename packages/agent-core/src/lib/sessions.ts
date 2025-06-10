@@ -60,11 +60,12 @@ export const getSessions = async (): Promise<SessionItem[]> => {
   const res = await ddb.send(
     new QueryCommand({
       TableName,
+      IndexName: 'LSI1',
       KeyConditionExpression: 'PK = :pk',
       ExpressionAttributeValues: {
         ':pk': 'sessions',
       },
-      ScanIndexForward: false,
+      ScanIndexForward: false, // DESC order
       Limit: 50,
     })
   );
