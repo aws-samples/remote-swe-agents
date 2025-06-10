@@ -9,7 +9,6 @@ import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
 import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
-import { useScrollPosition } from '@/hooks/use-scroll-position';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -56,16 +55,14 @@ export default function SessionPageClient({
           setInstanceStatus(event.status);
           break;
         case 'toolResult':
-          // Update corresponding toolUse message with output
           if (event.output) {
-            setMessages((prev) =>
-              prev.map((msg) => {
-                if (msg.type === 'toolUse' && msg.content === event.toolName) {
-                  return { ...msg, output: event.output };
-                }
-                return msg;
-              })
-            );
+            setMessages((prev) => {
+              const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
+              if (toolUse) {
+                toolUse.output = event.output;
+              }
+              return prev;
+            });
           }
           break;
         case 'toolUse':
