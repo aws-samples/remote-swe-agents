@@ -55,15 +55,13 @@ export default function SessionPageClient({
           setInstanceStatus(event.status);
           break;
         case 'toolResult':
-          if (event.output) {
-            setMessages((prev) => {
-              const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
-              if (toolUse) {
-                toolUse.output = event.output;
-              }
-              return prev;
-            });
-          }
+          setMessages((prev) => {
+            const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
+            if (toolUse && toolUse.output == undefined) {
+              toolUse.output = event.output;
+            }
+            return prev;
+          });
           break;
         case 'toolUse':
           if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {

@@ -363,7 +363,7 @@ Users will primarily request software engineering assistance including bug fixes
         await sendWebappEvent(workerId, {
           type: 'toolResult',
           toolName: toolUse.name ?? '',
-          output: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResultObject),
+          output: toolResult ? toolResult : (toolResultObject?.map((r) => r.text).join('\n') ?? ''),
         });
       }
 
