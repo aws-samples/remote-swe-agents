@@ -103,6 +103,11 @@ cd packages/webapp && npm run build
 4. Create a PR and ensure CI passes. The PR title and description must always written in English.
 5. Request review when the PR is ready (i.e. when you implemented all the requested features and all the CI passes.)
 
+## PR Guidelines
+
+- **Always create PRs against the upstream repository**: When making changes, ensure that your Pull Requests are created against the original repository (`aws-samples/remote-swe-agents`), not your personal fork.
+- **Use descriptive PR titles**: PR titles and descriptions should clearly explain the changes and must be written in English.
+
 ## Troubleshooting
 
 - **Build errors**: Check that dependencies are up to date (`npm ci` to update)
