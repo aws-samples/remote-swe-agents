@@ -229,13 +229,13 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
         {input && visibleInputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-yellow-600 dark:text-yellow-400 whitespace-pre-wrap break-words">{input}</pre>
+            <pre className="text-xs text-yellow-600 dark:text-yellow-400 whitespace-pre-wrap break-all">{input}</pre>
           </div>
         )}
 
         {output && visibleOutputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-green-600 dark:text-green-400 whitespace-pre-wrap break-words">{output}</pre>
+            <pre className="text-xs text-green-600 dark:text-green-400 whitespace-pre-wrap break-all">{output}</pre>
           </div>
         )}
       </div>
