@@ -372,8 +372,18 @@ app.event('message', async ({ event, client, logger }) => {
     files?: any[];
   };
 
-  // Skip if message has no text, is from a bot, or has a subtype
-  if (!messageEvent.text || messageEvent.bot_id || messageEvent.subtype) {
+  // Skip if from a bot
+  if (messageEvent.bot_id) {
+    return;
+  }
+
+  // Skip if no text AND no files (empty message)
+  if (!messageEvent.text && !messageEvent.files?.length) {
+    return;
+  }
+
+  // Skip certain subtypes but allow those with files
+  if (messageEvent.subtype && !messageEvent.files?.length) {
     return;
   }
 
