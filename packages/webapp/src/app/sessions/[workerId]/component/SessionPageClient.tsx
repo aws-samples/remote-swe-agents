@@ -56,6 +56,17 @@ export default function SessionPageClient({
           setInstanceStatus(event.status);
           break;
         case 'toolResult':
+          // Update corresponding toolUse message with output
+          if (event.output) {
+            setMessages((prev) => 
+              prev.map((msg) => {
+                if (msg.type === 'toolUse' && msg.content === event.toolName) {
+                  return { ...msg, output: event.output };
+                }
+                return msg;
+              })
+            );
+          }
           break;
         case 'toolUse':
           if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {

@@ -360,7 +360,11 @@ Users will primarily request software engineering assistance including bug fixes
             ],
           },
         });
-        await sendWebappEvent(workerId, { type: 'toolResult', toolName: toolUse.name ?? '' });
+        await sendWebappEvent(workerId, { 
+          type: 'toolResult', 
+          toolName: toolUse.name ?? '',
+          output: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResultObject) 
+        });
       }
 
       // Save both tool use and tool result messages atomically to DynamoDB

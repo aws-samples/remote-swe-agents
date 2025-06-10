@@ -16,6 +16,7 @@ export type Message = {
   role: 'user' | 'assistant';
   content: string;
   detail?: string;
+  output?: string; // Added for toolResult output JSON
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse';
 };
@@ -30,10 +31,24 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const { theme } = useTheme();
   const t = useTranslations('sessions');
   const positionRatio = useScrollPosition();
-  const [visibleRawJsonMessages, setVisibleRawJsonMessages] = useState<Set<string>>(new Set());
+  // Track visibility of input and output JSON for each message
+  const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
+  const [visibleOutputJsonMessages, setVisibleOutputJsonMessages] = useState<Set<string>>(new Set());
 
-  const toggleRawJsonVisibility = (messageId: string) => {
-    setVisibleRawJsonMessages((prev) => {
+  const toggleInputJsonVisibility = (messageId: string) => {
+    setVisibleInputJsonMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+  
+  const toggleOutputJsonVisibility = (messageId: string) => {
+    setVisibleOutputJsonMessages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
         newSet.delete(messageId);
@@ -122,10 +137,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const ToolUseRenderer = ({
     content,
     input,
+    output,
     messageId,
   }: {
     content: string;
     input: string | undefined;
+    output: string | undefined;
     messageId: string;
   }) => {
     const toolName = content;
@@ -143,20 +160,39 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           <span className="font-semibold">
             {t('usingTool')}: {toolName}
           </span>
-          {input && (
-            <button
-              onClick={() => toggleRawJsonVisibility(messageId)}
-              className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
-            >
-              <Info className="w-3 h-3" />
-              {visibleRawJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {input && (
+              <button
+                onClick={() => toggleInputJsonVisibility(messageId)}
+                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
+              >
+                <Info className="w-3 h-3" />
+                <span>{visibleInputJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}</span>
+                <span className="ml-1">({t('input')})</span>
+              </button>
+            )}
+            {output && (
+              <button
+                onClick={() => toggleOutputJsonVisibility(messageId)}
+                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs ml-2"
+              >
+                <Info className="w-3 h-3" />
+                <span>{visibleOutputJsonMessages.has(messageId) ? t('hideRawJson') : t('showRawJson')}</span>
+                <span className="ml-1">({t('output')})</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {input && visibleRawJsonMessages.has(messageId) && (
+        {input && visibleInputJsonMessages.has(messageId) && (
           <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
             <pre className="text-xs">{input}</pre>
+          </div>
+        )}
+
+        {output && visibleOutputJsonMessages.has(messageId) && (
+          <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+            <pre className="text-xs">{output}</pre>
           </div>
         )}
       </div>
@@ -191,7 +227,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 }`}
               >
                 {message.type === 'toolUse' ? (
-                  <ToolUseRenderer content={message.content} input={message.detail} messageId={message.id} />
+                  <ToolUseRenderer 
+                    content={message.content} 
+                    input={message.detail} 
+                    output={message.output}
+                    messageId={message.id} 
+                  />
                 ) : (
                   <MarkdownRenderer content={message.content} />
                 )}

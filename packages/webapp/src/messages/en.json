@@ -41,6 +41,8 @@
     "usingTool": "Using Tool",
     "showRawJson": "Show raw JSON",
     "hideRawJson": "Hide raw JSON",
+    "input": "input",
+    "output": "output",
     "scrollToTop": "Scroll to top",
     "scrollToBottom": "Scroll to bottom"
   },

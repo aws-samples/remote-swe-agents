@@ -41,6 +41,8 @@
     "usingTool": "ツール使用中",
     "showRawJson": "JSONを表示",
     "hideRawJson": "JSONを隠す",
+    "input": "入力",
+    "output": "出力",
     "scrollToTop": "一番上までスクロール",
     "scrollToBottom": "一番下までスクロール"
   },
