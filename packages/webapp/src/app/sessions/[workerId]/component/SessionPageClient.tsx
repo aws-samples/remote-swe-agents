@@ -126,7 +126,7 @@ export default function SessionPageClient({
                 <ArrowLeft className="w-4 h-4" />
                 {t('sessionList')}
               </Link>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Session: {workerId}</h1>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{workerId}</h1>
               {instanceStatus && (
                 <div className="flex items-center gap-2">
                   <span
