@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bot, User, Loader2, Clock, Info, Settings, Code, Terminal } from 'lucide-react';
+import { Bot, User, Loader2, Clock, Info, Settings, Code, Terminal, ChevronRight, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -167,9 +167,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs ml-2"
               >
                 {visibleInputJsonMessages.has(messageId) ? (
-                  <span className="transform rotate-90">&#9654;</span>
+                  <ChevronDown className="w-3 h-3" />
                 ) : (
-                  <span>&#9654;</span>
+                  <ChevronRight className="w-3 h-3" />
                 )}
                 <span>{t('input')}</span>
               </button>
@@ -180,9 +180,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                 className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs ml-2"
               >
                 {visibleOutputJsonMessages.has(messageId) ? (
-                  <span className="transform rotate-90">&#9654;</span>
+                  <ChevronDown className="w-3 h-3" />
                 ) : (
-                  <span>&#9654;</span>
+                  <ChevronRight className="w-3 h-3" />
                 )}
                 <span>{t('output')}</span>
               </button>
