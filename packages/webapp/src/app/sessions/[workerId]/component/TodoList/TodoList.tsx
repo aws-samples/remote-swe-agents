@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TodoItem, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema/todo';
+import { TodoItem, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema';
 import { ChevronDown, ChevronUp, CheckCircle, Circle, XCircle, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
