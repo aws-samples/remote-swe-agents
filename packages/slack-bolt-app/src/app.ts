@@ -397,7 +397,7 @@ app.event('message', async ({ event, client, logger }) => {
   const safeEvent = {
     ...messageEvent,
     // Ensure text is always a string (fallback to empty string if undefined)
-    text: messageEvent.text || "",
+    text: messageEvent.text || '',
   };
 
   // Process thread replies
