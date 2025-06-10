@@ -223,6 +223,9 @@ Users will primarily request software engineering assistance including bug fixes
         `Applying middle-out during agent turn. Total tokens: ${totalBeforeFiltering}, threshold: ${tokenThreshold}`
       );
       result = await middleOutFiltering(items);
+      // cache was purged anyway after middle-out
+      firstCachePoint = result.messages.length - 1;
+      secondCachePoint = firstCachePoint;
     } else {
       // Otherwise use noOpFiltering as before
       result = await noOpFiltering(items);
