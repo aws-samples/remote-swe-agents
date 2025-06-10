@@ -189,11 +189,11 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     };
 
     return (
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
-        <div className="flex items-center justify-between mb-2">
+      <div className="bg-gray-50/50 dark:bg-gray-800/20 rounded-md ">
+        <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {getToolIcon(toolName)}
-            <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+            <span className="text-gray-700 dark:text-gray-300">
               {t('usingTool')}: {toolName}
             </span>
           </div>
@@ -244,6 +244,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
   const MessageItem = ({ message }: { message: MessageView }) => (
     <div className="flex items-start gap-3 py-1">
+      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1">
+        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </div>
       <div className="flex-1">
         {message.type === 'toolUse' ? (
           <ToolUseRenderer
@@ -253,13 +256,10 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             messageId={message.id}
           />
         ) : (
-          <div className="text-gray-900 dark:text-white">
+          <div className="text-gray-900 dark:text-white pb-2">
             <MarkdownRenderer content={message.content} />
           </div>
         )}
-      </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1">
-        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
     </div>
   );
