@@ -7,11 +7,10 @@ import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { Message } from './MessageList';
-import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import { TodoList as TodoListType, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import TodoList from './TodoList';
-import { TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema/todo';
 
 interface SessionPageClientProps {
   workerId: string;
