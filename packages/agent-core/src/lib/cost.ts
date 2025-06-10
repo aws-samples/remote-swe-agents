@@ -58,10 +58,6 @@ async function calculateTotalSessionCost(workerId: string) {
       const modelCost = calculateCost(modelId, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens);
 
       totalCost += modelCost;
-
-      console.log(
-        `Model ${modelId}: ${inputTokens} input, ${outputTokens} output, ${cacheReadTokens} cache read, ${cacheWriteTokens} cache write tokens = ${modelCost.toFixed(6)}`
-      );
     }
 
     return totalCost;
