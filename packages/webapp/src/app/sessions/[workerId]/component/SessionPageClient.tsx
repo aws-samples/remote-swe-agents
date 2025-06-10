@@ -158,7 +158,7 @@ export default function SessionPageClient({
             <TodoList todoList={todoList} />
           </div>
         )}
-        
+
         <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />

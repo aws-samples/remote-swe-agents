@@ -106,9 +106,9 @@ export default async function SessionPage({ params }: SessionPageProps) {
   const todoList = await getTodoList();
 
   return (
-    <SessionPageClient 
-      workerId={workerId} 
-      initialMessages={messages} 
+    <SessionPageClient
+      workerId={workerId}
+      initialMessages={messages}
       initialInstanceStatus={session.instanceStatus}
       initialTodoList={todoList}
     />

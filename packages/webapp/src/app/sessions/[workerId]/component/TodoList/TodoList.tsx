@@ -42,9 +42,9 @@ export default function TodoList({ todoList }: TodoListProps) {
         onClick={toggleCollapse}
       >
         <h3 className="text-md font-medium text-gray-900 dark:text-white flex items-center gap-2">
-          {t('todoList')} 
+          {t('todoList')}
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            ({todoList.items.filter(item => item.status === 'completed').length}/{todoList.items.length})
+            ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
           </span>
         </h3>
         <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -60,11 +60,11 @@ export default function TodoList({ todoList }: TodoListProps) {
         <div className="p-3">
           <ul className="space-y-2">
             {todoList.items.map((item) => (
-              <li 
+              <li
                 key={item.id}
                 className={`flex items-start gap-2 p-2 rounded ${
-                  item.status === 'in_progress' 
-                    ? 'bg-blue-50 dark:bg-blue-900/20' 
+                  item.status === 'in_progress'
+                    ? 'bg-blue-50 dark:bg-blue-900/20'
                     : item.status === 'completed'
                       ? 'bg-green-50 dark:bg-green-900/20'
                       : ''
@@ -72,9 +72,13 @@ export default function TodoList({ todoList }: TodoListProps) {
               >
                 <div className="mt-0.5">{getStatusIcon(item.status)}</div>
                 <div>
-                  <div className={`text-sm ${
-                    item.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      item.status === 'completed'
+                        ? 'line-through text-gray-500 dark:text-gray-400'
+                        : 'text-gray-900 dark:text-gray-100'
+                    }`}
+                  >
                     {item.description}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
