@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { isAgentStatus } from '@remote-swe-agents/agent-core/schema/agent';
 
-interface RouteContextParams {
-  params: {
-    workerId: string;
-  };
-}
-
-export async function PUT(request: NextRequest, context: RouteContextParams) {
-  const { params } = context;
+export async function PUT(request: NextRequest, { params }: { params: { workerId: string } }) {
   try {
     const { workerId } = params;
     const body = await request.json();
