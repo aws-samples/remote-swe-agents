@@ -4,7 +4,9 @@
   },
   "header": {
     "title": "Remote SWE Agents",
-    "signOut": "サインアウト"
+    "signOut": "サインアウト",
+    "menu": "メニュー",
+    "language": "言語"
   },
   "sessions": {
     "title": "セッション一覧",

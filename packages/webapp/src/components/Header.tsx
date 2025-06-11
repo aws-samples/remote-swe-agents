@@ -2,11 +2,40 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useState, useEffect, useRef } from 'react';
+import { Menu } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-import LanguageSwitcher from './LanguageSwitcher';
+import HamburgerMenu from './HamburgerMenu';
 
 export default function Header() {
   const t = useTranslations('header');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        menuOpen && 
+        menuRef.current && 
+        buttonRef.current && 
+        !menuRef.current.contains(event.target as Node) && 
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -18,17 +47,21 @@ export default function Header() {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
             <ThemeToggle />
-            <Link
-              href="/api/auth/sign-out"
-              className="inline-flex items-center px-4 py-1.5 border border-gray-300 dark:border-gray-600 text-sm rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              prefetch={false} // prevent CORS error
+            <button
+              ref={buttonRef}
+              onClick={toggleMenu}
+              className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              aria-expanded={menuOpen}
+              aria-label="Menu"
             >
-              {t('signOut')}
-            </Link>
+              <Menu className="h-5 w-5" />
+            </button>
           </div>
         </div>
+      </div>
+      <div ref={menuRef}>
+        {menuOpen && <HamburgerMenu close={() => setMenuOpen(false)} />}
       </div>
     </header>
   );

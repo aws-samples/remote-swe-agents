@@ -4,7 +4,9 @@
   },
   "header": {
     "title": "Remote SWE Agents",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "menu": "Menu",
+    "language": "Language"
   },
   "sessions": {
     "title": "Sessions",

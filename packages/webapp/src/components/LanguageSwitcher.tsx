@@ -25,7 +25,7 @@ export default function LanguageSwitcher() {
       value={locale}
       onChange={(e) => changeLocale(e.target.value)}
       disabled={isPending}
-      className="text-sm rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 bg-white py-1.5 px-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+      className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 bg-white py-1.5 px-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
     >
       <option value="en">English</option>
       <option value="ja">日本語</option>
