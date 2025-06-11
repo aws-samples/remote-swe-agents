@@ -21,10 +21,10 @@ export default function Header() {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        menuOpen && 
-        menuRef.current && 
-        buttonRef.current && 
-        !menuRef.current.contains(event.target as Node) && 
+        menuOpen &&
+        menuRef.current &&
+        buttonRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
         !buttonRef.current.contains(event.target as Node)
       ) {
         setMenuOpen(false);
@@ -60,9 +60,7 @@ export default function Header() {
           </div>
         </div>
       </div>
-      <div ref={menuRef}>
-        {menuOpen && <HamburgerMenu close={() => setMenuOpen(false)} />}
-      </div>
+      <div ref={menuRef}>{menuOpen && <HamburgerMenu close={() => setMenuOpen(false)} />}</div>
     </header>
   );
 }

@@ -23,14 +23,14 @@ export default function HamburgerMenu({ close }: HamburgerMenuProps) {
         menu.style.transform = 'translateX(0)';
       });
     }
-    
+
     // Add escape key listener
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         close();
       }
     };
-    
+
     window.addEventListener('keydown', handleEscKey);
     return () => {
       window.removeEventListener('keydown', handleEscKey);
@@ -39,7 +39,7 @@ export default function HamburgerMenu({ close }: HamburgerMenuProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-20">
-      <div 
+      <div
         ref={menuRef}
         className="absolute right-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-lg p-4 transform transition-transform duration-300 ease-in-out translate-x-full"
         onClick={(e) => e.stopPropagation()}
@@ -54,13 +54,13 @@ export default function HamburgerMenu({ close }: HamburgerMenuProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="space-y-6">
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('language')}</p>
             <LanguageSwitcher />
           </div>
-          
+
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <Link
               href="/api/auth/sign-out"
