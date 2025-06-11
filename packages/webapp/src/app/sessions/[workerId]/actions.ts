@@ -1,11 +1,11 @@
 'use server';
 
-import { sendMessageToAgentSchema } from './schemas';
+import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
-import { PutCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
-import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
+import { getOrCreateWorkerInstance, renderUserMessage, getTodoList } from '@remote-swe-agents/agent-core/lib';
+import { MessageItem, sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
@@ -44,4 +44,17 @@ export const sendMessageToAgent = authActionClient
     await getOrCreateWorkerInstance(workerId, '', '');
 
     return { success: true, item };
+  });
+
+export const fetchLatestTodoList = authActionClient
+  .schema(fetchTodoListSchema)
+  .action(async ({ parsedInput: { workerId } }) => {
+    const todoList = await getTodoList(workerId);
+    return { todoList };
+  });
+
+export const updateAgentStatus = authActionClient
+  .schema(updateAgentStatusSchema)
+  .action(async ({ parsedInput: { workerId, status } }) => {
+    await updateSessionAgentStatus(workerId, status);
   });

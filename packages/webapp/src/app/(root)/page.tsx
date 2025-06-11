@@ -29,7 +29,7 @@ export default async function Home() {
               <Link href="/sessions/new">
                 <Button variant="outline" size="lg" className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
-                  {sessionsT('newSession')}
+                  <span className="hidden sm:inline">{sessionsT('newSession')}</span>
                 </Button>
               </Link>
             </div>

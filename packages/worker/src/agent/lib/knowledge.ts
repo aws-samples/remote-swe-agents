@@ -5,12 +5,10 @@ import { join } from 'path';
  * List of knowledge file patterns to search for
  */
 export const knowledgeFilePatterns = [
-  // Original supported files
   'AmazonQ.md',
   '.clinerules',
   'CLAUDE.md',
   '.cursorrules',
-  // Additional files
   '.github/copilot-instructions.md',
   'AGENT.md',
   'AGENTS.md',

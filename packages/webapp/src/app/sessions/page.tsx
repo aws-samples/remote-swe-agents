@@ -22,7 +22,7 @@ export default async function SessionsPage() {
             <Link href="/sessions/new">
               <Button className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
-                {t('newSession')}
+                <span className="hidden sm:inline">{t('newSession')}</span>
               </Button>
             </Link>
           </div>
@@ -93,7 +93,7 @@ export default async function SessionsPage() {
               <Link href="/sessions/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  {t('newSession')}
+                  <span className="hidden sm:inline">{t('newSession')}</span>
                 </Button>
               </Link>
             </div>
