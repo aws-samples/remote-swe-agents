@@ -47,11 +47,7 @@ export default function Header() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link 
-                    href="/api/auth/sign-out"
-                    className="w-full cursor-default flex items-center"
-                    prefetch={false}
-                  >
+                  <Link href="/api/auth/sign-out" className="w-full cursor-default flex items-center" prefetch={false}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t('signOut')}</span>
                   </Link>
