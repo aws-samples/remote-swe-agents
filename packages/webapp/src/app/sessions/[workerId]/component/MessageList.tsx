@@ -129,12 +129,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
           return !isInline ? (
             <SyntaxHighlighter
               style={theme === 'dark' ? oneDark : oneLight}
+              lineProps={{ style: { wordBreak: 'break-word', whiteSpace: 'pre-wrap' } }}
               language={match[1]}
               PreTag="div"
               className="rounded-md"
-              wrapLines={true}
-              wrapLongLines={true}
-              customStyle={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}
+              wrapLines
+              wrapLongLines
             >
               {String(children).replace(/\n$/, '')}
             </SyntaxHighlighter>
@@ -270,7 +270,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             messageId={message.id}
           />
         ) : (
-          <div className="text-gray-900 dark:text-white pb-2 whitespace-pre-wrap break-words overflow-x-auto">
+          <div className="text-gray-900 dark:text-white pb-2">
             <MarkdownRenderer content={message.content} />
           </div>
         )}
