@@ -41,7 +41,7 @@ export default function SessionPageClient({
       if (data.todoList) {
         setTodoList(data.todoList);
       }
-    }
+    },
   });
 
   // Real-time communication via event bus
