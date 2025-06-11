@@ -26,15 +26,15 @@ export default function Header() {
   const { localeOptions, currentLocale, changeLocale } = useLanguageSwitcher();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex-shrink-0">
-            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full">
+        <div className="flex justify-between h-16 items-center w-full">
+          <div className="flex-shrink-0 min-w-0">
+            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white truncate">
               {t('title')}
             </Link>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -42,7 +42,7 @@ export default function Header() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 z-50">
                 <DropdownMenuLabel>{t('menu')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
