@@ -29,6 +29,69 @@ This project consists of the following main components:
 
 5. **Webapp** - `/packages/webapp` directory
    - A Next.js web UI to interact with agents
+   
+## Next.js Server Actions (Webapp)
+
+### Server Actions Pattern
+
+When implementing server-side functionality in the webapp, always use Next.js server actions instead of API Routes:
+
+1. **Server Action Creation Pattern**:
+   ```typescript
+   'use server';
+   
+   import { authActionClient } from '@/lib/safe-action';
+   import { myActionSchema } from './schemas';
+   
+   export const myServerAction = authActionClient
+     .schema(myActionSchema)
+     .action(async ({ parsedInput: { param1, param2 } }) => {
+       // Implement server-side logic
+       return result;
+     });
+   ```
+
+2. **Action Schema Definition**:
+   ```typescript
+   // schemas.ts
+   import { z } from 'zod';
+   
+   export const myActionSchema = z.object({
+     param1: z.string(),
+     param2: z.number(),
+   });
+   ```
+
+3. **Client-side Usage with useAction hook**:
+   ```typescript
+   'use client';
+   
+   import { useAction } from 'next-safe-action/hooks';
+   import { myServerAction } from '../actions';
+   
+   // In component:
+   const { execute, status, result } = useAction(myServerAction, {
+     onSuccess: (data) => {
+       // Handle success
+     },
+     onError: (error) => {
+       // Handle error
+     }
+   });
+   
+   const handleSubmit = () => {
+     execute({ param1: 'value', param2: 42 });
+   };
+   ```
+
+### Important Notes
+
+- **NEVER** use direct API Routes (app/api/...) when server actions can be used instead
+- **ALWAYS** handle both success and error cases in client-side code
+- Keep database access code in server actions, not in client components
+- Use Zod schemas for validation in server actions
+- When dealing with DynamoDB, import from `@remote-swe-agents/agent-core/aws` and use directly in server actions
+- The auth middleware automatically protects server actions through `authActionClient`
 
 ## Coding Conventions
 
@@ -114,3 +177,4 @@ cd packages/webapp && npm run build
 - **TypeScript errors**: Ensure type definitions are accurate and use type assertions when necessary
 - **CDK Snapshot Test Failures**: When modifying infrastructure in CDK, snapshot tests may fail. Update snapshots using `cd cdk && npm run test -- -u`
 - **Import errors from agent-core**: Always use the official export paths defined in agent-core's package.json. Do not directly import from internal paths like `@remote-swe-agents/agent-core/lib/todo` or `@remote-swe-agents/agent-core/schema/todo` as these are not officially exported and may cause build failures.
+- **Server actions returning void error**: When using `useAction` hook, make sure you're using callbacks for success/error handling rather than directly awaiting the return value. If you see errors like `Property 'data' does not exist on type 'void'`, use the onSuccess/onError pattern shown above.

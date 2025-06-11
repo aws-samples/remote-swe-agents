@@ -15,6 +15,7 @@ import {
   renderToolResult,
   sendSystemMessage,
   updateSessionCost,
+  updateSessionAgentStatus,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -38,6 +39,9 @@ import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from '../common/cancellation-token';
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
+  // Update agent status to 'working' when starting a turn
+  await updateSessionAgentStatus(workerId, 'working');
+
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -150,7 +154,7 @@ Users will primarily request software engineering assistance including bug fixes
 3. Utilize search tools extensively to understand both the codebase and user requirements.
 4. Implement solutions using all available tools
 5. Verify solutions with tests when possible. NEVER assume specific testing frameworks or scripts. Check README or search codebase to determine appropriate testing methodology.
-6. After completing tasks, run linting and type-checking commands (e.g., npm run lint, npm run typecheck, ruff, etc.) if available to verify code correctness. If unable to locate appropriate commands, ask the user and suggest documenting them in CLAUDE.md for future reference.
+6. After completing tasks, run linting and type-checking commands (e.g., npm run lint, npm run typecheck, ruff, etc.) if available to verify code correctness.
 7. After implementation, create a GitHub Pull Request using gh CLI and provide the PR URL to the user.
 8. When users send feedback, create additional git commits in the same branch and pull request.
 `;
@@ -397,6 +401,11 @@ Users will primarily request software engineering assistance including bug fixes
       );
       appendedItems.push(...savedItems);
     } else {
+      if (!cancellationToken.isCancelled) {
+        // Update agent status to 'pending' when finishing a turn.
+        // When the turn is cancelled, do not update the status to avoid race conddition.
+        await updateSessionAgentStatus(workerId, 'pending');
+      }
       const mention = slackUserId ? `<@${slackUserId}> ` : '';
       const finalMessage = res.output?.message;
       if (finalMessage?.content == null || finalMessage.content?.length == 0) {

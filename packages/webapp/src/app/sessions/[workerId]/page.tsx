@@ -130,6 +130,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         workerId={workerId}
         initialMessages={messages}
         initialInstanceStatus={session.instanceStatus}
+        initialAgentStatus={session.agentStatus}
         initialTodoList={todoList}
       />
       <RefreshOnFocus />

@@ -1,3 +1,4 @@
+import { agentStatusSchema } from '@remote-swe-agents/agent-core/schema';
 import { z } from 'zod';
 
 export const sendMessageToAgentSchema = z.object({
@@ -8,4 +9,9 @@ export const sendMessageToAgentSchema = z.object({
 
 export const fetchTodoListSchema = z.object({
   workerId: z.string(),
+});
+
+export const updateAgentStatusSchema = z.object({
+  workerId: z.string(),
+  status: agentStatusSchema,
 });
