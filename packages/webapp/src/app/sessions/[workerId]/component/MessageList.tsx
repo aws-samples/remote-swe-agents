@@ -40,6 +40,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
   const [visibleOutputJsonMessages, setVisibleOutputJsonMessages] = useState<Set<string>>(new Set());
   const scrollPositionRef = useRef<number>(0);
+  // Track window width for responsive design
+  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 768);
 
   const toggleInputJsonVisibility = (messageId: string) => {
     scrollPositionRef.current = window.scrollY;
@@ -98,6 +100,18 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
+  
+  // Add event listener for window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   const showWaitingMessage = instanceStatus === 'starting';
 
@@ -220,9 +234,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                   toggleOutputJsonVisibility(messageId);
                 }
               }}
-              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer flex items-center"
             >
-              {t('usingTool')}: {toolName}
+              <span className="hidden md:inline">{t('usingTool')}: </span>
+              <span className="truncate max-w-[200px] md:max-w-full">
+                {toolName.length > 20 && windowWidth < 768 ? `${toolName.substring(0, 18)}...` : toolName}
+              </span>
             </button>
           </div>
           <div className="flex items-center gap-2">
