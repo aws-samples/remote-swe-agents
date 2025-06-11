@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import { ArrowLeft, ListChecks, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus } from '../actions/update-status';
+import { updateAgentStatus } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
