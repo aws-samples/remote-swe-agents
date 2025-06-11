@@ -47,7 +47,7 @@ When implementing server-side functionality in the webapp, always use Next.js se
      .schema(myActionSchema)
      .action(async ({ parsedInput: { param1, param2 } }) => {
        // Implement server-side logic
-       return { success: true, data: result };
+       return result;
      });
    ```
 
@@ -178,4 +178,3 @@ cd packages/webapp && npm run build
 - **CDK Snapshot Test Failures**: When modifying infrastructure in CDK, snapshot tests may fail. Update snapshots using `cd cdk && npm run test -- -u`
 - **Import errors from agent-core**: Always use the official export paths defined in agent-core's package.json. Do not directly import from internal paths like `@remote-swe-agents/agent-core/lib/todo` or `@remote-swe-agents/agent-core/schema/todo` as these are not officially exported and may cause build failures.
 - **Server actions returning void error**: When using `useAction` hook, make sure you're using callbacks for success/error handling rather than directly awaiting the return value. If you see errors like `Property 'data' does not exist on type 'void'`, use the onSuccess/onError pattern shown above.
-- **Subpaths in schema imports**: When importing from agent-core schema, always import from the main schema path (`@remote-swe-agents/agent-core/schema`) instead of subpaths like `@remote-swe-agents/agent-core/schema/agent` to avoid build issues.

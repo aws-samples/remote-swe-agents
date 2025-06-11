@@ -6,7 +6,6 @@ import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { MessageItem, sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
-import { AgentStatus } from '@remote-swe-agents/agent-core/schema';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
