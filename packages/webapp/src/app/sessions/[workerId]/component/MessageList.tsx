@@ -267,7 +267,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             messageId={message.id}
           />
         ) : (
-          <div className="text-gray-900 dark:text-white pb-2">
+          <div className="text-gray-900 dark:text-white pb-2 whitespace-pre-wrap break-words overflow-x-auto">
             <MarkdownRenderer content={message.content} />
           </div>
         )}
