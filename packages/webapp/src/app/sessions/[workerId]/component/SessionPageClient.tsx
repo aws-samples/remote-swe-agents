@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ListChecks, CheckCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus } from '../actions';
@@ -139,7 +139,7 @@ export default function SessionPageClient({
                 className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4" />
-                {t('sessionList')}
+                <span className="hidden sm:inline">{t('sessionList')}</span>
               </Link>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{workerId}</h1>
               {instanceStatus && (
@@ -170,16 +170,22 @@ export default function SessionPageClient({
                   className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
-                  <ListChecks className="h-4 w-4 mr-2" />
-                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
-                  {todoList.items.length})
+                  <ListChecks className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                    {todoList.items.length})
+                  </span>
+                  <span className="inline sm:hidden">
+                    ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
+                  </span>
                 </button>
               )}
               <Link
                 href="/sessions/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {t('newSession')}
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('newSession')}</span>
               </Link>
             </div>
           </div>
