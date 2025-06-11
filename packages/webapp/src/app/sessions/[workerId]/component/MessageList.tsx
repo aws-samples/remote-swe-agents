@@ -200,9 +200,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {getToolIcon(toolName)}
             <button
               onClick={() => {
-                // If either one is visible, hide both. Otherwise, don't change anything.
+                // If either one is visible, hide both. Otherwise, show both.
                 if (visibleInputJsonMessages.has(messageId) || visibleOutputJsonMessages.has(messageId)) {
-                  // Create new sets without this messageId
+                  // Create new sets without this messageId (hide both)
                   setVisibleInputJsonMessages((prev) => {
                     const newSet = new Set(prev);
                     newSet.delete(messageId);
@@ -211,6 +211,18 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                   setVisibleOutputJsonMessages((prev) => {
                     const newSet = new Set(prev);
                     newSet.delete(messageId);
+                    return newSet;
+                  });
+                } else {
+                  // Both are hidden, so show both
+                  setVisibleInputJsonMessages((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.add(messageId);
+                    return newSet;
+                  });
+                  setVisibleOutputJsonMessages((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.add(messageId);
                     return newSet;
                   });
                 }
