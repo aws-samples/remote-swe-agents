@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks } from 'lucide-react';
+import { ArrowLeft, ListChecks, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
