@@ -10,6 +10,7 @@ import MessageList, { MessageView } from './MessageList';
 import { webappEventSchema, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
+import { fetchLatestTodoList } from '../actions';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -32,6 +33,18 @@ export default function SessionPageClient({
   );
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
+
+  // Refetch todoList function
+  const refetchTodoList = useCallback(async () => {
+    try {
+      const { todoList: latestTodoList } = await fetchLatestTodoList(workerId);
+      if (latestTodoList) {
+        setTodoList(latestTodoList);
+      }
+    } catch (error) {
+      console.error('Failed to refetch todo list:', error);
+    }
+  }, [workerId]);
 
   // Real-time communication via event bus
   useEventBus({
@@ -67,6 +80,11 @@ export default function SessionPageClient({
             }
             return prev;
           });
+          
+          // Check if the tool was todoInit or todoUpdate and refetch the todo list
+          if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
+            refetchTodoList();
+          }
           break;
         case 'toolUse':
           if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
@@ -93,10 +111,16 @@ export default function SessionPageClient({
               },
             ]);
           }
+          
+          // Pre-fetch todoList when todoInit or todoUpdate tool is used
+          if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
+            refetchTodoList();
+          }
+          
           setIsAgentTyping(true);
           break;
       }
-    }, []),
+    }, [refetchTodoList]),
   });
 
   const onSendMessage = async (message: MessageView) => {

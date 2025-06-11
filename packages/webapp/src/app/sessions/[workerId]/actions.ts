@@ -1,11 +1,12 @@
 'use server';
 
 import { sendMessageToAgentSchema } from './schemas';
+import { z } from 'zod';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
-import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
+import { getOrCreateWorkerInstance, renderUserMessage, getTodoList } from '@remote-swe-agents/agent-core/lib';
 
 export const sendMessageToAgent = authActionClient
   .schema(sendMessageToAgentSchema)
@@ -45,3 +46,8 @@ export const sendMessageToAgent = authActionClient
 
     return { success: true, item };
   });
+
+export async function fetchLatestTodoList(workerId: string) {
+  const todoList = await getTodoList(workerId);
+  return { todoList };
+}
