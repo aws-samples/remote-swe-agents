@@ -36,29 +36,33 @@ export default async function SessionsPage() {
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
                   </div>
                   
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 line-clamp-3 overflow-hidden">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
                     {session.initialMessage}
                   </p>
                   
                   <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1 truncate">
-                      <Clock className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{new Date(session.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center">
+                      <div className="w-4 flex justify-center">
+                        <Clock className="w-3 h-3" />
+                      </div>
+                      <span className="truncate ml-1">{new Date(session.createdAt).toLocaleDateString()}</span>
                     </div>
                     
-                    <div className="flex items-center gap-1 truncate">
-                      <span
-                        className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-                          session.instanceStatus === 'running'
-                            ? 'bg-green-500'
-                            : session.instanceStatus === 'starting'
-                              ? 'bg-blue-500'
-                              : session.instanceStatus === 'stopped'
-                                ? 'bg-gray-500'
-                                : 'bg-gray-500'
-                        }`}
-                      />
-                      <span className="truncate">
+                    <div className="flex items-center">
+                      <div className="w-4 flex justify-center">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            session.instanceStatus === 'running'
+                              ? 'bg-green-500'
+                              : session.instanceStatus === 'starting'
+                                ? 'bg-blue-500'
+                                : session.instanceStatus === 'stopped'
+                                  ? 'bg-gray-500'
+                                  : 'bg-gray-500'
+                          }`}
+                        />
+                      </div>
+                      <span className="truncate ml-1">
                         {session.instanceStatus === 'running'
                           ? t('sessionStatus.running')
                           : session.instanceStatus === 'starting'
@@ -70,8 +74,10 @@ export default async function SessionsPage() {
                     </div>
                     
                     <div className="flex items-center">
-                      <DollarSign className="w-3 h-3 flex-shrink-0" />
-                      <span>{(session.sessionCost ?? 0).toFixed(2)}</span>
+                      <div className="w-4 flex justify-center">
+                        <DollarSign className="w-3 h-3" />
+                      </div>
+                      <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
