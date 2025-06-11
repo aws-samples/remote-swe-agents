@@ -55,7 +55,8 @@
     "todoStatus_in_progress": "進行中",
     "todoStatus_completed": "完了",
     "todoStatus_cancelled": "取り消し",
-    "lastUpdated": "最終更新"
+    "lastUpdated": "最終更新",
+    "markAsCompleted": "完了としてマーク"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

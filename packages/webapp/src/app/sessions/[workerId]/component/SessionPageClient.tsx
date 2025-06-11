@@ -242,8 +242,8 @@ export default function SessionPageClient({
                 })
               }
               className="p-2 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 focus:outline-none cursor-pointer"
-              title={t('markAsCompleted') || 'Mark as completed'}
-              aria-label={t('markAsCompleted') || 'Mark as completed'}
+              title={t('markAsCompleted')}
+              aria-label={t('markAsCompleted')}
             >
               <CheckCircle className="w-5 h-5" />
             </button>
