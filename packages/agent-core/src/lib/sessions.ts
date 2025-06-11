@@ -82,10 +82,7 @@ export const getSessions = async (): Promise<SessionItem[]> => {
  * @param workerId Worker ID of the session to update
  * @param agentStatus New agent status
  */
-export const updateSessionAgentStatus = async (
-  workerId: string,
-  agentStatus: AgentStatus
-): Promise<void> => {
+export const updateSessionAgentStatus = async (workerId: string, agentStatus: AgentStatus): Promise<void> => {
   await ddb.send(
     new UpdateCommand({
       TableName,

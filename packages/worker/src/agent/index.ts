@@ -41,7 +41,7 @@ import { CancellationToken } from '../common/cancellation-token';
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
   // Update agent status to 'working' when starting a turn
   await updateSessionAgentStatus(workerId, 'working');
-  
+
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -417,7 +417,7 @@ Users will primarily request software engineering assistance including bug fixes
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`);
-      
+
       // Update agent status to 'pending response' when finishing a turn
       await updateSessionAgentStatus(workerId, 'pending response');
       break;

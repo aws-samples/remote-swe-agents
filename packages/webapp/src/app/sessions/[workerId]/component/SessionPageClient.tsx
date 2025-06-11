@@ -33,9 +33,7 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
-  const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(
-    initialAgentStatus
-  );
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
 
@@ -117,7 +115,7 @@ export default function SessionPageClient({
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
-  
+
   const markSessionCompleted = async () => {
     try {
       const response = await fetch(`/api/sessions/${workerId}/status`, {
@@ -127,7 +125,7 @@ export default function SessionPageClient({
         },
         body: JSON.stringify({ status: 'completed' }),
       });
-      
+
       if (response.ok) {
         setAgentStatus('completed');
       } else {
