@@ -161,7 +161,7 @@ export default function SessionPageClient({
                     {todoList.items.length})
                   </span>
                   <span className="inline sm:hidden">
-                    {todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length}
+                    ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
                   </span>
                 </button>
               )}
