@@ -1,10 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { Menu, Languages, LogOut, Check } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-import { useLanguageSwitcher } from './LanguageSwitcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +16,10 @@ import {
   DropdownMenuPortal,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
+import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { setUserLocale } from '@/i18n/db';
 
 export default function Header() {
   const t = useTranslations('header');
@@ -79,4 +81,32 @@ export default function Header() {
       </div>
     </header>
   );
+}
+
+const localeOptions: {
+  value: string;
+  label: string;
+}[] = [
+  { value: 'en', label: 'English' },
+  { value: 'ja', label: '日本語' },
+];
+
+function useLanguageSwitcher() {
+  const [isPending, startTransition] = useTransition();
+  const locale = useLocale();
+  const router = useRouter();
+
+  const changeLocale = (newLocale: string) => {
+    startTransition(() => {
+      setUserLocale(newLocale);
+      router.refresh();
+    });
+  };
+
+  return {
+    localeOptions,
+    currentLocale: locale,
+    isPending,
+    changeLocale,
+  };
 }
