@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import { ArrowLeft, ListChecks, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useAction } from 'next-safe-action/hooks';
+import { updateAgentStatus } from '../actions/update-status';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -116,23 +118,18 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-  const markSessionCompleted = async () => {
-    try {
-      const response = await fetch(`/api/sessions/status?workerId=${workerId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'completed' }),
-      });
+  const { execute: executeUpdateStatus } = useAction(updateAgentStatus);
 
-      if (response.ok) {
-        setAgentStatus('completed');
-      } else {
-        console.error('Failed to update session status');
-      }
-    } catch (error) {
-      console.error('Error updating session status:', error);
+  const markSessionCompleted = async () => {
+    const result = await executeUpdateStatus({
+      workerId,
+      status: 'completed',
+    });
+
+    if (result.data?.success) {
+      setAgentStatus('completed');
+    } else {
+      console.error('Failed to update session status:', result.data?.error);
     }
   };
 

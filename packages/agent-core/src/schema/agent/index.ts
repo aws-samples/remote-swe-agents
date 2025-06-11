@@ -2,7 +2,7 @@
  * Agent status types
  */
 
-export type AgentStatus = 'working' | 'pending response' | 'completed';
+export type AgentStatus = 'working' | 'pending' | 'completed';
 
 export const isAgentStatus = (status: string): status is AgentStatus =>
-  ['working', 'pending response', 'completed'].includes(status);
+  ['working', 'pending', 'completed'].includes(status);

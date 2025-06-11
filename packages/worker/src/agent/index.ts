@@ -40,7 +40,9 @@ import { CancellationToken } from '../common/cancellation-token';
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
   // Update agent status to 'working' when starting a turn
-  await updateSessionAgentStatus(workerId, 'working');
+  if (!cancellationToken.isCancelled) {
+    await updateSessionAgentStatus(workerId, 'working');
+  }
 
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
@@ -418,8 +420,8 @@ Users will primarily request software engineering assistance including bug fixes
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`);
 
-      // Update agent status to 'pending response' when finishing a turn
-      await updateSessionAgentStatus(workerId, 'pending response');
+      // Update agent status to 'pending' when finishing a turn
+      await updateSessionAgentStatus(workerId, 'pending');
       break;
     }
   }

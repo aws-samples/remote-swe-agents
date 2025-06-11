@@ -12,7 +12,7 @@ type SessionItem = {
   initialMessage: string;
   instanceStatus: 'starting' | 'running' | 'stopped' | 'terminated';
   sessionCost: number;
-  agentStatus?: AgentStatus;
+  agentStatus: AgentStatus;
 };
 
 export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
@@ -31,7 +31,7 @@ export const saveSessionInfo = async (workerId: string, initialMessage: string) 
         initialMessage,
         instanceStatus: 'terminated',
         sessionCost: 0,
-        agentStatus: 'pending response',
+        agentStatus: 'pending',
       } satisfies SessionItem,
     })
   );
