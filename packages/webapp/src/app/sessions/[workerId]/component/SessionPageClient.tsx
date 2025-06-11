@@ -12,6 +12,7 @@ import MessageList, { MessageView } from './MessageList';
 import { webappEventSchema, TodoList as TodoListType, AgentStatus } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
+import { toast } from 'sonner';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -117,25 +118,14 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-  const {
-    execute: executeUpdateStatus,
-    status,
-    result,
-  } = useAction(updateAgentStatus, {
+  const { execute: executeUpdateStatus } = useAction(updateAgentStatus, {
     onSuccess: () => {
       setAgentStatus('completed');
     },
     onError: (error) => {
-      console.error('Failed to update session status:', error);
+      toast.error(`Failed to update session status: ${error}`);
     },
   });
-
-  const markSessionCompleted = () => {
-    executeUpdateStatus({
-      workerId,
-      status: 'completed',
-    });
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -245,7 +235,12 @@ export default function SessionPageClient({
           {/* Mark as completed button - only show if not already completed */}
           {agentStatus !== 'completed' && (
             <button
-              onClick={markSessionCompleted}
+              onClick={() =>
+                executeUpdateStatus({
+                  workerId,
+                  status: 'completed',
+                })
+              }
               className="p-2 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 focus:outline-none cursor-pointer"
               title={t('markAsCompleted') || 'Mark as completed'}
               aria-label={t('markAsCompleted') || 'Mark as completed'}

@@ -4,7 +4,7 @@ import { sendMessageToAgentSchema, updateAgentStatusSchema } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { MessageItem, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
+import { MessageItem, sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 import { AgentStatus } from '@remote-swe-agents/agent-core/schema';
 
@@ -50,23 +50,5 @@ export const sendMessageToAgent = authActionClient
 export const updateAgentStatus = authActionClient
   .schema(updateAgentStatusSchema)
   .action(async ({ parsedInput: { workerId, status } }) => {
-    try {
-      await ddb.send(
-        new UpdateCommand({
-          TableName,
-          Key: {
-            PK: 'sessions',
-            SK: workerId,
-          },
-          UpdateExpression: 'SET agentStatus = :agentStatus',
-          ExpressionAttributeValues: {
-            ':agentStatus': status,
-          },
-        })
-      );
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating agent status:', error);
-      return { success: false, error: 'Failed to update agent status' };
-    }
+    await updateSessionAgentStatus(workerId, status);
   });

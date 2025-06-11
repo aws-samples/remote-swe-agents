@@ -1,5 +1,5 @@
+import { agentStatusSchema } from '@remote-swe-agents/agent-core/schema';
 import { z } from 'zod';
-import { isAgentStatus } from '@remote-swe-agents/agent-core/schema';
 
 export const sendMessageToAgentSchema = z.object({
   workerId: z.string(),
@@ -9,7 +9,5 @@ export const sendMessageToAgentSchema = z.object({
 
 export const updateAgentStatusSchema = z.object({
   workerId: z.string(),
-  status: z.string().refine(isAgentStatus, {
-    message: 'Invalid status. Must be one of: working, pending, completed',
-  }),
+  status: agentStatusSchema,
 });
