@@ -37,8 +37,8 @@ export default function SessionPageClient({
 
   // Refetch todoList function using safe action
   const { execute: refetchTodoList, isExecuting: isRefetchingTodoList } = useAction(fetchLatestTodoList, {
-    onSuccess: (data) => {
-      if (data.todoList) {
+    onSuccess: ({ data }) => {
+      if (data?.todoList) {
         setTodoList(data.todoList);
       }
     },
