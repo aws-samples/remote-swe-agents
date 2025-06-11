@@ -117,19 +117,24 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-  const { execute: executeUpdateStatus } = useAction(updateAgentStatus);
+  const {
+    execute: executeUpdateStatus,
+    status,
+    result,
+  } = useAction(updateAgentStatus, {
+    onSuccess: () => {
+      setAgentStatus('completed');
+    },
+    onError: (error) => {
+      console.error('Failed to update session status:', error);
+    },
+  });
 
-  const markSessionCompleted = async () => {
-    const result = await executeUpdateStatus({
+  const markSessionCompleted = () => {
+    executeUpdateStatus({
       workerId,
       status: 'completed',
     });
-
-    if (result.data?.success) {
-      setAgentStatus('completed');
-    } else {
-      console.error('Failed to update session status:', result.data?.error);
-    }
   };
 
   return (
