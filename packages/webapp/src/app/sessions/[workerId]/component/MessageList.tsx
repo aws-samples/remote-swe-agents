@@ -7,7 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 
@@ -35,6 +35,8 @@ type MessageListProps = {
 export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
   const { theme } = useTheme();
   const t = useTranslations('sessions');
+  const locale = useLocale();
+  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const positionRatio = useScrollPosition();
   // Track visibility of input and output JSON for each message
   const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
@@ -273,7 +275,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => (
     <div className="flex items-start gap-1 py-1">
       <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1" style={{ minWidth: '55px' }}>
-        {showTimestamp && new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {showTimestamp && new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
       </div>
       <div className="flex-1">
         {message.type === 'toolUse' ? (
@@ -317,8 +319,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             {group.role === 'assistant' ? 'Assistant' : 'User'}
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {firstMessageDate.toLocaleDateString()}{' '}
-            {firstMessageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {firstMessageDate.toLocaleDateString(localeForDate)}{' '}
+            {firstMessageDate.toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
 
