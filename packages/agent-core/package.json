@@ -19,6 +19,10 @@
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     },
+    "./schema/agent": {
+      "types": "./dist/schema/agent/index.d.ts",
+      "default": "./dist/schema/agent/index.js"
+    },
     "./tools": {
       "types": "./dist/tools/index.d.ts",
       "default": "./dist/tools/index.js"
