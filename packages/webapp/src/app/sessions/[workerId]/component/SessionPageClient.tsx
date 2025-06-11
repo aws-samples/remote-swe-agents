@@ -11,6 +11,7 @@ import { webappEventSchema, TodoList as TodoListType } from '@remote-swe-agents/
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
+import { useAction } from 'next-safe-action/hooks';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -34,17 +35,14 @@ export default function SessionPageClient({
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
 
-  // Refetch todoList function
-  const refetchTodoList = useCallback(async () => {
-    try {
-      const { todoList: latestTodoList } = await fetchLatestTodoList(workerId);
-      if (latestTodoList) {
-        setTodoList(latestTodoList);
+  // Refetch todoList function using safe action
+  const { execute: refetchTodoList, isExecuting: isRefetchingTodoList } = useAction(fetchLatestTodoList, {
+    onSuccess: (data) => {
+      if (data.todoList) {
+        setTodoList(data.todoList);
       }
-    } catch (error) {
-      console.error('Failed to refetch todo list:', error);
     }
-  }, [workerId]);
+  });
 
   // Real-time communication via event bus
   useEventBus({
@@ -84,7 +82,7 @@ export default function SessionPageClient({
 
             // Check if the tool was todoInit or todoUpdate and refetch the todo list
             if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-              refetchTodoList();
+              refetchTodoList({ workerId });
             }
             break;
           case 'toolUse':
@@ -115,7 +113,7 @@ export default function SessionPageClient({
 
             // Pre-fetch todoList when todoInit or todoUpdate tool is used
             if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-              refetchTodoList();
+              refetchTodoList({ workerId });
             }
 
             setIsAgentTyping(true);
@@ -216,7 +214,7 @@ export default function SessionPageClient({
                 </button>
               </div>
               <div className="p-3 max-h-[70vh] overflow-y-auto">
-                <TodoList todoList={todoList} />
+                <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
               </div>
             </div>
           </div>

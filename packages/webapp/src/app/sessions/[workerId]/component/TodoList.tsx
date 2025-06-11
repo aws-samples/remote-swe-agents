@@ -7,9 +7,10 @@ import { useTranslations } from 'next-intl';
 
 interface TodoListProps {
   todoList: TodoListType | null;
+  isRefreshing?: boolean;
 }
 
-export default function TodoList({ todoList }: TodoListProps) {
+export default function TodoList({ todoList, isRefreshing = false }: TodoListProps) {
   const t = useTranslations('sessions');
 
   if (!todoList || todoList.items.length === 0) {
@@ -62,7 +63,13 @@ export default function TodoList({ todoList }: TodoListProps) {
           </li>
         ))}
       </ul>
-      <div className="mt-3 text-xs text-right text-gray-500 dark:text-gray-400">
+      <div className="mt-3 text-xs text-right text-gray-500 dark:text-gray-400 flex items-center justify-end">
+        {isRefreshing && (
+          <span className="mr-2 flex items-center">
+            <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full mr-1"></span>
+            {t('refreshing')}
+          </span>
+        )}
         {t('lastUpdated')}: {new Date(todoList.lastUpdated).toLocaleString()}
       </div>
     </>
