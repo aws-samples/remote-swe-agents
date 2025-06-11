@@ -118,7 +118,7 @@ export default function SessionPageClient({
 
   const markSessionCompleted = async () => {
     try {
-      const response = await fetch(`/api/sessions/${workerId}/status`, {
+      const response = await fetch(`/api/sessions/status?workerId=${workerId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
