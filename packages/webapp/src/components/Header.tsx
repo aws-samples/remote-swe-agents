@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Menu, Languages, LogOut } from 'lucide-react';
+import { Menu, Languages, LogOut, Check } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguageSwitcher } from './LanguageSwitcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +12,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 
 export default function Header() {
   const t = useTranslations('header');
+  const { localeOptions, currentLocale, changeLocale } = useLanguageSwitcher();
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -38,13 +43,28 @@ export default function Header() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{t('menu')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="flex items-center gap-2">
-                  <Languages className="h-4 w-4" />
-                  <span>{t('language')}</span>
-                </DropdownMenuLabel>
-                <div className="px-2 py-1.5">
-                  <LanguageSwitcher />
-                </div>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="flex items-center">
+                    <Languages className="mr-2 h-4 w-4" />
+                    <span>{t('language')}</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {localeOptions.map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onClick={() => changeLocale(option.value)}
+                          className="flex justify-between"
+                        >
+                          {option.label}
+                          {currentLocale === option.value && <Check className="h-4 w-4 ml-2" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/api/auth/sign-out" className="w-full cursor-default flex items-center" prefetch={false}>
