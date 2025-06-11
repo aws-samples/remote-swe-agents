@@ -100,13 +100,13 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
-  
+
   // Add event listener for window resize
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-    
+
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
