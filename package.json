@@ -16,6 +16,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.15",
     "patch-package": "^8.0.0"
   }
 }

@@ -8,6 +8,8 @@ import { ThemeProvider } from 'next-themes';
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Get the locale from the request
   const locale = await getLocale();
+  // Get the messages for the current locale
+  const messages = await getMessages();
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -15,7 +17,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <title>Remote SWE Agents</title>
       </head>
       <body>
-        <NextIntlClientProvider locale={locale}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
             <Toaster position="top-right" />
