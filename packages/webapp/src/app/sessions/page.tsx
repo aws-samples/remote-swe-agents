@@ -65,13 +65,6 @@ export default async function SessionsPage() {
                     <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center">
                         <div className="w-4 flex justify-center">
-                          <Clock className="w-3 h-3" />
-                        </div>
-                        <span className="truncate ml-1">{new Date(session.createdAt).toLocaleDateString()}</span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <div className="w-4 flex justify-center">
                           <span className={`inline-block w-2 h-2 rounded-full ${status.color}`} />
                         </div>
                         <span className="truncate ml-1">{status.text}</span>
@@ -82,6 +75,16 @@ export default async function SessionsPage() {
                           <DollarSign className="w-3 h-3" />
                         </div>
                         <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <div className="w-4 flex justify-center">
+                          <Clock className="w-3 h-3" />
+                        </div>
+                        <span className="truncate ml-1">
+                          {new Date(session.createdAt).toLocaleDateString()}{' '}
+                          {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                     </div>
                   </div>
