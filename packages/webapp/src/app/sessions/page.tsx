@@ -5,10 +5,30 @@ import { Plus, MessageSquare, Clock, DollarSign } from 'lucide-react';
 import { getSessions } from '@remote-swe-agents/agent-core/lib';
 import { getTranslations } from 'next-intl/server';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
+import { SessionItem } from '@remote-swe-agents/agent-core/schema';
 
 export default async function SessionsPage() {
   const sessions = await getSessions();
   const t = await getTranslations('sessions');
+
+  const getUnifiedStatus = (session: SessionItem) => {
+    if (session.agentStatus === 'completed') {
+      return { text: t('agentStatus.completed'), color: 'bg-green-500' };
+    }
+    if (session.instanceStatus === 'stopped' || session.instanceStatus === 'terminated') {
+      return { text: t('sessionStatus.stopped'), color: 'bg-gray-500' };
+    }
+    if (session.instanceStatus === 'starting') {
+      return { text: t('sessionStatus.starting'), color: 'bg-blue-500' };
+    }
+    if (session.agentStatus === 'pending') {
+      return { text: t('agentStatus.pending'), color: 'bg-yellow-500' };
+    }
+    if (session.agentStatus === 'working') {
+      return { text: t('agentStatus.working'), color: 'bg-orange-500' };
+    }
+    return { text: '不明', color: 'bg-gray-400' };
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -28,61 +48,46 @@ export default async function SessionsPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {sessions.map((session) => (
-              <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
-                <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
-                  </div>
-                  
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                    {session.initialMessage}
-                  </p>
-                  
-                  <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center">
-                      <div className="w-4 flex justify-center">
-                        <Clock className="w-3 h-3" />
-                      </div>
-                      <span className="truncate ml-1">{new Date(session.createdAt).toLocaleDateString()}</span>
+            {sessions.map((session) => {
+              const status = getUnifiedStatus(session);
+              return (
+                <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
+                  <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
                     </div>
-                    
-                    <div className="flex items-center">
-                      <div className="w-4 flex justify-center">
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full ${
-                            session.instanceStatus === 'running'
-                              ? 'bg-green-500'
-                              : session.instanceStatus === 'starting'
-                                ? 'bg-blue-500'
-                                : session.instanceStatus === 'stopped'
-                                  ? 'bg-gray-500'
-                                  : 'bg-gray-500'
-                          }`}
-                        />
+
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
+                      {session.initialMessage}
+                    </p>
+
+                    <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center">
+                        <div className="w-4 flex justify-center">
+                          <Clock className="w-3 h-3" />
+                        </div>
+                        <span className="truncate ml-1">{new Date(session.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <span className="truncate ml-1">
-                        {session.instanceStatus === 'running'
-                          ? t('sessionStatus.running')
-                          : session.instanceStatus === 'starting'
-                            ? t('sessionStatus.starting')
-                            : session.instanceStatus === 'stopped'
-                              ? t('sessionStatus.stopped')
-                              : t('sessionStatus.terminated')}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <div className="w-4 flex justify-center">
-                        <DollarSign className="w-3 h-3" />
+
+                      <div className="flex items-center">
+                        <div className="w-4 flex justify-center">
+                          <span className={`inline-block w-2 h-2 rounded-full ${status.color}`} />
+                        </div>
+                        <span className="truncate ml-1">{status.text}</span>
                       </div>
-                      <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
+
+                      <div className="flex items-center">
+                        <div className="w-4 flex justify-center">
+                          <DollarSign className="w-3 h-3" />
+                        </div>
+                        <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
 
           {sessions.length === 0 && (
