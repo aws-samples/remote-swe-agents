@@ -6,10 +6,13 @@ import { getSessions } from '@remote-swe-agents/agent-core/lib';
 import { getTranslations } from 'next-intl/server';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import { SessionItem } from '@remote-swe-agents/agent-core/schema';
+import { getUserLocale } from '@/i18n/db';
 
 export default async function SessionsPage() {
   const sessions = await getSessions();
   const t = await getTranslations('sessions');
+  const locale = await getUserLocale();
+  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
 
   const getUnifiedStatus = (session: SessionItem) => {
     if (session.agentStatus === 'completed') {
@@ -82,8 +85,8 @@ export default async function SessionsPage() {
                           <Clock className="w-3 h-3" />
                         </div>
                         <span className="truncate ml-1">
-                          {new Date(session.createdAt).toLocaleDateString()}{' '}
-                          {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(session.createdAt).toLocaleDateString(localeForDate)}{' '}
+                          {new Date(session.createdAt).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
