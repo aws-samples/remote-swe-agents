@@ -49,78 +49,81 @@ export default function SessionPageClient({
   // Real-time communication via event bus
   useEventBus({
     channelName: `webapp/worker/${workerId}`,
-    onReceived: useCallback((payload: unknown) => {
-      console.log('Received event:', payload);
-      const event = webappEventSchema.parse(payload);
+    onReceived: useCallback(
+      (payload: unknown) => {
+        console.log('Received event:', payload);
+        const event = webappEventSchema.parse(payload);
 
-      switch (event.type) {
-        case 'message':
-          if (event.message) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                role: 'assistant',
-                content: event.message,
-                timestamp: new Date(event.timestamp),
-                type: 'message',
-              },
-            ]);
-          }
-          setIsAgentTyping(false);
-          break;
-        case 'instanceStatusChanged':
-          setInstanceStatus(event.status);
-          break;
-        case 'toolResult':
-          setMessages((prev) => {
-            const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
-            if (toolUse && toolUse.output == undefined) {
-              toolUse.output = event.output;
+        switch (event.type) {
+          case 'message':
+            if (event.message) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  role: 'assistant',
+                  content: event.message,
+                  timestamp: new Date(event.timestamp),
+                  type: 'message',
+                },
+              ]);
             }
-            return prev;
-          });
-          
-          // Check if the tool was todoInit or todoUpdate and refetch the todo list
-          if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-            refetchTodoList();
-          }
-          break;
-        case 'toolUse':
-          if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                role: 'assistant',
-                content: JSON.parse(event.input).message,
-                timestamp: new Date(event.timestamp),
-                type: 'message',
-              },
-            ]);
-          } else {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                role: 'assistant',
-                content: event.toolName,
-                detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
-                timestamp: new Date(event.timestamp),
-                type: 'toolUse',
-              },
-            ]);
-          }
-          
-          // Pre-fetch todoList when todoInit or todoUpdate tool is used
-          if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-            refetchTodoList();
-          }
-          
-          setIsAgentTyping(true);
-          break;
-      }
-    }, [refetchTodoList]),
+            setIsAgentTyping(false);
+            break;
+          case 'instanceStatusChanged':
+            setInstanceStatus(event.status);
+            break;
+          case 'toolResult':
+            setMessages((prev) => {
+              const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
+              if (toolUse && toolUse.output == undefined) {
+                toolUse.output = event.output;
+              }
+              return prev;
+            });
+
+            // Check if the tool was todoInit or todoUpdate and refetch the todo list
+            if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
+              refetchTodoList();
+            }
+            break;
+          case 'toolUse':
+            if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  role: 'assistant',
+                  content: JSON.parse(event.input).message,
+                  timestamp: new Date(event.timestamp),
+                  type: 'message',
+                },
+              ]);
+            } else {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  role: 'assistant',
+                  content: event.toolName,
+                  detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
+                  timestamp: new Date(event.timestamp),
+                  type: 'toolUse',
+                },
+              ]);
+            }
+
+            // Pre-fetch todoList when todoInit or todoUpdate tool is used
+            if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
+              refetchTodoList();
+            }
+
+            setIsAgentTyping(true);
+            break;
+        }
+      },
+      [refetchTodoList]
+    ),
   });
 
   const onSendMessage = async (message: MessageView) => {
