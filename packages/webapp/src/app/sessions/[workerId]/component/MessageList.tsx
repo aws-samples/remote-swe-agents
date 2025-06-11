@@ -132,6 +132,9 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
               language={match[1]}
               PreTag="div"
               className="rounded-md"
+              wrapLines={true}
+              wrapLongLines={true}
+              customStyle={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}
             >
               {String(children).replace(/\n$/, '')}
             </SyntaxHighlighter>
