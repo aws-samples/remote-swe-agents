@@ -99,8 +99,6 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
     }
   }, [messages]);
 
-
-
   const showWaitingMessage = instanceStatus === 'starting';
 
   const MarkdownRenderer = ({ content }: { content: string }) => (
