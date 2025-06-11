@@ -9,8 +9,7 @@ import { updateAgentStatus } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
-import { webappEventSchema, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema';
-import { AgentStatus } from '@remote-swe-agents/agent-core/schema/agent';
+import { webappEventSchema, TodoList as TodoListType, AgentStatus } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 
