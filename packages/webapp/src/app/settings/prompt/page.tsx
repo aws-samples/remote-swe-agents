@@ -56,10 +56,11 @@ export default function PromptSettingsPage() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-1">Agent Prompt Configuration</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.
+              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or
+              instructions.
             </p>
           </div>
-          
+
           <div className="p-6">
             <div className="space-y-4">
               <div>
@@ -73,7 +74,7 @@ export default function PromptSettingsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
             <Button onClick={handleSave} disabled={saveStatus === 'executing'} className="flex items-center gap-2">
               <Save className="h-4 w-4" />
