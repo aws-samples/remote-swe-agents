@@ -57,7 +57,7 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
     { retries: 5, minTimeout: 100, maxTimeout: 1000 }
   );
   if (!allItems) return;
-  
+
   // Generate session title if this is the first user message
   if (allItems.length === 1 && allItems[0].messageType === 'userMessage') {
     try {
