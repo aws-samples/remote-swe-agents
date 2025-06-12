@@ -18,7 +18,8 @@ export default function PromptSettingsPage() {
       }
     },
     onError: (error) => {
-      toast.error(error.serverError || 'Failed to load common prompt settings');
+      const errorMessage = error.error?.serverError || 'Failed to load common prompt settings';
+      toast.error(errorMessage);
     },
   });
 
@@ -27,7 +28,8 @@ export default function PromptSettingsPage() {
       toast.success('Common prompt has been successfully saved');
     },
     onError: (error) => {
-      toast.error(error.serverError || 'Failed to save common prompt');
+      const errorMessage = error.error?.serverError || 'Failed to save common prompt';
+      toast.error(errorMessage);
     },
   });
 
