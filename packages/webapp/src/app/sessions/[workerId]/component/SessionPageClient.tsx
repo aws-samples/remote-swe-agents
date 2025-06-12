@@ -15,7 +15,7 @@ import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { removeSlackMentions } from '@/lib/message-formatter';
+import { formatMessage } from '@/lib/message-formatter';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -82,7 +82,7 @@ export default function SessionPageClient({
         switch (event.type) {
           case 'message':
             if (event.message) {
-              const cleanedMessage = removeSlackMentions(event.message);
+              const cleanedMessage = formatMessage(event.message);
               // Only add message if it's not empty after removing mentions
               if (cleanedMessage) {
                 setMessages((prev) => [
@@ -119,7 +119,7 @@ export default function SessionPageClient({
           case 'toolUse':
             if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
               const message = JSON.parse(event.input).message;
-              const cleanedMessage = removeSlackMentions(message);
+              const cleanedMessage = formatMessage(message);
 
               // Only add message if it's not empty after removing mentions
               if (cleanedMessage) {

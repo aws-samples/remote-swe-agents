@@ -3,6 +3,7 @@ import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
+import { formatMessage } from '@/lib/message-formatter';
 
 interface SessionPageProps {
   params: Promise<{
@@ -36,14 +37,18 @@ export default async function SessionPage({ params }: SessionPageProps) {
         const msgBlocks = message.content?.filter((block) => isMsg(block.toolUse?.name)) ?? [];
 
         if (msgBlocks.length > 0) {
-          messages.push({
-            id: `${item.SK}-${i}`,
-            role: 'assistant',
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            content: (msgBlocks[0].toolUse?.input as any).message ?? '',
-            timestamp: new Date(parseInt(item.SK)),
-            type: 'message',
-          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let messageText = msgBlocks.map((b) => (b.toolUse?.input as any)?.message ?? '').join('\n');
+          messageText = formatMessage(messageText);
+          if (messageText) {
+            messages.push({
+              id: `${item.SK}-${i}`,
+              role: 'assistant',
+              content: messageText,
+              timestamp: new Date(parseInt(item.SK)),
+              type: 'message',
+            });
+          }
         }
 
         const tools = (message.content ?? [])
@@ -108,14 +113,16 @@ export default async function SessionPage({ params }: SessionPageProps) {
       }
       case 'assistant': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
-
-        messages.push({
-          id: `${item.SK}-${i}`,
-          role: 'assistant',
-          content: text,
-          timestamp: new Date(parseInt(item.SK)),
-          type: 'message',
-        });
+        const formatted = formatMessage(text);
+        if (formatted) {
+          messages.push({
+            id: `${item.SK}-${i}`,
+            role: 'assistant',
+            content: text,
+            timestamp: new Date(parseInt(item.SK)),
+            type: 'message',
+          });
+        }
         break;
       }
     }
