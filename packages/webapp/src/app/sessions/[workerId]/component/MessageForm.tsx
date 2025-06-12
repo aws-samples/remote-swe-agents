@@ -56,7 +56,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
     if (isExecuting || isUploading) return;
-    if (keyEvent.key === 'Enter' && (keyEvent.ctrlKey || keyEvent.altKey)) {
+    if (keyEvent.key === 'Enter' && (keyEvent.ctrlKey || keyEvent.altKey || keyEvent.metaKey)) {
       handleSubmitWithAction();
     }
   };

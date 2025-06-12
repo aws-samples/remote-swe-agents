@@ -120,7 +120,7 @@ export default function NewSessionPage() {
                       onKeyDown={(e) => {
                         if (
                           e.key === 'Enter' &&
-                          (e.ctrlKey || e.altKey) &&
+                          (e.ctrlKey || e.altKey || e.metaKey) &&
                           !isExecuting &&
                           formState.isValid &&
                           !isUploading
