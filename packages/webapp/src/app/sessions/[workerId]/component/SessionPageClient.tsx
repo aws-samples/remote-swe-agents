@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -31,6 +32,7 @@ export default function SessionPageClient({
   initialTodoList,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
+  const router = useRouter();
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
@@ -164,6 +166,7 @@ export default function SessionPageClient({
   const { execute: executeUpdateStatus } = useAction(updateAgentStatus, {
     onSuccess: ({ input }) => {
       setAgentStatus(input.status);
+      router.refresh();
     },
     onError: (error) => {
       toast.error(`Failed to update session status: ${error}`);
@@ -190,7 +193,7 @@ export default function SessionPageClient({
                 onClick={() =>
                   executeUpdateStatus({
                     workerId,
-                    status: agentStatus === 'completed' ? 'working' : 'completed',
+                    status: agentStatus === 'completed' ? 'pending' : 'completed',
                   })
                 }
                 className={`flex items-center justify-center w-5 h-5 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
@@ -200,9 +203,7 @@ export default function SessionPageClient({
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
               >
-                {agentStatus === 'completed' && (
-                  <Check className="h-3 w-3 text-white" />
-                )}
+                {agentStatus === 'completed' && <Check className="h-3 w-3 text-white" />}
               </button>
               {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-2">
