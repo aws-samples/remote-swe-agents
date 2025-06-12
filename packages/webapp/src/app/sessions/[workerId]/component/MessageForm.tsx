@@ -90,7 +90,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="outline">
                 <ImageIcon className="w-4 h-4" />
               </Button>
-              <TooltipProvider>
+              <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">

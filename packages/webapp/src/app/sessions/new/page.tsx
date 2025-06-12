@@ -133,7 +133,7 @@ export default function NewSessionPage() {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-                  <TooltipProvider>
+                  <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
