@@ -30,7 +30,7 @@ export default async function SessionsPage() {
     if (session.agentStatus === 'working') {
       return { text: t('agentStatus.working'), color: 'bg-orange-500' };
     }
-    return { text: '不明', color: 'bg-gray-400' };
+    return { text: t('agentStatus.unknown'), color: 'bg-gray-400' };
   };
 
   return (

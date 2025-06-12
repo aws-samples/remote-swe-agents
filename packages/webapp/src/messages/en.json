@@ -38,7 +38,8 @@
     "agentStatus": {
       "working": "Working",
       "pending": "Awaiting Response",
-      "completed": "Completed"
+      "completed": "Completed",
+      "unknown": "Unknown"
     },
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
