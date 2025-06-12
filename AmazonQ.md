@@ -34,52 +34,52 @@ This project consists of the following main components:
 
 ### Server Component Best Practices
 
-1. **ページコンポーネントは async function として定義する**
+1. **Define page components as async functions**
    ```typescript
-   // 良い例
+   // Good example
    export default async function MyPage() {
-     const data = await fetchData(); // サーバー側でデータを取得
+     const data = await fetchData(); // Fetch data on the server
      return <div>{data.title}</div>;
    }
    ```
 
-2. **初回レンダリングには Server Action を使わない**
-   - 初回レンダリング時のデータ取得は、Server Componentで直接データを取得する
-   - Server Actionは、主にユーザーインタラクション後のデータ更新に使用する
+2. **Don't use Server Actions for initial rendering**
+   - For initial rendering, fetch data directly in the Server Component
+   - Use Server Actions primarily for data updates after user interactions
 
    ```typescript
-   // 良い例 - Server Componentで直接データ取得
+   // Good example - Direct data fetching in Server Component
    export default async function MyPage() {
-     // Server Componentで直接データベースや関数を呼び出す
+     // Directly call database functions in Server Component
      const data = await readDataFromDB();
      return <MyComponent initialData={data} />;
    }
    
-   // 悪い例 - 初回レンダリングにServer Actionを使用
+   // Bad example - Using Server Action for initial rendering
    export default function MyPage() {
      const { data } = useAction(getDataAction);
      // ...
    }
    ```
 
-3. **クライアントロジックとサーバーロジックを分離する**
-   - UI操作とステート管理はクライアントコンポーネントに
-   - データ取得やビジネスロジックはサーバーコンポーネントに
+3. **Separate client logic from server logic**
+   - Keep UI operations and state management in client components
+   - Keep data fetching and business logic in server components
 
    ```typescript
-   // 親: Server Component
+   // Parent: Server Component
    export default async function ProductPage({ id }) {
      const product = await getProduct(id);
      return <ProductClientUI product={product} />;
    }
    
-   // 子: Client Component
+   // Child: Client Component
    'use client';
    export function ProductClientUI({ product }) {
      const [quantity, setQuantity] = useState(1);
-     // クライアント側のインタラクションを処理
+     // Handle client-side interactions
      return (
-       // UI実装
+       // UI implementation
      );
    }
    ```
@@ -114,16 +114,16 @@ When implementing server-side functionality in the webapp, always use Next.js se
    });
    ```
 
-3. **'use server' が付いたファイルからは Server Action のみをエクスポートする**
-   - type や interface、関数などの他の項目はエクスポートしない
-   - スキーマ定義などは別ファイル（schemas.ts など）に切り出す
+3. **Only export Server Actions from files with 'use server' directive**
+   - Do not export types, interfaces, or other functions
+   - Move schemas and other definitions to separate files (e.g., schemas.ts)
 
-4. **共通関数は直接インポートして使用する**
-   - 共通関数は専用のライブラリから直接インポートする
-   - DB操作用の関数はラッパーを作らず、既存の共通関数を活用する
+4. **Import and use common functions directly**
+   - Import common functions directly from dedicated libraries
+   - Use existing common functions for DB operations rather than creating wrappers
 
    ```typescript
-   // 良い例
+   // Good example
    'use server';
    
    import { writeData } from '@remote-swe-agents/agent-core/lib';
@@ -132,7 +132,7 @@ When implementing server-side functionality in the webapp, always use Next.js se
    export const saveDataAction = authActionClient
      .schema(saveDataSchema)
      .action(async ({ parsedInput }) => {
-       // 共通関数を直接使用
+       // Use common function directly
        await writeData(parsedInput);
        return { success: true };
      });
@@ -152,7 +152,7 @@ When implementing server-side functionality in the webapp, always use Next.js se
      },
      onError: (error) => {
        // Handle error
-       const errorMessage = error.error?.serverError || 'エラーが発生しました';
+       const errorMessage = error.error?.serverError || 'An error occurred';
        showError(errorMessage);
      }
    });
@@ -170,9 +170,9 @@ When implementing server-side functionality in the webapp, always use Next.js se
 - Use Zod schemas for validation in server actions
 - When dealing with DynamoDB, import from `@remote-swe-agents/agent-core/aws` and use directly in server actions
 - The auth middleware automatically protects server actions through `authActionClient`
-- **データ取得の責任分担**:
-  - 初期データはサーバーコンポーネントで取得
-  - 更新操作のみをクライアントコンポーネントで実行
+- **Data Responsibility Distribution**:
+  - Fetch initial data in server components
+  - Perform update operations only in client components
 
 ## Coding Conventions
 
