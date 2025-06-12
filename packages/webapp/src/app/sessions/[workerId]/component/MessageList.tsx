@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes';
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import { removeSlackMentions } from '@/utils/message-formatter';
 
 export type MessageView = {
   id: string;
@@ -103,26 +104,33 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
   const showWaitingMessage = instanceStatus === 'starting';
 
-  const MarkdownRenderer = ({ content }: { content: string }) => (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        p: ({ children }) => {
-          if (typeof children === 'string') {
-            const parts = children.split('\n');
-            return (
-              <p className="mb-2">
-                {parts.map((part, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <br />}
-                    {part}
-                  </React.Fragment>
-                ))}
-              </p>
-            );
-          }
-          return <p className="mb-2">{children}</p>;
-        },
+  const MarkdownRenderer = ({ content }: { content: string }) => {
+    // Filter out Slack mentions from content
+    const cleanedContent = removeSlackMentions(content);
+    
+    // If the content is null or empty after filtering, don't render anything
+    if (!cleanedContent) return null;
+    
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => {
+            if (typeof children === 'string') {
+              const parts = children.split('\n');
+              return (
+                <p className="mb-2">
+                  {parts.map((part, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <br />}
+                      {part}
+                    </React.Fragment>
+                  ))}
+                </p>
+              );
+            }
+            return <p className="mb-2">{children}</p>;
+          },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         code(props: any) {
           const { className, children } = props;
