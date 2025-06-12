@@ -48,6 +48,8 @@ export default function NewSessionPage() {
       },
     });
 
+  const isUploading = uploadingImages.some((img) => !img.key);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -112,7 +114,7 @@ export default function NewSessionPage() {
                       placeholder={t('placeholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
                       rows={4}
-                      disabled={isExecuting || uploadingImages.some((img) => !img.key)}
+                      disabled={isExecuting || isUploading}
                       onPaste={handlePaste}
                       onKeyDown={(e) => {
                         if (
@@ -120,7 +122,7 @@ export default function NewSessionPage() {
                           (e.ctrlKey || e.altKey) &&
                           !isExecuting &&
                           formState.isValid &&
-                          !uploadingImages.some((img) => !img.key)
+                          !isUploading
                         ) {
                           handleSubmitWithAction();
                         }
@@ -132,13 +134,13 @@ export default function NewSessionPage() {
                   </div>
                   <Button
                     type="submit"
-                    disabled={isExecuting || !formState.isValid || uploadingImages.some((img) => !img.key)}
+                    disabled={isExecuting || !formState.isValid || isUploading}
                     className="w-full"
                     size="lg"
                   >
                     {isExecuting
                       ? t('creatingSession')
-                      : uploadingImages.some((img) => !img.key)
+                      : isUploading
                         ? t('waitingForImageUpload')
                         : t('createSessionButton')}
                   </Button>
