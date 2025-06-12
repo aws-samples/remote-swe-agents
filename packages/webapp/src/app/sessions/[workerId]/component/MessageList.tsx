@@ -290,7 +290,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             messageId={message.id}
           />
         ) : (
-          <div className="text-gray-900 dark:text-white pb-2">
+          <div className="text-gray-900 dark:text-white pb-2 break-all">
             <MarkdownRenderer content={message.content} />
           </div>
         )}
