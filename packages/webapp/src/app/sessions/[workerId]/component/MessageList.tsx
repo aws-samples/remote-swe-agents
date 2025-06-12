@@ -28,11 +28,11 @@ type MessageGroup = {
 
 type MessageListProps = {
   messages: MessageView[];
-  isAgentTyping: boolean;
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
+  agentStatus?: 'pending' | 'working' | 'completed';
 };
 
-export default function MessageList({ messages, isAgentTyping, instanceStatus }: MessageListProps) {
+export default function MessageList({ messages, instanceStatus, agentStatus }: MessageListProps) {
   const { theme } = useTheme();
   const t = useTranslations('sessions');
   const locale = useLocale();
@@ -222,9 +222,10 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
                   toggleOutputJsonVisibility(messageId);
                 }
               }}
-              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer flex items-center"
             >
-              {t('usingTool')}: {toolName}
+              <span className="hidden md:inline">{t('usingTool')}: </span>
+              <span className="truncate">{toolName}</span>
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -350,7 +351,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
             <MessageGroup key={`group-${index}`} group={group} />
           ))}
 
-          {isAgentTyping && (
+          {agentStatus === 'working' && (
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">

@@ -34,7 +34,6 @@ export default function SessionPageClient({
   const t = useTranslations('sessions');
   const router = useRouter();
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
-  const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
     initialInstanceStatus
   );
@@ -92,7 +91,6 @@ export default function SessionPageClient({
                 },
               ]);
             }
-            setIsAgentTyping(false);
             break;
           case 'instanceStatusChanged':
             setInstanceStatus(event.status);
@@ -142,7 +140,6 @@ export default function SessionPageClient({
               refetchTodoList({ workerId });
             }
 
-            setIsAgentTyping(true);
             break;
         }
       },
@@ -152,7 +149,6 @@ export default function SessionPageClient({
 
   const onSendMessage = async (message: MessageView) => {
     setMessages((prev) => [...prev, message]);
-    setIsAgentTyping(true);
   };
 
   const scrollToTop = () => {
@@ -267,7 +263,7 @@ export default function SessionPageClient({
           </div>
         )}
 
-        <MessageList messages={messages} isAgentTyping={isAgentTyping} instanceStatus={instanceStatus} />
+        <MessageList messages={messages} instanceStatus={instanceStatus} agentStatus={agentStatus} />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
 
