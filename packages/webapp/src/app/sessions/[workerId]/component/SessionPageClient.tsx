@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, CheckCircle, Plus } from 'lucide-react';
+import { ArrowLeft, ListChecks, Check, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus } from '../actions';
@@ -39,6 +39,25 @@ export default function SessionPageClient({
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
+
+  const getUnifiedStatus = () => {
+    if (agentStatus === 'completed') {
+      return { text: t('agentStatus.completed'), color: 'bg-gray-500' };
+    }
+    if (instanceStatus === 'stopped' || instanceStatus === 'terminated') {
+      return { text: t('sessionStatus.stopped'), color: 'bg-gray-500' };
+    }
+    if (instanceStatus === 'starting') {
+      return { text: t('sessionStatus.starting'), color: 'bg-blue-500' };
+    }
+    if (agentStatus === 'pending') {
+      return { text: t('agentStatus.pending'), color: 'bg-yellow-500' };
+    }
+    if (agentStatus === 'working') {
+      return { text: t('agentStatus.working'), color: 'bg-green-500' };
+    }
+    return { text: t('agentStatus.unknown'), color: 'bg-gray-400' };
+  };
 
   // Refetch todoList function using safe action
   const { execute: refetchTodoList, isExecuting: isRefetchingTodoList } = useAction(fetchLatestTodoList, {
@@ -174,33 +193,21 @@ export default function SessionPageClient({
                     status: agentStatus === 'completed' ? 'working' : 'completed',
                   })
                 }
-                className={`p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
+                className={`flex items-center justify-center w-5 h-5 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   agentStatus === 'completed'
-                    ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-200 dark:bg-green-900 dark:border-green-600 dark:hover:bg-green-800 focus:ring-green-500'
-                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:ring-blue-500'
+                    ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
+                    : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
               >
-                <CheckCircle className={`h-4 w-4 ${agentStatus === 'completed' ? 'text-green-600' : 'text-gray-400'}`} />
+                {agentStatus === 'completed' && (
+                  <Check className="h-3 w-3 text-white" />
+                )}
               </button>
-              {instanceStatus && (
+              {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-block w-2 h-2 rounded-full ${
-                      instanceStatus === 'running'
-                        ? 'bg-green-500'
-                        : instanceStatus === 'starting'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-500'
-                    }`}
-                  />
-                  <span className="text-sm font-medium">
-                    {instanceStatus === 'running'
-                      ? t('instanceRunning')
-                      : instanceStatus === 'starting'
-                        ? t('instanceStarting')
-                        : t('instanceStopped')}
-                  </span>
+                  <span className={`inline-block w-2 h-2 rounded-full ${getUnifiedStatus().color}`} />
+                  <span className="text-sm font-medium">{getUnifiedStatus().text}</span>
                 </div>
               )}
             </div>
