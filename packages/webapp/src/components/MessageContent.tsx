@@ -15,10 +15,10 @@ interface MessageContentProps {
 export function MessageContent({ content, render }: MessageContentProps) {
   // Filter out Slack mentions
   const cleanedContent = removeSlackMentions(content);
-  
+
   // If content is null/empty after filtering, don't render anything
   if (!cleanedContent) return null;
-  
+
   // Otherwise, render the content using the provided render function
   return <>{render(cleanedContent)}</>;
 }

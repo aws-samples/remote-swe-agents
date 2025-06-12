@@ -120,7 +120,7 @@ export default function SessionPageClient({
             if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
               const message = JSON.parse(event.input).message;
               const cleanedMessage = removeSlackMentions(message);
-              
+
               // Only add message if it's not empty after removing mentions
               if (cleanedMessage) {
                 setMessages((prev) => [
