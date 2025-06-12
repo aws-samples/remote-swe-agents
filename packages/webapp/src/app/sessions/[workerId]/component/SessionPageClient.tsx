@@ -178,18 +178,18 @@ export default function SessionPageClient({
       <div className="sticky top-0 z-10">
         <Header />
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
+            <div className="flex items-center gap-4 min-w-0 flex-shrink">
               <Link
                 href="/sessions"
-                className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex-shrink-0"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('sessionList')}</span>
+                <span className="hidden sm:inline truncate">{t('sessionList')}</span>
               </Link>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block">{workerId}</h1>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">{workerId}</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Session status toggle button */}
               <button
                 onClick={() =>
@@ -208,9 +208,9 @@ export default function SessionPageClient({
                 {agentStatus === 'completed' && <Check className="h-4 w-4 text-white" />}
               </button>
               {(instanceStatus || agentStatus) && (
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2 h-2 rounded-full ${getUnifiedStatus().color}`} />
-                  <span className="text-sm font-medium">{getUnifiedStatus().text}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
+                  <span className="text-sm font-medium truncate min-w-0">{getUnifiedStatus().text}</span>
                 </div>
               )}
               {todoList && (
@@ -220,11 +220,11 @@ export default function SessionPageClient({
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
                   <ListChecks className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden sm:inline truncate">
                     {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
                     {todoList.items.length})
                   </span>
-                  <span className="inline sm:hidden">
+                  <span className="inline sm:hidden truncate">
                     ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
                   </span>
                 </button>
@@ -234,7 +234,7 @@ export default function SessionPageClient({
                 className="inline-flex items-center px-4 py-2 h-10 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('newSession')}</span>
+                <span className="hidden sm:inline truncate">{t('newSession')}</span>
               </Link>
             </div>
           </div>
