@@ -102,5 +102,15 @@
     "addImage": "Add Image",
     "imagesCount": "{count} images",
     "waitingForImageUpload": "Waiting for image upload..."
+  },
+  "prompt_settings": {
+    "title": "Common Prompt Settings",
+    "description": "Configure a common prompt that will be added to all agent interactions",
+    "configTitle": "Agent Prompt Configuration",
+    "configDescription": "This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.",
+    "placeholder": "Enter common prompt text here...",
+    "saveButton": "Save Prompt",
+    "saveSuccess": "Common prompt has been successfully saved",
+    "saveError": "Failed to save common prompt"
   }
 }

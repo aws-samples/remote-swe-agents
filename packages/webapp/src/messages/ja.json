@@ -102,5 +102,15 @@
     "addImage": "画像を追加",
     "imagesCount": "{count} 枚の画像",
     "waitingForImageUpload": "画像アップロード中..."
+  },
+  "prompt_settings": {
+    "title": "共通プロンプト設定",
+    "description": "すべてのエージェントとのやり取りに追加される共通プロンプトを設定します",
+    "configTitle": "エージェントプロンプト設定",
+    "configDescription": "このプロンプトはすべてのエージェントのシステムプロンプトに追加されます。組織全体のガイドラインや指示を設定するために使用してください。",
+    "placeholder": "共通プロンプトテキストを入力してください...",
+    "saveButton": "プロンプトを保存",
+    "saveSuccess": "共通プロンプトが正常に保存されました",
+    "saveError": "共通プロンプトの保存に失敗しました"
   }
 }
