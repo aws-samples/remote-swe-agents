@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
 import { useAction } from 'next-safe-action/hooks';
 import { savePromptAction, getPromptAction } from './actions';
 import Header from '@/components/Header';
 import { Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PromptSettingsPage() {
   const [prompt, setPrompt] = useState<string>('');
-  const { toast } = useToast();
 
   const { execute: getPrompt, result: getResult } = useAction(getPromptAction, {
     onSuccess: (data) => {
@@ -21,27 +18,16 @@ export default function PromptSettingsPage() {
       }
     },
     onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Error loading prompt',
-        description: error.serverError || 'Failed to load common prompt settings',
-      });
+      toast.error(error.serverError || 'Failed to load common prompt settings');
     },
   });
 
   const { execute: savePrompt, status: saveStatus } = useAction(savePromptAction, {
     onSuccess: () => {
-      toast({
-        title: 'Prompt saved',
-        description: 'Common prompt has been successfully saved',
-      });
+      toast.success('Common prompt has been successfully saved');
     },
     onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Error saving prompt',
-        description: error.serverError || 'Failed to save common prompt',
-      });
+      toast.error(error.serverError || 'Failed to save common prompt');
     },
   });
 
@@ -66,34 +52,35 @@ export default function PromptSettingsPage() {
           </p>
         </div>
 
-        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm">
-          <CardHeader>
-            <CardTitle>Agent Prompt Configuration</CardTitle>
-            <CardDescription>
-              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or
-              instructions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="border border-gray-200 dark:border-gray-800 shadow-sm rounded-lg bg-white dark:bg-gray-800">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold mb-1">Agent Prompt Configuration</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.
+            </p>
+          </div>
+          
+          <div className="p-6">
             <div className="space-y-4">
               <div>
-                <Textarea
+                <textarea
                   placeholder="Enter common prompt text here..."
-                  className="h-64 font-mono"
+                  className="w-full h-64 p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   id="prompt"
                 />
               </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-end space-x-2">
+          </div>
+          
+          <div className="p-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
             <Button onClick={handleSave} disabled={saveStatus === 'executing'} className="flex items-center gap-2">
               <Save className="h-4 w-4" />
               Save Prompt
             </Button>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </main>
     </div>
   );
