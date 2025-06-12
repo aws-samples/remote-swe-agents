@@ -16,7 +16,7 @@ export default async function SessionsPage() {
 
   const getUnifiedStatus = (session: SessionItem) => {
     if (session.agentStatus === 'completed') {
-      return { text: t('agentStatus.completed'), color: 'bg-green-500' };
+      return { text: t('agentStatus.completed'), color: 'bg-gray-500' };
     }
     if (session.instanceStatus === 'stopped' || session.instanceStatus === 'terminated') {
       return { text: t('sessionStatus.stopped'), color: 'bg-gray-500' };
@@ -28,7 +28,7 @@ export default async function SessionsPage() {
       return { text: t('agentStatus.pending'), color: 'bg-yellow-500' };
     }
     if (session.agentStatus === 'working') {
-      return { text: t('agentStatus.working'), color: 'bg-orange-500' };
+      return { text: t('agentStatus.working'), color: 'bg-green-500' };
     }
     return { text: t('agentStatus.unknown'), color: 'bg-gray-400' };
   };
@@ -55,7 +55,7 @@ export default async function SessionsPage() {
               const status = getUnifiedStatus(session);
               return (
                 <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
-                  <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40">
+                  <div className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40`}>
                     <div className="flex items-center gap-2 mb-3">
                       <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
