@@ -3,32 +3,21 @@ import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { updateTodoItem, updateTodoItems, TodoItemUpdate, formatTodoList } from '../../lib/todo';
 import { todoInitTool } from './todo-init';
 
-// Single item schema
+// Item update schema
 const todoItemUpdateSchema = z.object({
   id: z.string().describe('The ID of the task to update'),
   status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).describe('The new status for the task'),
   description: z.string().optional().describe('Optional new description for the task'),
 });
 
-// Input schema - can be either a single update or an array of updates
-const todoUpdateInputSchema = z.union([
-  todoItemUpdateSchema,
-  z.object({
-    updates: z.array(todoItemUpdateSchema).nonempty().describe('Array of task updates to process in batch'),
-  }),
-]);
+// Input schema - array of updates only
+const todoUpdateInputSchema = z.object({
+  updates: z.array(todoItemUpdateSchema).nonempty().describe('Array of task updates to process in batch'),
+});
 
 async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promise<string> {
-  // Convert input to a consistent array of updates
-  let updates: TodoItemUpdate[];
-
-  if ('updates' in params) {
-    // Batch update mode
-    updates = params.updates;
-  } else {
-    const { id, status, description } = params;
-    updates = [{ id, status, description }];
-  }
+  // Get updates from params
+  const updates: TodoItemUpdate[] = params.updates;
 
   // Update the todo items
   const result = await updateTodoItems(updates);
@@ -62,9 +51,9 @@ export const todoUpdateTool: ToolDefinition<z.infer<typeof todoUpdateInputSchema
   schema: todoUpdateInputSchema,
   toolSpec: async () => ({
     name,
-    description: `Update an existing task in the todo list created by ${todoInitTool.name}.
+    description: `Update tasks in the todo list created by ${todoInitTool.name}.
 Use this to mark tasks as completed, in progress, or to modify task descriptions.
-You can update a single task or provide an array of updates to process multiple tasks at once.
+Provide an array of updates to process multiple tasks at once.
 
 If your update request is invalid, an error will be returned.
 `.trim(),
