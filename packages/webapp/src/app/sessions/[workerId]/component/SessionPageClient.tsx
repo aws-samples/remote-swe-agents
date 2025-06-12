@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Plus } from 'lucide-react';
+import { ArrowLeft, ListChecks, Check, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus } from '../actions';
@@ -176,7 +176,7 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-  const { execute: executeUpdateStatus } = useAction(updateAgentStatus, {
+  const { execute: executeUpdateStatus, isExecuting: isUpdatingStatus } = useAction(updateAgentStatus, {
     onSuccess: ({ input }) => {
       setAgentStatus(input.status);
       router.refresh();
@@ -219,8 +219,13 @@ export default function SessionPageClient({
                     : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
+                disabled={isUpdatingStatus}
               >
-                {agentStatus === 'completed' && <Check className="h-4 w-4 text-white" />}
+                {isUpdatingStatus ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-gray-600 dark:text-gray-300" />
+                ) : (
+                  agentStatus === 'completed' && <Check className="h-4 w-4 text-white" />
+                )}
               </button>
               {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-2 min-w-0">
