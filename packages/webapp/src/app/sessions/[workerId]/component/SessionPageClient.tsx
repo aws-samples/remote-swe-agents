@@ -15,7 +15,7 @@ import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { removeSlackMentions } from '@/utils/message-formatter';
+import { removeSlackMentions } from '@/lib/message-formatter';
 
 interface SessionPageClientProps {
   workerId: string;
