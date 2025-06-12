@@ -7,14 +7,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Copy, Loader2, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -36,21 +29,18 @@ export default function ApiKeysPage() {
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
 
   // List API keys action
-  const { 
-    data: apiKeysData, 
-    execute: executeListApiKeys, 
-    isExecuting: isLoading 
+  const {
+    data: apiKeysData,
+    execute: executeListApiKeys,
+    isExecuting: isLoading,
   } = useAction(listApiKeysAction, {
     onError: (error) => {
       toast.error(error.serverError || 'Failed to load API keys');
-    }
+    },
   });
 
   // Create API key action
-  const { 
-    execute: executeCreateApiKey,
-    isExecuting: isCreating 
-  } = useAction(createApiKeyAction, {
+  const { execute: executeCreateApiKey, isExecuting: isCreating } = useAction(createApiKeyAction, {
     onSuccess: (data) => {
       setNewApiKey(data.apiKey);
       setDescription('');
@@ -59,14 +49,11 @@ export default function ApiKeysPage() {
     },
     onError: (error) => {
       toast.error(error.serverError || 'Failed to create API key');
-    }
+    },
   });
 
   // Delete API key action
-  const { 
-    execute: executeDeleteApiKey,
-    isExecuting: isDeleting 
-  } = useAction(deleteApiKeyAction, {
+  const { execute: executeDeleteApiKey, isExecuting: isDeleting } = useAction(deleteApiKeyAction, {
     onSuccess: () => {
       toast.success('API key deleted successfully');
       executeListApiKeys();
@@ -76,7 +63,7 @@ export default function ApiKeysPage() {
     onError: (error) => {
       toast.error(error.serverError || 'Failed to delete API key');
       setIsDeleteDialogOpen(false);
-    }
+    },
   });
 
   const handleCreateKey = useCallback(() => {
@@ -145,11 +132,7 @@ export default function ApiKeysPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={isCreating}
                   />
-                  <Button
-                    onClick={handleCreateKey}
-                    disabled={isCreating}
-                    className="flex gap-2 items-center"
-                  >
+                  <Button onClick={handleCreateKey} disabled={isCreating} className="flex gap-2 items-center">
                     {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     Create Key
                   </Button>
@@ -182,8 +165,8 @@ export default function ApiKeysPage() {
             <CardHeader>
               <CardTitle>Your API Keys</CardTitle>
               <CardDescription>
-                These are the API keys associated with your account. When making API requests,
-                include the key in the Authorization header as "Bearer YOUR_API_KEY".
+                These are the API keys associated with your account. When making API requests, include the key in the
+                Authorization header as "Bearer YOUR_API_KEY".
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -228,16 +211,15 @@ export default function ApiKeysPage() {
             <Card>
               <CardHeader>
                 <CardTitle>API Documentation</CardTitle>
-                <CardDescription>
-                  How to use the Remote SWE Agents API
-                </CardDescription>
+                <CardDescription>How to use the Remote SWE Agents API</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium mb-2">Authentication</h3>
                     <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      All API requests require authentication using an API key. Include your API key in the Authorization header:
+                      All API requests require authentication using an API key. Include your API key in the
+                      Authorization header:
                     </p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>Authorization: Bearer YOUR_API_KEY</code>
@@ -281,9 +263,7 @@ export default function ApiKeysPage() {
                     <p className="text-gray-600 dark:text-gray-300 mt-2">
                       Replace <code>:sessionId</code> with the workerId returned when creating the session.
                     </p>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2">
-                      Returns a success status:
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">Returns a success status:</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`{
   "success": true
@@ -293,9 +273,7 @@ export default function ApiKeysPage() {
 
                   <div>
                     <h3 className="text-lg font-medium mb-2">Example cURL requests</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      Create a new session:
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">Create a new session:</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
   https://yourwebapp.com/api/sessions/ \\
@@ -304,9 +282,7 @@ export default function ApiKeysPage() {
   -d '{"message": "Create a React component for a user profile page"}'`}</code>
                     </pre>
 
-                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">
-                      Send follow-up message:
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">Send follow-up message:</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
   https://yourwebapp.com/api/sessions/api-1234567890 \\
@@ -328,8 +304,8 @@ export default function ApiKeysPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this API key and
-              revoke access for any services using it.
+              This action cannot be undone. This will permanently delete this API key and revoke access for any services
+              using it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -12,10 +12,10 @@ import crypto from 'crypto';
 export const createApiKey = async (description?: string, ownerId?: string): Promise<string> => {
   const now = Date.now();
   const timestamp = String(now).padStart(15, '0');
-  
+
   // Generate a random 32 byte key and hex encode it
   const apiKey = crypto.randomBytes(32).toString('hex');
-  
+
   await ddb.send(
     new PutCommand({
       TableName,
@@ -29,7 +29,7 @@ export const createApiKey = async (description?: string, ownerId?: string): Prom
       } satisfies ApiKeyItem,
     })
   );
-  
+
   return apiKey;
 };
 
@@ -48,7 +48,7 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
       },
     })
   );
-  
+
   return !!result.Item;
 };
 

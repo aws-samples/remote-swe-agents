@@ -10,46 +10,37 @@ const sendMessageSchema = z.object({
   message: z.string().min(1),
 });
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { sessionId: string } }) {
   // Validate API key
   const apiKeyValidation = await validateApiKeyMiddleware(request);
   if (apiKeyValidation) {
     return apiKeyValidation;
   }
-  
+
   try {
     // Get session ID from the URL params
     const { sessionId } = params;
-    
+
     // Parse and validate request body
     const body = await request.json();
     const parsedBody = sendMessageSchema.safeParse(body);
-    
+
     if (!parsedBody.success) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: parsedBody.error.format() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
     }
-    
+
     const { message } = parsedBody.data;
-    
+
     // Check if session exists
     const session = await getSession(sessionId);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
-    
+
     // Create content for the message
     const content = [{ text: renderUserMessage({ message }) }];
-    
+
     // Save the message
     await ddb.send(
       new PutCommand({
@@ -64,16 +55,13 @@ export async function POST(
         },
       })
     );
-    
+
     // Send worker event to notify message received
     await sendWorkerEvent(sessionId, { type: 'onMessageReceived' });
-    
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error('Error sending message:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
   }
 }

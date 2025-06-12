@@ -16,26 +16,23 @@ export async function POST(request: NextRequest) {
   if (apiKeyValidation) {
     return apiKeyValidation;
   }
-  
+
   try {
     // Parse and validate request body
     const body = await request.json();
     const parsedBody = createSessionSchema.safeParse(body);
-    
+
     if (!parsedBody.success) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: parsedBody.error.format() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
     }
-    
+
     const { message } = parsedBody.data;
     const workerId = `api-${Date.now()}`;
     const now = Date.now();
-    
+
     // Create content for the message
     const content = [{ text: renderUserMessage({ message }) }];
-    
+
     // Create session and initial message in a transaction
     await ddb.send(
       new TransactWriteCommand({
@@ -73,23 +70,20 @@ export async function POST(request: NextRequest) {
         ],
       })
     );
-    
+
     // Start EC2 instance for the worker
     await getOrCreateWorkerInstance(
       workerId,
       '', // slackChannelId - empty for API
       '' // slackThreadTs - empty for API
     );
-    
+
     // Send worker event to notify message received
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
-    
+
     return NextResponse.json({ workerId }, { status: 201 });
   } catch (error) {
     console.error('Error creating session:', error);
-    return NextResponse.json(
-      { error: 'Failed to create session' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
 }
