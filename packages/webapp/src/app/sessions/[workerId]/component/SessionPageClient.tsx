@@ -15,6 +15,7 @@ import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { removeSlackMentions } from '@/utils/message-formatter';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -81,16 +82,20 @@ export default function SessionPageClient({
         switch (event.type) {
           case 'message':
             if (event.message) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  role: 'assistant',
-                  content: event.message,
-                  timestamp: new Date(event.timestamp),
-                  type: 'message',
-                },
-              ]);
+              const cleanedMessage = removeSlackMentions(event.message);
+              // Only add message if it's not empty after removing mentions
+              if (cleanedMessage) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: cleanedMessage,
+                    timestamp: new Date(event.timestamp),
+                    type: 'message',
+                  },
+                ]);
+              }
             }
             setIsAgentTyping(false);
             break;
@@ -113,16 +118,22 @@ export default function SessionPageClient({
             break;
           case 'toolUse':
             if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  role: 'assistant',
-                  content: JSON.parse(event.input).message,
-                  timestamp: new Date(event.timestamp),
-                  type: 'message',
-                },
-              ]);
+              const message = JSON.parse(event.input).message;
+              const cleanedMessage = removeSlackMentions(message);
+              
+              // Only add message if it's not empty after removing mentions
+              if (cleanedMessage) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: cleanedMessage,
+                    timestamp: new Date(event.timestamp),
+                    type: 'message',
+                  },
+                ]);
+              }
             } else {
               setMessages((prev) => [
                 ...prev,
