@@ -1,4 +1,4 @@
-import { validateApiKeyMiddleware } from '../../auth/api-key';
+import { validateApiKeyMiddleware } from '../auth/api-key';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateWorkerInstance, renderUserMessage, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/lib/aws';
