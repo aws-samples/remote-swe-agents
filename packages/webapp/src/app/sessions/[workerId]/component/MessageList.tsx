@@ -225,7 +225,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
               className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer flex items-center"
             >
               <span className="hidden md:inline">{t('usingTool')}: </span>
-              <span className="truncate max-w-[200px] md:max-w-full">{toolName}</span>
+              <span className="truncate">{toolName}</span>
             </button>
           </div>
           <div className="flex items-center gap-2">
