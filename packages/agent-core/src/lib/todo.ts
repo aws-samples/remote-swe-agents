@@ -88,23 +88,23 @@ export async function updateTodoItems(
 
   // Create a copy of the todo list to work with
   const updatedItems = [...todoList.items];
-  
+
   // Update all the specified tasks
   for (const update of updates) {
     const { id, status, description } = update;
-    
+
     // Find the task to update
     const taskIndex = updatedItems.findIndex((task) => task.id == id);
     if (taskIndex === -1) {
       return { success: false, currentList: todoList, error: `Task id ${id} was not found.` };
     }
-    
+
     // Update the task
     updatedItems[taskIndex] = {
       ...updatedItems[taskIndex],
       status,
       description: description ?? updatedItems[taskIndex].description,
-      updatedAt: now
+      updatedAt: now,
     };
   }
 
@@ -112,7 +112,7 @@ export async function updateTodoItems(
     items: updatedItems,
     lastUpdated: now,
   };
-  
+
   try {
     await validateTodoList(updatedList);
   } catch (e) {

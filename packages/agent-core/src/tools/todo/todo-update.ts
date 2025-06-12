@@ -21,7 +21,7 @@ const todoUpdateInputSchema = z.union([
 async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promise<string> {
   // Convert input to a consistent array of updates
   let updates: TodoItemUpdate[];
-  
+
   if ('updates' in params) {
     // Batch update mode
     updates = params.updates;
@@ -30,7 +30,7 @@ async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promis
     const { id, status, description } = params;
     updates = [{ id, status, description }];
   }
-  
+
   // Update the todo items
   const result = await updateTodoItems(updates);
 
