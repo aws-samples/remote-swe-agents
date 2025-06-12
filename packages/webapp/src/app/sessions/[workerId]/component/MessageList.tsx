@@ -139,7 +139,9 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
               {String(children).replace(/\n$/, '')}
             </SyntaxHighlighter>
           ) : (
-            <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm break-all">{children}</code>
+            <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm whitespace-pre-wrap">
+              {children}
+            </code>
           );
         },
         h1: ({ children }) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
@@ -289,7 +291,9 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
             messageId={message.id}
           />
         ) : (
-          <div className="text-gray-900 dark:text-white pb-2 break-all">
+          <div
+            className={`text-gray-900 dark:text-white pb-2 break-all${message.role == 'user' ? ' whitespace-pre-wrap' : ''}`}
+          >
             <MarkdownRenderer content={message.content} />
           </div>
         )}
