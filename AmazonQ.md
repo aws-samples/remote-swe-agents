@@ -153,7 +153,7 @@ When implementing server-side functionality in the webapp, always use Next.js se
      onError: (error) => {
        // Handle error
        const errorMessage = error.error?.serverError || 'An error occurred';
-       showError(errorMessage);
+       toast(errorMessage);
      }
    });
    
