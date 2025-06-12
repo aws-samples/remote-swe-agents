@@ -112,10 +112,16 @@ export default function NewSessionPage() {
                       placeholder={t('placeholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
                       rows={4}
-                      disabled={isExecuting || uploadingImages.some(img => !img.key)}
+                      disabled={isExecuting || uploadingImages.some((img) => !img.key)}
                       onPaste={handlePaste}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.ctrlKey || e.altKey) && !isExecuting && formState.isValid && !uploadingImages.some(img => !img.key)) {
+                        if (
+                          e.key === 'Enter' &&
+                          (e.ctrlKey || e.altKey) &&
+                          !isExecuting &&
+                          formState.isValid &&
+                          !uploadingImages.some((img) => !img.key)
+                        ) {
                           handleSubmitWithAction();
                         }
                       }}
@@ -124,18 +130,17 @@ export default function NewSessionPage() {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-                  <Button 
-                    type="submit" 
-                    disabled={isExecuting || !formState.isValid || uploadingImages.some(img => !img.key)} 
-                    className="w-full" 
+                  <Button
+                    type="submit"
+                    disabled={isExecuting || !formState.isValid || uploadingImages.some((img) => !img.key)}
+                    className="w-full"
                     size="lg"
                   >
-                    {isExecuting 
-                      ? t('creatingSession') 
-                      : uploadingImages.some(img => !img.key)
+                    {isExecuting
+                      ? t('creatingSession')
+                      : uploadingImages.some((img) => !img.key)
                         ? t('waitingForImageUpload')
-                        : t('createSessionButton')
-                    }
+                        : t('createSessionButton')}
                   </Button>
                 </form>
               </div>
