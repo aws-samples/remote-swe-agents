@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes';
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 export type MessageView = {
   id: string;
@@ -38,6 +39,7 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const positionRatio = useScrollPosition();
+  const isMobile = useIsMobile();
   // Track visibility of input and output JSON for each message
   const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
   const [visibleOutputJsonMessages, setVisibleOutputJsonMessages] = useState<Set<string>>(new Set());
@@ -274,10 +276,12 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
 
   const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => (
     <div className="flex items-start gap-1 py-1">
-      <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1" style={{ minWidth: '55px' }}>
-        {showTimestamp &&
-          new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
-      </div>
+      {!isMobile && (
+        <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1" style={{ minWidth: '55px' }}>
+          {showTimestamp &&
+            new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
       <div className="flex-1">
         {message.type === 'toolUse' ? (
           <ToolUseRenderer
