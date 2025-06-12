@@ -48,6 +48,15 @@ export async function initializeTodoList(items: string[]): Promise<TodoList> {
 }
 
 /**
+ * Represents a single todo item update
+ */
+export interface TodoItemUpdate {
+  id: string;
+  status: TodoItem['status'];
+  description?: string;
+}
+
+/**
  * Update a task in the todo list
  * @param id ID of the task to update
  * @param status New status for the task
@@ -59,6 +68,17 @@ export async function updateTodoItem(
   status: TodoItem['status'],
   description?: string
 ): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
+  return updateTodoItems([{ id, status, description }]);
+}
+
+/**
+ * Update multiple tasks in the todo list
+ * @param updates Array of task updates with id, status and optional description
+ * @returns Updated todo list or error if any update fails
+ */
+export async function updateTodoItems(
+  updates: TodoItemUpdate[]
+): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
   const todoList = await getTodoList();
   if (!todoList) {
     return { success: false, currentList: null, error: 'No todo list exists. Please create one first.' };
@@ -66,19 +86,33 @@ export async function updateTodoItem(
 
   const now = Date.now();
 
-  // Find and update the task
-  const task = todoList.items.find((task) => task.id == id);
-  if (!task) {
-    return { success: false, currentList: null, error: `Task id ${id} was not found.` };
+  // Create a copy of the todo list to work with
+  const updatedItems = [...todoList.items];
+
+  // Update all the specified tasks
+  for (const update of updates) {
+    const { id, status, description } = update;
+
+    // Find the task to update
+    const taskIndex = updatedItems.findIndex((task) => task.id == id);
+    if (taskIndex === -1) {
+      return { success: false, currentList: todoList, error: `Task id ${id} was not found.` };
+    }
+
+    // Update the task
+    updatedItems[taskIndex] = {
+      ...updatedItems[taskIndex],
+      status,
+      description: description ?? updatedItems[taskIndex].description,
+      updatedAt: now,
+    };
   }
-  task.status = status;
-  task.description = description ?? task.description;
-  task.updatedAt = now;
 
   const updatedList: TodoList = {
-    items: todoList.items,
+    items: updatedItems,
     lastUpdated: now,
   };
+
   try {
     await validateTodoList(updatedList);
   } catch (e) {
