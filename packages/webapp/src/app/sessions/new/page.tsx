@@ -12,6 +12,7 @@ import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -132,18 +133,27 @@ export default function NewSessionPage() {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-                  <Button
-                    type="submit"
-                    disabled={isExecuting || !formState.isValid || isUploading}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isExecuting
-                      ? t('creatingSession')
-                      : isUploading
-                        ? t('waitingForImageUpload')
-                        : t('createSessionButton')}
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="submit"
+                          disabled={isExecuting || !formState.isValid || isUploading}
+                          className="w-full"
+                          size="lg"
+                        >
+                          {isExecuting
+                            ? t('creatingSession')
+                            : isUploading
+                              ? t('waitingForImageUpload')
+                              : t('createSessionButton')}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{sessionsT('sendWithCtrlEnter')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </form>
               </div>
             </div>

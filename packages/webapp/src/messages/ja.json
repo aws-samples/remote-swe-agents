@@ -18,6 +18,7 @@
       "send": "送信",
       "placeholder": "メッセージを入力してください..."
     },
+    "sendWithCtrlEnter": "Ctrl+Enterで送信",
     "loading": "読み込み中...",
     "enterMessage": "メッセージを入力してください",
     "newSessionTitle": "新規セッションの作成",

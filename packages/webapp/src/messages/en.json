@@ -18,6 +18,7 @@
       "send": "Send",
       "placeholder": "Type your message here..."
     },
+    "sendWithCtrlEnter": "Send with Ctrl+Enter",
     "loading": "Loading...",
     "enterMessage": "Please enter a message",
     "newSessionTitle": "Create New Session",

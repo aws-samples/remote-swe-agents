@@ -11,6 +11,7 @@ import { KeyboardEventHandler } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
@@ -89,15 +90,24 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="outline">
                 <ImageIcon className="w-4 h-4" />
               </Button>
-              <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">
-                {isExecuting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isUploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">
+                      {isExecuting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('sendWithCtrlEnter')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
