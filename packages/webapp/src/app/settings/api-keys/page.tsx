@@ -40,9 +40,7 @@ export default async function ApiKeysPage() {
             <div className="p-6 pt-0">
               <div className="space-y-4">
                 {(!apiKeys || apiKeys.length === 0) && (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                    {t('noKeys')}
-                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('noKeys')}</p>
                 )}
                 {apiKeys.map((key: ApiKeyItem) => (
                   <div
@@ -52,7 +50,9 @@ export default async function ApiKeysPage() {
                     <div>
                       <div className="text-sm font-medium">{key.description || t('unnamedKey')}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('createdAgo', { timeAgo: formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }) })}
+                        {t('createdAgo', {
+                          timeAgo: formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }),
+                        })}
                       </div>
                     </div>
                     {/* Delete button will be handled by client component */}
@@ -72,9 +72,7 @@ export default async function ApiKeysPage() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium mb-2">{documentationT('authentication')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      {documentationT('authDesc')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('authDesc')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>Authorization: Bearer YOUR_API_KEY</code>
                     </pre>
@@ -82,9 +80,7 @@ export default async function ApiKeysPage() {
 
                   <div>
                     <h3 className="text-lg font-medium mb-2">{documentationT('createSession')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      {documentationT('createSessionDesc')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('createSessionDesc')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`POST /api/sessions/
 
@@ -92,9 +88,7 @@ export default async function ApiKeysPage() {
   "message": "Your initial message to the agent"
 }`}</code>
                     </pre>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2">
-                      {documentationT('createSessionReturns')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">{documentationT('createSessionReturns')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`{
   "workerId": "api-1234567890"
@@ -104,9 +98,7 @@ export default async function ApiKeysPage() {
 
                   <div>
                     <h3 className="text-lg font-medium mb-2">{documentationT('sendMessage')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      {documentationT('sendMessageDesc')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('sendMessageDesc')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`POST /api/sessions/:sessionId
 
@@ -114,12 +106,8 @@ export default async function ApiKeysPage() {
   "message": "Your follow-up message to the agent"
 }`}</code>
                     </pre>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2">
-                      {documentationT('sendMessageNote')}
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2">
-                      {documentationT('sendMessageReturns')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">{documentationT('sendMessageNote')}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">{documentationT('sendMessageReturns')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`{
   "success": true
@@ -129,9 +117,7 @@ export default async function ApiKeysPage() {
 
                   <div>
                     <h3 className="text-lg font-medium mb-2">{documentationT('examples')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      {documentationT('exampleCreateSession')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('exampleCreateSession')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
   https://yourwebapp.com/api/sessions/ \\
@@ -140,9 +126,7 @@ export default async function ApiKeysPage() {
   -d '{"message": "Create a React component for a user profile page"}'`}</code>
                     </pre>
 
-                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">
-                      {documentationT('exampleSendMessage')}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleSendMessage')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
   https://yourwebapp.com/api/sessions/api-1234567890 \\

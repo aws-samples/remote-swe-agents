@@ -33,24 +33,21 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
   const [localApiKeys, setLocalApiKeys] = useState<ApiKeyItem[]>(initialApiKeys || []);
 
   // List API keys action
-  const { 
-    data: apiKeysData, 
-    execute: executeListApiKeys, 
-    isExecuting: isLoading 
+  const {
+    data: apiKeysData,
+    execute: executeListApiKeys,
+    isExecuting: isLoading,
   } = useAction(listApiKeysAction, {
     onSuccess: (data) => {
       setLocalApiKeys(data.apiKeys || []);
     },
     onError: (error) => {
       toast.error(error.serverError || t('loadError'));
-    }
+    },
   });
 
   // Create API key action
-  const { 
-    execute: executeCreateApiKey,
-    isExecuting: isCreating 
-  } = useAction(createApiKeyAction, {
+  const { execute: executeCreateApiKey, isExecuting: isCreating } = useAction(createApiKeyAction, {
     onSuccess: (data) => {
       setNewApiKey(data.apiKey);
       setDescription('');
@@ -59,14 +56,11 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
     },
     onError: (error) => {
       toast.error(error.serverError || t('createError'));
-    }
+    },
   });
 
   // Delete API key action
-  const { 
-    execute: executeDeleteApiKey,
-    isExecuting: isDeleting 
-  } = useAction(deleteApiKeyAction, {
+  const { execute: executeDeleteApiKey, isExecuting: isDeleting } = useAction(deleteApiKeyAction, {
     onSuccess: () => {
       toast.success(t('deleteSuccess'));
       executeListApiKeys();
@@ -76,7 +70,7 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
     onError: (error) => {
       toast.error(error.serverError || t('deleteError'));
       setIsDeleteDialogOpen(false);
-    }
+    },
   });
 
   const handleCreateKey = useCallback(() => {
@@ -94,16 +88,19 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
     }
   }, [executeDeleteApiKey, keyToDelete]);
 
-  const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        toast.success(t('keyCopied'));
-      },
-      () => {
-        toast.error(t('copyFailed'));
-      }
-    );
-  }, [t]);
+  const copyToClipboard = useCallback(
+    (text: string) => {
+      navigator.clipboard.writeText(text).then(
+        () => {
+          toast.success(t('keyCopied'));
+        },
+        () => {
+          toast.error(t('copyFailed'));
+        }
+      );
+    },
+    [t]
+  );
 
   return (
     <>
@@ -114,21 +111,15 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
           onChange={(e) => setDescription(e.target.value)}
           disabled={isCreating}
         />
-        <Button
-          onClick={handleCreateKey}
-          disabled={isCreating}
-          className="flex gap-2 items-center"
-        >
+        <Button onClick={handleCreateKey} disabled={isCreating} className="flex gap-2 items-center">
           {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           {isCreating ? t('creatingKey') : t('createKey')}
         </Button>
       </div>
-      
+
       {newApiKey && (
         <div className="mt-4 p-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-md">
-          <div className="mb-2 text-sm font-medium text-green-800 dark:text-green-400">
-            {t('newKeyCreated')}
-          </div>
+          <div className="mb-2 text-sm font-medium text-green-800 dark:text-green-400">{t('newKeyCreated')}</div>
           <div className="flex items-center gap-2">
             <code className="p-2 bg-green-100 dark:bg-green-900/40 rounded text-sm flex-grow break-all">
               {newApiKey}
@@ -161,14 +152,14 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
 
       {/* Delete buttons for each key */}
       {localApiKeys.map((key) => (
-        <div 
-          key={`delete-button-${key.SK}`} 
+        <div
+          key={`delete-button-${key.SK}`}
           className="absolute right-4 top-1/2 transform -translate-y-1/2"
-          style={{ 
-            position: 'relative', 
-            float: 'right', 
-            marginTop: `-${(localApiKeys.indexOf(key) * 72) + 36}px`,
-            marginRight: '16px'
+          style={{
+            position: 'relative',
+            float: 'right',
+            marginTop: `-${localApiKeys.indexOf(key) * 72 + 36}px`,
+            marginRight: '16px',
           }}
         >
           <Button
@@ -187,9 +178,7 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('deleteConfirmDesc')}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('deleteConfirmDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>{t('cancel')}</AlertDialogCancel>
