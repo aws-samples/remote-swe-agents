@@ -9,7 +9,12 @@ import { updateAgentStatus } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
-import { webappEventSchema, TodoList as TodoListType, AgentStatus } from '@remote-swe-agents/agent-core/schema';
+import {
+  webappEventSchema,
+  TodoList as TodoListType,
+  AgentStatus,
+  InstanceStatus,
+} from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
@@ -20,7 +25,7 @@ import { formatMessage } from '@/lib/message-formatter';
 interface SessionPageClientProps {
   workerId: string;
   initialMessages: MessageView[];
-  initialInstanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
+  initialInstanceStatus?: InstanceStatus;
   initialAgentStatus?: AgentStatus;
   initialTodoList: TodoListType | null;
 }
@@ -35,9 +40,7 @@ export default function SessionPageClient({
   const t = useTranslations('sessions');
   const router = useRouter();
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
-  const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
-    initialInstanceStatus
-  );
+  const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
@@ -99,6 +102,9 @@ export default function SessionPageClient({
             break;
           case 'instanceStatusChanged':
             setInstanceStatus(event.status);
+            break;
+          case 'agentStatusUpdate':
+            setAgentStatus(event.status);
             break;
           case 'toolResult':
             setMessages((prev) => {

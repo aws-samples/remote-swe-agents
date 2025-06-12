@@ -8,7 +8,7 @@ export const instanceStatusSchema = z.union([
   z.literal('terminated'),
 ]);
 
-export type SessionItem = z.infer<typeof sessionItemSchema>;
+export type InstanceStatus = z.infer<typeof instanceStatusSchema>;
 
 export const sessionItemSchema = z.object({
   PK: z.literal('sessions'),
@@ -21,3 +21,5 @@ export const sessionItemSchema = z.object({
   sessionCost: z.number(),
   agentStatus: agentStatusSchema,
 });
+
+export type SessionItem = z.infer<typeof sessionItemSchema>;

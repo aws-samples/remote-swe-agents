@@ -101,8 +101,6 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
     }
   }, [messages]);
 
-  const showWaitingMessage = instanceStatus === 'starting';
-
   const MarkdownRenderer = ({ content }: { content: string }) => (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -351,7 +349,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
             <MessageGroup key={`group-${index}`} group={group} />
           ))}
 
-          {agentStatus === 'working' && (
+          {(agentStatus === 'working' || instanceStatus === 'starting') && (
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">
@@ -365,7 +363,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
                 <div className="flex items-center gap-2 py-1">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-gray-600 dark:text-gray-300">
-                    {showWaitingMessage ? t('agentStartingMessage') : t('aiAgentResponding')}
+                    {instanceStatus === 'starting' ? t('agentStartingMessage') : t('aiAgentResponding')}
                   </span>
                 </div>
               </div>
