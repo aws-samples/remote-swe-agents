@@ -33,7 +33,7 @@ export const savePromptAction = authActionClient
           },
         })
       );
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error saving prompt to DynamoDB:', error);
@@ -41,30 +41,28 @@ export const savePromptAction = authActionClient
     }
   });
 
-export const getPromptAction = authActionClient
-  .schema(getPromptSchema)
-  .action(async () => {
-    try {
-      const result = await ddb.send(
-        new GetCommand({
-          TableName,
-          Key: {
-            PK: 'global-config',
-            SK: 'prompt',
-          },
-        })
-      );
+export const getPromptAction = authActionClient.schema(getPromptSchema).action(async () => {
+  try {
+    const result = await ddb.send(
+      new GetCommand({
+        TableName,
+        Key: {
+          PK: 'global-config',
+          SK: 'prompt',
+        },
+      })
+    );
 
-      if (!result.Item) {
-        // If no item exists, return default empty prompt
-        return { additionalSystemPrompt: '' };
-      }
-
-      return { 
-        additionalSystemPrompt: result.Item.additionalSystemPrompt || '',
-      };
-    } catch (error) {
-      console.error('Error reading prompt from DynamoDB:', error);
-      throw new Error('Failed to load prompt configuration');
+    if (!result.Item) {
+      // If no item exists, return default empty prompt
+      return { additionalSystemPrompt: '' };
     }
-  });
+
+    return {
+      additionalSystemPrompt: result.Item.additionalSystemPrompt || '',
+    };
+  } catch (error) {
+    console.error('Error reading prompt from DynamoDB:', error);
+    throw new Error('Failed to load prompt configuration');
+  }
+});

@@ -13,7 +13,7 @@ import { Save } from 'lucide-react';
 export default function PromptSettingsPage() {
   const [prompt, setPrompt] = useState<string>('');
   const { toast } = useToast();
-  
+
   const { execute: getPrompt, result: getResult } = useAction(getPromptAction, {
     onSuccess: (data) => {
       if (data && data.additionalSystemPrompt) {
@@ -26,7 +26,7 @@ export default function PromptSettingsPage() {
         title: 'Error loading prompt',
         description: error.serverError || 'Failed to load common prompt settings',
       });
-    }
+    },
   });
 
   const { execute: savePrompt, status: saveStatus } = useAction(savePromptAction, {
@@ -42,7 +42,7 @@ export default function PromptSettingsPage() {
         title: 'Error saving prompt',
         description: error.serverError || 'Failed to save common prompt',
       });
-    }
+    },
   });
 
   // Load prompt on initial page load
@@ -70,7 +70,8 @@ export default function PromptSettingsPage() {
           <CardHeader>
             <CardTitle>Agent Prompt Configuration</CardTitle>
             <CardDescription>
-              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.
+              This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or
+              instructions.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,11 +88,7 @@ export default function PromptSettingsPage() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
-            <Button 
-              onClick={handleSave} 
-              disabled={saveStatus === 'executing'} 
-              className="flex items-center gap-2"
-            >
+            <Button onClick={handleSave} disabled={saveStatus === 'executing'} className="flex items-center gap-2">
               <Save className="h-4 w-4" />
               Save Prompt
             </Button>
