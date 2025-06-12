@@ -14,10 +14,10 @@ export function useIsMobile(): boolean {
 
     // Check on mount
     checkIsMobile();
-    
+
     // Add event listener for window resize
     window.addEventListener('resize', checkIsMobile);
-    
+
     // Clean up
     return () => {
       window.removeEventListener('resize', checkIsMobile);
