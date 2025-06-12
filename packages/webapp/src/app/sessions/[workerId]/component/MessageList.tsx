@@ -139,7 +139,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
               {String(children).replace(/\n$/, '')}
             </SyntaxHighlighter>
           ) : (
-            <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm">{children}</code>
+            <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm break-all">{children}</code>
           );
         },
         h1: ({ children }) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
