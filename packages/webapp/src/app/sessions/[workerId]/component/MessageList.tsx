@@ -275,7 +275,8 @@ export default function MessageList({ messages, isAgentTyping, instanceStatus }:
   const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => (
     <div className="flex items-start gap-1 py-1">
       <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1" style={{ minWidth: '55px' }}>
-        {showTimestamp && new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+        {showTimestamp &&
+          new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
       </div>
       <div className="flex-1">
         {message.type === 'toolUse' ? (
