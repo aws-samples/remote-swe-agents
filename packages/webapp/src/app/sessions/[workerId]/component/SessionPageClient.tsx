@@ -187,7 +187,9 @@ export default function SessionPageClient({
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline truncate">{t('sessionList')}</span>
               </Link>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">{workerId}</h1>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">
+                {workerId}
+              </h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {/* Session status toggle button */}
