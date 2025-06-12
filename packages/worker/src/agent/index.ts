@@ -15,7 +15,6 @@ import {
   renderToolResult,
   sendSystemMessage,
   updateSessionCost,
-  updateSessionAgentStatus,
   readCommonPrompt,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
@@ -38,10 +37,11 @@ import {
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from '../common/cancellation-token';
+import { updateAgentStatusWithEvent } from '../common/status';
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
   // Update agent status to 'working' when starting a turn
-  await updateSessionAgentStatus(workerId, 'working');
+  await updateAgentStatusWithEvent(workerId, 'working');
 
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
@@ -418,8 +418,8 @@ Users will primarily request software engineering assistance including bug fixes
     } else {
       if (!cancellationToken.isCancelled) {
         // Update agent status to 'pending' when finishing a turn.
-        // When the turn is cancelled, do not update the status to avoid race conddition.
-        await updateSessionAgentStatus(workerId, 'pending');
+        // When the turn is cancelled, do not update the status to avoid race condition.
+        await updateAgentStatusWithEvent(workerId, 'pending');
       }
       const mention = slackUserId ? `<@${slackUserId}> ` : '';
       const finalMessage = res.output?.message;
