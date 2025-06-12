@@ -187,7 +187,9 @@ export default function SessionPageClient({
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('sessionList')}</span>
               </Link>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{workerId}</h1>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block">{workerId}</h1>
+            </div>
+            <div className="flex items-center gap-2">
               {/* Session status toggle button */}
               <button
                 onClick={() =>
@@ -196,14 +198,14 @@ export default function SessionPageClient({
                     status: agentStatus === 'completed' ? 'pending' : 'completed',
                   })
                 }
-                className={`flex items-center justify-center w-5 h-5 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`flex items-center justify-center w-6 h-6 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   agentStatus === 'completed'
                     ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
                     : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
               >
-                {agentStatus === 'completed' && <Check className="h-3 w-3 text-white" />}
+                {agentStatus === 'completed' && <Check className="h-4 w-4 text-white" />}
               </button>
               {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-2">
@@ -211,12 +213,10 @@ export default function SessionPageClient({
                   <span className="text-sm font-medium">{getUnifiedStatus().text}</span>
                 </div>
               )}
-            </div>
-            <div className="flex items-center gap-2">
               {todoList && (
                 <button
                   onClick={() => setShowTodoModal(!showTodoModal)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                  className="inline-flex items-center px-3 py-2 h-10 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
                   <ListChecks className="h-4 w-4 sm:mr-2" />
@@ -231,7 +231,7 @@ export default function SessionPageClient({
               )}
               <Link
                 href="/sessions/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 h-10 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('newSession')}</span>
