@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Bot, Zap } from 'lucide-react';
+import { MessageSquare, Bot, Zap, Settings } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 export default async function Home() {
@@ -30,6 +30,12 @@ export default async function Home() {
                 <Button variant="outline" size="lg" className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
                   <span className="hidden sm:inline">{sessionsT('newSession')}</span>
+                </Button>
+              </Link>
+              <Link href="/settings/prompt">
+                <Button variant="outline" size="lg" className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  <span className="hidden sm:inline">Prompt Settings</span>
                 </Button>
               </Link>
             </div>

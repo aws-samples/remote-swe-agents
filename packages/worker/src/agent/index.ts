@@ -16,6 +16,7 @@ import {
   sendSystemMessage,
   updateSessionCost,
   updateSessionAgentStatus,
+  readCommonPrompt,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -161,6 +162,19 @@ Users will primarily request software engineering assistance including bug fixes
 
   let systemPrompt = baseSystemPrompt;
 
+  // Try to append common prompt from DynamoDB
+  const tryAppendCommonPrompt = async () => {
+    try {
+      const commonPromptData = await readCommonPrompt();
+      if (commonPromptData && commonPromptData.additionalSystemPrompt) {
+        systemPrompt = `${baseSystemPrompt}\n\n## Common Prompt\n${commonPromptData.additionalSystemPrompt}`;
+      }
+    } catch (error) {
+      console.error('Error retrieving common prompt:', error);
+    }
+  };
+  await tryAppendCommonPrompt();
+
   const tryAppendRepositoryKnowledge = async () => {
     try {
       const repo = await readMetadata('repo', workerId);
@@ -173,7 +187,8 @@ Users will primarily request software engineering assistance including bug fixes
         const { content: knowledgeContent, found: foundKnowledgeFile } = findRepositoryKnowledge(repoDirectory);
 
         if (foundKnowledgeFile) {
-          systemPrompt = `${baseSystemPrompt}\n## Repository Knowledge\n${knowledgeContent}`;
+          // If common prompt is already added, append repository knowledge after it
+          systemPrompt = `${systemPrompt}\n## Repository Knowledge\n${knowledgeContent}`;
         }
       }
     } catch (error) {
