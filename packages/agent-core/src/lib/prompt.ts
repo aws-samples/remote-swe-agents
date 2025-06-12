@@ -4,9 +4,9 @@ import { ddb, TableName } from './aws/ddb';
 
 export const renderToolResult = (props: { toolResult: string; forceReport: boolean }) => {
   return `
-<r>
+<result>
 ${props.toolResult}
-</r>
+</result>
 <command>
 ${props.forceReport ? `Long time has passed since you sent the last message. Please use ${reportProgressTool.name} tool to send a response asap.` : ''}
 </command>
@@ -74,19 +74,14 @@ export const readCommonPrompt = async (): Promise<CommonPromptData | null> => {
  * @returns Promise that resolves when the data is written
  */
 export const writeCommonPrompt = async (data: CommonPromptData): Promise<void> => {
-  try {
-    await ddb.send(
-      new PutCommand({
-        TableName,
-        Item: {
-          PK: GlobalConfigKeys.PK,
-          SK: GlobalConfigKeys.PromptSK,
-          additionalSystemPrompt: data.additionalSystemPrompt,
-        },
-      })
-    );
-  } catch (error) {
-    console.error('Error writing common prompt:', error);
-    throw error;
-  }
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: {
+        PK: GlobalConfigKeys.PK,
+        SK: GlobalConfigKeys.PromptSK,
+        additionalSystemPrompt: data.additionalSystemPrompt,
+      },
+    })
+  );
 };
