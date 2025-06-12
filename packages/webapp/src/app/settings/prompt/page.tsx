@@ -12,9 +12,9 @@ export default function PromptSettingsPage() {
   const [prompt, setPrompt] = useState<string>('');
 
   const { execute: getPrompt, result: getResult } = useAction(getPromptAction, {
-    onSuccess: (data) => {
-      if (data && data.additionalSystemPrompt) {
-        setPrompt(data.additionalSystemPrompt);
+    onSuccess: (result) => {
+      if (result && result.data && result.data.additionalSystemPrompt) {
+        setPrompt(result.data.additionalSystemPrompt);
       }
     },
     onError: (error) => {
