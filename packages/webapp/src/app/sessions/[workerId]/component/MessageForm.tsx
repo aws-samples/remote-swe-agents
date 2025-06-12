@@ -54,7 +54,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   const message = watch('message');
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
-    if (isExecuting) return;
+    if (isExecuting || uploadingImages.some(img => !img.key)) return;
     if (keyEvent.key === 'Enter' && (keyEvent.ctrlKey || keyEvent.altKey)) {
       handleSubmitWithAction();
     }
@@ -76,10 +76,10 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           <div className="flex gap-4">
             <textarea
               {...register('message')}
-              placeholder={t('enterYourMessage')}
+              placeholder={uploadingImages.some(img => !img.key) ? t('waitingForImageUpload') : t('enterYourMessage')}
               className="flex-1 resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
-              disabled={isExecuting}
+              disabled={isExecuting || uploadingImages.some(img => !img.key)}
               onKeyDown={enterPost}
               onPaste={handlePaste}
             />
@@ -87,8 +87,14 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="outline">
                 <ImageIcon className="w-4 h-4" />
               </Button>
-              <Button type="submit" disabled={!message.trim() || isExecuting} size="icon">
-                {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <Button type="submit" disabled={!message.trim() || isExecuting || uploadingImages.some(img => !img.key)} size="icon">
+                {isExecuting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : uploadingImages.some(img => !img.key) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>

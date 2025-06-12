@@ -44,6 +44,7 @@
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",
     "enterYourMessage": "メッセージを入力...",
+    "waitingForImageUpload": "画像アップロード中...",
     "noSessionsFound": "セッションが見つかりません",
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
     "usingTool": "ツール使用",
@@ -95,6 +96,7 @@
     "creatingSession": "セッション作成中...",
     "createSessionButton": "セッションを作成して会話を開始",
     "addImage": "画像を追加",
-    "imagesCount": "{count} 枚の画像"
+    "imagesCount": "{count} 枚の画像",
+    "waitingForImageUpload": "画像アップロード中..."
   }
 }

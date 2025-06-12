@@ -44,6 +44,7 @@
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
     "enterYourMessage": "Enter your message...",
+    "waitingForImageUpload": "Waiting for image upload...",
     "noSessionsFound": "No sessions found",
     "createSessionToStart": "Create a new session to start chatting with AI agents",
     "usingTool": "Using Tool",
@@ -95,6 +96,7 @@
     "creatingSession": "Creating Session...",
     "createSessionButton": "Create Session & Start Conversation",
     "addImage": "Add Image",
-    "imagesCount": "{count} images"
+    "imagesCount": "{count} images",
+    "waitingForImageUpload": "Waiting for image upload..."
   }
 }
