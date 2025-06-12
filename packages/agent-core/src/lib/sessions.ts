@@ -2,7 +2,7 @@ import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/li
 import { ddb, TableName } from './aws';
 
 import { AgentStatus, SessionItem } from '../schema';
-import { bedrockConverse } from './bedrock';
+import { bedrockConverse } from './converse';
 
 export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
   const now = Date.now();
@@ -114,7 +114,7 @@ Important: The title must be 10 characters or fewer. Do not include any explanat
     });
 
     const title = res.output?.message?.content?.at(0)?.text?.trim() || 'New Chat';
-    
+
     // Ensure the title is not longer than 10 characters
     return title.length > 10 ? title.substring(0, 10) : title;
   } catch (error) {
