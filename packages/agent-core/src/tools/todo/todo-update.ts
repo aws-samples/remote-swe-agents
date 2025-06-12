@@ -53,7 +53,21 @@ export const todoUpdateTool: ToolDefinition<z.infer<typeof todoUpdateInputSchema
     name,
     description: `Update tasks in the todo list created by ${todoInitTool.name}.
 Use this to mark tasks as completed, in progress, or to modify task descriptions.
-Provide an array of updates to process multiple tasks at once.
+Provide an array of updates to process multiple tasks at once. For example,
+<example>
+{
+  "updates": [
+    {
+      "id": "task-1",
+      "status": "completed",
+    },
+    {
+      "id": "task-2",
+      "status": "in_progress"
+    }
+  ]
+}
+</example>
 
 If your update request is invalid, an error will be returned.
 `.trim(),
