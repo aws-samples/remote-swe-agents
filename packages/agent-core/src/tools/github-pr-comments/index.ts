@@ -30,7 +30,7 @@ const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>) 
 
   try {
     const octokit = await getOctokitClient();
-    
+
     // Get PR review comments using Octokit
     const { data } = await octokit.pulls.listReviewComments({
       owner,
@@ -43,14 +43,14 @@ const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>) 
     }
 
     // Format the comments similar to the previous CLI output
-    const formattedComments = data.map(comment => ({
+    const formattedComments = data.map((comment) => ({
       id: comment.id,
       user: comment.user?.login,
       body: comment.body,
       path: comment.path,
       position: comment.position,
       created_at: comment.created_at,
-      html_url: comment.html_url
+      html_url: comment.html_url,
     }));
 
     return JSON.stringify(formattedComments, null, 2);
@@ -64,7 +64,7 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
 
   try {
     const octokit = await getOctokitClient();
-    
+
     // Use Octokit to reply to a comment
     await octokit.pulls.createReplyForReviewComment({
       owner,
