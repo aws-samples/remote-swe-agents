@@ -2,6 +2,7 @@ import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/li
 import { ddb, TableName } from './aws';
 
 import { AgentStatus, SessionItem } from '../schema';
+import { bedrockConverse } from './bedrock';
 
 export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
   const now = Date.now();
@@ -84,4 +85,65 @@ export const updateSessionAgentStatus = async (workerId: string, agentStatus: Ag
       },
     })
   );
+};
+
+/**
+ * Generate a title for a session using the first user message
+ * @param workerId Worker ID of the session
+ * @param userMessage First user message to generate a title from
+ * @returns Generated title string (max 10 characters)
+ */
+export const generateSessionTitle = async (workerId: string, userMessage: string): Promise<string> => {
+  try {
+    const res = await bedrockConverse(workerId, ['haiku3.5'], {
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              text: `Generate a concise title (maximum 10 characters) that represents this message: "${userMessage}"
+
+Important: The title must be 10 characters or fewer. Do not include any explanations or additional text.`,
+            },
+          ],
+        },
+      ],
+      inferenceConfig: {
+        maxTokens: 50,
+      },
+    });
+
+    const title = res.output?.message?.content?.at(0)?.text?.trim() || 'New Chat';
+    
+    // Ensure the title is not longer than 10 characters
+    return title.length > 10 ? title.substring(0, 10) : title;
+  } catch (error) {
+    console.error('Error generating session title:', error);
+    return 'New Chat'; // Default title in case of error
+  }
+};
+
+/**
+ * Save a generated title to the session in DynamoDB
+ * @param workerId Worker ID of the session to update
+ * @param title Generated title to save
+ */
+export const saveSessionTitle = async (workerId: string, title: string): Promise<void> => {
+  try {
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET generatedTitle = :title',
+        ExpressionAttributeValues: {
+          ':title': title,
+        },
+      })
+    );
+  } catch (error) {
+    console.error('Error saving session title:', error);
+  }
 };

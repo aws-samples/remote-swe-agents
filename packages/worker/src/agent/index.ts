@@ -17,6 +17,8 @@ import {
   updateSessionCost,
   updateSessionAgentStatus,
   readCommonPrompt,
+  generateSessionTitle,
+  saveSessionTitle,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -55,6 +57,17 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
     { retries: 5, minTimeout: 100, maxTimeout: 1000 }
   );
   if (!allItems) return;
+  
+  // Generate session title if this is the first user message
+  if (allItems.length === 1 && allItems[0].messageType === 'userMessage') {
+    try {
+      const firstUserMessage = allItems[0].content;
+      const sessionTitle = await generateSessionTitle(workerId, firstUserMessage);
+      await saveSessionTitle(workerId, sessionTitle);
+    } catch (error) {
+      console.error('Error in session title generation:', error);
+    }
+  }
 
   const baseSystemPrompt = `You are an SWE agent. Help your user using your software development skill. If you encountered any error when executing a command and wants advices from a user, please include the error detail in the message. Always use the same language that user speaks. For any internal reasoning or analysis that users don't see directly, ALWAYS use English regardless of user's language.
 

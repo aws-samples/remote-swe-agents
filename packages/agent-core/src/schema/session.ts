@@ -20,4 +20,5 @@ export const sessionItemSchema = z.object({
   instanceStatus: instanceStatusSchema,
   sessionCost: z.number(),
   agentStatus: agentStatusSchema,
+  generatedTitle: z.string().optional(),
 });
