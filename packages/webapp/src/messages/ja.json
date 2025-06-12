@@ -18,6 +18,7 @@
       "send": "送信",
       "placeholder": "メッセージを入力してください..."
     },
+    "sendWithCtrlEnter": "Ctrl+Enterで送信",
     "loading": "読み込み中...",
     "enterMessage": "メッセージを入力してください",
     "newSessionTitle": "新規セッションの作成",
@@ -44,6 +45,7 @@
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",
     "enterYourMessage": "メッセージを入力...",
+    "waitingForImageUpload": "画像アップロード中...",
     "noSessionsFound": "セッションが見つかりません",
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
     "usingTool": "ツール使用",
@@ -62,7 +64,10 @@
     "todoStatus_completed": "完了",
     "todoStatus_cancelled": "取り消し",
     "lastUpdated": "最終更新",
-    "markAsCompleted": "完了としてマーク"
+    "markAsCompleted": "完了としてマーク",
+    "markAsIncomplete": "未完了としてマーク",
+    "completed": "完了",
+    "incomplete": "未完了"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
@@ -95,6 +100,7 @@
     "creatingSession": "セッション作成中...",
     "createSessionButton": "セッションを作成して会話を開始",
     "addImage": "画像を追加",
-    "imagesCount": "{count} 枚の画像"
+    "imagesCount": "{count} 枚の画像",
+    "waitingForImageUpload": "画像アップロード中..."
   }
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, CheckCircle, Plus } from 'lucide-react';
+import { ArrowLeft, ListChecks, Check, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus } from '../actions';
@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -31,6 +32,7 @@ export default function SessionPageClient({
   initialTodoList,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
+  const router = useRouter();
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [instanceStatus, setInstanceStatus] = useState<'starting' | 'running' | 'stopped' | 'terminated' | undefined>(
@@ -39,6 +41,25 @@ export default function SessionPageClient({
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
+
+  const getUnifiedStatus = () => {
+    if (agentStatus === 'completed') {
+      return { text: t('agentStatus.completed'), color: 'bg-gray-500' };
+    }
+    if (instanceStatus === 'stopped' || instanceStatus === 'terminated') {
+      return { text: t('sessionStatus.stopped'), color: 'bg-gray-500' };
+    }
+    if (instanceStatus === 'starting') {
+      return { text: t('sessionStatus.starting'), color: 'bg-blue-500' };
+    }
+    if (agentStatus === 'pending') {
+      return { text: t('agentStatus.pending'), color: 'bg-yellow-500' };
+    }
+    if (agentStatus === 'working') {
+      return { text: t('agentStatus.working'), color: 'bg-green-500' };
+    }
+    return { text: t('agentStatus.unknown'), color: 'bg-gray-400' };
+  };
 
   // Refetch todoList function using safe action
   const { execute: refetchTodoList, isExecuting: isRefetchingTodoList } = useAction(fetchLatestTodoList, {
@@ -143,8 +164,9 @@ export default function SessionPageClient({
   };
 
   const { execute: executeUpdateStatus } = useAction(updateAgentStatus, {
-    onSuccess: () => {
-      setAgentStatus('completed');
+    onSuccess: ({ input }) => {
+      setAgentStatus(input.status);
+      router.refresh();
     },
     onError: (error) => {
       toast.error(`Failed to update session status: ${error}`);
@@ -166,24 +188,27 @@ export default function SessionPageClient({
                 <span className="hidden sm:inline">{t('sessionList')}</span>
               </Link>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{workerId}</h1>
-              {instanceStatus && (
+              {/* Session status toggle button */}
+              <button
+                onClick={() =>
+                  executeUpdateStatus({
+                    workerId,
+                    status: agentStatus === 'completed' ? 'pending' : 'completed',
+                  })
+                }
+                className={`flex items-center justify-center w-5 h-5 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  agentStatus === 'completed'
+                    ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
+                    : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
+                }`}
+                title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
+              >
+                {agentStatus === 'completed' && <Check className="h-3 w-3 text-white" />}
+              </button>
+              {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-block w-2 h-2 rounded-full ${
-                      instanceStatus === 'running'
-                        ? 'bg-green-500'
-                        : instanceStatus === 'starting'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-500'
-                    }`}
-                  />
-                  <span className="text-sm font-medium">
-                    {instanceStatus === 'running'
-                      ? t('instanceRunning')
-                      : instanceStatus === 'starting'
-                        ? t('instanceStarting')
-                        : t('instanceStopped')}
-                  </span>
+                  <span className={`inline-block w-2 h-2 rounded-full ${getUnifiedStatus().color}`} />
+                  <span className="text-sm font-medium">{getUnifiedStatus().text}</span>
                 </div>
               )}
             </div>
@@ -244,7 +269,7 @@ export default function SessionPageClient({
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
 
-        {/* Scroll buttons and actions */}
+        {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
           <button
             onClick={scrollToTop}
@@ -262,22 +287,6 @@ export default function SessionPageClient({
           >
             <ArrowLeft className="w-5 h-5 -rotate-90" />
           </button>
-          {/* Mark as completed button - only show if not already completed */}
-          {agentStatus !== 'completed' && (
-            <button
-              onClick={() =>
-                executeUpdateStatus({
-                  workerId,
-                  status: 'completed',
-                })
-              }
-              className="p-2 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 focus:outline-none cursor-pointer"
-              title={t('markAsCompleted')}
-              aria-label={t('markAsCompleted')}
-            >
-              <CheckCircle className="w-5 h-5" />
-            </button>
-          )}
         </div>
       </main>
     </div>

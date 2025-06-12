@@ -12,6 +12,7 @@ import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -47,6 +48,8 @@ export default function NewSessionPage() {
         setValue('imageKeys', keys);
       },
     });
+
+  const isUploading = uploadingImages.some((img) => !img.key);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -112,10 +115,16 @@ export default function NewSessionPage() {
                       placeholder={t('placeholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
                       rows={4}
-                      disabled={isExecuting}
+                      disabled={isExecuting || isUploading}
                       onPaste={handlePaste}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.ctrlKey || e.altKey) && !isExecuting && formState.isValid) {
+                        if (
+                          e.key === 'Enter' &&
+                          (e.ctrlKey || e.altKey) &&
+                          !isExecuting &&
+                          formState.isValid &&
+                          !isUploading
+                        ) {
                           handleSubmitWithAction();
                         }
                       }}
@@ -124,9 +133,27 @@ export default function NewSessionPage() {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
                     )}
                   </div>
-                  <Button type="submit" disabled={isExecuting || !formState.isValid} className="w-full" size="lg">
-                    {isExecuting ? t('creatingSession') : t('createSessionButton')}
-                  </Button>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="submit"
+                          disabled={isExecuting || !formState.isValid || isUploading}
+                          className="w-full"
+                          size="lg"
+                        >
+                          {isExecuting
+                            ? t('creatingSession')
+                            : isUploading
+                              ? t('waitingForImageUpload')
+                              : t('createSessionButton')}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{sessionsT('sendWithCtrlEnter')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </form>
               </div>
             </div>

@@ -10,11 +10,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale();
   // Get the messages for the current locale
   const messages = await getMessages();
+  const isLocal = process.env.IS_LOCAL == 'true';
+  const title = isLocal ? 'Remote SWE Agents (local)' : 'Remote SWE Agents';
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <title>Remote SWE Agents</title>
+        <title>{title}</title>
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>

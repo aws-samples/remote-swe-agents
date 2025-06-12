@@ -18,6 +18,7 @@
       "send": "Send",
       "placeholder": "Type your message here..."
     },
+    "sendWithCtrlEnter": "Send with Ctrl+Enter",
     "loading": "Loading...",
     "enterMessage": "Please enter a message",
     "newSessionTitle": "Create New Session",
@@ -44,6 +45,7 @@
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
     "enterYourMessage": "Enter your message...",
+    "waitingForImageUpload": "Waiting for image upload...",
     "noSessionsFound": "No sessions found",
     "createSessionToStart": "Create a new session to start chatting with AI agents",
     "usingTool": "Using Tool",
@@ -62,7 +64,10 @@
     "todoStatus_completed": "Completed",
     "todoStatus_cancelled": "Cancelled",
     "lastUpdated": "Last Updated",
-    "markAsCompleted": "Mark as completed"
+    "markAsCompleted": "Mark as completed",
+    "markAsIncomplete": "Mark as incomplete",
+    "completed": "Completed",
+    "incomplete": "Incomplete"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
@@ -95,6 +100,7 @@
     "creatingSession": "Creating Session...",
     "createSessionButton": "Create Session & Start Conversation",
     "addImage": "Add Image",
-    "imagesCount": "{count} images"
+    "imagesCount": "{count} images",
+    "waitingForImageUpload": "Waiting for image upload..."
   }
 }

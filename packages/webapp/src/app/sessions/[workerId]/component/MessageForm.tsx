@@ -11,6 +11,7 @@ import { KeyboardEventHandler } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
@@ -54,7 +55,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   const message = watch('message');
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
-    if (isExecuting) return;
+    if (isExecuting || isUploading) return;
     if (keyEvent.key === 'Enter' && (keyEvent.ctrlKey || keyEvent.altKey)) {
       handleSubmitWithAction();
     }
@@ -67,6 +68,8 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
     },
   });
 
+  const isUploading = uploadingImages.some((img) => !img.key);
+
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div className="max-w-4xl mx-auto px-4 py-4">
@@ -76,10 +79,10 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           <div className="flex gap-4">
             <textarea
               {...register('message')}
-              placeholder={t('enterYourMessage')}
+              placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}
               className="flex-1 resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
-              disabled={isExecuting}
+              disabled={isExecuting || isUploading}
               onKeyDown={enterPost}
               onPaste={handlePaste}
             />
@@ -87,9 +90,24 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="outline">
                 <ImageIcon className="w-4 h-4" />
               </Button>
-              <Button type="submit" disabled={!message.trim() || isExecuting} size="icon">
-                {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </Button>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">
+                      {isExecuting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('sendWithCtrlEnter')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
