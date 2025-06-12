@@ -63,7 +63,10 @@
     "todoStatus_completed": "Completed",
     "todoStatus_cancelled": "Cancelled",
     "lastUpdated": "Last Updated",
-    "markAsCompleted": "Mark as completed"
+    "markAsCompleted": "Mark as completed",
+    "markAsIncomplete": "Mark as incomplete",
+    "completed": "Completed",
+    "incomplete": "Incomplete"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

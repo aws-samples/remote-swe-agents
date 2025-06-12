@@ -63,7 +63,10 @@
     "todoStatus_completed": "完了",
     "todoStatus_cancelled": "取り消し",
     "lastUpdated": "最終更新",
-    "markAsCompleted": "完了としてマーク"
+    "markAsCompleted": "完了としてマーク",
+    "markAsIncomplete": "未完了としてマーク",
+    "completed": "完了",
+    "incomplete": "未完了"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

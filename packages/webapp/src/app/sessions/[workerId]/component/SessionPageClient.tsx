@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import { ArrowLeft, ListChecks, CheckCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -143,8 +143,8 @@ export default function SessionPageClient({
   };
 
   const { execute: executeUpdateStatus } = useAction(updateAgentStatus, {
-    onSuccess: () => {
-      setAgentStatus('completed');
+    onSuccess: ({ input }) => {
+      setAgentStatus(input.status);
     },
     onError: (error) => {
       toast.error(`Failed to update session status: ${error}`);
@@ -166,6 +166,23 @@ export default function SessionPageClient({
                 <span className="hidden sm:inline">{t('sessionList')}</span>
               </Link>
               <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{workerId}</h1>
+              {/* Session status toggle button */}
+              <button
+                onClick={() =>
+                  executeUpdateStatus({
+                    workerId,
+                    status: agentStatus === 'completed' ? 'working' : 'completed',
+                  })
+                }
+                className={`p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
+                  agentStatus === 'completed'
+                    ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-200 dark:bg-green-900 dark:border-green-600 dark:hover:bg-green-800 focus:ring-green-500'
+                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:ring-blue-500'
+                }`}
+                title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
+              >
+                <CheckCircle className={`h-4 w-4 ${agentStatus === 'completed' ? 'text-green-600' : 'text-gray-400'}`} />
+              </button>
               {instanceStatus && (
                 <div className="flex items-center gap-2">
                   <span
@@ -244,7 +261,7 @@ export default function SessionPageClient({
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
 
-        {/* Scroll buttons and actions */}
+        {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
           <button
             onClick={scrollToTop}
@@ -262,22 +279,6 @@ export default function SessionPageClient({
           >
             <ArrowLeft className="w-5 h-5 -rotate-90" />
           </button>
-          {/* Mark as completed button - only show if not already completed */}
-          {agentStatus !== 'completed' && (
-            <button
-              onClick={() =>
-                executeUpdateStatus({
-                  workerId,
-                  status: 'completed',
-                })
-              }
-              className="p-2 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 focus:outline-none cursor-pointer"
-              title={t('markAsCompleted')}
-              aria-label={t('markAsCompleted')}
-            >
-              <CheckCircle className="w-5 h-5" />
-            </button>
-          )}
         </div>
       </main>
     </div>
