@@ -1,19 +1,7 @@
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 
-import { AgentStatus } from '../schema/agent';
-
-type SessionItem = {
-  PK: string;
-  SK: string;
-  workerId: string;
-  createdAt: number;
-  LSI1: string;
-  initialMessage: string;
-  instanceStatus: 'starting' | 'running' | 'stopped' | 'terminated';
-  sessionCost: number;
-  agentStatus: AgentStatus;
-};
+import { AgentStatus, SessionItem } from '../schema';
 
 export const saveSessionInfo = async (workerId: string, initialMessage: string) => {
   const now = Date.now();

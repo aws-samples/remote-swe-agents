@@ -35,6 +35,12 @@
       "stopped": "停止",
       "terminated": "終了"
     },
+    "agentStatus": {
+      "working": "作業中",
+      "pending": "返信待ち",
+      "completed": "完了",
+      "unknown": "不明"
+    },
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",
     "enterYourMessage": "メッセージを入力...",

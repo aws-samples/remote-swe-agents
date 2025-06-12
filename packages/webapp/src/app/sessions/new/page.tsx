@@ -12,7 +12,6 @@ import { createNewWorkerSchema } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
-import { KeyboardEventHandler } from 'react';
 
 export default function NewSessionPage() {
   const router = useRouter();
