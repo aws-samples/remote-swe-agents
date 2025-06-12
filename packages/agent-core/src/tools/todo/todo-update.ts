@@ -26,7 +26,6 @@ async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promis
     // Batch update mode
     updates = params.updates;
   } else {
-    // Single update mode (backwards compatibility)
     const { id, status, description } = params;
     updates = [{ id, status, description }];
   }
