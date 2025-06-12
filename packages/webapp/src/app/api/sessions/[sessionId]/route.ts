@@ -10,8 +10,13 @@ const sendMessageSchema = z.object({
   message: z.string().min(1),
 });
 
-export async function POST(request: NextRequest, context: { params: { sessionId: string } }) {
-  const { params } = context;
+interface RouteParams {
+  params: {
+    sessionId: string;
+  };
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
   // Validate API key
   const apiKeyValidation = await validateApiKeyMiddleware(request);
   if (apiKeyValidation) {
