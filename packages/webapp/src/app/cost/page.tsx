@@ -15,7 +15,7 @@ export default async function CostAnalysisPage() {
   const startDate = startOfMonth.getTime();
 
   // Fetch cost data for the current month
-  const costData = await fetchCostDataAction({ parsedInput: { startDate } });
+  const costData = await fetchCostDataAction({ startDate });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
