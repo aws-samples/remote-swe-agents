@@ -15,7 +15,21 @@ export default async function CostAnalysisPage() {
   const startDate = startOfMonth.getTime();
 
   // Fetch cost data for the current month
-  const costData = await fetchCostDataAction({ startDate });
+  const costDataResult = await fetchCostDataAction({ startDate });
+  
+  // Set default values in case data is undefined
+  const costData = costDataResult || {
+    totalCost: 0,
+    tokenCounts: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      total: 0,
+    },
+    sessionCosts: [],
+    modelCosts: [],
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
