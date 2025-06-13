@@ -16,7 +16,7 @@ export default function DateSelector() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('cost');
-  
+
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(
     searchParams.get('year') ? parseInt(searchParams.get('year')!) : now.getFullYear()
@@ -31,7 +31,7 @@ export default function DateSelector() {
   // Generate months with i18n support
   const months = Array.from({ length: 12 }, (_, i) => ({
     value: i + 1,
-    label: t(`monthNames.${i + 1}`)
+    label: t(`monthNames.${i + 1}`),
   }));
 
   const updateUrl = (year: number, month: number) => {
@@ -55,7 +55,7 @@ export default function DateSelector() {
     <div className="flex items-center gap-4 mb-6">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{t('period')}:</span>
-        
+
         {/* Year Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -81,7 +81,7 @@ export default function DateSelector() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="min-w-[80px]">
-              {months.find(m => m.value === selectedMonth)?.label}
+              {months.find((m) => m.value === selectedMonth)?.label}
               <ChevronDownIcon className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
