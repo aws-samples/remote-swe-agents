@@ -82,7 +82,7 @@ function getUserDisplayName(user: User): string {
 }
 `;
   const filePath = join(tempDirPath, `${randomBytes(6).toString('hex')}.ts`);
-  
+
   // Ensure file doesn't exist before test
   expect(existsSync(filePath)).toBe(false);
 
@@ -96,7 +96,7 @@ function getUserDisplayName(user: User): string {
   // THEN
   expect(result).toBe('successfully created the file.');
   expect(existsSync(filePath)).toBe(true);
-  
+
   const fileContent = readFileSync(filePath, 'utf-8');
   expect(fileContent).toEqual(newContent);
 });
