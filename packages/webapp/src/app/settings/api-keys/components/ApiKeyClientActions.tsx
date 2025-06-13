@@ -159,51 +159,34 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
               <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('noKeys')}</p>
             )}
             {apiKeys.map((key: ApiKeyItem) => (
-              <>
-                <div key={key.SK} className="flex items-center justify-between p-4 border rounded-md bg-card">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {key.SK.slice(0, 8)}...{key.SK.slice(-8)}
-                      </code>
-                    </div>
-                    {key.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{key.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyToClipboard(key.SK)}
-                      className="flex gap-2 items-center"
-                    >
-                      <Copy className="h-4 w-4" /> {t('copyKey')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteKey(key.SK)}
-                      className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 flex gap-2 items-center"
-                    >
-                      <Trash2 className="h-4 w-4" /> {t('deleteKey')}
-                    </Button>
+              <div key={key.SK} className="flex items-center justify-between p-4 border rounded-md bg-card">
+                <div className="flex-1">
+                  <div className="text-sm font-medium">{key.description || t('unnamedKey')}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('createdAgo', {
+                      timeAgo: formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }),
+                    })}
                   </div>
                 </div>
-                <div
-                  key={key.SK}
-                  className="p-4 border border-gray-200 dark:border-gray-800 rounded-md flex justify-between items-center"
-                >
-                  <div>
-                    <div className="text-sm font-medium">{key.description || t('unnamedKey')}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('createdAgo', {
-                        timeAgo: formatDistanceToNow(new Date(key.createdAt), { addSuffix: true }),
-                      })}
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(key.SK)}
+                    className="flex gap-2 items-center"
+                  >
+                    <Copy className="h-4 w-4" /> {t('copyKey')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteKey(key.SK)}
+                    className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 flex gap-2 items-center"
+                  >
+                    <Trash2 className="h-4 w-4" /> {t('deleteKey')}
+                  </Button>
                 </div>
-              </>
+              </div>
             ))}
           </div>
         </div>
