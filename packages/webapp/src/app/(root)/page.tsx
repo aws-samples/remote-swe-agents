@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Bot, Plus } from 'lucide-react';
+import { MessageSquare, Bot, Plus, DollarSign } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 export default async function Home() {
@@ -30,6 +30,12 @@ export default async function Home() {
                 <Button size="lg" className="flex items-center gap-2">
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">{sessionsT('newSession')}</span>
+                </Button>
+              </Link>
+              <Link href="/cost">
+                <Button variant="outline" size="lg" className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  {t('costAnalysis')}
                 </Button>
               </Link>
             </div>
