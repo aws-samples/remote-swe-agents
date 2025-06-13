@@ -112,7 +112,7 @@ const config = {
 };
 `;
   const filePath = join(tempDirPath, `${randomBytes(6).toString('hex')}.ts`);
-  
+
   // Create file before test
   writeFileSync(filePath, existingContent, 'utf-8');
   expect(existsSync(filePath)).toBe(true);
@@ -126,7 +126,7 @@ const config = {
 
   // THEN
   expect(result).toBe('The file already exists. Please provide a non-empty oldString to edit it.');
-  
+
   // File content should remain unchanged
   const fileContent = readFileSync(filePath, 'utf-8');
   expect(fileContent).toEqual(existingContent);
