@@ -38,29 +38,14 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const positionRatio = useScrollPosition();
-  // Track visibility of input and output JSON for each message
-  const [visibleInputJsonMessages, setVisibleInputJsonMessages] = useState<Set<string>>(new Set());
-  const [visibleOutputJsonMessages, setVisibleOutputJsonMessages] = useState<Set<string>>(new Set());
+  // Track visibility of tool details for each message
+  const [visibleToolDetails, setVisibleToolDetails] = useState<Set<string>>(new Set());
   const scrollPositionRef = useRef<number>(0);
 
-  const toggleInputJsonVisibility = (messageId: string) => {
+  const toggleToolDetailsVisibility = (messageId: string) => {
     scrollPositionRef.current = window.scrollY;
 
-    setVisibleInputJsonMessages((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleOutputJsonVisibility = (messageId: string) => {
-    scrollPositionRef.current = window.scrollY;
-
-    setVisibleOutputJsonMessages((prev) => {
+    setVisibleToolDetails((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
         newSet.delete(messageId);
@@ -74,7 +59,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
   // to keep scroll position before/after toggle
   useLayoutEffect(() => {
     window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
-  }, [visibleInputJsonMessages, visibleOutputJsonMessages]);
+  }, [visibleToolDetails]);
 
   const groupMessages = (messages: MessageView[]): MessageGroup[] => {
     const groups: MessageGroup[] = [];
@@ -191,82 +176,59 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
     messageId: string;
   }) => {
     const toolName = content;
+    const isExecuting = output === undefined;
+    const isExpanded = visibleToolDetails.has(messageId);
 
     const getToolIcon = (name: string) => {
-      if (name.includes('execute') || name.includes('Command')) return <Terminal className="w-4 h-4" />;
-      if (name.includes('file') || name.includes('edit')) return <Code className="w-4 h-4" />;
-      return <Settings className="w-4 h-4" />;
+      if (name.includes('execute') || name.includes('Command'))
+        return <Terminal className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+      if (name.includes('file') || name.includes('edit'))
+        return <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+      return <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     };
 
     return (
       <div className="rounded-md">
-        <div className="flex items-start justify-between mb-2">
+        <button
+          onClick={() => toggleToolDetailsVisibility(messageId)}
+          className="w-full flex items-center justify-between text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer hover:underline p-2 -m-2"
+        >
           <div className="flex items-center gap-2">
             {getToolIcon(toolName)}
-            <button
-              onClick={() => {
-                // If either one is visible, hide both. Otherwise, usual toggle behavior.
-                if (visibleInputJsonMessages.has(messageId) || visibleOutputJsonMessages.has(messageId)) {
-                  setVisibleInputJsonMessages((prev) => {
-                    const newSet = new Set(prev);
-                    newSet.delete(messageId);
-                    return newSet;
-                  });
-                  setVisibleOutputJsonMessages((prev) => {
-                    const newSet = new Set(prev);
-                    newSet.delete(messageId);
-                    return newSet;
-                  });
-                } else {
-                  toggleInputJsonVisibility(messageId);
-                  toggleOutputJsonVisibility(messageId);
-                }
-              }}
-              className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer flex items-center"
-            >
+            <span className="flex items-center gap-2">
               <span className="hidden md:inline">{t('usingTool')}: </span>
               <span className="truncate">{toolName}</span>
-            </button>
+              {isExecuting && (
+                <div className="flex items-center gap-1 ml-2">
+                  <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('executing')}</span>
+                </div>
+              )}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex-shrink-0">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            )}
+          </div>
+        </button>
+
+        {isExpanded && (
+          <div className="mt-2 space-y-2">
             {input && (
-              <button
-                onClick={() => toggleInputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:underline text-xs cursor-pointer"
-              >
-                {visibleInputJsonMessages.has(messageId) ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronRight className="w-3 h-3" />
-                )}
-                <span>{t('input')}</span>
-              </button>
+              <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('input')}:</div>
+                <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">{input}</pre>
+              </div>
             )}
             {output && (
-              <button
-                onClick={() => toggleOutputJsonVisibility(messageId)}
-                className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline text-xs cursor-pointer"
-              >
-                {visibleOutputJsonMessages.has(messageId) ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronRight className="w-3 h-3" />
-                )}
-                <span>{t('output')}</span>
-              </button>
+              <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('output')}:</div>
+                <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">{output}</pre>
+              </div>
             )}
-          </div>
-        </div>
-
-        {input && visibleInputJsonMessages.has(messageId) && (
-          <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-yellow-600 dark:text-yellow-400 whitespace-pre-wrap break-all">{input}</pre>
-          </div>
-        )}
-
-        {output && visibleOutputJsonMessages.has(messageId) && (
-          <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-green-600 dark:text-green-400 whitespace-pre-wrap break-all">{output}</pre>
           </div>
         )}
       </div>
@@ -357,7 +319,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-700 dark:bg-gray-600 rounded-full flex items-center justify-center">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -365,7 +327,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
               </div>
               <div className="md:ml-11">
                 <div className="flex items-center gap-2 py-1">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-600 dark:text-gray-400" />
                   <span className="text-gray-600 dark:text-gray-300">
                     {instanceStatus === 'starting' ? t('agentStartingMessage') : t('aiAgentResponding')}
                   </span>

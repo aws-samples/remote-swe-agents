@@ -228,9 +228,9 @@ export default function SessionPageClient({
                 )}
               </button>
               {(instanceStatus || agentStatus) && (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 w-24 min-w-0">
                   <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
-                  <span className="text-sm font-medium truncate min-w-0">{getUnifiedStatus().text}</span>
+                  <span className="text-sm font-medium truncate">{getUnifiedStatus().text}</span>
                 </div>
               )}
               {todoList && (
@@ -264,21 +264,21 @@ export default function SessionPageClient({
       <main className="flex-grow flex flex-col relative">
         {/* Todo List Popup */}
         {todoList && showTodoModal && (
-          <div className="fixed top-30 right-4 z-50 max-w-sm w-full">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-y-auto border border-gray-200 dark:border-gray-700">
-              <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-md font-medium">
+          <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
                   {todoList.items.length})
                 </h2>
                 <button
                   onClick={() => setShowTodoModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   ✕
                 </button>
               </div>
-              <div className="p-3 max-h-[70vh] overflow-y-auto">
+              <div className="p-4 max-h-[70vh] overflow-y-auto">
                 <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
               </div>
             </div>
