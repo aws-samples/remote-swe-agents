@@ -8,7 +8,8 @@
     "menu": "Menu",
     "language": "Language",
     "promptSettings": "Prompt Settings",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "costAnalysis": "Cost Analysis"
   },
   "sessions": {
     "title": "Sessions",

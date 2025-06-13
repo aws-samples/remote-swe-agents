@@ -8,7 +8,8 @@
     "menu": "メニュー",
     "language": "言語",
     "promptSettings": "プロンプト設定",
-    "apiKeys": "APIキー"
+    "apiKeys": "APIキー",
+    "costAnalysis": "コスト分析"
   },
   "sessions": {
     "title": "セッション一覧",
