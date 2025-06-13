@@ -33,7 +33,7 @@ type MessageListProps = {
 };
 
 export default function MessageList({ messages, instanceStatus, agentStatus }: MessageListProps) {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -128,7 +128,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
           const isInline = !match;
           return !isInline ? (
             <SyntaxHighlighter
-              style={theme === 'dark' ? oneDark : oneLight}
+              style={(theme === 'dark' || resolvedTheme === 'dark') ? oneDark : oneLight}
               lineProps={{ style: { wordBreak: 'break-word', whiteSpace: 'pre-wrap' } }}
               language={match[1]}
               PreTag="div"
