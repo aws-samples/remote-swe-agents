@@ -141,6 +141,7 @@
     "loadError": "Failed to load API keys",
     "deleteConfirmTitle": "Are you sure?",
     "deleteConfirmDesc": "This action cannot be undone. This will permanently delete this API key and revoke access for any services using it.",
+    "cancel": "Cancel",
     "documentation": {
       "title": "API Documentation",
       "desc": "How to use the Remote SWE Agents API",

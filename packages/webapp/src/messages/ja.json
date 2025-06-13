@@ -141,6 +141,7 @@
     "loadError": "APIキーの読み込みに失敗しました",
     "deleteConfirmTitle": "本当によろしいですか？",
     "deleteConfirmDesc": "この操作は元に戻せません。このAPIキーは完全に削除され、このキーを使用しているサービスのアクセスは取り消されます。",
+    "cancel": "キャンセル",
     "documentation": {
       "title": "APIドキュメント",
       "desc": "Remote SWE Agents APIの使用方法",
