@@ -16,7 +16,7 @@ export default async function CostAnalysisPage() {
 
   // Fetch cost data for the current month
   const costDataResult = await fetchCostDataAction({ startDate });
-  
+
   // Set default values in case data is undefined
   const costData = costDataResult || {
     totalCost: 0,
