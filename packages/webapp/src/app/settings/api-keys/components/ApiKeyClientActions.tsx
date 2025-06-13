@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiKeyItem } from '@remote-swe-agents/agent-core/schema';
 import { useAction } from 'next-safe-action/hooks';
+import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Copy, Loader2, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import { z } from 'zod';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { createApiKeySchema } from '@/actions/api-key/schemas';
 
 interface ApiKeyClientActionsProps {
   apiKeys: ApiKeyItem[];
@@ -28,22 +32,32 @@ interface ApiKeyClientActionsProps {
 export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProps) {
   const t = useTranslations('api_settings');
   const router = useRouter();
-  const [description, setDescription] = useState('');
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
 
-  // Create API key action
-  const { execute: executeCreateApiKey, isExecuting: isCreating } = useAction(createApiKeyAction, {
-    onSuccess: (result) => {
-      if (!result.data) return;
-      setNewApiKey(result.data.apiKey);
-      setDescription('');
-      toast.success(t('createSuccess'));
-      router.refresh();
+  // Create API key action with React Hook Form
+  const {
+    form: { register, formState, reset },
+    action: { isExecuting: isCreating },
+    handleSubmitWithAction,
+  } = useHookFormAction(createApiKeyAction, zodResolver(createApiKeySchema), {
+    actionProps: {
+      onSuccess: (result) => {
+        if (!result.data) return;
+        setNewApiKey(result.data.apiKey);
+        reset();
+        toast.success(t('createSuccess'));
+        router.refresh();
+      },
+      onError: (result) => {
+        toast.error(result.error.serverError || t('createError'));
+      },
     },
-    onError: (result) => {
-      toast.error(result.error.serverError || t('createError'));
+    formProps: {
+      defaultValues: {
+        description: '',
+      },
     },
   });
 
@@ -61,9 +75,6 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
     },
   });
 
-  const handleCreateKey = useCallback(() => {
-    executeCreateApiKey({ description });
-  }, [executeCreateApiKey, description]);
 
   const handleDeleteKey = useCallback((apiKey: string) => {
     setKeyToDelete(apiKey);
@@ -92,18 +103,20 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
 
   return (
     <>
-      <div className="flex items-center gap-4 mb-6">
+      <form onSubmit={handleSubmitWithAction} className="flex items-center gap-4 mb-6">
         <Input
           placeholder={t('createDesc')}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          {...register('description')}
           disabled={isCreating}
         />
-        <Button onClick={handleCreateKey} disabled={isCreating} className="flex gap-2 items-center">
+        <Button type="submit" disabled={isCreating} className="flex gap-2 items-center">
           {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           {isCreating ? t('creatingKey') : t('createKey')}
         </Button>
-      </div>
+      </form>
+      {formState.errors.description && (
+        <p className="text-red-500 text-sm mb-4">{formState.errors.description.message}</p>
+      )}
 
       {newApiKey && (
         <div className="mt-4 p-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-md">
