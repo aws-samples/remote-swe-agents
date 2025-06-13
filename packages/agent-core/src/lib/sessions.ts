@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, QueryCommand, QueryCommandInput, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 
 import { AgentStatus, SessionItem } from '../schema';
@@ -48,19 +48,29 @@ export async function getSession(workerId: string): Promise<SessionItem | undefi
   return result.Item as SessionItem;
 }
 
-export const getSessions = async (): Promise<SessionItem[]> => {
-  const res = await ddb.send(
-    new QueryCommand({
-      TableName,
-      IndexName: 'LSI1',
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': 'sessions',
-      },
-      ScanIndexForward: false, // DESC order
-      Limit: 50,
-    })
-  );
+export const getSessions = async (range?: { startDate: number; endDate: number }): Promise<SessionItem[]> => {
+  const queryParams: QueryCommandInput = {
+    TableName,
+    IndexName: 'LSI1',
+    KeyConditionExpression: 'PK = :pk',
+    ExpressionAttributeValues: {
+      ':pk': 'sessions',
+    },
+    ScanIndexForward: false, // DESC order
+    Limit: 50,
+  };
+
+  // Add date range filter if provided
+  if (range) {
+    const startTimestamp = String(range.startDate).padStart(15, '0');
+    const endTimestamp = String(range.endDate).padStart(15, '0');
+
+    queryParams.KeyConditionExpression += ' AND LSI1 BETWEEN :startDate AND :endDate';
+    queryParams.ExpressionAttributeValues![':startDate'] = startTimestamp;
+    queryParams.ExpressionAttributeValues![':endDate'] = endTimestamp;
+  }
+
+  const res = await ddb.send(new QueryCommand(queryParams));
 
   return (res.Items ?? []) as SessionItem[];
 };

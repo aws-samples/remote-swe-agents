@@ -27,11 +27,8 @@ export default async function CostAnalysisPage({
   const startDate = startOfMonth.getTime();
   const endDate = endOfMonth.getTime();
 
-  // Get all sessions
-  const sessions = await getSessions();
-
-  // Filter sessions by date range
-  const filteredSessions = sessions.filter((session) => session.createdAt >= startDate && session.createdAt <= endDate);
+  // Get sessions filtered by date range
+  const filteredSessions = await getSessions({ startDate, endDate });
 
   // Variables to store aggregated data
   let totalCost = 0;
@@ -46,6 +43,7 @@ export default async function CostAnalysisPage({
     const { workerId } = session;
 
     // Query token usage records for this session
+    // TODO: very inefficient. Maybe we should the token stats.
     const result = await ddb.send(
       new QueryCommand({
         TableName,
