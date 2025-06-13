@@ -36,9 +36,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
     <Card className="p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="mb-6">
         <h2 className="text-xl font-semibold">{t('costBreakdown')}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          {t('costBreakdownDescription')}
-        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('costBreakdownDescription')}</p>
       </div>
 
       {/* Tab navigation */}
@@ -78,24 +76,21 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
                 sessionCosts
                   .sort((a, b) => b.sessionCost - a.sessionCost) // Sort by cost descending
                   .map((session) => (
-                    <tr key={session.workerId} className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <tr
+                      key={session.workerId}
+                      className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900"
+                    >
                       <td className="px-4 py-3">
-                        <Link 
+                        <Link
                           href={`/sessions/${session.workerId}`}
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {session.workerId}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 max-w-[300px] truncate">
-                        {session.initialMessage || t('noMessage')}
-                      </td>
-                      <td className="px-4 py-3">
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${session.sessionCost.toFixed(2)}
-                      </td>
+                      <td className="px-4 py-3 max-w-[300px] truncate">{session.initialMessage || t('noMessage')}</td>
+                      <td className="px-4 py-3">{new Date(session.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-right font-medium">${session.sessionCost.toFixed(2)}</td>
                     </tr>
                   ))
               ) : (
@@ -109,7 +104,9 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 dark:bg-gray-800">
-                <td colSpan={3} className="px-4 py-3 font-medium">{t('total')}</td>
+                <td colSpan={3} className="px-4 py-3 font-medium">
+                  {t('total')}
+                </td>
                 <td className="px-4 py-3 text-right font-bold">
                   ${sessionCosts.reduce((sum, session) => sum + session.sessionCost, 0).toFixed(2)}
                 </td>
@@ -137,7 +134,10 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
                 modelCosts
                   .sort((a, b) => b.totalCost - a.totalCost) // Sort by cost descending
                   .map((model) => (
-                    <tr key={model.modelId} className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <tr
+                      key={model.modelId}
+                      className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900"
+                    >
                       <td className="px-4 py-3 font-medium">{model.modelId}</td>
                       <td className="px-4 py-3 text-right">{model.inputTokens.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">{model.outputTokens.toLocaleString()}</td>
@@ -147,9 +147,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
                           (R: {model.cacheReadTokens.toLocaleString()}, W: {model.cacheWriteTokens.toLocaleString()})
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${model.totalCost.toFixed(2)}
-                      </td>
+                      <td className="px-4 py-3 text-right font-medium">${model.totalCost.toFixed(2)}</td>
                     </tr>
                   ))
               ) : (
@@ -172,10 +170,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreak
                 </td>
                 <td className="px-4 py-3 text-right font-medium">
                   {modelCosts
-                    .reduce(
-                      (sum, model) => sum + model.cacheReadTokens + model.cacheWriteTokens, 
-                      0
-                    )
+                    .reduce((sum, model) => sum + model.cacheReadTokens + model.cacheWriteTokens, 0)
                     .toLocaleString()}
                 </td>
                 <td className="px-4 py-3 text-right font-bold">

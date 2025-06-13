@@ -96,7 +96,7 @@ export default function CostSummary({ totalCost, tokenCounts, t }: CostSummaryPr
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
             ></div>
           </div>
-          
+
           <div className="flex mb-2 items-center justify-between">
             <div>
               <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full bg-blue-200 text-blue-800">
@@ -115,7 +115,7 @@ export default function CostSummary({ totalCost, tokenCounts, t }: CostSummaryPr
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
             ></div>
           </div>
-          
+
           <div className="flex mb-2 items-center justify-between">
             <div>
               <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full bg-purple-200 text-purple-800">
@@ -134,7 +134,7 @@ export default function CostSummary({ totalCost, tokenCounts, t }: CostSummaryPr
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-500"
             ></div>
           </div>
-          
+
           <div className="flex mb-2 items-center justify-between">
             <div>
               <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full bg-yellow-200 text-yellow-800">

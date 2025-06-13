@@ -13,17 +13,15 @@ export const fetchCostDataAction = authActionClient
     try {
       // Get all sessions
       const sessions = await getSessions();
-      
+
       // Filter sessions by date if specified
       let filteredSessions = sessions;
       if (startDate && endDate) {
-        filteredSessions = sessions.filter(
-          session => session.createdAt >= startDate && session.createdAt <= endDate
-        );
+        filteredSessions = sessions.filter((session) => session.createdAt >= startDate && session.createdAt <= endDate);
       } else if (startDate) {
-        filteredSessions = sessions.filter(session => session.createdAt >= startDate);
+        filteredSessions = sessions.filter((session) => session.createdAt >= startDate);
       } else if (endDate) {
-        filteredSessions = sessions.filter(session => session.createdAt <= endDate);
+        filteredSessions = sessions.filter((session) => session.createdAt <= endDate);
       }
 
       // Array to hold token usage data for all sessions
@@ -37,7 +35,7 @@ export const fetchCostDataAction = authActionClient
       // For each session, fetch token usage data
       for (const session of filteredSessions) {
         const { workerId } = session;
-        
+
         // Query token usage records for this session
         const result = await ddb.send(
           new QueryCommand({
@@ -50,7 +48,7 @@ export const fetchCostDataAction = authActionClient
         );
 
         const items = result.Items || [];
-        
+
         // Process each token usage record
         for (const item of items) {
           const modelId = item.SK; // model ID is stored in SK
@@ -60,13 +58,7 @@ export const fetchCostDataAction = authActionClient
           const cacheWriteTokens = item.cacheWriteInputTokens || 0;
 
           // Calculate cost for this model usage
-          const modelCost = calculateCost(
-            modelId, 
-            inputTokens, 
-            outputTokens, 
-            cacheReadTokens, 
-            cacheWriteTokens
-          );
+          const modelCost = calculateCost(modelId, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens);
 
           // Add to totals
           totalInputTokens += inputTokens;
@@ -91,7 +83,7 @@ export const fetchCostDataAction = authActionClient
       }
 
       // Group data by different dimensions
-      const sessionCosts = filteredSessions.map(session => ({
+      const sessionCosts = filteredSessions.map((session) => ({
         workerId: session.workerId,
         initialMessage: session.initialMessage,
         sessionCost: session.sessionCost || 0,
@@ -99,35 +91,38 @@ export const fetchCostDataAction = authActionClient
       }));
 
       // Group data by model
-      const modelCosts = allTokenUsageData.reduce((acc, item) => {
-        const existingModel = acc.find(model => model.modelId === item.modelId);
-        
-        if (existingModel) {
-          existingModel.inputTokens += item.inputTokens;
-          existingModel.outputTokens += item.outputTokens;
-          existingModel.cacheReadTokens += item.cacheReadTokens;
-          existingModel.cacheWriteTokens += item.cacheWriteTokens;
-          existingModel.totalCost += item.cost;
-        } else {
-          acc.push({
-            modelId: item.modelId,
-            inputTokens: item.inputTokens,
-            outputTokens: item.outputTokens,
-            cacheReadTokens: item.cacheReadTokens,
-            cacheWriteTokens: item.cacheWriteTokens,
-            totalCost: item.cost,
-          });
-        }
-        
-        return acc;
-      }, [] as Array<{
-        modelId: string;
-        inputTokens: number;
-        outputTokens: number;
-        cacheReadTokens: number;
-        cacheWriteTokens: number;
-        totalCost: number;
-      }>);
+      const modelCosts = allTokenUsageData.reduce(
+        (acc, item) => {
+          const existingModel = acc.find((model) => model.modelId === item.modelId);
+
+          if (existingModel) {
+            existingModel.inputTokens += item.inputTokens;
+            existingModel.outputTokens += item.outputTokens;
+            existingModel.cacheReadTokens += item.cacheReadTokens;
+            existingModel.cacheWriteTokens += item.cacheWriteTokens;
+            existingModel.totalCost += item.cost;
+          } else {
+            acc.push({
+              modelId: item.modelId,
+              inputTokens: item.inputTokens,
+              outputTokens: item.outputTokens,
+              cacheReadTokens: item.cacheReadTokens,
+              cacheWriteTokens: item.cacheWriteTokens,
+              totalCost: item.cost,
+            });
+          }
+
+          return acc;
+        },
+        [] as Array<{
+          modelId: string;
+          inputTokens: number;
+          outputTokens: number;
+          cacheReadTokens: number;
+          cacheWriteTokens: number;
+          totalCost: number;
+        }>
+      );
 
       return {
         success: true,
