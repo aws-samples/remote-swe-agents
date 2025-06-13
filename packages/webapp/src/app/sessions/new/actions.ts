@@ -6,6 +6,7 @@ import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
+import { MessageItem, SessionItem } from '@remote-swe-agents/agent-core/schema';
 
 export const createNewWorker = authActionClient.schema(createNewWorkerSchema).action(async ({ parsedInput, ctx }) => {
   const workerId = `webapp-${Date.now()}`;
@@ -45,7 +46,9 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
               createdAt: now,
               LSI1: String(now).padStart(15, '0'),
               instanceStatus: 'starting',
-            },
+              sessionCost: 0,
+              agentStatus: 'pending',
+            } satisfies SessionItem,
           },
         },
         {
@@ -58,7 +61,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
               role: 'user',
               tokenCount: 0,
               messageType: 'userMessage',
-            },
+            } satisfies MessageItem,
           },
         },
       ],

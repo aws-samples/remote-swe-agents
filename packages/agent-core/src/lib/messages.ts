@@ -8,22 +8,10 @@ import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey } from './aws/s3';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
+import { MessageItem } from '../schema';
 
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;
-
-export type MessageItem = {
-  PK: string;
-  SK: string;
-  /**
-   * messsage.content in json string
-   */
-  content: string;
-  role: string;
-  tokenCount: number;
-  messageType: string;
-  slackUserId?: string;
-};
 
 export const saveConversationHistoryAtomic = async (
   workerId: string,

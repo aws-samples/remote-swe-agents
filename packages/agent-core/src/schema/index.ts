@@ -4,4 +4,5 @@ export * from './events';
 export * from './todo';
 export * from './agent';
 export * from './session';
+export * from './message';
 export * from './api-key';

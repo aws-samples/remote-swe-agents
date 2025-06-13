@@ -2,16 +2,7 @@ import { PutCommand, QueryCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-
-type MessageItem = {
-  PK: string;
-  SK: string;
-  content: string;
-  role: string;
-  tokenCount: number;
-  messageType: string;
-  slackUserId: string;
-};
+import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 
 export const saveConversationHistory = async (
   workerId: string,
