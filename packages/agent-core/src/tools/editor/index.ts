@@ -24,6 +24,11 @@ const editFile = async (input: z.infer<typeof inputSchema>) => {
     return 'successfully created the file.';
   }
 
+  // When oldString is empty and file already exists, prevent overwriting existing files
+  if (!oldString) {
+    return `The file already exists. Please provide a non-empty oldString to edit it.`;
+  }
+
   const fileContents = readFileSync(filePath, 'utf8');
 
   const isValid = isSingleOccurrence(fileContents, oldString);

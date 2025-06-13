@@ -100,3 +100,34 @@ function getUserDisplayName(user: User): string {
   const fileContent = readFileSync(filePath, 'utf-8');
   expect(fileContent).toEqual(newContent);
 });
+
+test('error when file exists and oldString is empty', async () => {
+  // GIVEN
+  const tool = fileEditTool.handler;
+  const existingContent = `
+const config = {
+    apiUrl: 'https://api.example.com',
+    timeout: 30000,
+    retries: 3
+};
+`;
+  const filePath = join(tempDirPath, `${randomBytes(6).toString('hex')}.ts`);
+  
+  // Create file before test
+  writeFileSync(filePath, existingContent, 'utf-8');
+  expect(existsSync(filePath)).toBe(true);
+
+  // WHEN
+  const result = await tool({
+    filePath,
+    oldString: '',
+    newString: 'new content that should not be written',
+  });
+
+  // THEN
+  expect(result).toBe('The file already exists. Please provide a non-empty oldString to edit it.');
+  
+  // File content should remain unchanged
+  const fileContent = readFileSync(filePath, 'utf-8');
+  expect(fileContent).toEqual(existingContent);
+});
