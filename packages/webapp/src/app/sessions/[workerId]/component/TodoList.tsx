@@ -20,14 +20,14 @@ export default function TodoList({ todoList, isRefreshing = false }: TodoListPro
   const getStatusIcon = (status: TodoItem['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-gray-700 dark:text-gray-300" />;
       case 'in_progress':
-        return <Clock className="w-4 h-4 text-blue-500" />;
+        return <Clock className="w-4 h-4 text-gray-800 dark:text-gray-200" />;
       case 'cancelled':
-        return <XCircle className="w-4 h-4 text-gray-500" />;
+        return <XCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
       case 'pending':
       default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
+        return <Circle className="w-4 h-4 text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -37,11 +37,11 @@ export default function TodoList({ todoList, isRefreshing = false }: TodoListPro
         {todoList.items.map((item) => (
           <li
             key={item.id}
-            className={`flex items-start gap-2 p-2 rounded ${
+            className={`flex items-start gap-2 p-2 rounded-md ${
               item.status === 'in_progress'
-                ? 'bg-blue-50 dark:bg-blue-900/20'
+                ? 'bg-gray-100 dark:bg-gray-700/50'
                 : item.status === 'completed'
-                  ? 'bg-green-50 dark:bg-green-900/20'
+                  ? 'bg-gray-50 dark:bg-gray-800/50'
                   : ''
             }`}
           >
@@ -66,7 +66,7 @@ export default function TodoList({ todoList, isRefreshing = false }: TodoListPro
       <div className="mt-3 text-xs text-right text-gray-500 dark:text-gray-400 flex items-center justify-end">
         {isRefreshing && (
           <span className="mr-2 flex items-center">
-            <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full mr-1"></span>
+            <span className="animate-spin inline-block w-3 h-3 border-2 border-gray-600 dark:border-gray-400 border-t-transparent rounded-full mr-1"></span>
             {t('refreshing')}
           </span>
         )}
