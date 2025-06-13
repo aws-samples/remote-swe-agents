@@ -19,8 +19,8 @@ export default async function ApiKeysPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
           </div>
 
-                <ApiKeyClientActions apiKeys={apiKeys} />
-        
+          <ApiKeyClientActions apiKeys={apiKeys} />
+
           <div className="mt-8">
             <div className="rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50">
               <div className="flex flex-col space-y-1.5 p-6">
