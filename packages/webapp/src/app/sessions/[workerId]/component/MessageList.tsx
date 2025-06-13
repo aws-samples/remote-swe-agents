@@ -180,8 +180,10 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
     const isExpanded = visibleToolDetails.has(messageId);
 
     const getToolIcon = (name: string) => {
-      if (name.includes('execute') || name.includes('Command')) return <Terminal className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
-      if (name.includes('file') || name.includes('edit')) return <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+      if (name.includes('execute') || name.includes('Command'))
+        return <Terminal className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+      if (name.includes('file') || name.includes('edit'))
+        return <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
       return <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     };
 
@@ -272,7 +274,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
           <div className="flex-shrink-0">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                group.role === 'assistant' ? 'bg-gray-700 dark:bg-gray-600' : 'bg-gray-600 dark:bg-gray-500'
+                group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
               }`}
             >
               {group.role === 'assistant' ? (
