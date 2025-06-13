@@ -87,13 +87,13 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
             </div>
             <div className="text-right">
               <span className="text-xs font-semibold inline-block">
-                {((tokenCounts.input / tokenCounts.total) * 100).toFixed(1)}%
+                {tokenCounts.total > 0 ? ((tokenCounts.input / tokenCounts.total) * 100).toFixed(1) : '0'}%
               </span>
             </div>
           </div>
           <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
             <div
-              style={{ width: `${(tokenCounts.input / tokenCounts.total) * 100}%` }}
+              style={{ width: `${tokenCounts.total > 0 ? (tokenCounts.input / tokenCounts.total) * 100 : 0}%` }}
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
             ></div>
           </div>
@@ -106,13 +106,13 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
             </div>
             <div className="text-right">
               <span className="text-xs font-semibold inline-block">
-                {((tokenCounts.output / tokenCounts.total) * 100).toFixed(1)}%
+                {tokenCounts.total > 0 ? ((tokenCounts.output / tokenCounts.total) * 100).toFixed(1) : '0'}%
               </span>
             </div>
           </div>
           <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
             <div
-              style={{ width: `${(tokenCounts.output / tokenCounts.total) * 100}%` }}
+              style={{ width: `${tokenCounts.total > 0 ? (tokenCounts.output / tokenCounts.total) * 100 : 0}%` }}
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
             ></div>
           </div>
@@ -125,13 +125,13 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
             </div>
             <div className="text-right">
               <span className="text-xs font-semibold inline-block">
-                {((tokenCounts.cacheRead / tokenCounts.total) * 100).toFixed(1)}%
+                {tokenCounts.total > 0 ? ((tokenCounts.cacheRead / tokenCounts.total) * 100).toFixed(1) : '0'}%
               </span>
             </div>
           </div>
           <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
             <div
-              style={{ width: `${(tokenCounts.cacheRead / tokenCounts.total) * 100}%` }}
+              style={{ width: `${tokenCounts.total > 0 ? (tokenCounts.cacheRead / tokenCounts.total) * 100 : 0}%` }}
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-500"
             ></div>
           </div>
@@ -144,13 +144,13 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
             </div>
             <div className="text-right">
               <span className="text-xs font-semibold inline-block">
-                {((tokenCounts.cacheWrite / tokenCounts.total) * 100).toFixed(1)}%
+                {tokenCounts.total > 0 ? ((tokenCounts.cacheWrite / tokenCounts.total) * 100).toFixed(1) : '0'}%
               </span>
             </div>
           </div>
           <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
             <div
-              style={{ width: `${(tokenCounts.cacheWrite / tokenCounts.total) * 100}%` }}
+              style={{ width: `${tokenCounts.total > 0 ? (tokenCounts.cacheWrite / tokenCounts.total) * 100 : 0}%` }}
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-yellow-500"
             ></div>
           </div>

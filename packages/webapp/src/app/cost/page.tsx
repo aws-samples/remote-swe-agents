@@ -5,22 +5,33 @@ import { calculateCost, getSessions } from '@remote-swe-agents/agent-core/lib';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import CostSummary from './components/CostSummary';
 import CostBreakdown from './components/CostBreakdown';
+import DateSelector from './components/DateSelector';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 
-export default async function CostAnalysisPage() {
+export default async function CostAnalysisPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; month?: string }>;
+}) {
   // Get translations
   const t = await getTranslations('cost');
+  const params = await searchParams;
 
-  // Calculate date range for current month
+  // Calculate date range based on query parameters or default to current month
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const year = params.year ? parseInt(params.year) : now.getFullYear();
+  const month = params.month ? parseInt(params.month) - 1 : now.getMonth(); // month is 0-indexed
+
+  const startOfMonth = new Date(year, month, 1);
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
   const startDate = startOfMonth.getTime();
+  const endDate = endOfMonth.getTime();
 
   // Get all sessions
   const sessions = await getSessions();
 
-  // Filter sessions by date
-  const filteredSessions = sessions.filter((session) => session.createdAt >= startDate);
+  // Filter sessions by date range
+  const filteredSessions = sessions.filter((session) => session.createdAt >= startDate && session.createdAt <= endDate);
 
   // Variables to store aggregated data
   let totalCost = 0;
@@ -147,6 +158,9 @@ export default async function CostAnalysisPage() {
           <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
           <p className="text-gray-600 dark:text-gray-300">{t('description')}</p>
         </div>
+
+        {/* Date Selector */}
+        <DateSelector />
 
         {/* Cost Summary Component */}
         <CostSummary totalCost={costData.totalCost} tokenCounts={costData.tokenCounts} />
