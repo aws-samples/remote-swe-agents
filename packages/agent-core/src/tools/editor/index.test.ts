@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { fileEditTool } from './';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
@@ -65,4 +65,38 @@ function displayVehicleInfo(vehicle: Vehicle) {
     }
 }
 `);
+});
+
+test('create new file with empty oldString', async () => {
+  // GIVEN
+  const tool = fileEditTool.handler;
+  const newContent = `
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+function getUserDisplayName(user: User): string {
+    return \`\${user.name} <\${user.email}>\`;
+}
+`;
+  const filePath = join(tempDirPath, `${randomBytes(6).toString('hex')}.ts`);
+  
+  // Ensure file doesn't exist before test
+  expect(existsSync(filePath)).toBe(false);
+
+  // WHEN
+  const result = await tool({
+    filePath,
+    oldString: '',
+    newString: newContent,
+  });
+
+  // THEN
+  expect(result).toBe('successfully created the file.');
+  expect(existsSync(filePath)).toBe(true);
+  
+  const fileContent = readFileSync(filePath, 'utf-8');
+  expect(fileContent).toEqual(newContent);
 });
