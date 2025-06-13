@@ -11,9 +11,9 @@ const sendMessageSchema = z.object({
 });
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     sessionId: string;
-  };
+  }>;
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   try {
     // Get session ID from the URL params
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     // Parse and validate request body
     const body = await request.json();

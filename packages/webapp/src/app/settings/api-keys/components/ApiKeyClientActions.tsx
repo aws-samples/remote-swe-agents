@@ -19,43 +19,31 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 interface ApiKeyClientActionsProps {
   apiKeys: ApiKeyItem[];
 }
 
-export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyClientActionsProps) {
+export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProps) {
   const t = useTranslations('api_settings');
+  const router = useRouter();
   const [description, setDescription] = useState('');
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
-  const [localApiKeys, setLocalApiKeys] = useState<ApiKeyItem[]>(initialApiKeys || []);
-
-  // List API keys action
-  const {
-    data: apiKeysData,
-    execute: executeListApiKeys,
-    isExecuting: isLoading,
-  } = useAction(listApiKeysAction, {
-    onSuccess: (data) => {
-      setLocalApiKeys(data.apiKeys || []);
-    },
-    onError: (error) => {
-      toast.error(error.serverError || t('loadError'));
-    },
-  });
 
   // Create API key action
   const { execute: executeCreateApiKey, isExecuting: isCreating } = useAction(createApiKeyAction, {
-    onSuccess: (data) => {
-      setNewApiKey(data.apiKey);
+    onSuccess: (result) => {
+      if (!result.data) return;
+      setNewApiKey(result.data.apiKey);
       setDescription('');
       toast.success(t('createSuccess'));
-      executeListApiKeys();
+      router.refresh();
     },
-    onError: (error) => {
-      toast.error(error.serverError || t('createError'));
+    onError: (result) => {
+      toast.error(result.error.serverError || t('createError'));
     },
   });
 
@@ -63,12 +51,12 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
   const { execute: executeDeleteApiKey, isExecuting: isDeleting } = useAction(deleteApiKeyAction, {
     onSuccess: () => {
       toast.success(t('deleteSuccess'));
-      executeListApiKeys();
       setIsDeleteDialogOpen(false);
       setKeyToDelete(null);
+      router.refresh();
     },
     onError: (error) => {
-      toast.error(error.serverError || t('deleteError'));
+      toast.error(error.error.serverError || t('deleteError'));
       setIsDeleteDialogOpen(false);
     },
   });
@@ -136,29 +124,15 @@ export default function ApiKeyClientActions({ apiKeys: initialApiKeys }: ApiKeyC
         </div>
       )}
 
-      {/* Refresh button at the top of Your API Keys section */}
-      <div className="flex justify-end -mt-2 mb-4">
-        <Button
-          onClick={() => executeListApiKeys()}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-          className="flex gap-2 items-center"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-          {t('refresh')}
-        </Button>
-      </div>
-
       {/* Delete buttons for each key */}
-      {localApiKeys.map((key) => (
+      {apiKeys.map((key) => (
         <div
           key={`delete-button-${key.SK}`}
           className="absolute right-4 top-1/2 transform -translate-y-1/2"
           style={{
             position: 'relative',
             float: 'right',
-            marginTop: `-${localApiKeys.indexOf(key) * 72 + 36}px`,
+            marginTop: `-${apiKeys.indexOf(key) * 72 + 36}px`,
             marginRight: '16px',
           }}
         >
