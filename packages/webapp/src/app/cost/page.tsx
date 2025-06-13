@@ -18,7 +18,7 @@ export default async function CostAnalysisPage() {
   const costDataResult = await fetchCostDataAction({ startDate });
 
   // Set default values in case data is undefined
-  const costData = costDataResult || {
+  const defaultCostData = {
     totalCost: 0,
     tokenCounts: {
       input: 0,
@@ -29,7 +29,11 @@ export default async function CostAnalysisPage() {
     },
     sessionCosts: [],
     modelCosts: [],
+    rawData: [],
   };
+
+  // Extract data from the result or use defaults
+  const costData = costDataResult?.data?.success ? costDataResult.data : defaultCostData;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
