@@ -120,7 +120,7 @@ export class Webapp extends Construct {
         `${this.baseUrl}/api/auth/sign-in-callback`,
         `${this.baseUrl}/api/auth/sign-out-callback`
       );
-      handler.addEnvironment('AMPLIFY_APP_ORIGIN', service.url);
+      handler.addEnvironment('APP_ORIGIN', service.url);
     } else {
       auth.updateAllowedCallbackUrls(
         [`${this.baseUrl}/api/auth/sign-in-callback`, `http://localhost:3011/api/auth/sign-in-callback`],
@@ -131,9 +131,9 @@ export class Webapp extends Construct {
         stringValue: 'dummy',
       });
       originSourceParameter.grantRead(handler);
-      handler.addEnvironment('AMPLIFY_APP_ORIGIN_SOURCE_PARAMETER', originSourceParameter.parameterName);
+      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', originSourceParameter.parameterName);
 
-      // We need to pass AMPLIFY_APP_ORIGIN environment variable for callback URL,
+      // We need to pass APP_ORIGIN environment variable for callback URL,
       // but we cannot know CloudFront domain before deploying Lambda function.
       // To avoid the circular dependency, we fetch the domain name on runtime.
       new AwsCustomResource(this, 'UpdateAmplifyOriginSourceParameter', {

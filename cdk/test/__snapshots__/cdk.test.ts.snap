@@ -3223,7 +3223,7 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "AMPLIFY_APP_ORIGIN_SOURCE_PARAMETER": {
+            "APP_ORIGIN_SOURCE_PARAMETER": {
               "Ref": "WebappOriginSourceParameterD87E143B",
             },
             "ASYNC_JOB_HANDLER_ARN": {

@@ -14,7 +14,7 @@ ARG NEXT_PUBLIC_EVENT_HTTP_ENDPOINT=""
 ARG NEXT_PUBLIC_AWS_REGION=""
 ENV USER_POOL_CLIENT_ID="dummy"
 ENV USER_POOL_ID="dummy"
-ENV AMPLIFY_APP_ORIGIN="https://dummy.example.com"
+ENV APP_ORIGIN="https://dummy.example.com"
 ENV COGNITO_DOMAIN="dummy.example.com"
 RUN --mount=type=cache,target=/build/packages/webapp/.next/cache cd packages/webapp && npm run build
 

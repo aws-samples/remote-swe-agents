@@ -4,6 +4,7 @@ import { ApiKeyItem } from '@remote-swe-agents/agent-core/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { getTranslations } from 'next-intl/server';
 import ApiKeyClientActions from './components/ApiKeyClientActions';
+import { AppOrigin } from '@/lib/origin';
 
 export default async function ApiKeysPage() {
   const apiKeys = await getApiKeys();
@@ -79,7 +80,7 @@ export default async function ApiKeysPage() {
                     <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('exampleCreateSession')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
-  https://yourwebapp.com/api/sessions/ \\
+  ${AppOrigin}/api/sessions/ \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{"message": "Create a React component for a user profile page"}'`}</code>
@@ -88,7 +89,7 @@ export default async function ApiKeysPage() {
                     <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleSendMessage')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
-  https://yourwebapp.com/api/sessions/api-1234567890 \\
+  ${AppOrigin}/api/sessions/api-1234567890 \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{"message": "Add dark mode support to the component"}'`}</code>
