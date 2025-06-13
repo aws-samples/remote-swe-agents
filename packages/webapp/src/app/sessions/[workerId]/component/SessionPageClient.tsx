@@ -91,7 +91,7 @@ export default function SessionPageClient({
                   ...prev,
                   {
                     id: Date.now().toString(),
-                    role: 'assistant',
+                    role: event.role,
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
                     type: 'message',
