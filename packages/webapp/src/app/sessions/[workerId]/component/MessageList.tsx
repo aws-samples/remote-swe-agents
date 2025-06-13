@@ -319,7 +319,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-gray-700 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 </div>
