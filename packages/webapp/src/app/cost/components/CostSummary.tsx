@@ -22,7 +22,7 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Total Cost Card */}
-      <Card className="p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <Card className="p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex items-center">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
             <DollarSign className="h-6 w-6 text-green-600 dark:text-green-300" />
@@ -35,7 +35,7 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
       </Card>
 
       {/* Total Tokens Card */}
-      <Card className="p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+      <Card className="p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex items-center">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
             <MessageSquare className="h-6 w-6 text-blue-600 dark:text-blue-300" />
@@ -53,23 +53,21 @@ export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps
           <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
             <Zap className="h-6 w-6 text-purple-600 dark:text-purple-300" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('inputOutputTokens')}</p>
-            <div className="flex gap-3">
-              <span className="text-sm">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('inputOutputTokens')}</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <div>
                 <span className="font-medium">{t('input')}:</span> {tokenCounts.input.toLocaleString()}
-              </span>
-              <span className="text-sm">
+              </div>
+              <div>
                 <span className="font-medium">{t('output')}:</span> {tokenCounts.output.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex gap-3 mt-1">
-              <span className="text-sm">
+              </div>
+              <div>
                 <span className="font-medium">{t('cacheRead')}:</span> {tokenCounts.cacheRead.toLocaleString()}
-              </span>
-              <span className="text-sm">
+              </div>
+              <div>
                 <span className="font-medium">{t('cacheWrite')}:</span> {tokenCounts.cacheWrite.toLocaleString()}
-              </span>
+              </div>
             </div>
           </div>
         </div>
