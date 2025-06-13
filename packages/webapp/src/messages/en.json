@@ -40,7 +40,7 @@
     },
     "agentStatus": {
       "working": "Working",
-      "pending": "Awaiting Response",
+      "pending": "Waiting",
       "completed": "Completed",
       "unknown": "Unknown"
     },

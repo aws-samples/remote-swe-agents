@@ -228,9 +228,9 @@ export default function SessionPageClient({
                 )}
               </button>
               {(instanceStatus || agentStatus) && (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 w-24 min-w-0">
                   <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
-                  <span className="text-sm font-medium truncate min-w-0">{getUnifiedStatus().text}</span>
+                  <span className="text-sm font-medium truncate">{getUnifiedStatus().text}</span>
                 </div>
               )}
               {todoList && (
