@@ -28,7 +28,7 @@ export default async function CostAnalysisPage({
   const endDate = endOfMonth.getTime();
 
   // Get sessions filtered by date range
-  const filteredSessions = await getSessions({ startDate, endDate });
+  const filteredSessions = await getSessions(0, { startDate, endDate });
 
   // Variables to store aggregated data
   let totalCost = 0;

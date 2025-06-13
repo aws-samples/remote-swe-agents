@@ -1,4 +1,11 @@
-import { GetCommand, PutCommand, QueryCommand, QueryCommandInput, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  QueryCommandInput,
+  UpdateCommand,
+  paginateQuery,
+} from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 
 import { AgentStatus, SessionItem } from '../schema';
@@ -48,7 +55,10 @@ export async function getSession(workerId: string): Promise<SessionItem | undefi
   return result.Item as SessionItem;
 }
 
-export const getSessions = async (range?: { startDate: number; endDate: number }): Promise<SessionItem[]> => {
+export const getSessions = async (
+  limit: number = 50,
+  range?: { startDate: number; endDate: number }
+): Promise<SessionItem[]> => {
   const queryParams: QueryCommandInput = {
     TableName,
     IndexName: 'LSI1',
@@ -57,7 +67,6 @@ export const getSessions = async (range?: { startDate: number; endDate: number }
       ':pk': 'sessions',
     },
     ScanIndexForward: false, // DESC order
-    Limit: 50,
   };
 
   // Add date range filter if provided
@@ -70,6 +79,25 @@ export const getSessions = async (range?: { startDate: number; endDate: number }
     queryParams.ExpressionAttributeValues![':endDate'] = endTimestamp;
   }
 
+  // If limit is 0, fetch all results using pagination
+  if (limit === 0) {
+    const paginator = paginateQuery(
+      {
+        client: ddb,
+      },
+      queryParams
+    );
+    const items: SessionItem[] = [];
+    for await (const page of paginator) {
+      if (page.Items != null) {
+        items.push(...(page.Items as SessionItem[]));
+      }
+    }
+    return items;
+  }
+
+  // Otherwise, use the specified limit
+  queryParams.Limit = limit;
   const res = await ddb.send(new QueryCommand(queryParams));
 
   return (res.Items ?? []) as SessionItem[];
