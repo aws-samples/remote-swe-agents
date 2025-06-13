@@ -128,7 +128,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
           const isInline = !match;
           return !isInline ? (
             <SyntaxHighlighter
-              style={(theme === 'dark' || resolvedTheme === 'dark') ? oneDark : oneLight}
+              style={theme === 'dark' || resolvedTheme === 'dark' ? oneDark : oneLight}
               lineProps={{ style: { wordBreak: 'break-word', whiteSpace: 'pre-wrap' } }}
               language={match[1]}
               PreTag="div"
