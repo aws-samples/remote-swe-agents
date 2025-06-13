@@ -199,7 +199,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
               <span className="hidden md:inline">{t('usingTool')}: </span>
               <span className="truncate">{toolName}</span>
               {isExecuting && (
-                <div className="flex items-center gap-1 ml-2">
+                <div className="flex items-end gap-1 ml-2">
                   <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">{t('executing')}</span>
                 </div>
