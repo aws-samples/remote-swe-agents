@@ -1,6 +1,8 @@
 import { AppOrigin } from '@/lib/origin';
 import { createServerRunner } from '@aws-amplify/adapter-nextjs';
 
+process.env.AMPLIFY_APP_ORIGIN = AppOrigin;
+
 export const { runWithAmplifyServerContext, createAuthRouteHandlers } = createServerRunner({
   config: {
     Auth: {
