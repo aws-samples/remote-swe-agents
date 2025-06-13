@@ -130,6 +130,7 @@
     "deleteKey": "削除",
     "deletingKey": "削除中...",
     "copyKey": "コピー",
+    "descriptionPlaceholder": "このAPIキーの説明を入力してください（任意）",
     "refresh": "更新",
     "newKeyCreated": "新しいAPIキーが作成されました - このキーを保存してください。後で確認することはできません！",
     "keyCopied": "APIキーをクリップボードにコピーしました",

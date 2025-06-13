@@ -130,6 +130,7 @@
     "deleteKey": "Delete",
     "deletingKey": "Deleting...",
     "copyKey": "Copy",
+    "descriptionPlaceholder": "Enter a description for this API key (optional)",
     "refresh": "Refresh",
     "newKeyCreated": "New API key created - Save this key now, you won't be able to see it again!",
     "keyCopied": "API key copied to clipboard",

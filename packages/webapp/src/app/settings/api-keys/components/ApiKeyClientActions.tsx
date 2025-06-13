@@ -109,7 +109,7 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
           </div>
           <div className="p-6 pt-0">
             <form onSubmit={handleSubmitWithAction} className="flex items-center gap-4 mb-6">
-              <Input placeholder={t('createDesc')} {...register('description')} disabled={isCreating} />
+              <Input placeholder={t('descriptionPlaceholder')} {...register('description')} disabled={isCreating} />
               {formState.errors.description && (
                 <p className="text-red-500 text-sm mb-4">{formState.errors.description.message}</p>
               )}
