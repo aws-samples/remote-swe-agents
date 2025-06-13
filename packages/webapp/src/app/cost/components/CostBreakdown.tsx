@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, BarChart } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 interface SessionCost {
   workerId: string;
@@ -25,10 +26,10 @@ interface ModelCost {
 interface CostBreakdownProps {
   sessionCosts: SessionCost[];
   modelCosts: ModelCost[];
-  t: any; // Translation function
 }
 
-export default function CostBreakdown({ sessionCosts, modelCosts, t }: CostBreakdownProps) {
+export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdownProps) {
+  const t = useTranslations('cost');
   // State for active tab
   const [activeTab, setActiveTab] = useState<'sessions' | 'models'>('sessions');
 

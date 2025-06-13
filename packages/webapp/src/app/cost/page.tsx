@@ -149,10 +149,10 @@ export default async function CostAnalysisPage() {
         </div>
 
         {/* Cost Summary Component */}
-        <CostSummary totalCost={costData.totalCost} tokenCounts={costData.tokenCounts} t={t} />
+        <CostSummary totalCost={costData.totalCost} tokenCounts={costData.tokenCounts} />
 
         {/* Cost Breakdown Components */}
-        <CostBreakdown sessionCosts={costData.sessionCosts} modelCosts={costData.modelCosts} t={t} />
+        <CostBreakdown sessionCosts={costData.sessionCosts} modelCosts={costData.modelCosts} />
       </main>
     </div>
   );

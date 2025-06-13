@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { DollarSign, MessageSquare, Zap } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface TokenCounts {
   input: number;
@@ -14,10 +15,10 @@ interface TokenCounts {
 interface CostSummaryProps {
   totalCost: number;
   tokenCounts: TokenCounts;
-  t: any; // Translation function
 }
 
-export default function CostSummary({ totalCost, tokenCounts, t }: CostSummaryProps) {
+export default function CostSummary({ totalCost, tokenCounts }: CostSummaryProps) {
+  const t = useTranslations('cost');
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Total Cost Card */}
