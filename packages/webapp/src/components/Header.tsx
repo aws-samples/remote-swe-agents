@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Languages, LogOut, Check } from 'lucide-react';
+import { Menu, Languages, LogOut, Check, Key, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import {
   DropdownMenu,
@@ -68,6 +68,18 @@ export default function Header() {
                 </DropdownMenuSub>
 
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings/prompt" className="w-full cursor-default flex items-center" prefetch={false}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>{t('promptSettings')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings/api-keys" className="w-full cursor-default flex items-center" prefetch={false}>
+                    <Key className="mr-2 h-4 w-4" />
+                    <span>{t('apiKeys')}</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/api/auth/sign-out" className="w-full cursor-default flex items-center" prefetch={false}>
                     <LogOut className="mr-2 h-4 w-4" />

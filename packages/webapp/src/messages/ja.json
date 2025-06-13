@@ -6,7 +6,9 @@
     "title": "Remote SWE Agents",
     "signOut": "サインアウト",
     "menu": "メニュー",
-    "language": "言語"
+    "language": "言語",
+    "promptSettings": "プロンプト設定",
+    "apiKeys": "APIキー"
   },
   "sessions": {
     "title": "セッション一覧",

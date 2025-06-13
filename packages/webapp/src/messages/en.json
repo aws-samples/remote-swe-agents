@@ -6,7 +6,9 @@
     "title": "Remote SWE Agents",
     "signOut": "Sign Out",
     "menu": "Menu",
-    "language": "Language"
+    "language": "Language",
+    "promptSettings": "Prompt Settings",
+    "apiKeys": "API Keys"
   },
   "sessions": {
     "title": "Sessions",
