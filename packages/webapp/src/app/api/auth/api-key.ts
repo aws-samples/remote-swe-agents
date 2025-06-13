@@ -7,17 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
  * @returns Response or undefined if validation passes
  */
 export async function validateApiKeyMiddleware(request: NextRequest): Promise<NextResponse | undefined> {
-  // Extract API key from authorization header
-  const authHeader = request.headers.get('authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Missing API key' }, { status: 401 });
-  }
-
-  const apiKey = authHeader.split(' ')[1];
+  // Extract API key from x-api-key header
+  const apiKey = request.headers.get('x-api-key');
 
   if (!apiKey) {
-    return NextResponse.json({ error: 'Invalid API key format' }, { status: 401 });
+    return NextResponse.json({ error: 'Missing API key' }, { status: 401 });
   }
 
   const isValid = await validateApiKey(apiKey);
