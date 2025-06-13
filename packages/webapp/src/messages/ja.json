@@ -51,6 +51,7 @@
     "noSessionsFound": "セッションが見つかりません",
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
     "usingTool": "ツール使用",
+    "executing": "実行中...",
     "showRawJson": "JSONを表示",
     "hideRawJson": "JSONを隠す",
     "input": "入力",

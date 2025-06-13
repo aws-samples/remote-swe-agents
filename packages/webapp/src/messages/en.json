@@ -51,6 +51,7 @@
     "noSessionsFound": "No sessions found",
     "createSessionToStart": "Create a new session to start chatting with AI agents",
     "usingTool": "Using Tool",
+    "executing": "Executing...",
     "showRawJson": "Show raw JSON",
     "hideRawJson": "Hide raw JSON",
     "input": "input",
