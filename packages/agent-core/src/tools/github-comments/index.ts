@@ -17,6 +17,13 @@ const replyPRCommentSchema = z.object({
   body: z.string().describe('The text of the reply comment'),
 });
 
+const addIssueCommentSchema = z.object({
+  owner: z.string().describe('GitHub repository owner'),
+  repo: z.string().describe('GitHub repository name'),
+  issueNumber: z.number().describe('The sequential number of the issue issued from GitHub'),
+  body: z.string().describe('The text of the comment'),
+});
+
 // Utility function to initialize Octokit client
 const getOctokitClient = async () => {
   const token = await authorizeGitHubCli();
@@ -138,6 +145,22 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
   return `Successfully replied to comment ${commentId}`;
 };
 
+const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchema>) => {
+  const { owner, repo, issueNumber, body } = input;
+
+  const octokit = await getOctokitClient();
+
+  // Use Octokit to add a comment to an issue
+  await octokit.issues.createComment({
+    owner,
+    repo,
+    issue_number: issueNumber,
+    body,
+  });
+
+  return `Successfully added comment to issue #${issueNumber}`;
+};
+
 // Tool definitions
 export const getPRCommentsTool: ToolDefinition<z.infer<typeof getPRCommentsSchema>> = {
   name: 'getPRComments',
@@ -165,6 +188,19 @@ export const replyPRCommentTool: ToolDefinition<z.infer<typeof replyPRCommentSch
   }),
 };
 
+export const addIssueCommentTool: ToolDefinition<z.infer<typeof addIssueCommentSchema>> = {
+  name: 'addIssueComment',
+  handler: addIssueCommentHandler,
+  schema: addIssueCommentSchema,
+  toolSpec: async () => ({
+    name: 'addIssueComment',
+    description: 'Add a comment to a specific GitHub issue.',
+    inputSchema: {
+      json: zodToJsonSchemaBody(addIssueCommentSchema),
+    },
+  }),
+};
+
 // Test script code - only runs when file is executed directly
 if (false) {
   const args = process.argv.slice(2);
@@ -172,14 +208,16 @@ if (false) {
 
   const printUsage = () => {
     console.log('Usage:');
-    console.log('  npx tsx src/tools/github-pr-comments/index.ts get <owner> <repo> <pullRequestId>');
-    console.log(
-      '  npx tsx src/tools/github-pr-comments/index.ts reply <owner> <repo> <pullRequestId> <commentId> <body>'
-    );
+    console.log('  npx tsx src/tools/github-comments/index.ts get <owner> <repo> <pullRequestId>');
+    console.log('  npx tsx src/tools/github-comments/index.ts reply <owner> <repo> <pullRequestId> <commentId> <body>');
+    console.log('  npx tsx src/tools/github-comments/index.ts issue-comment <owner> <repo> <issueNumber> <body>');
     console.log('\nExamples:');
-    console.log('  npx tsx src/tools/github-pr-comments/index.ts get aws-samples remote-swe-agents 32');
+    console.log('  npx tsx src/tools/github-comments/index.ts get aws-samples remote-swe-agents 32');
     console.log(
-      '  npx tsx src/tools/github-pr-comments/index.ts reply aws-samples remote-swe-agents 32 1234567890 "Thanks for the feedback!"'
+      '  npx tsx src/tools/github-comments/index.ts reply aws-samples remote-swe-agents 32 1234567890 "Thanks for the feedback!"'
+    );
+    console.log(
+      '  npx tsx src/tools/github-comments/index.ts issue-comment aws-samples remote-swe-agents 45 "This issue is being addressed in PR #32"'
     );
   };
 
@@ -226,8 +264,32 @@ if (false) {
           console.log(replyResult);
           break;
 
+        case 'issue-comment':
+          if (args.length < 5) {
+            console.error('Error: Not enough arguments for issue-comment command');
+            printUsage();
+            process.exit(1);
+          }
+
+          const [issueOwner, issueRepo, issueNumber, ...issueBodyParts] = args.slice(1);
+          const issueBody = issueBodyParts.join(' ');
+
+          console.log(`Adding comment to issue #${issueNumber} in ${issueOwner}/${issueRepo}...`);
+          console.log(`Message: "${issueBody}"`);
+
+          const issueCommentResult = await addIssueCommentHandler({
+            owner: issueOwner,
+            repo: issueRepo,
+            issueNumber: parseInt(issueNumber),
+            body: issueBody,
+          });
+
+          console.log('Result:');
+          console.log(issueCommentResult);
+          break;
+
         default:
-          console.error('Error: Unknown command. Use "get" or "reply"');
+          console.error('Error: Unknown command. Use "get", "reply", or "issue-comment"');
           printUsage();
           process.exit(1);
       }

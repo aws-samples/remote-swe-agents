@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useLayoutEffect, useRef } from 'react';
-import { Bot, User, Loader2, Clock, Info, Settings, Code, Terminal, ChevronRight, ChevronDown } from 'lucide-react';
+import {
+  Bot,
+  User,
+  Loader2,
+  Clock,
+  Info,
+  Settings,
+  Code,
+  Terminal,
+  ChevronRight,
+  ChevronDown,
+  Copy,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -10,6 +22,7 @@ import { useTheme } from 'next-themes';
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import { toast } from 'sonner';
 
 export type MessageView = {
   id: string;
@@ -235,33 +248,60 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
     );
   };
 
-  const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => (
-    <div className="flex items-start gap-1 py-1">
-      <div
-        className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
-        style={{ minWidth: '55px' }}
-      >
-        {showTimestamp &&
-          new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+  const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => {
+    const copyMessageToClipboard = (content: string) => {
+      navigator.clipboard
+        .writeText(content)
+        .then(() => {
+          toast.success(t('copySuccess'));
+        })
+        .catch((err) => {
+          console.error('Could not copy text: ', err);
+          toast.error(t('copyFailed'));
+        });
+    };
+
+    return (
+      <div className="flex items-start gap-1 py-1">
+        <div
+          className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
+          style={{ minWidth: '55px' }}
+        >
+          {showTimestamp &&
+            new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+        </div>
+        <div className="flex-1">
+          {message.type === 'toolUse' ? (
+            <ToolUseRenderer
+              content={message.content}
+              input={message.detail}
+              output={message.output}
+              messageId={message.id}
+            />
+          ) : (
+            <div
+              className={`text-gray-900 dark:text-white pb-2 break-all${message.role == 'user' ? ' whitespace-pre-wrap' : ''}`}
+            >
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <MarkdownRenderer content={message.content} />
+                </div>
+                {message.type === 'message' && message.role === 'assistant' && (
+                  <button
+                    onClick={() => copyMessageToClipboard(message.content)}
+                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 hidden md:block"
+                    title={t('copyMessage')}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex-1">
-        {message.type === 'toolUse' ? (
-          <ToolUseRenderer
-            content={message.content}
-            input={message.detail}
-            output={message.output}
-            messageId={message.id}
-          />
-        ) : (
-          <div
-            className={`text-gray-900 dark:text-white pb-2 break-all${message.role == 'user' ? ' whitespace-pre-wrap' : ''}`}
-          >
-            <MarkdownRenderer content={message.content} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const MessageGroup = ({ group }: { group: MessageGroup }) => {
     const firstMessage = group.messages[0];
