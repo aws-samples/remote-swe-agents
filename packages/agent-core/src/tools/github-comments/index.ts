@@ -209,9 +209,7 @@ if (false) {
   const printUsage = () => {
     console.log('Usage:');
     console.log('  npx tsx src/tools/github-comments/index.ts get <owner> <repo> <pullRequestId>');
-    console.log(
-      '  npx tsx src/tools/github-comments/index.ts reply <owner> <repo> <pullRequestId> <commentId> <body>'
-    );
+    console.log('  npx tsx src/tools/github-comments/index.ts reply <owner> <repo> <pullRequestId> <commentId> <body>');
     console.log('  npx tsx src/tools/github-comments/index.ts issue-comment <owner> <repo> <issueNumber> <body>');
     console.log('\nExamples:');
     console.log('  npx tsx src/tools/github-comments/index.ts get aws-samples remote-swe-agents 32');
