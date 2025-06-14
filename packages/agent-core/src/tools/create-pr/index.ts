@@ -5,6 +5,7 @@ import { executeCommand } from '../command-execution';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '../../lib/aws/ddb';
+import { ciTool } from '../ci';
 
 const inputSchema = z.object({
   title: z.string().describe('Title of the pull request'),
@@ -125,7 +126,9 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
     // Store PR record in DynamoDB
     await storePRRecord(workerId, prUrl, branchName);
 
-    return `Pull request created successfully: ${prUrl}`;
+    return `Pull request created successfully: ${prUrl}
+Suggestion: When you successfully created a PR, make sure you report its URL to the user. Also check the CI status by using ${ciTool.name} tool and fix the code until all of the CI steps pass.
+`.trim();
   } catch (error) {
     throw new Error(`Failed to create pull request: ${(error as Error).message}`);
   }

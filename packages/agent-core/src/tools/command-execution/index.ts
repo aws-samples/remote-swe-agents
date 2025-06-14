@@ -150,25 +150,6 @@ IMPORTANT: When your command contains special characters (like backticks, quotes
 1. Use single quotes to prevent variable expansion and most interpretations: 'text with $HOME and \`backticks\`'
 2. Escape special characters with backslash: "text with \\$HOME and \\\`backticks\\\`"
 
-IMPORTANT FOR GITHUB PR/ISSUES: When creating GitHub PRs or issues with markdown formatting:
-1. Use heredoc for proper markdown rendering (especially for multi-line content):
-   gh pr create --title "Title" --body "$(cat <<EOF
-   # Heading
-
-   Description text
-   
-   ## Changes
-   
-   * Item 1
-   * Item 2
-   EOF
-   )"
-2. Ensure proper spacing in markdown:
-   - Always add empty lines between sections
-   - Add an empty line before lists
-   - Properly indent nested content
-3. When escaping quotes within heredocs, use: \\"quoted text\\"
-
 Some example commands:
 * \`ls\`: list files in a directory
 * \`cat\`: read the content of a file
