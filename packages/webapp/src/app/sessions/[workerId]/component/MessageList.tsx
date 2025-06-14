@@ -281,7 +281,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
                   <button
                     onClick={() => copyMessageToClipboard(message.content)}
                     className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-                    title="Copy message"
+                    title={t('copyMessage')}
                   >
                     <Copy className="w-4 h-4" />
                   </button>

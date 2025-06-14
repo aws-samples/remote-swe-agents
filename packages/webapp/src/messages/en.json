@@ -57,6 +57,7 @@
     "hideRawJson": "Hide raw JSON",
     "input": "input",
     "output": "output",
+    "copyMessage": "Copy message",
     "scrollToTop": "Scroll to top",
     "scrollToBottom": "Scroll to bottom",
     "todoList": "Todo List",

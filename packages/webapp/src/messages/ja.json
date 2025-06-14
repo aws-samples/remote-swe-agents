@@ -57,6 +57,7 @@
     "hideRawJson": "JSONを隠す",
     "input": "入力",
     "output": "出力",
+    "copyMessage": "メッセージをコピー",
     "scrollToTop": "一番上までスクロール",
     "scrollToBottom": "一番下までスクロール",
     "todoList": "Todoリスト",
