@@ -6,13 +6,15 @@
 
 ## 主な特徴
 
-* 完全自律型のソフトウェア開発エージェント
-* AWS サーバーレスサービスによる最小限のメンテナンスコスト
-* システムを使用しない間は前払いや固定費用なし
-* MCP 統合（ツールサーバー）
-* プロンプトキャッシュとミドルアウト戦略による効率的なトークン使用
-* お好みの形式（.clinerules、CLAUDE.md など）から知識を読み込み
-* OSS フォークリポジトリでも動作可能！
+* **完全自律型のソフトウェア開発エージェント** - AI駆動の開発ワークフロー自動化
+* **Webベースの管理インターフェース** - セッション管理とリアルタイムモニタリング用のモダンなNext.js webapp
+* **包括的なAPI** - プログラマティック統合とセッション制御のためのRESTful エンドポイント
+* **AWS サーバーレスサービスによる最小限のメンテナンスコスト**
+* **システムを使用しない間は前払いや固定費用なし**
+* **MCP サポート** - MCPサーバーとの統合により
+* **プロンプトキャッシュとミドルアウト戦略による効率的なトークン使用**
+* **お好みの形式から知識を読み込み**（.clinerules、CLAUDE.md など）
+* **OSS フォークリポジトリでも動作可能**
 
 ## 例
 
@@ -29,8 +31,10 @@ Remote SWE エージェントによるセッション例：
 
 ## インストール手順
 
-このプロジェクトは完全にセルフホスト型のため、セットアッププロセスにはSlackアプリの設定など、いくつかの手動操作が必要です。
-以下の手順に慎重に従ってください。問題が発生した場合は、GitHubのissueを通じてサポートを提供します！
+このプロジェクトはニーズに応じて2つのインストールパターンをサポートしています。要件に最も適したパターンを選択してください：
+
+- **パターンA（Webインターフェースのみ）**：webappアクセスのみのクイックセットアップ
+- **パターンB（Web + Slack統合）**：webappとSlackボット機能の両方を含む完全セットアップ
 
 ### 前提条件
 
@@ -40,21 +44,25 @@ Remote SWE エージェントによるセッション例：
 - 適切な権限を持つAWS IAMプロファイル
 - Docker
 - Bedrock Claude Sonnet 3.7モデルが[us-west-2リージョンで有効化](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access)されていること
-- Slackワークスペース
 - GitHubアカウント
+- Slackワークスペース（パターンBのみ）
 
-### 1. リポジトリのクローン
+---
+
+## パターンA：Webインターフェースのみのセットアップ
+
+このパターンは、WebインターフェースとAPIエンドポイントのみを通じてシステムにアクセスを提供します。Slack統合が不要なユーザーに最適です。
+
+### ステップ1：リポジトリのクローン
 
 ```bash
 git clone https://github.com/aws-samples/remote-swe-agents.git
 cd remote-swe-agents
 ```
 
-この手順を完了したら、ステップ2に進んで必要なパラメータを設定し、CDKスタックをデプロイします。
+### ステップ2：SSMパラメータの作成
 
-### 2. CDKのデプロイ
-
-cdk deployを実行する前に、後で実際の値が入力されるプレースホルダーのSSMパラメータを作成する必要があります：
+GitHub統合のセットアップを行う前に、CDKから参照されるプレースホルダーのSSMパラメータを作成します：
 
 ```bash
 aws ssm put-parameter \
@@ -73,7 +81,93 @@ aws ssm put-parameter \
     --type String
 ```
 
-その後、cdk deployを実行できます。上記のパラメータ名は`bin/cdk.ts`で参照されています。
+### ステップ3：GitHub統合のセットアップ
+
+GitHubと連携するには、GitHub統合のセットアップが必要です。GitHub統合には2つの選択肢があります：
+
+**どちらのオプションを選ぶべきか？**
+- **Personal Access Token（オプション3A）**：個人利用や迅速なセットアップに適しています。より単純ですが、単一のユーザーアカウントに紐づけられます。
+- **GitHub App（オプション3B）**：チーム環境や組織での利用に推奨されます。より詳細な権限を提供し、個人アカウントに紐づけられません。
+
+#### オプション3A：Personal Access Token (PAT)
+
+1. [GitHub設定 > 開発者設定 > 個人アクセストークン](https://github.com/settings/tokens)にアクセス
+2. 適切なリポジトリアクセス権を持つ新しいトークン（クラシック）を生成
+   * 必要なスコープ：`repo, workflow, read:org`
+   * 許可するスコープが多いほど、エージェントがさまざまなタスクを実行できるようになります
+3. 生成したトークン文字列でSSMパラメータを更新：
+   ```bash
+   aws ssm put-parameter \
+      --name /remote-swe/github/personal-access-token \
+      --value "your-access-token" \
+      --type String \
+      --overwrite
+   ```
+
+> [!NOTE]
+> システムを複数の開発者と共有したい場合、個人の権限の悪用を防ぐために、自分のアカウントのPATを使用するのではなく、[GitHubのマシンユーザーアカウント](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#user-accounts)を作成することをお勧めします。
+
+#### オプション3B：GitHub App
+
+1. [GitHub設定 > 開発者設定 > GitHub Apps](https://github.com/settings/apps)にアクセス
+2. 新しいGitHub Appを作成
+3. 権限を設定し、秘密鍵を生成
+   - 必要な権限：Actions(RW)、Issues(RW)、Pull requests(RW)、Contents(RW)
+4. 秘密鍵用の[AWS Systems Manager パラメータストア](https://console.aws.amazon.com/systems-manager/parameters)のパラメータを作成
+   - このパラメータはCDKから参照されます（デフォルトのパラメータ名：`/remote-swe/github/app-private-key`）
+   ```bash
+   aws ssm put-parameter \
+      --name /remote-swe/github/app-private-key \
+      --value "$(cat your-private-key.pem)" \
+      --type String
+   ```
+5. 使用したいGitHub組織にアプリをインストール
+   - アプリをインストールした後、URL（`https://github.com/organizations/<YOUR_ORG>/settings/installations/<INSTALLATION_ID>`）からインストールIDを確認できます
+6. 以下の値をメモしておいてください：
+   - アプリID（例：12345678）
+   - インストールID（例：12345678）
+   - AWS Systems Manager パラメータストア内の秘密鍵パラメータ名
+
+> [!NOTE]
+> 現在、GitHub Appを使用する場合、単一の組織（つまり、アプリのインストール）の下のリポジトリのみを使用できます。
+
+### ステップ4：環境変数のセットアップ
+
+デプロイメントには以下の環境変数が必要です：
+
+#### GitHub App統合の場合：
+
+GitHub App統合（上記のオプション3B）を使用する場合、CDKをデプロイする際に以下の2つの環境変数を設定する必要があります。
+
+```sh
+export GITHUB_APP_ID=your-github-app-id
+export GITHUB_INSTALLATION_ID=your-github-installation-id
+```
+
+#### ワーカーインスタンス設定の場合：
+
+ワーカーインスタンスロールにアタッチする追加のAWSマネージドポリシーを設定できます：
+
+```sh
+export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+```
+
+#### Webappユーザー作成の場合：
+
+以下の環境変数を設定することで、デプロイ中に初期webappユーザーを自動作成できます：
+
+```sh
+export INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
+```
+
+この変数が設定されている場合、デプロイ中にCognitoユーザーが作成され、指定されたメールアドレスに一時パスワードが送信されます。このメールと一時パスワードを使用してwebappにログインできます。
+
+この変数を設定しない場合は、後でAWS Cognitoマネジメントコンソールを通じて手動でユーザーを作成できます。[AWS管理コンソールでの新しいユーザーの作成](https://docs.aws.amazon.com/cognito/latest/developerguide/how-to-create-user-accounts.html#creating-a-new-user-using-the-console)を参照してください。
+
+> [!NOTE]
+> ここでは、GitHub Actions変数から設定を注入するために環境変数を使用しています。これが便利でない場合は、[`bin/cdk.ts`](cdk/bin/cdk.ts)内の値を直接ハードコードすることもできます。
+
+### ステップ5：CDKのデプロイ
 
 ```bash
 cd cdk && npm ci
@@ -81,11 +175,19 @@ npx cdk bootstrap
 npx cdk deploy --all
 ```
 
-デプロイには通常約5分かかります。デプロイ後、Slack Boltアプリのエンドポイントが表示されます。次のステップで必要になるため、CDK出力の`SlackBoltEndpointUrl`をメモしておいてください。
+デプロイには通常約10分かかります。
 
-この手順を完了したら、ステップ3に進んでSlackアプリケーションを設定します。
+**以上です！** デプロイ後、CDKスタック出力に表示される`WebappUrl`を通じてシステムにアクセスできます。
 
-### 3. Slackアプリのセットアップ
+## パターンB：Web + Slack統合のセットアップ
+
+このパターンは、パターンAのすべてにSlackボット機能を追加したものです。
+
+### ステップ1-5：まずパターンAのセットアップを完了
+
+上記のパターンAのすべてのステップに従って、基本システムを動作させます。
+
+### ステップ6：Slackアプリのセットアップ
 
 ここでは、Slackインターフェースを通じてエージェントを制御するためのSlackアプリを設定する必要があります。
 
@@ -107,8 +209,7 @@ npx cdk deploy --all
 > [!NOTE]
 > 共有（個人ではなく）Slackワークスペースを使用している場合は、エージェントへのアクセスを制御するために`ADMIN_USER_ID_LIST`環境変数（以下を参照）の設定を検討してください。この制限がないと、ワークスペース内の誰でもエージェントにアクセスでき、潜在的にあなたのGitHubコンテンツにもアクセスできてしまいます。
 
-
-#### SlackシークレットのSSMパラメータ作成
+#### Slack用SSMパラメータの更新
 
 Slackアプリを作成した後、以下のコマンドでAWSアカウントにシークレットを登録します：
 
@@ -128,72 +229,7 @@ aws ssm put-parameter \
 
 `your-slack-bot-token`と`your-slack-signing-secret`を、前のステップで取得した実際の値に置き換えてください。これらのパラメータはCDKから参照されます。
 
-この手順を完了したら、ステップ4に進んでGitHub連携を設定します。認証にはPersonal Access Token（PAT）またはGitHub Appのいずれかを選択する必要があります。
-
-
-### 4. GitHub連携
-
-GitHubと連携するには、GitHub連携のセットアップが必要です。GitHub連携には2つの選択肢があります：
-
-**どちらのオプションを選ぶべきか？**
-- **Personal Access Token（オプション1）**：個人利用や迅速なセットアップに適しています。より単純ですが、単一のユーザーアカウントに紐づけられます。
-- **GitHub App（オプション2）**：チーム環境や組織での利用に推奨されます。より詳細な権限を提供し、個人アカウントに紐づけられません。
-
-#### オプション1：Personal Access Token (PAT)
-
-1. [GitHub設定 > 開発者設定 > 個人アクセストークン](https://github.com/settings/tokens)にアクセス
-2. 適切なリポジトリアクセス権を持つ新しいトークン（クラシック）を生成
-   * 必要なスコープ：`repo, workflow, read:org`
-   * 許可するスコープが多いほど、エージェントがさまざまなタスクを実行できるようになります
-3. 生成したトークン文字列でSSMパラメータを作成
-   ```bash
-   aws ssm put-parameter \
-      --name /remote-swe/github/personal-access-token \
-      --value "your-access-token" \
-      --type String \
-      --overwrite
-   ```
-
-> [!NOTE]
-> システムを複数の開発者と共有したい場合、個人の権限の悪用を防ぐために、自分のアカウントのPATを使用するのではなく、[GitHubのマシンユーザーアカウント](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#user-accounts)を作成することをお勧めします。
-
-#### オプション2：GitHub App
-
-1. [GitHub設定 > 開発者設定 > GitHub Apps](https://github.com/settings/apps)にアクセス
-2. 新しいGitHub Appを作成
-3. 権限を設定し、秘密鍵を生成
-   - 必要な権限：Actions(RW)、Issues(RW)、Pull requests(RW)、Contents(RW)
-4. 秘密鍵用の[AWS Systems Manager パラメータストア](https://console.aws.amazon.com/systems-manager/parameters)のパラメータを作成
-   - このパラメータはCDKから参照されます（デフォルトのパラメータ名：`/remote-swe/github/app-private-key`）
-5. 使用したいGitHub組織にアプリをインストール
-   - アプリをインストールした後、URL（`https://github.com/organizations/<YOUR_ORG>/settings/installations/<INSTALLATION_ID>`）からインストールIDを確認できます
-6. 以下の値をメモしておいてください：
-   - アプリID（例：12345678）
-   - インストールID（例：12345678）
-   - AWS Systems Manager パラメータストア内の秘密鍵パラメータ名
-
-> [!NOTE]
-> 現在、GitHub Appを使用する場合、単一の組織（つまり、アプリのインストール）の下のリポジトリのみを使用できます。
-
-この手順を完了したら、ステップ5に進んで選択したGitHub連携方法に基づいて環境変数を設定します。
-
-### 5. 環境変数のセットアップ
-
-デプロイメントには以下の環境変数が必要です：
-
-#### GitHub App連携の場合：
-
-GitHub App連携（上記のオプション2）を使用する場合、CDKをデプロイする際に以下の2つの環境変数を設定する必要があります。
-
-```sh
-export GITHUB_APP_ID=your-github-app-id
-export GITHUB_INSTALLATION_ID=your-github-installation-id
-```
-
-> [!NOTE]
-> ここでは、GitHub Actions変数から設定を注入するために環境変数を使用しています。これが便利でない場合は、[`bin/cdk.ts`](cdk/bin/cdk.ts)内の値を直接ハードコードすることもできます。
-
-#### （オプション）Slackからのシステムアクセス制限
+### ステップ7：（オプション）Slackからのシステムアクセス制限
 
 Slackワークスペース内のどのメンバーがエージェントにアクセスできるかを制御するには、以下の環境変数でSlackユーザーIDのカンマ区切りリストを提供できます：
 
@@ -208,18 +244,38 @@ export ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
 > [!NOTE]
 > ユーザーにアプリへのアクセス権を付与するには、`approve_user`メッセージとユーザーのメンションをアプリでメンションします。例：`@remote-swe approve_user @Alice @Bob @Carol`
 
-この手順を完了したら、ステップ6に進んで設定でデプロイメントを完了します。
-
-### 6. 設定変数を使用してCDKを再度デプロイ
+### ステップ8：Slack統合でCDKを再デプロイ
 
 上記のセットアップが完了したら、`cdk deploy`を再度実行します。
 
 ```bash
 cd cdk
-npx cdk deploy
+npx cdk deploy --all
 ```
 
-おめでとうございます！セットアップは完了しました。これでSlackからすべての機能にアクセスできます。Slackアプリをメンションするだけで、エージェントにタスクを割り当て始めることができます！
+**完了です！** これでWebインターフェースとSlackボット機能の両方にアクセスできます。
+
+---
+
+## デプロイしたシステムへのアクセス
+
+デプロイが成功した後、以下の方法でRemote SWE Agentsシステムにアクセスできます：
+
+1. **Webインターフェース**：CDKスタック出力の webapp URL にアクセス（出力で`WebappUrl`を探してください）
+   - セッション管理用のモダンなWebダッシュボードにアクセス
+   - エージェントセッションをリアルタイムで作成・監視
+   - コスト分析とシステム使用状況の確認
+   - 画像のアップロードと設定管理
+
+2. **Slackインターフェース**：Slackアプリをメンションするだけで、エージェントにタスクを割り当て開始
+   - Slackワークスペースとの直接統合
+   - エージェントとのスレッドベースの会話
+   - リアルタイムの進捗更新
+
+3. **APIアクセス**：プログラマティック統合用のRESTful APIエンドポイントを使用
+   - セッションの作成と管理
+   - 自動化されたワークフローとCI/CD統合
+   - カスタムアプリケーションの開発
 
 エージェントを効果的に使用するためのヒントについては、以下の「有用なヒント」セクションを参照してください。
 
