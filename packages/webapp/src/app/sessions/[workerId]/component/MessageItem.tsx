@@ -11,10 +11,7 @@ type MessageItemProps = {
   showTimestamp: boolean;
 };
 
-export const MessageItem = ({
-  message,
-  showTimestamp,
-}: MessageItemProps) => {
+export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';

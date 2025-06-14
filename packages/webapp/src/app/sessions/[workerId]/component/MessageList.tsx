@@ -64,10 +64,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div>
           {messageGroups.map((group, index) => (
-            <MessageGroupComponent
-              key={`group-${index}`}
-              group={group}
-            />
+            <MessageGroupComponent key={`group-${index}`} group={group} />
           ))}
 
           {(agentStatus === 'working' || instanceStatus === 'starting') && (

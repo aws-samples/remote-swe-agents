@@ -9,12 +9,7 @@ type ToolUseRendererProps = {
   messageId: string;
 };
 
-export const ToolUseRenderer = ({
-  content,
-  input,
-  output,
-  messageId,
-}: ToolUseRendererProps) => {
+export const ToolUseRenderer = ({ content, input, output, messageId }: ToolUseRendererProps) => {
   const t = useTranslations('sessions');
   const [isExpanded, setIsExpanded] = useState(false);
   const toolName = content;

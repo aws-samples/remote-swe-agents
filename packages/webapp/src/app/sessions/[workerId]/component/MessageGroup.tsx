@@ -13,9 +13,7 @@ type MessageGroupProps = {
   group: MessageGroup;
 };
 
-export const MessageGroupComponent = ({
-  group,
-}: MessageGroupProps) => {
+export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const firstMessage = group.messages[0];
@@ -54,13 +52,7 @@ export const MessageGroupComponent = ({
         {group.messages.map((message, index) => {
           const showTimestamp =
             index !== 0 && !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
-          return (
-            <MessageItem
-              key={message.id}
-              message={message}
-              showTimestamp={showTimestamp}
-            />
-          );
+          return <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} />;
         })}
       </div>
     </div>
