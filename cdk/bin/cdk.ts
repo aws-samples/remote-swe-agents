@@ -56,6 +56,7 @@ const props: MainStackProps = {
       }
     : {}),
   ...(additionalAwsManagedPolicies ? { additionalAwsManagedPolicies } : {}),
+  initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {

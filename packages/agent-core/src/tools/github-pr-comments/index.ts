@@ -97,7 +97,7 @@ const formatCommentsAsThreads = (
 
   const formattedText = rootComments.map((rootComment) => formatThread(rootComment));
 
-  return formattedText.join('\n' + '─'.repeat(80) + '\n');
+  return formattedText.join('\n---\n');
 };
 
 const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>) => {

@@ -498,6 +498,81 @@ exports[`Snapshot test: MainStack 1`] = `
       },
       "Type": "AWS::Cognito::ManagedLoginBranding",
     },
+    "AuthCreateUserB080A606": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "AuthCreateUserCustomResourcePolicy28879C6A",
+      ],
+      "Properties": {
+        "Create": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-cognito-identity-provider","action":"adminCreateUser","parameters":{"UserPoolId":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "","Username":"user@example.com"},"physicalResourceId":{"id":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "user@example.com"},"ignoreErrorCodesMatching":"UsernameExistsException"}",
+            ],
+          ],
+        },
+        "InstallLatestAwsSdk": false,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "Arn",
+          ],
+        },
+        "Update": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-cognito-identity-provider","action":"adminCreateUser","parameters":{"UserPoolId":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "","Username":"user@example.com"},"physicalResourceId":{"id":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "user@example.com"},"ignoreErrorCodesMatching":"UsernameExistsException"}",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::AWS",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "AuthCreateUserCustomResourcePolicy28879C6A": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "cognito-idp:AdminCreateUser",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "AuthUserPool8115E87F",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AuthCreateUserCustomResourcePolicy28879C6A",
+        "Roles": [
+          {
+            "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "AuthDomainPrefixE1742B23": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -642,6 +717,18 @@ exports[`Snapshot test: MainStack 1`] = `
         },
         "AdminCreateUserConfig": {
           "AllowAdminCreateUserOnly": true,
+          "InviteMessageTemplate": {
+            "EmailMessage": "Hi {username}<br>
+<br>
+Thank you for registering to Remote SWE Agents.<br>
+Here is your login information:<br>
+Username: {username}<br>
+Temporary password: {####}<br><br>
+You can set a new password after logging in.<br><br>
+Best regards,<br>
+Remote SWE Agents Team",
+            "EmailSubject": "Account Invitation - Remote SWE Agents",
+          },
         },
         "AutoVerifiedAttributes": [
           "email",

@@ -40,6 +40,7 @@ export interface MainStackProps extends cdk.StackProps {
   };
   readonly workerAmiIdParameterName: string;
   readonly additionalAwsManagedPolicies?: string[];
+  readonly initialWebappUserEmail?: string;
 }
 
 export class MainStack extends cdk.Stack {
@@ -140,6 +141,7 @@ export class MainStack extends cdk.Stack {
     const auth = new Auth(this, 'Auth', {
       hostedZone,
       sharedCertificate: props.sharedCertificate,
+      initialUserEmail: props.initialWebappUserEmail,
     });
 
     worker.bus.addUserPoolProvider(auth.userPool);

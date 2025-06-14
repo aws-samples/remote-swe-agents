@@ -11,6 +11,7 @@ import { join } from 'path';
 export interface AuthProps {
   readonly hostedZone?: IHostedZone;
   readonly sharedCertificate?: ICertificate;
+  readonly initialUserEmail?: string;
 }
 
 export class Auth extends Construct {
@@ -62,6 +63,19 @@ export class Auth extends Construct {
         username: false,
         email: true,
       },
+      userInvitation: {
+        emailSubject: 'Account Invitation - Remote SWE Agents',
+        emailBody: `Hi {username}<br>
+<br>
+Thank you for registering to Remote SWE Agents.<br>
+Here is your login information:<br>
+Username: {username}<br>
+Temporary password: {####}<br><br>
+You can set a new password after logging in.<br><br>
+Best regards,<br>
+Remote SWE Agents Team
+`.trim(),
+      },
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
@@ -112,6 +126,24 @@ export class Auth extends Construct {
       clientId: client.userPoolClientId,
       useCognitoProvidedValues: true,
     });
+
+    if (props.initialUserEmail) {
+      new AwsCustomResource(this, 'CreateUser', {
+        onUpdate: {
+          service: '@aws-sdk/client-cognito-identity-provider',
+          action: 'adminCreateUser',
+          parameters: {
+            UserPoolId: this.userPool.userPoolId,
+            Username: props.initialUserEmail,
+          },
+          physicalResourceId: PhysicalResourceId.of(this.userPool.userPoolId + props.initialUserEmail),
+          ignoreErrorCodesMatching: 'UsernameExistsException',
+        },
+        policy: AwsCustomResourcePolicy.fromSdkCalls({
+          resources: [this.userPool.userPoolArn],
+        }),
+      });
+    }
 
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
     new CfnOutput(this, 'UserPoolClientId', { value: client.userPoolClientId });

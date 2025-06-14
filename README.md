@@ -156,6 +156,18 @@ You can configure additional AWS managed policies to be attached to the worker i
 export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
 ```
 
+#### For Webapp User Creation:
+
+You can automatically create an initial webapp user during deployment by setting the following environment variable:
+
+```sh
+export INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
+```
+
+When this variable is set, a Cognito user will be created during deployment, and a temporary password will be sent to the specified email address. You can then use this email and temporary password to log into the webapp.
+
+If you don't set this variable, you can manually create users later through the AWS Cognito Management Console. See [Creating a new user in the AWS Management Console](https://docs.aws.amazon.com/cognito/latest/developerguide/how-to-create-user-accounts.html#creating-a-new-user-using-the-console).
+
 > [!NOTE]
 > We use environment variables here to inject configuration from GitHub Actions variables. If this isn't convenient for you, you can simply hard-code the values in [`bin/cdk.ts`](cdk/bin/cdk.ts).
 

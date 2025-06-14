@@ -42,6 +42,7 @@ test('Snapshot test', () => {
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
     additionalAwsManagedPolicies: ['AmazonS3ReadOnlyAccess', 'AmazonDynamoDBReadOnlyAccess'],
+    initialWebappUserEmail: 'user@example.com',
   });
 
   // Test both stacks
