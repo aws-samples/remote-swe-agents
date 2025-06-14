@@ -22,6 +22,7 @@ import { useTheme } from 'next-themes';
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import { toast } from 'sonner';
 
 export type MessageView = {
   id: string;
@@ -249,7 +250,15 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
 
   const MessageItem = ({ message, showTimestamp = true }: { message: MessageView; showTimestamp?: boolean }) => {
     const copyMessageToClipboard = (content: string) => {
-      navigator.clipboard.writeText(content).catch((err) => console.error('Could not copy text: ', err));
+      navigator.clipboard
+        .writeText(content)
+        .then(() => {
+          toast.success(t('copySuccess'));
+        })
+        .catch((err) => {
+          console.error('Could not copy text: ', err);
+          toast.error(t('copyFailed'));
+        });
     };
 
     return (
@@ -280,7 +289,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
                 {message.type === 'message' && message.role === 'assistant' && (
                   <button
                     onClick={() => copyMessageToClipboard(message.content)}
-                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 hidden md:block"
                     title={t('copyMessage')}
                   >
                     <Copy className="w-4 h-4" />
