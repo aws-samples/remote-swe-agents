@@ -10,13 +10,15 @@ This is an example implementation of a fully autonomous software development AI 
 
 ## Key Features
 
-* Fully autonomous software development agent
-* Powered by AWS serverless services with minimal maintenance costs
-* No upfront or fixed costs while you don't use the system
-* MCP integration (tool servers)
-* Efficient token usage with prompt cache and middle-out strategy
-* Reads knowledge from your preferred formats (.clinerules, CLAUDE.md, etc.)
-* Can work on OSS forked repositories!
+* **Fully autonomous software development agent** - AI-powered development workflow automation
+* **Web-based management interface** - Modern Next.js webapp for session management and real-time monitoring
+* **Comprehensive API** - RESTful endpoints for programmatic integration and session control
+* **Powered by AWS serverless services** with minimal maintenance costs
+* **No upfront or fixed costs** while you don't use the system
+* **MCP integration** (tool servers)
+* **Efficient token usage** with prompt cache and middle-out strategy
+* **Reads knowledge** from your preferred formats (.clinerules, CLAUDE.md, etc.)
+* **Can work on OSS forked repositories**
 
 ## Examples 
 
@@ -33,8 +35,10 @@ You can view all the public pull requests created by the agent [here](https://gi
 
 ## Installation Steps
 
-Since this project is fully self-hosted, the setup process requires several manual operations such as configuring a Slack app.
-Please carefully follow all the steps below. If you encounter any issues, we're ready to help you via GitHub issues!
+This project supports two installation patterns depending on your needs. Choose the pattern that best fits your requirements:
+
+- **Pattern A (Web Interface Only)**: Quick setup for webapp access only
+- **Pattern B (Web + Slack Integration)**: Full setup with both webapp and Slack bot functionality
 
 ### Prerequisites
 
@@ -44,21 +48,25 @@ Please carefully follow all the steps below. If you encounter any issues, we're 
 - AWS IAM profile with appropriate permissions
 - Docker
 - Bedrock Claude Sonnet 3.7 model is [enabled on](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access) us-west-2 regions
-- Slack Workspace
 - GitHub Account
+- Slack Workspace (only for Pattern B)
 
-### 1. Clone the Repository
+---
+
+## Pattern A: Web Interface Only Setup
+
+This pattern provides access to the system through the web interface and API endpoints only. Perfect for users who don't need Slack integration.
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/aws-samples/remote-swe-agents.git
 cd remote-swe-agents
 ```
 
-After completing this step, proceed to Step 2 to set up the required parameters and deploy the CDK stack.
+### Step 2: Create SSM Parameters
 
-### 2. Run CDK Deploy
-
-Before running cdk deploy, you need to create placeholder SSM parameters that will later be populated with actual values:
+Before setting up GitHub integration, create placeholder SSM parameters that will be referenced by CDK:
 
 ```bash
 aws ssm put-parameter \
@@ -77,7 +85,81 @@ aws ssm put-parameter \
     --type String
 ```
 
-Then you can run cdk deploy. Note that the above parameter names are referenced in `bin/cdk.ts`.
+### Step 3: GitHub Integration Setup
+
+To interact with GitHub, you need to setup GitHub integration. You have two options for GitHub integration:
+
+**Which option should you choose?**
+- **Personal Access Token (Option 3A)**: Choose this for personal use or quick setup. It's simpler but tied to a single user account.
+- **GitHub App (Option 3B)**: Recommended for team environments or organizational use. Provides more granular permissions and isn't tied to a personal account.
+
+#### Option 3A: Personal Access Token (PAT)
+
+1. Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+2. Generate a new token (classic) with appropriate repository access
+   * Required scopes: `repo, workflow, read:org`
+   * The more scopes you permit, the more various tasks agents can perform
+3. Update the SSM Parameter with the generated token string:
+   ```bash
+   aws ssm put-parameter \
+      --name /remote-swe/github/personal-access-token \
+      --value "your-access-token" \
+      --type String \
+      --overwrite
+   ```
+
+> [!NOTE]
+> If you want to share the system with multiple developers, it is recommended to create a [machine user account for GitHub](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#user-accounts) instead of using your own account's PAT, to prevent misuse of personal privileges.
+
+#### Option 3B: GitHub App
+
+1. Go to [GitHub Settings > Developer settings > GitHub Apps](https://github.com/settings/apps)
+2. Create a new GitHub App
+3. Configure permissions and generate a private key
+   - the required permissions: Actions(RW), Issues(RW), Pull requests(RW), Contents(RW)
+4. Create a parameter of [AWS Systems Manager Parameter Store](https://console.aws.amazon.com/systems-manager/parameters) for the private key.
+   - This parameter will be referenced from CDK (the default parameter name: `/remote-swe/github/app-private-key`).
+   ```bash
+   aws ssm put-parameter \
+      --name /remote-swe/github/app-private-key \
+      --value "$(cat your-private-key.pem)" \
+      --type String
+   ```
+5. Install the app to a GitHub organization you want to use.
+   - After installing the app, you can find the installation id from the URL (`https://github.com/organizations/<YOUR_ORG>/settings/installations/<INSTALLATION_ID>`)
+6. Please take a note of the below values:
+   - App ID (e.g. 12345678)
+   - Installation ID (e.g. 12345678)
+   - Private key parameter name in AWS Systems Manager Parameter Store
+
+> [!NOTE]
+> Currently when using with GitHub App, you can only use repositories under a single organization (i.e. app installation).
+
+### Step 4: Environment Variables Setup
+
+The following environment variables are required for deployment:
+
+#### For GitHub App Integration:
+
+When you use GitHub App integration (option 3B above), you must set the below two environment variables when deploying CDK.
+
+```sh
+export GITHUB_APP_ID=your-github-app-id
+export GITHUB_INSTALLATION_ID=your-github-installation-id
+```
+
+#### For Worker Instance Configuration:
+
+You can configure additional AWS managed policies to be attached to the worker instance role:
+
+```sh
+export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+```
+
+> [!NOTE]
+> We use environment variables here to inject configuration from GitHub Actions variables. If this isn't convenient for you, you can simply hard-code the values in [`bin/cdk.ts`](cdk/bin/cdk.ts).
+
+### Step 5: Deploy CDK
 
 ```bash
 cd cdk && npm ci
@@ -85,11 +167,21 @@ npx cdk bootstrap
 npx cdk deploy --all
 ```
 
-Deployment usually takes about 5 minutes. After the deployment, you should see the endpoint of your Slack Bolt app. Make note of the `SlackBoltEndpointUrl` from the CDK output as you'll need it in the next step.
+Deployment usually takes about 10 minutes. 
 
-After completing this step, proceed to Step 3 to set up your Slack application.
+**That's it!** After deployment, you can access your system via the `WebappUrl` shown in the CDK stack output.
 
-### 3. Slack App Setup
+---
+
+## Pattern B: Web + Slack Integration Setup
+
+This pattern includes everything from Pattern A plus Slack bot functionality.
+
+### Step 1-5: Complete Pattern A Setup First
+
+Follow all steps from Pattern A above to get the basic system running.
+
+### Step 6: Slack App Setup
 
 Now, you need to set up a Slack App to control agents through the Slack interface.
 
@@ -111,8 +203,7 @@ Please also refer to this document for more details: [Create and configure apps 
 > [!NOTE]
 > If you're using a shared (rather than personal) Slack workspace, consider setting the `ADMIN_USER_ID_LIST` environment variable (see below) to control agent access. Without this restriction, anyone in the workspace can access the agents and potentially your GitHub content.
 
-
-#### Create SSM Parameters for Slack Secrets
+#### Update SSM Parameters for Slack
 
 After creating a Slack app, register the secrets in your AWS account by the following command:
 
@@ -132,80 +223,7 @@ aws ssm put-parameter \
 
 Replace `your-slack-bot-token` and `your-slack-signing-secret` with the actual values you obtained in the previous step. The parameters will be referenced from CDK.
 
-After completing this step, proceed to Step 4 to set up GitHub integration. You will need to choose between using a Personal Access Token (PAT) or GitHub App for authentication.
-
-
-### 4. GitHub Integration
-
-To interact with GitHub, you need to setup GitHub integration. You have two options for GitHub integration:
-
-**Which option should you choose?**
-- **Personal Access Token (Option 1)**: Choose this for personal use or quick setup. It's simpler but tied to a single user account.
-- **GitHub App (Option 2)**: Recommended for team environments or organizational use. Provides more granular permissions and isn't tied to a personal account.
-
-#### Option 1: Personal Access Token (PAT)
-
-1. Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
-2. Generate a new token (classic) with appropriate repository access
-   * Required scopes: `repo, workflow, read:org`
-   * The more scopes you permit, the more various tasks agents can perform
-3. Create an SSM Parameter with the generated token string
-   ```bash
-   aws ssm put-parameter \
-      --name /remote-swe/github/personal-access-token \
-      --value "your-access-token" \
-      --type String \
-      --overwrite
-   ```
-
-> [!NOTE]
-> If you want to share the system with multiple developers, it is recommended to create a [machine user account for GitHub](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#user-accounts) instead of using your own account's PAT, to prevent misuse of personal privileges.
-
-#### Option 2: GitHub App
-
-1. Go to [GitHub Settings > Developer settings > GitHub Apps](https://github.com/settings/apps)
-2. Create a new GitHub App
-3. Configure permissions and generate a private key
-   - the required permissions: Actions(RW), Issues(RW), Pull requests(RW), Contents(RW)
-4. Create a parameter of [AWS Systems Manager Parameter Store](https://console.aws.amazon.com/systems-manager/parameters) for the private key.
-   - This parameter will be referenced from CDK (the default parameter name: `/remote-swe/github/app-private-key`).
-5. Install the app to a GitHub organization you want to use.
-   - After installing the app, you can find the installation id from the URL (`https://github.com/organizations/<YOUR_ORG>/settings/installations/<INSTALLATION_ID>`)
-6. Please take a note of the below values:
-   - App ID (e.g. 12345678)
-   - Installation ID (e.g. 12345678)
-   - Private key parameter name in AWS Systems Manager Parameter Store
-
-> [!NOTE]
-> Currently when using with GitHub App, you can only use repositories under a single organization (i.e. app installation).
-
-After completing this step, proceed to Step 5 to set up environment variables based on your chosen GitHub integration method.
-
-### 5. Environment Variables Setup
-
-The following environment variables are required for deployment:
-
-#### For GitHub App Integration:
-
-When you use GitHub App integration (option 2 above), you must set the below two environment variables when deploying CDK.
-
-```sh
-export GITHUB_APP_ID=your-github-app-id
-export GITHUB_INSTALLATION_ID=your-github-installation-id
-```
-
-#### For Worker Instance Configuration:
-
-You can configure additional AWS managed policies to be attached to the worker instance role:
-
-```sh
-export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
-```
-
-> [!NOTE]
-> We use environment variables here to inject configuration from GitHub Actions variables. If this isn't convenient for you, you can simply hard-code the values in [`bin/cdk.ts`](cdk/bin/cdk.ts).
-
-#### (optional) Restrict access to the system from the Slack
+### Step 7: (Optional) Restrict Access to the System from Slack
 
 To control which members in the Slack workspace can access the agents, you can provide a comma-separated list of Slack User IDs in the following environment variable:
 
@@ -220,9 +238,7 @@ All users except those with specified user IDs will receive an Unauthorized erro
 > [!NOTE]
 > To grant a user access to the app, mention the app with an `approve_user` message followed by mentions of the users, e.g., `@remote-swe approve_user @Alice @Bob @Carol`
 
-After completing this step, proceed to Step 6 to finalize the deployment with your configuration.
-
-### 6. Deploy CDK again with configuration variables
+### Step 8: Re-deploy CDK with Slack Integration
 
 After the above setup is complete, run `cdk deploy` again.
 
@@ -231,7 +247,29 @@ cd cdk
 npx cdk deploy
 ```
 
-Congratulations! Setup is now complete. You can now access all features from Slack. Simply mention the Slack app and start assigning tasks to the agents!
+**Done!** You now have access to both web interface and Slack bot functionality.
+
+---
+
+## Accessing Your Deployed System
+
+After successful deployment, you can access the Remote SWE Agents system through:
+
+1. **Web Interface**: Visit the webapp URL from your CDK Stack outputs (look for `WebappUrl` in the deployment output)
+   - Access the modern web dashboard for session management
+   - Create and monitor agent sessions in real-time
+   - View cost analytics and system usage
+   - Upload images and manage settings
+
+2. **Slack Interface**: Simply mention the Slack app and start assigning tasks to the agents
+   - Direct integration with your Slack workspace
+   - Thread-based conversations with agents
+   - Real-time progress updates
+
+3. **API Access**: Use the RESTful API endpoints for programmatic integration
+   - Session creation and management
+   - Automated workflows and CI/CD integration
+   - Custom application development
 
 For tips on how to effectively use the agents, refer to the "Useful Tips" section below.
 
