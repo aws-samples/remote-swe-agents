@@ -21,6 +21,7 @@ import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
 import {
+  addIssueCommentTool,
   ciTool,
   cloneRepositoryTool,
   commandExecutionTool,
@@ -207,6 +208,7 @@ Users will primarily request software engineering assistance including bug fixes
     sendImageTool,
     getPRCommentsTool,
     replyPRCommentTool,
+    addIssueCommentTool,
     readImageTool,
     todoInitTool,
     todoUpdateTool,
