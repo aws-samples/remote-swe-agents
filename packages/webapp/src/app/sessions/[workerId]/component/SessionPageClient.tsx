@@ -304,9 +304,7 @@ export default function SessionPageClient({
           <button
             onClick={scrollToBottom}
             className={`p-2 rounded-full shadow-md focus:outline-none transition-colors ${
-              isBottom
-                ? 'bg-gray-400 text-gray-200'
-                : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+              isBottom ? 'bg-gray-400 text-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
             }`}
             title={t('scrollToBottom')}
             aria-label={t('scrollToBottom')}

@@ -24,6 +24,7 @@ import {
   addIssueCommentTool,
   ciTool,
   cloneRepositoryTool,
+  createPRTool,
   commandExecutionTool,
   DefaultWorkingDirectory,
   fileEditTool,
@@ -201,6 +202,7 @@ Users will primarily request software engineering assistance including bug fixes
   const tools = [
     ciTool,
     cloneRepositoryTool,
+    createPRTool,
     commandExecutionTool,
     reportProgressTool,
     // thinkTool,

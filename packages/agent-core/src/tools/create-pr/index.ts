@@ -110,6 +110,10 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
     finalDescription = addIssueReference(description, issueId);
   }
 
+  // Embed workerId as HTML comment (invisible to users)
+  // Regex to search the PR id: /<!-- WORKER_ID:([^-]+) -->/
+  finalDescription = `${finalDescription}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
+
   // Create markdown file in /tmp to avoid escape issues
   const tempFile = join('/tmp', `pr-description-${Date.now()}.md`);
   writeFileSync(tempFile, finalDescription);
@@ -135,7 +139,10 @@ export const createPRTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   schema: inputSchema,
   toolSpec: async () => ({
     name,
-    description: `Create a new pull request using GitHub CLI. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When an issue ID is specified, it automatically adds closing references if not present.`,
+    description:
+      `Create a new pull request of your branch to the upstream. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When your PR is linked to an issue, always provide the issue id as well. 
+IMPORTANT: Please make sure to push the current branch before using this tool.
+    `.trim(),
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
     },
