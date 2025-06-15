@@ -205,9 +205,10 @@
       "sendMessageDesc": "Send a follow-up message to an existing session:",
       "sendMessageNote": "Replace :sessionId with the workerId returned when creating the session.",
       "sendMessageReturns": "Returns a success status:",
-      "examples": "Example cURL requests",
-      "exampleCreateSession": "Create a new session:",
-      "exampleSendMessage": "Send follow-up message:"
+      "getSession": "Get session details",
+      "getSessionDesc": "Retrieve detailed information about a session including status, cost, and messages:",
+      "getSessionReturns": "Returns session details:",
+      "exampleCurl": "cURL command example:"
     }
   }
 }

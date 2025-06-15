@@ -204,9 +204,10 @@
       "sendMessageDesc": "既存のセッションにフォローアップメッセージを送信します：",
       "sendMessageNote": ":sessionIdはセッション作成時に返されたworkerIdに置き換えてください。",
       "sendMessageReturns": "成功ステータスが返されます：",
-      "examples": "cURLリクエスト例",
-      "exampleCreateSession": "新しいセッションを作成：",
-      "exampleSendMessage": "フォローアップメッセージを送信："
+      "getSession": "セッション詳細を取得",
+      "getSessionDesc": "セッションの詳細情報（ステータス、コスト、メッセージ）を取得します：",
+      "getSessionReturns": "セッション詳細が返されます：",
+      "exampleCurl": "cURLコマンドの例："
     }
   }
 }

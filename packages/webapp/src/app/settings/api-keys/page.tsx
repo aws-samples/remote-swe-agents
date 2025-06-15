@@ -54,6 +54,14 @@ export default async function ApiKeysPage() {
   "workerId": "api-1234567890"
 }`}</code>
                     </pre>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleCurl')}</p>
+                    <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
+                      <code>{`curl -X POST \\
+  ${AppOrigin}/api/sessions \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-KEY: YOUR_API_KEY" \\
+  -d '{"message": "Create a React component for a user profile page"}'`}</code>
+                    </pre>
                   </div>
 
                   <div>
@@ -73,26 +81,41 @@ export default async function ApiKeysPage() {
   "success": true
 }`}</code>
                     </pre>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">{documentationT('examples')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('exampleCreateSession')}</p>
-                    <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
-                      <code>{`curl -X POST \\
-  ${AppOrigin}/api/sessions \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-KEY: YOUR_API_KEY" \\
-  -d '{"message": "Create a React component for a user profile page"}'`}</code>
-                    </pre>
-
-                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleSendMessage')}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleCurl')}</p>
                     <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
                       <code>{`curl -X POST \\
   ${AppOrigin}/api/sessions/api-1234567890 \\
   -H "Content-Type: application/json" \\
   -H "X-API-KEY: YOUR_API_KEY" \\
   -d '{"message": "Add dark mode support to the component"}'`}</code>
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">{documentationT('getSession')}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{documentationT('getSessionDesc')}</p>
+                    <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
+                      <code>{`GET /api/sessions/:sessionId`}</code>
+                    </pre>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">{documentationT('getSessionReturns')}</p>
+                    <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
+                      <code>{`{
+  "agentStatus": "working" | "pending" | "completed",
+  "instanceStatus": "starting" | "running" | "stopped" | "terminated",
+  "sessionCost": 0.25,
+  "messages": [
+    {
+      "role": "user" | "assistant",
+      "content": "message content"
+    }
+  ]
+}`}</code>
+                    </pre>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4 mb-2">{documentationT('exampleCurl')}</p>
+                    <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-x-auto">
+                      <code>{`curl -X GET \\
+  ${AppOrigin}/api/sessions/api-1234567890 \\
+  -H "X-API-KEY: YOUR_API_KEY"`}</code>
                     </pre>
                   </div>
                 </div>
