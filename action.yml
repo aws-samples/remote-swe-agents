@@ -7,7 +7,7 @@ branding:
 inputs:
   trigger_phrase:
     description: 'The phrase that triggers the action (e.g., @remote-swe)'
-    required: true
+    required: false
     default: '@remote-swe'
   assignee_trigger:
     description: 'The assignee username that triggers the action (e.g., @remote-swe-user)'
