@@ -62,7 +62,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
       handleSubmitWithAction();
     }
   };
-  
+
   const handleFocus = () => {
     setTimeout(() => {
       if (sendButtonRef.current) {
@@ -79,7 +79,7 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   });
 
   const isUploading = uploadingImages.some((img) => !img.key);
-  
+
   // モバイル用のスクロール位置調整: レンダリングされたときにビューポートをチェック
   useEffect(() => {
     const checkViewportAndAdjust = () => {
@@ -101,20 +101,20 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
             },
             { threshold: 0.5 }
           );
-          
+
           observer.observe(textareaRef.current);
-          
+
           return () => {
             if (textareaRef.current) observer.unobserve(textareaRef.current);
           };
         }
       }
     };
-    
+
     // 初回レンダリング時とリサイズ時に実行
     checkViewportAndAdjust();
     window.addEventListener('resize', checkViewportAndAdjust);
-    
+
     return () => {
       window.removeEventListener('resize', checkViewportAndAdjust);
     };
@@ -145,10 +145,10 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
+                    <Button
                       ref={sendButtonRef}
-                      type="submit" 
-                      disabled={!message.trim() || isExecuting || isUploading} 
+                      type="submit"
+                      disabled={!message.trim() || isExecuting || isUploading}
                       size="icon"
                     >
                       {isExecuting ? (
