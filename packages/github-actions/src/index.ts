@@ -49,7 +49,7 @@ function shouldTriggerForAssignee(assignees: string[], inputs: ActionInputs): bo
   return assignees.some((assignee) => assignee === targetAssignee);
 }
 
-async function startRemoteSweSession(message: string, context: any, inputs: ActionInputs): Promise<void> {
+async function startRemoteSweSession(message: string, context: any, inputs: ActionInputs) {
   const baseUrl = inputs.apiBaseUrl.endsWith('/') ? inputs.apiBaseUrl.slice(0, -1) : inputs.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions`;
 
@@ -79,6 +79,8 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
 
     const responseData = await response.json();
     core.info(`Remote SWE session started successfully: ${JSON.stringify(responseData)}`);
+    const sessionId = responseData.sessionId as string;
+    return { sessionId, sessionUrl: `${baseUrl}/sessions/${sessionId}` };
   } catch (error) {
     core.error(`Failed to start remote SWE session: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
