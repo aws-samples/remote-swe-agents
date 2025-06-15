@@ -98,9 +98,12 @@ export default async function SessionPage({ params }: SessionPageProps) {
       }
       case 'userMessage': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
-        const extracted = text
-          .slice(text.indexOf('<user_message>') + '<user_message>'.length, text.indexOf('</user_message>'))
-          .trim();
+        const extracted =
+          text.includes('<user_message>') && text.includes('</user_message>')
+            ? text
+                .slice(text.indexOf('<user_message>') + '<user_message>'.length, text.indexOf('</user_message>'))
+                .trim()
+            : text.trim();
 
         messages.push({
           id: `${item.SK}-${i}`,

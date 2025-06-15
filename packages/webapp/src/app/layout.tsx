@@ -17,6 +17,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang={locale} suppressHydrationWarning>
       <head>
         <title>{title}</title>
+        <meta name="robots" content="noindex, nofollow" />
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
