@@ -33,6 +33,7 @@ runs:
         # --error-on-fail is enabled by default on CI, which is undesired.
         # Disable the behavior by passing CI=false
         CI=false npm install
+        npm run build
       working-directory: ${{ github.action_path }}
     - name: Run action
       shell: bash
