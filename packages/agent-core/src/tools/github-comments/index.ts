@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { Octokit } from '@octokit/rest';
 import { authorizeGitHubCli } from '../command-execution/github';
+import { WorkerId } from '../../env';
 
 const getPRCommentsSchema = z.object({
   owner: z.string().describe('GitHub repository owner'),
@@ -34,7 +35,7 @@ const getOctokitClient = async () => {
 
 // Utility function to append workerId metadata to comment body
 const appendWorkerIdMetadata = (body: string): string => {
-  const workerId = process.env.WORKER_ID!;
+  const workerId = WorkerId;
   return `${body}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
 };
 
