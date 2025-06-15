@@ -5,12 +5,11 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "allowJs": true,
     "strict": true,
+    "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "outDir": "./dist",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],

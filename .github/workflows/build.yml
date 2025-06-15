@@ -88,7 +88,6 @@ jobs:
           npm run build
         working-directory: ./packages/webapp
         name: build
-
   Build-and-Test-AgentCore:
     runs-on: ubuntu-latest
     steps:
@@ -108,7 +107,23 @@ jobs:
       - run: |
           npm run build
         working-directory: ./packages/agent-core
-        name: Run next build
+        name: Run build
+  Build-and-Test-GitHubActions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - run: |
+          npm ci
+          npm run format:check -w packages/github-actions
+        name: Run static analyses
+      - run: |
+          npm run build
+        working-directory: ./packages/github-actions
+        name: Run build
   Build-and-Test-Dockerfiles:
     runs-on: ubuntu-latest
     steps:
