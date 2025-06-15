@@ -118,6 +118,9 @@ jobs:
           node-version: '22.x'
       - run: |
           npm ci
+          npm run build -w packages/agent-core
+        name: Install dependencies
+      - run: |
           npm run format:check -w packages/github-actions
         name: Run static analyses
       - run: |
