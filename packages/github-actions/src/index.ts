@@ -87,9 +87,13 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
   }
 }
 
-async function sendMessageToSession(sessionId: string, message: string, inputs: ActionInputs) {
+async function sendMessageToSession(sessionId: string, message: string, context: any, inputs: ActionInputs) {
   const baseUrl = inputs.apiBaseUrl.endsWith('/') ? inputs.apiBaseUrl.slice(0, -1) : inputs.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions/${sessionId}`;
+
+  if (context) {
+    message += `\n\n Here is the additional context:\n${JSON.stringify(context, null, 1)}`;
+  }
 
   const payload = {
     message,
@@ -130,12 +134,50 @@ async function getIssueOrPRComments(issueNumber: number): Promise<any[]> {
       owner,
       repo,
       issue_number: issueNumber,
+      sort: 'created',
+      direction: 'desc',
     });
 
     return response.data;
   } catch (error) {
     core.error(`Failed to get comments: ${error instanceof Error ? error.message : String(error)}`);
     return [];
+  }
+}
+
+async function getIssueOrPRDescription(issueNumber: number): Promise<string | null> {
+  try {
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+    const { owner, repo } = github.context.repo;
+
+    const response = await octokit.rest.issues.get({
+      owner,
+      repo,
+      issue_number: issueNumber,
+    });
+
+    return response.data.body || null;
+  } catch (error) {
+    core.error(`Failed to get issue/PR description: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+async function addEyesReactionToComment(commentId: number) {
+  try {
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+    const { owner, repo } = github.context.repo;
+    
+    await octokit.rest.reactions.createForIssueComment({
+      owner,
+      repo,
+      comment_id: commentId,
+      content: 'eyes',
+    });
+    
+    core.info(`Added eyes reaction to comment ${commentId}`);
+  } catch (error) {
+    core.error(`Failed to add eyes reaction: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -246,16 +288,24 @@ async function run(): Promise<void> {
         return;
       }
 
-      // Get all comments to check for existing workerId
+      // Get all comments and PR/issue description to check for existing workerId
       const allComments = await getIssueOrPRComments(issueNumber);
+      const description = await getIssueOrPRDescription(issueNumber);
       let existingWorkerId: string | null = null;
 
-      for (const existingComment of allComments) {
-        const workerId = extractWorkerIdFromComment(existingComment.body);
-        if (workerId) {
-          existingWorkerId = workerId;
-          break;
+      if (!existingWorkerId) {
+        for (const existingComment of allComments) {
+          const workerId = extractWorkerIdFromComment(existingComment.body);
+          if (workerId) {
+            existingWorkerId = workerId;
+            break;
+          }
         }
+      }
+
+      // If not found in comments, check description
+      if (!existingWorkerId && description) {
+        existingWorkerId = extractWorkerIdFromComment(description);
       }
 
       message = commentBody.replaceAll(inputs.triggerPhrase, '');
@@ -268,7 +318,8 @@ async function run(): Promise<void> {
       // If existing workerId found, send message to existing session instead of creating new one
       if (existingWorkerId) {
         core.info(`Found existing workerId: ${existingWorkerId}, sending message to existing session`);
-        await sendMessageToSession(existingWorkerId, message, inputs);
+        await addEyesReactionToComment(comment.id);
+        await sendMessageToSession(existingWorkerId, message, context, inputs);
         return;
       }
     } else if (eventName === 'issues' && payload.action === 'assigned') {
