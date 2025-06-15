@@ -91,9 +91,9 @@ async function postSessionCommentToPrOrIssue(sessionUrl: string, eventName: stri
   try {
     const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
     const { owner, repo } = github.context.repo;
-    
+
     const commentBody = `🤖 Remote SWE session has been started!\n\n**Session URL:** ${sessionUrl}\n\nYou can monitor the progress and interact with the session using the link above.`;
-    
+
     if (eventName === 'issue_comment' && payload.issue) {
       // Comment on issue
       await octokit.rest.issues.createComment({
