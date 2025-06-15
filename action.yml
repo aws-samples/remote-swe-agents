@@ -26,19 +26,12 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '22'
-    - name: Build common module
-      shell: bash
-      run: |
-        cd packages/agent-core
-        # --error-on-fail is enabled by default on CI, which is undesired.
-        # Disable the behavior by passing CI=false
-        CI=false npm install
-        npm run build
-      working-directory: ${{ github.action_path }}
     - name: Install dependencies
       shell: bash
       run: |
         cd packages/github-actions
+        # --error-on-fail is enabled by default on CI, which is undesired.
+        # Disable the behavior by passing CI=false
         CI=false npm install
       working-directory: ${{ github.action_path }}
     - name: Run action

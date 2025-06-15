@@ -105,7 +105,7 @@ jobs:
         working-directory: ./packages/agent-core
         name: Run unit tests
       - run: |
-          npm run build:check
+          npm run build
         working-directory: ./packages/agent-core
         name: Run build
   Build-and-Test-GitHubActions:
