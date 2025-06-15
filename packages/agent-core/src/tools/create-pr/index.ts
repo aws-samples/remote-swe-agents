@@ -150,7 +150,7 @@ export const createPRTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   toolSpec: async () => ({
     name,
     description:
-      `Create a new pull request of your branch to the upstream. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When your PR is linked to an issue, always provide the issue id as well.
+      `Create a new pull request of your branch to the upstream. This tool automatically pushes your current branch to the remote repository before creating the PR. Make sure to commit your changes before running this tool. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When your PR is linked to an issue, always provide the issue id as well.
     `.trim(),
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
