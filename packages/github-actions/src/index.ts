@@ -9,15 +9,8 @@ interface ActionInputs {
 }
 
 function getInputs(): ActionInputs {
-  // Debug: Log environment variables
-  core.info(`Environment variables:`);
-  core.info(`INPUT_TRIGGER_PHRASE: ${process.env.INPUT_TRIGGER_PHRASE}`);
-  core.info(`INPUT_ASSIGNEE_TRIGGER: ${process.env.INPUT_ASSIGNEE_TRIGGER}`);
-  core.info(`INPUT_API_BASE_URL: ${process.env.INPUT_API_BASE_URL}`);
-  core.info(`INPUT_API_KEY: ${process.env.INPUT_API_KEY ? '[SET]' : '[NOT SET]'}`);
-  
   return {
-    triggerPhrase: core.getInput('trigger_phrase') || '@remote-swe',
+    triggerPhrase: core.getInput('trigger_phrase', { required: true }),
     assigneeTrigger: core.getInput('assignee_trigger') || undefined,
     apiBaseUrl: core.getInput('api_base_url', { required: true }),
     apiKey: core.getInput('api_key', { required: true }),
