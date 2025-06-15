@@ -110,6 +110,11 @@ const main = async () => {
       if (type == 'onMessageReceived') {
         tracker.cancelCurrentSessions();
         tracker.startOnMessageReceived();
+      } else if (type == 'forceStop') {
+        tracker.cancelCurrentSessions();
+        // Update agent status to pending after force stop
+        await updateInstanceStatus(workerId, 'running');
+        await sendSystemMessage(workerId, 'Agent work was force stopped by user.');
       }
     },
     error: (err) => console.error('error', err),

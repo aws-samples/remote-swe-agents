@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
 import { ArrowLeft, ListChecks, Check, Plus, Loader2 } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus } from '../actions';
+import { updateAgentStatus, sendEventToAgent } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -46,6 +46,36 @@ export default function SessionPageClient({
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
   const { isBottom } = useScrollPosition();
+  
+  // Setup event handler for Escape key press to force stop agent work
+  const { execute: sendEvent } = useAction(sendEventToAgent, {
+    onSuccess: () => {
+      toast.success(t('forceStopSuccess'));
+      setAgentStatus('pending');
+    },
+    onError: (error) => {
+      toast.error(`${t('forceStopError')}: ${error.serverError || error}`);
+    },
+  });
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && agentStatus === 'working') {
+      if (confirm(t('confirmForceStop') || 'Are you sure you want to stop the agent work?')) {
+        sendEvent({
+          workerId,
+          event: { type: 'forceStop' },
+        });
+      }
+    }
+  }, [workerId, agentStatus, t, sendEvent]);
+  
+  // Add and remove event listener for Escape key
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   const getUnifiedStatus = () => {
     if (agentStatus === 'completed') {

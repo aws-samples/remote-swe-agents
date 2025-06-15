@@ -1,6 +1,6 @@
 'use server';
 
-import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema } from './schemas';
+import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema, sendEventSchema } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
@@ -58,4 +58,11 @@ export const updateAgentStatus = authActionClient
   .schema(updateAgentStatusSchema)
   .action(async ({ parsedInput: { workerId, status } }) => {
     await updateSessionAgentStatus(workerId, status);
+  });
+
+export const sendEventToAgent = authActionClient
+  .schema(sendEventSchema)
+  .action(async ({ parsedInput: { workerId, event } }) => {
+    await sendWorkerEvent(workerId, event);
+    return { success: true };
   });
