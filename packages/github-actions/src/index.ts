@@ -8,13 +8,11 @@ async function isCollaborator(user: string, repository: string): Promise<boolean
     const res = await octokit.rest.repos.getCollaboratorPermissionLevel({
       owner,
       repo,
-      username: user
+      username: user,
     });
     return ['admin', 'write'].includes(res.data.permission);
   } catch (e) {
-    core.info(
-      `got error on isCollaborator ${e}. owner: ${owner} repo: ${repo} user: ${user}`
-    );
+    core.info(`got error on isCollaborator ${e}. owner: ${owner} repo: ${repo} user: ${user}`);
     return false;
   }
 }
@@ -120,7 +118,7 @@ async function run(): Promise<void> {
 
       const repositoryName = `${github.context.repo.owner}/${github.context.repo.repo}`;
       const hasPermission = await isCollaborator(commentAuthor, repositoryName);
-      
+
       if (!hasPermission) {
         core.info(`Comment author ${commentAuthor} does not have collaborator permissions, exiting`);
         return;

@@ -29,7 +29,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build:check": "tsc",
+    "build": "esbuild 'src/**/*.ts' --outdir=dist --format=esm --target=es2020 --platform=node --bundle=false",
     "watch": "tsc -w",
     "test": "vitest run",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
+    "esbuild": "^0.25.5",
     "typescript": "^5.7.3",
     "vitest": "^3.1.1"
   }
