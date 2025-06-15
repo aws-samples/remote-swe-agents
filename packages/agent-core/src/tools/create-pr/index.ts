@@ -104,7 +104,7 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
 
   // Get current branch name
   const branchName = await execute('git rev-parse --abbrev-ref HEAD', gitDirectoryPath);
-  
+
   // Push the current branch to origin before creating PR
   try {
     await execute(`git push -u origin ${branchName}`, gitDirectoryPath);
