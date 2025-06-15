@@ -46,7 +46,7 @@ export default function SessionPageClient({
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
   const { isBottom } = useScrollPosition();
-  
+
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
     onSuccess: () => {
@@ -58,17 +58,20 @@ export default function SessionPageClient({
     },
   });
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && agentStatus === 'working') {
-      if (confirm(t('confirmForceStop') || 'Are you sure you want to stop the agent work?')) {
-        sendEvent({
-          workerId,
-          event: { type: 'forceStop' },
-        });
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && agentStatus === 'working') {
+        if (confirm(t('confirmForceStop') || 'Are you sure you want to stop the agent work?')) {
+          sendEvent({
+            workerId,
+            event: { type: 'forceStop' },
+          });
+        }
       }
-    }
-  }, [workerId, agentStatus, t, sendEvent]);
-  
+    },
+    [workerId, agentStatus, t, sendEvent]
+  );
+
   // Add and remove event listener for Escape key
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
