@@ -87,6 +87,63 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
   }
 }
 
+async function sendMessageToSession(sessionId: string, message: string, inputs: ActionInputs) {
+  const baseUrl = inputs.apiBaseUrl.endsWith('/') ? inputs.apiBaseUrl.slice(0, -1) : inputs.apiBaseUrl;
+  const apiUrl = `${baseUrl}/api/sessions/${sessionId}`;
+
+  const payload = {
+    message,
+  };
+
+  try {
+    core.info(`Sending message to existing session: ${apiUrl}`);
+    core.info(`Payload: ${JSON.stringify(payload, null, 2)}`);
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': inputs.apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    core.info(`Message sent successfully: ${JSON.stringify(responseData)}`);
+    return responseData;
+  } catch (error) {
+    core.error(`Failed to send message to session: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+}
+
+async function getIssueOrPRComments(issueNumber: number): Promise<any[]> {
+  try {
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+    const { owner, repo } = github.context.repo;
+
+    const response = await octokit.rest.issues.listComments({
+      owner,
+      repo,
+      issue_number: issueNumber,
+    });
+
+    return response.data;
+  } catch (error) {
+    core.error(`Failed to get comments: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
+function extractWorkerIdFromComment(commentBody: string): string | null {
+  const match = commentBody.match(/<!-- WORKER_ID:([^-]+) -->/);
+  return match ? match[1] : null;
+}
+
 async function postSessionCommentToPrOrIssue(sessionUrl: string, eventName: string, payload: any): Promise<void> {
   try {
     const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
@@ -182,12 +239,38 @@ async function run(): Promise<void> {
         return;
       }
 
+      // Get issue/PR number
+      const issueNumber = payload.issue?.number || payload.pull_request?.number;
+      if (!issueNumber) {
+        core.info('No issue or PR number found, exiting');
+        return;
+      }
+
+      // Get all comments to check for existing workerId
+      const allComments = await getIssueOrPRComments(issueNumber);
+      let existingWorkerId: string | null = null;
+
+      for (const existingComment of allComments) {
+        const workerId = extractWorkerIdFromComment(existingComment.body);
+        if (workerId) {
+          existingWorkerId = workerId;
+          break;
+        }
+      }
+
       message = commentBody.replaceAll(inputs.triggerPhrase, '');
       context = {
         repository: github.context.repo,
         ...(payload.issue?.html_url ? { issueUrl: payload.issue.html_url } : {}),
         ...(payload.pull_request?.html_url ? { pullRequestUrl: payload.pull_request.html_url } : {}),
       };
+
+      // If existing workerId found, send message to existing session instead of creating new one
+      if (existingWorkerId) {
+        core.info(`Found existing workerId: ${existingWorkerId}, sending message to existing session`);
+        await sendMessageToSession(existingWorkerId, message, inputs);
+        return;
+      }
     } else if (eventName === 'issues' && payload.action === 'assigned') {
       // Handle issue assignment
       const assignee = payload.assignee?.login;
