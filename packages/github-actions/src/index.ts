@@ -185,6 +185,8 @@ async function run(): Promise<void> {
       message = commentBody;
       context = {
         repository: github.context.repo,
+        ...(payload.issue?.html_url ? { issueUrl: payload.issue.html_url } : {}),
+        ...(payload.pull_request?.html_url ? { pullRequestUrl: payload.pull_request.html_url } : {}),
       };
     } else if (eventName === 'issues' && payload.action === 'assigned') {
       // Handle issue assignment
