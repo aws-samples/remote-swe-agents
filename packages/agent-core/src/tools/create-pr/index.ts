@@ -6,6 +6,7 @@ import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '../../lib/aws/ddb';
 import { ciTool } from '../ci';
+import { appendWorkerIdMetadata } from '../../lib/worker-id';
 
 const inputSchema = z.object({
   title: z.string().describe('Title of the pull request'),
@@ -120,7 +121,7 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
 
   // Embed workerId as HTML comment (invisible to users)
   // Regex to search the PR id: /<!-- WORKER_ID:([^-]+) -->/
-  finalDescription = `${finalDescription}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
+  finalDescription = appendWorkerIdMetadata(finalDescription);
 
   // Create markdown file in /tmp to avoid escape issues
   const tempFile = join('/tmp', `pr-description-${Date.now()}.md`);

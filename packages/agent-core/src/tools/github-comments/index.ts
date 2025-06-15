@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { Octokit } from '@octokit/rest';
 import { authorizeGitHubCli } from '../command-execution/github';
-import { WorkerId } from '../../env';
+import { appendWorkerIdMetadata } from '../../lib/worker-id';
 
 const getPRCommentsSchema = z.object({
   owner: z.string().describe('GitHub repository owner'),
@@ -31,12 +31,6 @@ const getOctokitClient = async () => {
   return new Octokit({
     auth: token,
   });
-};
-
-// Utility function to append workerId metadata to comment body
-const appendWorkerIdMetadata = (body: string): string => {
-  const workerId = WorkerId;
-  return `${body}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
 };
 
 // Type for review comment with replies
