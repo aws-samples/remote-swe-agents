@@ -22,10 +22,12 @@ function shouldTriggerAction(comment: string, inputs: ActionInputs): boolean {
 }
 
 function shouldTriggerForAssignee(assignees: string[], inputs: ActionInputs): boolean {
+  // If no assignee trigger is specified, do nothing
   if (!inputs.assigneeTrigger) {
-    return true;
+    return false;
   }
 
+  // If assignee trigger is specified, only allow the specified assignee
   const targetAssignee = inputs.assigneeTrigger.replace('@', '');
   return assignees.some((assignee) => assignee === targetAssignee);
 }
@@ -91,19 +93,6 @@ async function run(): Promise<void> {
         return;
       }
 
-      // Check assignee trigger if specified
-      let assignees: string[] = [];
-      if (payload.issue) {
-        assignees = payload.issue.assignees?.map((assignee: any) => assignee.login) || [];
-      } else if (payload.pull_request) {
-        assignees = payload.pull_request.assignees?.map((assignee: any) => assignee.login) || [];
-      }
-
-      if (!shouldTriggerForAssignee(assignees, inputs)) {
-        core.info(`Assignee trigger not matched, exiting`);
-        return;
-      }
-
       message = commentBody;
       context = {
         repository: github.context.repo,
@@ -115,7 +104,6 @@ async function run(): Promise<void> {
           created_at: comment.created_at,
         },
         trigger_phrase: inputs.triggerPhrase,
-        assignees,
         event_type: 'comment',
       };
     } else if (eventName === 'issues' && payload.action === 'assigned') {
