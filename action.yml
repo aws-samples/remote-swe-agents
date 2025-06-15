@@ -22,8 +22,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -33,6 +31,9 @@ runs:
       run: |
         cd packages/github-actions
         npm install
+      working-directory: ${{ github.action_path }}
     - name: Run action
       shell: bash
-      run: npx tsx packages/github-actions/src/index.ts
+      run: |
+        npx tsx packages/github-actions/src/index.ts
+      working-directory: ${{ github.action_path }}
