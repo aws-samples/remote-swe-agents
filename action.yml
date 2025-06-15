@@ -29,16 +29,22 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        # --error-on-fail is enabled by default on CI, which is undesired.
-        # Disable the behavior by passing CI=false
-        CI=false npm install
-        npm run build
-      working-directory: ${{ github.action_path }}/packages/agent-core
+        rm -rf packages/slack-bolt-app
+        rm -rf packages/webapp
+        rm -rf packages/worker
+        rm -rf patches
+        npm ci
+      working-directory: ${{ github.action_path }}
+    - name: Build common module
+      shell: bash
+      run: |
+        npm run build -w @remote-swe-agents/agent-core
+      working-directory: ${{ github.action_path }}
     - name: Run action
       shell: bash
       run: |
-        npx tsx src/index.ts
-      working-directory: ${{ github.action_path }}/packages/github-actions
+        npm run start -w github-actions
+      working-directory: ${{ github.action_path }}
       env:
         INPUT_TRIGGER_PHRASE: ${{ inputs.trigger_phrase }}
         INPUT_ASSIGNEE_TRIGGER: ${{ inputs.assignee_trigger }}
