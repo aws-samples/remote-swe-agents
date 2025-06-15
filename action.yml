@@ -30,7 +30,7 @@ runs:
       shell: bash
       run: |
         cd packages/github-actions
-        npm install
+        CI=false npm install
       working-directory: ${{ github.action_path }}
     - name: Run action
       shell: bash
