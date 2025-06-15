@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { Octokit } from '@octokit/rest';
 import { authorizeGitHubCli } from '../command-execution/github';
+import { WorkerId } from '../../env';
 
 const getPRCommentsSchema = z.object({
   owner: z.string().describe('GitHub repository owner'),
@@ -30,6 +31,12 @@ const getOctokitClient = async () => {
   return new Octokit({
     auth: token,
   });
+};
+
+// Utility function to append workerId metadata to comment body
+const appendWorkerIdMetadata = (body: string): string => {
+  const workerId = WorkerId;
+  return `${body}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
 };
 
 // Type for review comment with replies
@@ -133,13 +140,16 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
 
   const octokit = await getOctokitClient();
 
+  // Append workerId metadata to comment body
+  const finalBody = appendWorkerIdMetadata(body);
+
   // Use Octokit to reply to a comment
   await octokit.pulls.createReplyForReviewComment({
     owner,
     repo,
     pull_number: pullRequestId,
     comment_id: commentId,
-    body,
+    body: finalBody,
   });
 
   return `Successfully replied to comment ${commentId}`;
@@ -150,12 +160,15 @@ const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchem
 
   const octokit = await getOctokitClient();
 
+  // Append workerId metadata to comment body
+  const finalBody = appendWorkerIdMetadata(body);
+
   // Use Octokit to add a comment to an issue
   await octokit.issues.createComment({
     owner,
     repo,
     issue_number: issueNumber,
-    body,
+    body: finalBody,
   });
 
   return `Successfully added comment to issue #${issueNumber}`;

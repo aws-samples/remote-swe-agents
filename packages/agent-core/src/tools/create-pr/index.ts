@@ -105,6 +105,13 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
   // Get current branch name
   const branchName = await execute('git rev-parse --abbrev-ref HEAD', gitDirectoryPath);
 
+  // Push the current branch to origin before creating PR
+  try {
+    await execute(`git push -u origin ${branchName}`, gitDirectoryPath);
+  } catch (error) {
+    throw new Error(`Failed to push branch to origin: ${(error as Error).message}`);
+  }
+
   // Add issue reference if issueId is provided
   let finalDescription = description;
   if (issueId) {
@@ -143,8 +150,7 @@ export const createPRTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   toolSpec: async () => ({
     name,
     description:
-      `Create a new pull request of your branch to the upstream. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When your PR is linked to an issue, always provide the issue id as well. 
-IMPORTANT: Please make sure to push the current branch before using this tool.
+      `Create a new pull request of your branch to the upstream. This tool automatically pushes your current branch to the remote repository before creating the PR. Make sure to commit your changes before running this tool. This tool tracks PRs created in the session and prevents duplicate PRs unless forced. When your PR is linked to an issue, always provide the issue id as well.
     `.trim(),
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),

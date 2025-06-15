@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
+import { UrlRenderer } from './UrlRenderer';
 
 type MessageItemProps = {
   message: MessageView;
@@ -46,12 +47,14 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
             messageId={message.id}
           />
         ) : (
-          <div
-            className={`text-gray-900 dark:text-white pb-2 break-all${message.role == 'user' ? ' whitespace-pre-wrap' : ''}`}
-          >
+          <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
               <div className="flex-1">
-                <MarkdownRenderer content={message.content} />
+                {message.role === 'user' ? (
+                  <UrlRenderer content={message.content} />
+                ) : (
+                  <MarkdownRenderer content={message.content} />
+                )}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
                 <button
