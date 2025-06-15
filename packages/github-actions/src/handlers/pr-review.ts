@@ -51,12 +51,12 @@ export async function handlePrReviewEvent(context: ActionContext, payload: Webho
   const sessionContext = {
     repository: github.context.repo,
     pullRequestUrl: payload.pull_request?.html_url,
-    reviewId: review.id
+    reviewId: review.id,
   };
 
   // Send the review to the existing session
   core.info(`Found existing workerId: ${workerId}, sending review to existing session`);
   await sendMessageToSession(workerId, message, sessionContext, context);
-  
+
   core.info('Review message sent to worker successfully');
 }
