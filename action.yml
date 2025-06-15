@@ -29,7 +29,6 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        cd packages/github-actions
         npm install
       working-directory: ${{ github.action_path }}
     - name: Run action
