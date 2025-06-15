@@ -47,9 +47,7 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
             messageId={message.id}
           />
         ) : (
-          <div
-            className="text-gray-900 dark:text-white pb-2 break-all"
-          >
+          <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
               <div className="flex-1">
                 {message.role === 'user' ? (

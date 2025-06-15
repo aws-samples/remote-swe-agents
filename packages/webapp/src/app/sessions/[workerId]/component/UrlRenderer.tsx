@@ -7,14 +7,14 @@ type UrlRendererProps = {
 export const UrlRenderer = ({ content }: UrlRendererProps) => {
   // URLを検出するための正規表現
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
+
   // テキストをURLと非URLのパーツに分割
   const parts = content.split(urlRegex);
   const matches = content.match(urlRegex) || [];
-  
+
   // マッチングした部分とマッチングしなかった部分を交互に配置
   const elements: React.ReactNode[] = [];
-  
+
   parts.forEach((part, i) => {
     if (part.match(urlRegex)) {
       // URLの場合はリンクとして表示
