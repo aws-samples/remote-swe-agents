@@ -2,74 +2,19 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { extractWorkerIdFromText } from '@remote-swe-agents/agent-core/lib';
 import { isCollaborator } from '../lib/permission';
-import { startRemoteSweSession, sendMessageToSession, RemoteSweApiConfig } from '../lib/remote-swe-api';
-import { postSessionCommentToPrOrIssue } from '../lib/comments';
+import { startRemoteSweSession, sendMessageToSession } from '../lib/remote-swe-api';
+import { addEyesReactionToComment, getIssueComments, getIssueDescription, submitIssueComment } from '../lib/comments';
 import { shouldTriggerAction } from '../lib/trigger';
 import { ActionContext } from '../lib/context';
+import { WebhookPayload } from '@actions/github/lib/interfaces';
 
-async function getIssueOrPRComments(issueNumber: number): Promise<any[]> {
-  try {
-    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
-    const { owner, repo } = github.context.repo;
-
-    const response = await octokit.rest.issues.listComments({
-      owner,
-      repo,
-      issue_number: issueNumber,
-      sort: 'created',
-      direction: 'desc',
-    });
-
-    return response.data;
-  } catch (error) {
-    core.error(`Failed to get comments: ${error instanceof Error ? error.message : String(error)}`);
-    return [];
-  }
-}
-
-async function getIssueOrPRDescription(issueNumber: number): Promise<string | null> {
-  try {
-    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
-    const { owner, repo } = github.context.repo;
-
-    const response = await octokit.rest.issues.get({
-      owner,
-      repo,
-      issue_number: issueNumber,
-    });
-
-    return response.data.body || null;
-  } catch (error) {
-    core.error(`Failed to get issue/PR description: ${error instanceof Error ? error.message : String(error)}`);
-    return null;
-  }
-}
-
-async function addEyesReactionToComment(commentId: number) {
-  try {
-    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
-    const { owner, repo } = github.context.repo;
-
-    await octokit.rest.reactions.createForIssueComment({
-      owner,
-      repo,
-      comment_id: commentId,
-      content: 'eyes',
-    });
-
-    core.info(`Added eyes reaction to comment ${commentId}`);
-  } catch (error) {
-    core.error(`Failed to add eyes reaction: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-export async function handleCommentEvent(context: ActionContext, payload: any): Promise<void> {
-  if (!payload.comment) {
+export async function handleCommentEvent(context: ActionContext, payload: WebhookPayload): Promise<void> {
+  const comment = payload.comment;
+  if (!comment) {
     core.info('No comment found in payload, exiting');
     return;
   }
 
-  const comment = payload.comment;
   const commentBody = (comment.body as string) || '';
 
   core.info(`Comment body: ${commentBody}`);
@@ -101,13 +46,14 @@ export async function handleCommentEvent(context: ActionContext, payload: any): 
     core.info('No issue or PR number found, exiting');
     return;
   }
+  const source = payload.issue?.number ? 'issue' : 'pull request';
 
   let existingWorkerId: string | null = null;
 
   // Get all comments and PR/issue description to check for existing workerId
-  const allComments = await getIssueOrPRComments(issueNumber);
-  for (const existingComment of allComments) {
-    const workerId = extractWorkerIdFromText(existingComment.body);
+  const allComments = await getIssueComments(issueNumber);
+  for (const comment of allComments) {
+    const workerId = extractWorkerIdFromText(comment.body ?? '');
     if (workerId) {
       existingWorkerId = workerId;
       break;
@@ -116,38 +62,35 @@ export async function handleCommentEvent(context: ActionContext, payload: any): 
 
   // If not found in comments, check description
   if (!existingWorkerId) {
-    const description = await getIssueOrPRDescription(issueNumber);
+    const description = await getIssueDescription(issueNumber);
     if (description) {
       existingWorkerId = extractWorkerIdFromText(description);
     }
   }
 
-  const message = commentBody.replaceAll(context.triggerPhrase, '');
+  let message = commentBody.replaceAll(context.triggerPhrase, '');
   const sessionContext = {
     repository: github.context.repo,
     ...(payload.issue?.html_url ? { issueUrl: payload.issue.html_url } : {}),
     ...(payload.pull_request?.html_url ? { pullRequestUrl: payload.pull_request.html_url } : {}),
-  };
-
-  const apiConfig: RemoteSweApiConfig = {
-    apiBaseUrl: context.apiBaseUrl,
-    apiKey: context.apiKey,
+    commentId: comment.id,
   };
 
   // If existing workerId found, send message to existing session instead of creating new one
   if (existingWorkerId) {
     core.info(`Found existing workerId: ${existingWorkerId}, sending message to existing session`);
+    message += `\n\nThe above message was received from a GitHub ${source}. Please address the comment.`;
+    await sendMessageToSession(existingWorkerId, message, sessionContext, context);
     await addEyesReactionToComment(comment.id);
-    await sendMessageToSession(existingWorkerId, message, sessionContext, apiConfig);
-    return;
+  } else {
+    // Start new remote-swe session
+    core.info('Trigger conditions met, starting remote-swe session');
+
+    message += `\n\nThe above message was received from a GitHub ${source}. Please use GitHub CLI to get the detail and address the comment.`;
+
+    const session = await startRemoteSweSession(message, sessionContext, context);
+    // Post comment with session URL to the original PR/Issue
+    await submitIssueComment(session.sessionId, session.sessionUrl, issueNumber);
+    core.info('Remote-swe session started successfully');
   }
-
-  // Start new remote-swe session
-  core.info('Trigger conditions met, starting remote-swe session');
-  const session = await startRemoteSweSession(message, sessionContext, apiConfig);
-
-  // Post comment with session URL to the original PR/Issue
-  await postSessionCommentToPrOrIssue(session.sessionId, session.sessionUrl, issueNumber);
-
-  core.info('Remote-swe session started successfully');
 }

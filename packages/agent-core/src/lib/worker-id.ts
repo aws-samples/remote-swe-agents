@@ -6,7 +6,7 @@ import { WorkerId } from '../env';
  * @returns The worker ID if found, null otherwise
  */
 export const extractWorkerIdFromText = (text: string): string | null => {
-  const match = text.match(/<!-- WORKER_ID:([^-]+) -->/);
+  const match = text.match(/<!-- WORKER_ID:(.+) -->/);
   return match ? match[1] : null;
 };
 

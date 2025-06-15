@@ -9,7 +9,7 @@ export async function startRemoteSweSession(message: string, context: any, confi
   const baseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl.slice(0, -1) : config.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions`;
 
-  if (context) {
+  if (context && Object.keys(context).length > 0) {
     message += `\n\n Here is the additional context:\n${JSON.stringify(context, null, 1)}`;
   }
   const payload = {
@@ -52,7 +52,7 @@ export async function sendMessageToSession(
   const baseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl.slice(0, -1) : config.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions/${sessionId}`;
 
-  if (context) {
+  if (context && Object.keys(context).length > 0) {
     message += `\n\n Here is the additional context:\n${JSON.stringify(context, null, 1)}`;
   }
 

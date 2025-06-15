@@ -1,0 +1,28 @@
+name: Remote SWE Trigger
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [assigned]
+  pull_request:
+    types: [assigned]
+
+jobs:
+  trigger-remote-swe:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Remote SWE
+        uses: aws-samples/remote-swe-agents@gha
+        with:
+          trigger_phrase: '@remote-swe-user'
+          assignee_trigger: 'remote-swe-user'
+          api_base_url: ${{ secrets.REMOTE_SWE_API_BASE_URL }}
+          api_key: ${{ secrets.REMOTE_SWE_API_KEY }}
+
+permissions:
+  pull-requests: write
+  issues: write

@@ -1,9 +1,9 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { handleCommentEvent } from './handlers/comment';
 import { handleIssueAssignmentEvent } from './handlers/issue-assignment';
 import { handlePrAssignmentEvent } from './handlers/pr-assignment';
 import { ActionContext } from './lib/context';
+import { handleCommentEvent } from './handlers/comment';
 
 function getContext(): ActionContext {
   return {
@@ -17,12 +17,16 @@ function getContext(): ActionContext {
 async function run() {
   try {
     const context = getContext();
+
+    // see https://docs.github.com/en/webhooks/webhook-events-and-payloads
     const payload = github.context.payload;
     const eventName = github.context.eventName;
 
     core.info(`Action triggered with event: ${eventName}`);
 
-    if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
+    if (eventName === 'issue_comment') {
+      await handleCommentEvent(context, payload);
+    } else if (eventName === 'pull_request_review_comment') {
       await handleCommentEvent(context, payload);
     } else if (eventName === 'issues' && payload.action === 'assigned') {
       await handleIssueAssignmentEvent(context, payload);
