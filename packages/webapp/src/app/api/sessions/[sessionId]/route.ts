@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // Create content for the message
-  const content = [{ text: renderUserMessage({ message }) }];
+  const content = [{ text: message }];
 
   // Save the message
   await ddb.send(
