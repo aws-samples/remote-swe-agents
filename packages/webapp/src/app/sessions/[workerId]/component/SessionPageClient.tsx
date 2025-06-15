@@ -54,7 +54,7 @@ export default function SessionPageClient({
       setAgentStatus('pending');
     },
     onError: (error) => {
-      toast.error(`${t('forceStopError')}: ${error.serverError || error}`);
+      toast.error(`${t('forceStopError')}: ${error?.error?.serverError || error}`);
     },
   });
 
