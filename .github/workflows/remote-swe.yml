@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Trigger Remote SWE
-        uses: aws-samples/remote-swe-agents@gha
+        uses: aws-samples/remote-swe-agents@main
         with:
           trigger_phrase: '@remote-swe-user'
           assignee_trigger: 'remote-swe-user'
