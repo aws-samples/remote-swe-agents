@@ -7,7 +7,7 @@ import { Loader2, Send, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler } from 'react';
+import { KeyboardEventHandler, useRef, useEffect } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
@@ -20,6 +20,8 @@ type MessageFormProps = {
 
 export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   const t = useTranslations('sessions');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     form: { register, formState, reset, watch, setValue },
@@ -60,6 +62,14 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
       handleSubmitWithAction();
     }
   };
+  
+  const handleFocus = () => {
+    setTimeout(() => {
+      if (sendButtonRef.current) {
+        sendButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  };
 
   const { uploadingImages, fileInputRef, handleImageSelect, handlePaste, ImagePreviewList } = ImageUploader({
     workerId,
@@ -69,6 +79,46 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
   });
 
   const isUploading = uploadingImages.some((img) => !img.key);
+  
+  // モバイル用のスクロール位置調整: レンダリングされたときにビューポートをチェック
+  useEffect(() => {
+    const checkViewportAndAdjust = () => {
+      // モバイルデバイスかどうかの判定（簡易的な方法）
+      if (window.innerWidth <= 768) {
+        // インプットフィールドが表示されたら自動的にスクロール位置を調整
+        if (textareaRef.current) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                // 要素が表示されている場合、送信ボタンが見えるようにスクロール
+                if (entry.isIntersecting && sendButtonRef.current) {
+                  // スクロール位置を調整（少し遅延させる）
+                  setTimeout(() => {
+                    sendButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 100);
+                }
+              });
+            },
+            { threshold: 0.5 }
+          );
+          
+          observer.observe(textareaRef.current);
+          
+          return () => {
+            if (textareaRef.current) observer.unobserve(textareaRef.current);
+          };
+        }
+      }
+    };
+    
+    // 初回レンダリング時とリサイズ時に実行
+    checkViewportAndAdjust();
+    window.addEventListener('resize', checkViewportAndAdjust);
+    
+    return () => {
+      window.removeEventListener('resize', checkViewportAndAdjust);
+    };
+  }, []);
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -79,11 +129,13 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
           <div className="flex gap-4">
             <textarea
               {...register('message')}
+              ref={textareaRef}
               placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}
               className="flex-1 resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
               disabled={isExecuting || isUploading}
               onKeyDown={enterPost}
+              onFocus={handleFocus}
               onPaste={handlePaste}
             />
             <div className="flex flex-col gap-2 self-end">
@@ -93,7 +145,12 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">
+                    <Button 
+                      ref={sendButtonRef}
+                      type="submit" 
+                      disabled={!message.trim() || isExecuting || isUploading} 
+                      size="icon"
+                    >
                       {isExecuting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : isUploading ? (
