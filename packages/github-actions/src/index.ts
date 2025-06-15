@@ -1,6 +1,24 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
+async function isCollaborator(user: string, repository: string): Promise<boolean> {
+  const [owner, repo] = repository.split('/');
+  try {
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+    const res = await octokit.rest.repos.getCollaboratorPermissionLevel({
+      owner,
+      repo,
+      username: user
+    });
+    return ['admin', 'write'].includes(res.data.permission);
+  } catch (e) {
+    core.info(
+      `got error on isCollaborator ${e}. owner: ${owner} repo: ${repo} user: ${user}`
+    );
+    return false;
+  }
+}
+
 interface ActionInputs {
   triggerPhrase: string;
   assigneeTrigger?: string;
@@ -90,6 +108,21 @@ async function run(): Promise<void> {
       // Check if comment contains trigger phrase
       if (!shouldTriggerAction(commentBody, inputs)) {
         core.info(`Comment does not contain trigger phrase "${inputs.triggerPhrase}", exiting`);
+        return;
+      }
+
+      // Check if comment author is a collaborator
+      const commentAuthor = comment.user?.login;
+      if (!commentAuthor) {
+        core.info('Comment author not found, exiting');
+        return;
+      }
+
+      const repositoryName = `${github.context.repo.owner}/${github.context.repo.repo}`;
+      const hasPermission = await isCollaborator(commentAuthor, repositoryName);
+      
+      if (!hasPermission) {
+        core.info(`Comment author ${commentAuthor} does not have collaborator permissions, exiting`);
         return;
       }
 

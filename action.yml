@@ -44,3 +44,4 @@ runs:
         INPUT_ASSIGNEE_TRIGGER: ${{ inputs.assignee_trigger }}
         INPUT_API_BASE_URL: ${{ inputs.api_base_url }}
         INPUT_API_KEY: ${{ inputs.api_key }}
+        GITHUB_TOKEN: ${{ github.token }}
