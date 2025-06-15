@@ -15,7 +15,6 @@
     "@actions/github": "^6.0.0",
     "@octokit/rest": "^22.0.0",
     "@remote-swe-agents/agent-core": "file:../agent-core",
-    "patch-package": "^8.0.0",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
