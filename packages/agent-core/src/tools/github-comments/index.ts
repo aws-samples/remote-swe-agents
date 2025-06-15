@@ -32,6 +32,12 @@ const getOctokitClient = async () => {
   });
 };
 
+// Utility function to append workerId metadata to comment body
+const appendWorkerIdMetadata = (body: string): string => {
+  const workerId = process.env.WORKER_ID!;
+  return `${body}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
+};
+
 // Type for review comment with replies
 type ReviewCommentWithReplies = Awaited<ReturnType<Octokit['pulls']['listReviewComments']>>['data'][0] & {
   replies: ReviewCommentWithReplies[];
@@ -133,13 +139,16 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
 
   const octokit = await getOctokitClient();
 
+  // Append workerId metadata to comment body
+  const finalBody = appendWorkerIdMetadata(body);
+
   // Use Octokit to reply to a comment
   await octokit.pulls.createReplyForReviewComment({
     owner,
     repo,
     pull_number: pullRequestId,
     comment_id: commentId,
-    body,
+    body: finalBody,
   });
 
   return `Successfully replied to comment ${commentId}`;
@@ -150,12 +159,15 @@ const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchem
 
   const octokit = await getOctokitClient();
 
+  // Append workerId metadata to comment body
+  const finalBody = appendWorkerIdMetadata(body);
+
   // Use Octokit to add a comment to an issue
   await octokit.issues.createComment({
     owner,
     repo,
     issue_number: issueNumber,
-    body,
+    body: finalBody,
   });
 
   return `Successfully added comment to issue #${issueNumber}`;
