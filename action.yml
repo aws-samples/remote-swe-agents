@@ -1,0 +1,36 @@
+name: 'Remote SWE Action'
+description: 'GitHub Action to trigger remote-swe sessions based on comments in issues and PRs'
+branding:
+  icon: 'code'
+  color: 'blue'
+
+inputs:
+  trigger_phrase:
+    description: 'The phrase that triggers the action (e.g., @remote-swe)'
+    required: true
+    default: '@remote-swe'
+  assignee_trigger:
+    description: 'The assignee username that triggers the action (e.g., @remote-swe-user)'
+    required: false
+  api_base_url:
+    description: 'Base URL for the remote-swe API (e.g., https://remote-swe.example.com)'
+    required: true
+  api_key:
+    description: 'API key for authentication with the remote-swe service'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd packages/github-actions
+        npm install
+    - name: Run action
+      shell: bash
+      run: npx tsx packages/github-actions/src/index.ts

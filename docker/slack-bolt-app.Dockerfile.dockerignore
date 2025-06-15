@@ -1,6 +1,7 @@
 cdk
 packages/worker
 packages/webapp
+packages/github-actions
 **/node_modules
 **/dist
 **/.next

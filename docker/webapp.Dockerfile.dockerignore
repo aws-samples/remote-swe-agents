@@ -6,6 +6,7 @@ node_modules
 cdk
 packages/worker
 packages/slack-bolt-app
+packages/github-actions
 docs
 .github
 .git
