@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { addIssueCommentTool } from '@remote-swe-agents/agent-core/tools';
 
 async function isCollaborator(user: string, repository: string): Promise<boolean> {
   const [owner, repo] = repository.split('/');
@@ -51,8 +52,12 @@ function shouldTriggerForAssignee(assignees: string[], inputs: ActionInputs): bo
 async function startRemoteSweSession(message: string, context: any, inputs: ActionInputs): Promise<void> {
   const baseUrl = inputs.apiBaseUrl.endsWith('/') ? inputs.apiBaseUrl.slice(0, -1) : inputs.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions`;
+
+  if (context) {
+    message += `\n\n Here is the additional context:\n${JSON.stringify(context, null, 1)}`;
+  }
   const payload = {
-    message: `${message}\n\n${JSON.stringify(context, null, 2)}`,
+    message,
   };
 
   try {
@@ -127,15 +132,6 @@ async function run(): Promise<void> {
       message = commentBody;
       context = {
         repository: github.context.repo,
-        issue: payload.issue || payload.pull_request,
-        comment: {
-          id: comment.id,
-          body: commentBody,
-          user: comment.user?.login,
-          created_at: comment.created_at,
-        },
-        trigger_phrase: inputs.triggerPhrase,
-        event_type: 'comment',
       };
     } else if (eventName === 'issues' && payload.action === 'assigned') {
       // Handle issue assignment
@@ -147,18 +143,13 @@ async function run(): Promise<void> {
         return;
       }
 
+      if (!payload.issue) {
+        core.info(`payload.issue is empty.`);
+        return;
+      }
+
       message = `Please resolve this issue and create a pull request.
-
-Issue URL: ${payload.issue?.html_url}
-Issue Title: ${payload.issue?.title}
-Issue Description: ${payload.issue?.body || 'No description provided'}`;
-
-      context = {
-        repository: github.context.repo,
-        issue: payload.issue,
-        assignee: assignee,
-        event_type: 'issue_assigned',
-      };
+Issue URL: ${payload.issue.html_url}`;
     } else if (eventName === 'pull_request' && payload.action === 'assigned') {
       // Handle PR assignment
       const assignee = payload.assignee?.login;
@@ -169,18 +160,14 @@ Issue Description: ${payload.issue?.body || 'No description provided'}`;
         return;
       }
 
-      message = `Please review this pull request and provide feedback or comments.
+      if (!payload.pull_request) {
+        core.info(`payload.pull_request is empty.`);
+        return;
+      }
 
-PR URL: ${payload.pull_request?.html_url}
-PR Title: ${payload.pull_request?.title}
-PR Description: ${payload.pull_request?.body || 'No description provided'}`;
+      message = `Please review this pull request and provide feedback or comments. When providing feedback, use ${addIssueCommentTool.name} tool to directly submit comments to the PR.
 
-      context = {
-        repository: github.context.repo,
-        pull_request: payload.pull_request,
-        assignee: assignee,
-        event_type: 'pr_assigned',
-      };
+PR URL: ${payload.pull_request.html_url}`;
     } else {
       core.info(`Unsupported event: ${eventName} with action: ${payload.action}`);
       return;
