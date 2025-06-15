@@ -29,17 +29,16 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        cd packages/github-actions
         # --error-on-fail is enabled by default on CI, which is undesired.
         # Disable the behavior by passing CI=false
         CI=false npm install
         npm run build
-      working-directory: ${{ github.action_path }}
+      working-directory: ${{ github.action_path }}/packages/agent-core
     - name: Run action
       shell: bash
       run: |
-        npx tsx packages/github-actions/src/index.ts
-      working-directory: ${{ github.action_path }}
+        npx tsx src/index.ts
+      working-directory: ${{ github.action_path }}/packages/github-actions
       env:
         INPUT_TRIGGER_PHRASE: ${{ inputs.trigger_phrase }}
         INPUT_ASSIGNEE_TRIGGER: ${{ inputs.assignee_trigger }}
