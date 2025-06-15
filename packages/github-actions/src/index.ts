@@ -157,7 +157,7 @@ async function run(): Promise<void> {
       }
 
       const comment = payload.comment;
-      const commentBody = comment.body || '';
+      const commentBody = (comment.body as string) || '';
 
       core.info(`Comment body: ${commentBody}`);
 
@@ -182,7 +182,7 @@ async function run(): Promise<void> {
         return;
       }
 
-      message = commentBody;
+      message = commentBody.replaceAll(inputs.triggerPhrase, '');
       context = {
         repository: github.context.repo,
         ...(payload.issue?.html_url ? { issueUrl: payload.issue.html_url } : {}),
