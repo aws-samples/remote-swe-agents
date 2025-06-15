@@ -277,7 +277,18 @@ npx cdk deploy --all
    - 自動化されたワークフローとCI/CD統合
    - カスタムアプリケーションの開発
 
+4. **GitHub Actions統合**：GitHub Actionsを使用してリポジトリと統合
+   - GitHub イベントからエージェントを自動的にトリガー
+   - issue コメントやアサインメントに対応
+   - シームレスなCI/CD統合
+
 エージェントを効果的に使用するためのヒントについては、以下の「有用なヒント」セクションを参照してください。
+
+### GitHub Actions統合
+
+このリポジトリはGitHub Actionとして使用でき、issueコメント、アサイン、PRレビューなどのGitHubイベントから自動的にRemote SWEエージェントをトリガーできます。GitHub ActionはRemote SWE API機能を使用してエージェントセッションを作成・管理します。
+
+ワークフローで`aws-samples/remote-swe-agents`を使用し、APIベースURLとキーをリポジトリシークレットとして設定してください。APIキーはデプロイされたwebappインターフェースから生成できます。入力パラメータについては[action.yml](./action.yml)を、完全なワークフロー例については[.github/workflows/remote-swe.yml](./.github/workflows/remote-swe.yml)を参照してください。
 
 ## 有用なヒント
 

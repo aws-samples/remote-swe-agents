@@ -283,7 +283,18 @@ After successful deployment, you can access the Remote SWE Agents system through
    - Automated workflows and CI/CD integration
    - Custom application development
 
+4. **GitHub Actions Integration**: Integrate with your repositories using GitHub Actions
+   - Automatically trigger agents from GitHub events
+   - Respond to issue comments and assignments
+   - Seamless CI/CD integration
+
 For tips on how to effectively use the agents, refer to the "Useful Tips" section below.
+
+### GitHub Actions Integration
+
+This repository can be used as a GitHub Action to automatically trigger Remote SWE agents from GitHub events like issue comments, assignments, and PR reviews. The GitHub Action uses the Remote SWE API functionality to create and manage agent sessions.
+
+Use `aws-samples/remote-swe-agents` in your workflow and configure your API base URL and key as repository secrets. You can generate API keys from the deployed webapp interface. See [action.yml](./action.yml) for input parameters and [.github/workflows/remote-swe.yml](./.github/workflows/remote-swe.yml) for a complete example workflow.
 
 ## Useful Tips
 
