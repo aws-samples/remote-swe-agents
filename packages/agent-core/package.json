@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "exports": {
+    "./lib": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
+    },
     "./aws": {
       "types": "./dist/lib/aws/index.d.ts",
       "default": "./dist/lib/aws/index.js"
