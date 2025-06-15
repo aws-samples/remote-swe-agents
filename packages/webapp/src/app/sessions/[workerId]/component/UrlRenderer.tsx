@@ -5,19 +5,19 @@ type UrlRendererProps = {
 };
 
 export const UrlRenderer = ({ content }: UrlRendererProps) => {
-  // URLを検出するための正規表現
+  // Regular expression to detect URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-  // テキストをURLと非URLのパーツに分割
+  // Split text into URL and non-URL parts
   const parts = content.split(urlRegex);
   const matches = content.match(urlRegex) || [];
 
-  // マッチングした部分とマッチングしなかった部分を交互に配置
+  // Arrange matched and unmatched parts alternately
   const elements: React.ReactNode[] = [];
 
   parts.forEach((part, i) => {
     if (part.match(urlRegex)) {
-      // URLの場合はリンクとして表示
+      // Display as a link if it's a URL
       elements.push(
         <a
           key={i}
@@ -30,7 +30,7 @@ export const UrlRenderer = ({ content }: UrlRendererProps) => {
         </a>
       );
     } else {
-      // 通常のテキストの場合
+      // For regular text content
       const lines = part.split('\n');
       elements.push(
         <React.Fragment key={i}>
