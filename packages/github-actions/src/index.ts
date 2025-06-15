@@ -41,7 +41,7 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
   const baseUrl = inputs.apiBaseUrl.endsWith('/') ? inputs.apiBaseUrl.slice(0, -1) : inputs.apiBaseUrl;
   const apiUrl = `${baseUrl}/api/sessions`;
   const payload = {
-    message: `${message}\n\n${JSON.stringify(context, null, 2)}`
+    message: `${message}\n\n${JSON.stringify(context, null, 2)}`,
   };
 
   try {
@@ -74,30 +74,30 @@ async function run(): Promise<void> {
     const inputs = getInputs();
     const payload = github.context.payload;
     const eventName = github.context.eventName;
-    
+
     core.info(`Action triggered with event: ${eventName}`);
-    
+
     let message = '';
     let context: any = {};
-    
+
     if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
       // Handle comment events
       if (!payload.comment) {
         core.info('No comment found in payload, exiting');
         return;
       }
-      
+
       const comment = payload.comment;
       const commentBody = comment.body || '';
-      
+
       core.info(`Comment body: ${commentBody}`);
-      
+
       // Check if comment contains trigger phrase
       if (!shouldTriggerAction(commentBody, inputs)) {
         core.info(`Comment does not contain trigger phrase "${inputs.triggerPhrase}", exiting`);
         return;
       }
-      
+
       // Check assignee trigger if specified
       let assignees: string[] = [];
       if (payload.issue) {
@@ -105,12 +105,12 @@ async function run(): Promise<void> {
       } else if (payload.pull_request) {
         assignees = payload.pull_request.assignees?.map((assignee: any) => assignee.login) || [];
       }
-      
+
       if (!shouldTriggerForAssignee(assignees, inputs)) {
         core.info(`Assignee trigger not matched, exiting`);
         return;
       }
-      
+
       message = commentBody;
       context = {
         repository: github.context.repo,
@@ -125,63 +125,60 @@ async function run(): Promise<void> {
         assignees,
         event_type: 'comment',
       };
-      
     } else if (eventName === 'issues' && payload.action === 'assigned') {
       // Handle issue assignment
       const assignee = payload.assignee?.login;
-      
+
       // Check assignee trigger if specified
       if (!shouldTriggerForAssignee([assignee], inputs)) {
         core.info(`Assignee trigger not matched for user: ${assignee}, exiting`);
         return;
       }
-      
+
       message = `Please resolve this issue and create a pull request.
 
 Issue URL: ${payload.issue?.html_url}
 Issue Title: ${payload.issue?.title}
 Issue Description: ${payload.issue?.body || 'No description provided'}`;
-      
+
       context = {
         repository: github.context.repo,
         issue: payload.issue,
         assignee: assignee,
         event_type: 'issue_assigned',
       };
-      
     } else if (eventName === 'pull_request' && payload.action === 'assigned') {
-      // Handle PR assignment  
+      // Handle PR assignment
       const assignee = payload.assignee?.login;
-      
+
       // Check assignee trigger if specified
       if (!shouldTriggerForAssignee([assignee], inputs)) {
         core.info(`Assignee trigger not matched for user: ${assignee}, exiting`);
         return;
       }
-      
+
       message = `Please review this pull request and provide feedback or comments.
 
 PR URL: ${payload.pull_request?.html_url}
 PR Title: ${payload.pull_request?.title}
 PR Description: ${payload.pull_request?.body || 'No description provided'}`;
-      
+
       context = {
         repository: github.context.repo,
         pull_request: payload.pull_request,
         assignee: assignee,
         event_type: 'pr_assigned',
       };
-      
     } else {
       core.info(`Unsupported event: ${eventName} with action: ${payload.action}`);
       return;
     }
-    
+
     core.info('Trigger conditions met, starting remote-swe session');
-    
+
     // Start remote-swe session
     await startRemoteSweSession(message, context, inputs);
-    
+
     core.info('Remote-swe session started successfully');
   } catch (error) {
     core.setFailed(`Action failed: ${error instanceof Error ? error.message : String(error)}`);

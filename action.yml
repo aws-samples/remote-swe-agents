@@ -36,3 +36,8 @@ runs:
       run: |
         npx tsx packages/github-actions/src/index.ts
       working-directory: ${{ github.action_path }}
+      env:
+        INPUT_TRIGGER_PHRASE: ${{ inputs.trigger_phrase }}
+        INPUT_ASSIGNEE_TRIGGER: ${{ inputs.assignee_trigger }}
+        INPUT_API_BASE_URL: ${{ inputs.api_base_url }}
+        INPUT_API_KEY: ${{ inputs.api_key }}
