@@ -74,7 +74,7 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      throw new Error(`API request failed with status ${response.status}: ${response.status}`);
     }
 
     const responseData = await response.json();
@@ -84,6 +84,57 @@ async function startRemoteSweSession(message: string, context: any, inputs: Acti
   } catch (error) {
     core.error(`Failed to start remote SWE session: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
+  }
+}
+
+async function postSessionCommentToPrOrIssue(sessionUrl: string, eventName: string, payload: any): Promise<void> {
+  try {
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+    const { owner, repo } = github.context.repo;
+    
+    const commentBody = `🤖 Remote SWE session has been started!\n\n**Session URL:** ${sessionUrl}\n\nYou can monitor the progress and interact with the session using the link above.`;
+    
+    if (eventName === 'issue_comment' && payload.issue) {
+      // Comment on issue
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: payload.issue.number,
+        body: commentBody,
+      });
+      core.info(`Posted session comment to issue #${payload.issue.number}`);
+    } else if (eventName === 'pull_request_review_comment' && payload.pull_request) {
+      // Comment on pull request
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: payload.pull_request.number,
+        body: commentBody,
+      });
+      core.info(`Posted session comment to PR #${payload.pull_request.number}`);
+    } else if (eventName === 'issues' && payload.issue) {
+      // Comment on assigned issue
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: payload.issue.number,
+        body: commentBody,
+      });
+      core.info(`Posted session comment to assigned issue #${payload.issue.number}`);
+    } else if (eventName === 'pull_request' && payload.pull_request) {
+      // Comment on assigned pull request
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: payload.pull_request.number,
+        body: commentBody,
+      });
+      core.info(`Posted session comment to assigned PR #${payload.pull_request.number}`);
+    } else {
+      core.info('Unable to determine where to post session comment');
+    }
+  } catch (error) {
+    core.error(`Failed to post session comment: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -178,7 +229,10 @@ PR URL: ${payload.pull_request.html_url}`;
     core.info('Trigger conditions met, starting remote-swe session');
 
     // Start remote-swe session
-    await startRemoteSweSession(message, context, inputs);
+    const sessionResult = await startRemoteSweSession(message, context, inputs);
+
+    // Post comment with session URL to the original PR/Issue
+    await postSessionCommentToPrOrIssue(sessionResult.sessionUrl, eventName, payload);
 
     core.info('Remote-swe session started successfully');
   } catch (error) {
