@@ -53,7 +53,7 @@ export async function sendMessageToSession(
   const apiUrl = `${baseUrl}/api/sessions/${sessionId}`;
 
   if (context && Object.keys(context).length > 0) {
-    message += `\n\n Here is the additional context:\n${JSON.stringify(context, null, 1)}`;
+    message += `\n\nHere is the additional context:\n${JSON.stringify(context, null, 1)}`;
   }
 
   const payload = {
