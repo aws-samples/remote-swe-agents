@@ -15,3 +15,10 @@ export const updateAgentStatusSchema = z.object({
   workerId: z.string(),
   status: agentStatusSchema,
 });
+
+export const sendEventSchema = z.object({
+  workerId: z.string(),
+  event: z.object({
+    type: z.literal('forceStop'),
+  }),
+});

@@ -5,7 +5,7 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
-import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
+import { sendSystemMessage, updateInstanceStatus, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 Object.assign(global, { WebSocket: require('ws') });
@@ -110,6 +110,11 @@ const main = async () => {
       if (type == 'onMessageReceived') {
         tracker.cancelCurrentSessions();
         tracker.startOnMessageReceived();
+      } else if (type == 'forceStop') {
+        tracker.cancelCurrentSessions();
+        // Update agent status to pending after force stop
+        await updateSessionAgentStatus(workerId, 'pending');
+        await sendSystemMessage(workerId, 'Agent work was force stopped by user.');
       }
     },
     error: (err) => console.error('error', err),
