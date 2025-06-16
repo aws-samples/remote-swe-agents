@@ -263,7 +263,7 @@ export default function SessionPageClient({
         </div>
       </div>
 
-      <main className="flex-grow flex flex-col relative">
+      <main className="flex-grow flex flex-col relative pt-18">
         {/* Todo List Popup */}
         {todoList && showTodoModal && (
           <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
