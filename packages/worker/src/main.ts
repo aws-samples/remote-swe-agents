@@ -113,7 +113,7 @@ const main = async () => {
       } else if (type == 'forceStop') {
         tracker.cancelCurrentSessions();
         // Update agent status to pending after force stop
-        await updateInstanceStatus(workerId, 'running');
+        await updateSessionAgentStatus(workerId, 'pending');
         await sendSystemMessage(workerId, 'Agent work was force stopped by user.');
       }
     },

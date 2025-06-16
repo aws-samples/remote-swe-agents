@@ -51,7 +51,6 @@ export default function SessionPageClient({
   const { execute: sendEvent } = useAction(sendEventToAgent, {
     onSuccess: () => {
       toast.success(t('forceStopSuccess'));
-      setAgentStatus('pending');
     },
     onError: (error) => {
       toast.error(`${t('forceStopError')}: ${error?.error?.serverError || error}`);
@@ -61,12 +60,10 @@ export default function SessionPageClient({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' && agentStatus === 'working') {
-        if (confirm(t('confirmForceStop') || 'Are you sure you want to stop the agent work?')) {
-          sendEvent({
-            workerId,
-            event: { type: 'forceStop' },
-          });
-        }
+        sendEvent({
+          workerId,
+          event: { type: 'forceStop' },
+        });
       }
     },
     [workerId, agentStatus, t, sendEvent]
