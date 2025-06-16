@@ -45,7 +45,7 @@ export default function SessionPageClient({
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
   const [showTodoModal, setShowTodoModal] = useState(false);
-  const { isBottom } = useScrollPosition();
+  const { isBottom, isHeaderVisible } = useScrollPosition();
 
   const getUnifiedStatus = () => {
     if (agentStatus === 'completed') {
@@ -190,9 +190,9 @@ export default function SessionPageClient({
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="sticky top-0 z-10">
+      <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
         <Header />
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2">
           <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
             <div className="flex items-center gap-4 min-w-0 flex-shrink">
               <Link

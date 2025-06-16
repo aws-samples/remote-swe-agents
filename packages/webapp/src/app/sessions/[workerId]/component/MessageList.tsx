@@ -61,7 +61,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-2">
         <div>
           {messageGroups.map((group, index) => (
             <MessageGroupComponent key={`group-${index}`} group={group} />

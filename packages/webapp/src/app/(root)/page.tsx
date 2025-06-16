@@ -12,7 +12,7 @@ export default async function Home() {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
 
-      <main className="flex-grow">
+      <main className="flex-grow pt-20">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center py-16">
             <Bot className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />

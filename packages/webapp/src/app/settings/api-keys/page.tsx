@@ -14,8 +14,8 @@ export default async function ApiKeysPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
-      <main className="flex-grow">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+      <main className="flex-grow pt-20">
+        <div className="max-w-6xl mx-auto px-4 pb-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
           </div>

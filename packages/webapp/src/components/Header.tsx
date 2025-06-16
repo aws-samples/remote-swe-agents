@@ -20,13 +20,19 @@ import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { setUserLocale } from '@/i18n/db';
+import { useScrollPosition } from '@/hooks/use-scroll-position';
 
 export default function Header() {
   const t = useTranslations('header');
   const { localeOptions, currentLocale, changeLocale } = useLanguageSwitcher();
+  const { isHeaderVisible } = useScrollPosition();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full">
+    <header
+      className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full fixed top-0 z-40 transition-transform duration-300 ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between h-16 items-center w-full">
           <div className="flex-shrink-0 min-w-0">
