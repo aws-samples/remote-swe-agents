@@ -45,6 +45,9 @@
       "completed": "完了",
       "unknown": "不明"
     },
+    "confirmForceStop": "現在の作業を中断してもよろしいですか？",
+    "forceStopSuccess": "エージェントの作業を停止しました",
+    "forceStopError": "エージェントの作業停止に失敗しました",
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",
     "enterYourMessage": "メッセージを入力...",

@@ -45,6 +45,9 @@
       "completed": "Completed",
       "unknown": "Unknown"
     },
+    "confirmForceStop": "Are you sure you want to stop the current agent work?",
+    "forceStopSuccess": "Agent work stopped successfully",
+    "forceStopError": "Failed to stop agent work",
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
     "enterYourMessage": "Enter your message...",
