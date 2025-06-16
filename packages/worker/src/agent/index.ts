@@ -177,14 +177,14 @@ Users will primarily request software engineering assistance including bug fixes
     }
   };
   await tryAppendCommonPrompt();
-  
+
   // Check for system prompt override in session
   const tryApplySystemPromptOverride = async () => {
     try {
       const session = await getSession(workerId);
       if (session?.systemPromptOverride) {
         const { prompt, mode } = session.systemPromptOverride;
-        
+
         if (mode === 'overwrite') {
           console.log('Overwriting system prompt with override');
           systemPrompt = prompt;
