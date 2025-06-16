@@ -19,7 +19,7 @@ let clients: { name: string; client: MCPClient }[] = [];
 const initMcp = async () => {
   try {
     const configFileContent = readFileSync('./mcp.json').toString();
-    
+
     // Parse JSON content
     let configJson;
     try {
@@ -32,7 +32,7 @@ const initMcp = async () => {
       await sendSystemMessage('system', errorMessage);
       return; // Return early without throwing, allowing agent to start without MCP
     }
-    
+
     // Validate schema
     const { success, data: config, error } = configSchema.safeParse(configJson);
     if (!success) {
@@ -42,7 +42,7 @@ const initMcp = async () => {
       await sendSystemMessage('system', errorMessage);
       return; // Return early without throwing
     }
-    
+
     clients = (
       await Promise.all(
         Object.entries(config.mcpServers).map(async ([name, config]) => {
@@ -82,7 +82,7 @@ export const tryExecuteMcpTool = async (toolName: string, input: any) => {
   if (clients.length === 0) {
     return { found: false };
   }
-  
+
   const client = clients.find(({ client }) => client.tools.find((tool) => tool.toolSpec?.name == toolName));
   if (client == null) {
     return { found: false };
@@ -96,7 +96,7 @@ export const closeMcpServers = async () => {
   if (clients.length === 0) {
     return;
   }
-  
+
   await Promise.all(
     clients.map(async (client) => {
       await client.client.cleanup();
