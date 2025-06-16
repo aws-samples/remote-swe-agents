@@ -231,7 +231,9 @@ export default function SessionPageClient({
               </button>
               {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-1 sm:gap-2 w-20 sm:w-24 min-w-0">
-                  <span className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
+                  <span
+                    className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`}
+                  />
                   <span className="text-xs sm:text-sm font-medium truncate">{getUnifiedStatus().text}</span>
                 </div>
               )}
