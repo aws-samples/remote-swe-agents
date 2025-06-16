@@ -46,7 +46,7 @@
       "unknown": "不明"
     },
 
-    "forceStopSuccess": "エージェントの作業を停止しました",
+    "forceStopSuccess": "エージェントの作業を停止中...",
     "forceStopError": "エージェントの作業停止に失敗しました",
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",

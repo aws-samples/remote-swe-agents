@@ -10,6 +10,7 @@ import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { WorkerImageBuilder } from './image-builder';
+import { readFileSync } from 'fs';
 
 export interface WorkerProps {
   vpc: ec2.IVpc;
@@ -41,6 +42,15 @@ export class Worker extends Construct {
     super(scope, id);
 
     const { vpc } = props;
+
+    const mcpJsonPath = join('..', 'packages', 'worker', 'mcp.json');
+    try {
+      JSON.parse(readFileSync(mcpJsonPath).toString());
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(`${mcpJsonPath} has syntax error! Please fix it.`);
+      }
+    }
 
     // Create CloudWatch LogGroup for worker logs
     this.logGroup = new logs.LogGroup(this, 'LogGroup', {

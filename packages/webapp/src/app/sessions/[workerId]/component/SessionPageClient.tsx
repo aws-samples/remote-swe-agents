@@ -49,7 +49,7 @@ export default function SessionPageClient({
 
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
-    onSuccess: () => {
+    onExecute: () => {
       toast.success(t('forceStopSuccess'));
     },
     onError: (error) => {
