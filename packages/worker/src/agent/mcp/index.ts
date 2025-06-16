@@ -24,8 +24,8 @@ const initMcp = async () => {
     let configJson;
     try {
       configJson = JSON.parse(configFileContent);
-    } catch (e) {
-      const errorMessage = `mcp.json の構文エラー: ${e.message}`;
+    } catch (e: unknown) {
+      const errorMessage = `mcp.json の構文エラー: ${e instanceof Error ? e.message : String(e)}`;
       console.error(errorMessage);
       // sendSystemMessage is imported in agent/index.ts
       const sendSystemMessage = require('@remote-swe-agents/agent-core/lib').sendSystemMessage;
@@ -55,8 +55,8 @@ const initMcp = async () => {
         })
       )
     ).filter((c) => c != null);
-  } catch (e) {
-    const errorMessage = `mcp.json の読み込みに失敗: ${e.message}`;
+  } catch (e: unknown) {
+    const errorMessage = `mcp.json の読み込みに失敗: ${e instanceof Error ? e.message : String(e)}`;
     console.error(errorMessage);
     const sendSystemMessage = require('@remote-swe-agents/agent-core/lib').sendSystemMessage;
     await sendSystemMessage('system', errorMessage);
