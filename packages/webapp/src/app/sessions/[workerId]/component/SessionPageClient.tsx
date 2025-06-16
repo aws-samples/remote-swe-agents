@@ -192,21 +192,21 @@ export default function SessionPageClient({
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
         <Header />
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2">
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
           <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
-            <div className="flex items-center gap-4 min-w-0 flex-shrink">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
               <Link
                 href="/sessions"
-                className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex-shrink-0"
+                className="inline-flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex-shrink-0"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline truncate">{t('sessionList')}</span>
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline truncate text-sm sm:text-base">{t('sessionList')}</span>
               </Link>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">
+              <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">
                 {workerId}
               </h1>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Session status toggle button */}
               <button
                 onClick={() =>
@@ -215,7 +215,7 @@ export default function SessionPageClient({
                     status: agentStatus === 'completed' ? 'pending' : 'completed',
                   })
                 }
-                className={`flex items-center justify-center w-6 h-6 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   agentStatus === 'completed'
                     ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
                     : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
@@ -224,24 +224,24 @@ export default function SessionPageClient({
                 disabled={isUpdatingStatus}
               >
                 {isUpdatingStatus ? (
-                  <Loader2 className="h-3 w-3 animate-spin text-gray-600 dark:text-gray-300" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-gray-600 dark:text-gray-300" />
                 ) : (
-                  agentStatus === 'completed' && <Check className="h-4 w-4 text-white" />
+                  agentStatus === 'completed' && <Check className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 )}
               </button>
               {(instanceStatus || agentStatus) && (
-                <div className="flex items-center gap-2 w-24 min-w-0">
-                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
-                  <span className="text-sm font-medium truncate">{getUnifiedStatus().text}</span>
+                <div className="flex items-center gap-1 sm:gap-2 w-20 sm:w-24 min-w-0">
+                  <span className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`} />
+                  <span className="text-xs sm:text-sm font-medium truncate">{getUnifiedStatus().text}</span>
                 </div>
               )}
               {todoList && (
                 <button
                   onClick={() => setShowTodoModal(!showTodoModal)}
-                  className="inline-flex items-center px-3 py-2 h-10 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                   title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
                 >
-                  <ListChecks className="h-4 w-4 sm:mr-2" />
+                  <ListChecks className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                   <span className="hidden sm:inline truncate">
                     {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
                     {todoList.items.length})
@@ -253,9 +253,9 @@ export default function SessionPageClient({
               )}
               <Link
                 href="/sessions/new"
-                className="inline-flex items-center px-4 py-2 h-10 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <Plus className="h-4 w-4 sm:mr-2" />
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                 <span className="hidden sm:inline truncate">{t('newSession')}</span>
               </Link>
             </div>
