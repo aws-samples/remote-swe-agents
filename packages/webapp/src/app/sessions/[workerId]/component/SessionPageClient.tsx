@@ -261,7 +261,7 @@ export default function SessionPageClient({
                 }
                 className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   agentStatus === 'completed'
-                    ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
+                    ? 'border-gray-400 bg-gray-400 hover:border-gray-500 hover:bg-gray-500 dark:border-gray-500 dark:bg-gray-500 dark:hover:border-gray-400 dark:hover:bg-gray-400'
                     : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
