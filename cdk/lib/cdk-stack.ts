@@ -78,7 +78,6 @@ export class MainStack extends cdk.Stack {
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
     });
 
-    // 既存VPCが指定されていればそれを使用し、そうでなければ新規作成
     const vpc = props.vpcId
       ? Vpc.fromLookup(this, 'VpcV2', { vpcId: props.vpcId })
       : new Vpc(this, 'VpcV2', {
