@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bot, Loader2, Square } from 'lucide-react';
+import { Bot, Loader2, Pause } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
@@ -91,9 +91,9 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
                         <TooltipTrigger asChild>
                           <button
                             onClick={onInterrupt}
-                            className="ml-2 flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                            className="ml-1 flex items-center px-4 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                           >
-                            <Square className="w-3 h-3" />
+                            <Pause className="w-4 h-4 mr-2" />
                             {t('interrupt')}
                           </button>
                         </TooltipTrigger>
