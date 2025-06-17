@@ -45,6 +45,24 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+
+  // Update state when props change (e.g., on refresh)
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
+  useEffect(() => {
+    setInstanceStatus(initialInstanceStatus);
+  }, [initialInstanceStatus]);
+
+  useEffect(() => {
+    setAgentStatus(initialAgentStatus);
+  }, [initialAgentStatus]);
+
+  useEffect(() => {
+    setTodoList(initialTodoList);
+  }, [initialTodoList]);
+
   const [showTodoModal, setShowTodoModal] = useState(false);
   const { isBottom, isHeaderVisible } = useScrollPosition();
 
