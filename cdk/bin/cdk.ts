@@ -10,7 +10,12 @@ const targetEnv = process.env.TARGET_ENV ?? 'Sandbox';
 
 // Parse IP addresses and country codes from environment variables
 const parseCommaSeparatedList = (envVar: string | undefined): string[] | undefined => {
-  return envVar ? envVar.split(',').map(item => item.trim()).filter(item => item) : undefined;
+  return envVar
+    ? envVar
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item)
+    : undefined;
 };
 
 const allowedIpV4AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV4_CIDRS);
