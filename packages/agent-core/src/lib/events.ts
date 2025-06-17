@@ -69,13 +69,14 @@ type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : nev
 
 export async function sendWebappEvent(
   workerId: string,
-  event: DistributiveOmit<z.infer<typeof webappEventSchema>, 'timestamp'>
+  event: DistributiveOmit<z.infer<typeof webappEventSchema>, 'timestamp' | 'workerId'>
 ) {
   try {
     await sendEvent(`webapp/worker/${workerId}`, {
       ...event,
       timestamp: Date.now(),
-    });
+      workerId,
+    } satisfies z.infer<typeof webappEventSchema>);
   } catch (e) {
     // webapp event is not critical so we do not throw on error.
     console.log(`failed to send event: ${e}`);
