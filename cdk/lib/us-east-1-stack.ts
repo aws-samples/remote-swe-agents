@@ -59,7 +59,6 @@ export class UsEast1Stack extends cdk.Stack {
 
     this.signPayloadHandler = signPayloadHandler;
 
-    // IPアドレス制限が設定されている場合はWAF Web ACLを作成
     if (props.allowedIpV4AddressRanges || props.allowedIpV6AddressRanges || props.allowedCountryCodes) {
       const webAcl = new CommonWebAcl(this, 'WebAcl', {
         scope: 'CLOUDFRONT',
