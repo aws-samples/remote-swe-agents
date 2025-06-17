@@ -162,6 +162,16 @@ You can configure additional AWS managed policies to be attached to the worker i
 WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
 ```
 
+#### For Using Existing VPC:
+
+If you want to use an existing VPC instead of creating a new one, you can specify the VPC ID by adding this to your `.env.local` file:
+
+```sh
+VPC_ID=vpc-12345abcdef
+```
+
+When this variable is set, the deployment will use the existing VPC instead of creating a new one.
+
 #### For Webapp User Creation:
 
 You can automatically create an initial webapp user during deployment by adding this to your `.env.local` file:
