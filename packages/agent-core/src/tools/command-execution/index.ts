@@ -15,12 +15,18 @@ const inputSchema = z.object({
     .describe(
       'If true, do not wait for the process to exit; leave the process running and return control after 10 seconds.'
     ),
+  timeoutMs: z
+    .number()
+    .optional()
+    .describe(
+      'Custom timeout in milliseconds for command execution. Default is 60000ms (60 seconds).'
+    ),
 });
 
 export const DefaultWorkingDirectory = join(homedir(), `.remote-swe-workspace`);
 spawn('mkdir', ['-p', DefaultWorkingDirectory]);
 
-export const executeCommand = async (command: string, cwd?: string, timeout = 60000, longRunningProcess = false) => {
+export const executeCommand = async (command: string, cwd?: string, timeoutMs = 60000, longRunningProcess = false) => {
   const token = await authorizeGitHubCli();
   cwd = cwd ?? DefaultWorkingDirectory;
 
@@ -55,13 +61,13 @@ export const executeCommand = async (command: string, cwd?: string, timeout = 60
         if (!longRunningProcess) {
           childProcess.kill();
           resolve({
-            error: `Command execution timed out after ${Math.round(timeout / 1000)} seconds of inactivity`,
+            error: `Command execution timed out after ${Math.round(timeoutMs / 1000)} seconds of inactivity`,
             stdout: truncate(stdout, 40e3),
             stderr: truncate(stderr),
             suggestion: generateSuggestion(command, false),
           });
         }
-      }, timeout);
+      }, timeoutMs);
     };
 
     resetTimer();
@@ -129,8 +135,8 @@ export const executeCommand = async (command: string, cwd?: string, timeout = 60
   });
 };
 
-const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean }) => {
-  const res = await executeCommand(input.command, input.cwd, 60000, input.longRunningProcess);
+const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number }) => {
+  const res = await executeCommand(input.command, input.cwd, input.timeoutMs ?? 60000, input.longRunningProcess);
   return JSON.stringify(res, undefined, 1);
 };
 
@@ -145,6 +151,8 @@ export const commandExecutionTool: ToolDefinition<z.infer<typeof inputSchema>> =
     description: `Execute any shell command. If you need to run a command in a specific directory, set \`cwd\` argument (optional).
 
 If you need to run a daemon or long-running process like \`npm run dev\` or \`docker compose up\`, set \`longRunningProcess: true\`. This will start the process, wait for 10 seconds to allow it to initialize, and return control to you while keeping the process running in the background.
+
+For one-time tasks that you expect to take longer than 60 seconds to complete, set \`timeoutMs\` to a higher value (in milliseconds). For example, \`timeoutMs: 180000\` for a 3-minute timeout. Do NOT use this for daemon processes - use \`longRunningProcess: true\` instead.
 
 IMPORTANT: When your command contains special characters (like backticks, quotes, dollar signs), they need to be properly escaped to prevent shell interpretation. Common approaches:
 1. Use single quotes to prevent variable expansion and most interpretations: 'text with $HOME and \`backticks\`'
