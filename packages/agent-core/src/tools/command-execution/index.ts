@@ -18,9 +18,7 @@ const inputSchema = z.object({
   timeoutMs: z
     .number()
     .optional()
-    .describe(
-      'Custom timeout in milliseconds for command execution. Default is 60000ms (60 seconds).'
-    ),
+    .describe('Custom timeout in milliseconds for command execution. Default is 60000ms (60 seconds).'),
 });
 
 export const DefaultWorkingDirectory = join(homedir(), `.remote-swe-workspace`);
