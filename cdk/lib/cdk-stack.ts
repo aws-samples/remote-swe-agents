@@ -20,7 +20,7 @@ export interface MainStackProps extends cdk.StackProps {
   readonly domainName?: string;
   readonly sharedCertificate?: ICertificate;
   readonly cloudFrontWebAclArn?: string;
-  readonly existingVpcId?: string;
+  readonly vpcId?: string;
 
   readonly slack: {
     botTokenParameterName: string;
@@ -79,8 +79,8 @@ export class MainStack extends cdk.Stack {
     });
 
     // 既存VPCが指定されていればそれを使用し、そうでなければ新規作成
-    const vpc = props.existingVpcId
-      ? Vpc.fromLookup(this, 'ImportedVpc', { vpcId: props.existingVpcId })
+    const vpc = props.vpcId
+      ? Vpc.fromLookup(this, 'VpcV2', { vpcId: props.vpcId })
       : new Vpc(this, 'VpcV2', {
           subnetConfiguration: [
             {
