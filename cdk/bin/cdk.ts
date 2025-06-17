@@ -52,7 +52,7 @@ const props: MainStackProps = {
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',
     signingSecretParameterName: '/remote-swe/slack/signing-secret',
-    adminUserIdList: process.env.ADMIN_USER_ID_LIST,
+    adminUserIdList: process.env.SLACK_ADMIN_USER_ID_LIST,
   },
   github: {
     ...(process.env.GITHUB_APP_ID

@@ -133,31 +133,37 @@ GitHubと連携するには、GitHub統合のセットアップが必要です�
 
 ### ステップ4：環境変数のセットアップ
 
-デプロイメントには以下の環境変数が必要です：
+まずサンプルテンプレートから `.env.local` ファイルを作成してください:
 
-#### GitHub App統合の場合：
-
-GitHub App統合（上記のオプション3B）を使用する場合、CDKをデプロイする際に以下の2つの環境変数を設定する必要があります。
-
-```sh
-export GITHUB_APP_ID=your-github-app-id
-export GITHUB_INSTALLATION_ID=your-github-installation-id
+```bash
+cp .env.local.example .env.local
 ```
 
-#### ワーカーインスタンス設定の場合：
+次に、`.env.local` を編集してデプロイメントに必要な環境変数を設定します。
 
-ワーカーインスタンスロールにアタッチする追加のAWSマネージドポリシーを設定できます：
+#### GitHub App統合
+
+GitHub App統合（上記のオプション3B）を使用する場合、`.env.local` ファイルに以下の変数を設定します：
 
 ```sh
-export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+GITHUB_APP_ID=your-github-app-id
+GITHUB_INSTALLATION_ID=your-github-installation-id
 ```
 
-#### Webappユーザー作成の場合：
+#### ワーカーインスタンス設定
 
-以下の環境変数を設定することで、デプロイ中に初期webappユーザーを自動作成できます：
+ワーカーインスタンスロールにアタッチする追加のAWSマネージドポリシーを設定するには、`.env.local` ファイルに以下を記述します：
 
 ```sh
-export INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
+WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+```
+
+#### Webappユーザー作成
+
+デプロイ中に初期webappユーザーを自動作成するには、`.env.local` ファイルに以下を記述します：
+
+```sh
+INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
 ```
 
 この変数が設定されている場合、デプロイ中にCognitoユーザーが作成され、指定されたメールアドレスに一時パスワードが送信されます。このメールと一時パスワードを使用してwebappにログインできます。
@@ -207,7 +213,7 @@ npx cdk deploy --all
 詳細については、こちらのドキュメントを参照してください：[マニフェストでアプリを作成および設定する](https://api.slack.com/reference/manifests)
 
 > [!NOTE]
-> 共有（個人ではなく）Slackワークスペースを使用している場合は、エージェントへのアクセスを制御するために`ADMIN_USER_ID_LIST`環境変数（以下を参照）の設定を検討してください。この制限がないと、ワークスペース内の誰でもエージェントにアクセスでき、潜在的にあなたのGitHubコンテンツにもアクセスできてしまいます。
+> 共有（個人ではなく）Slackワークスペースを使用している場合は、エージェントへのアクセスを制御するために`SLACK_ADMIN_USER_ID_LIST`環境変数（以下を参照）の設定を検討してください。この制限がないと、ワークスペース内の誰でもエージェントにアクセスでき、潜在的にあなたのGitHubコンテンツにもアクセスできてしまいます。
 
 #### Slack用SSMパラメータの更新
 
@@ -231,12 +237,12 @@ aws ssm put-parameter \
 
 ### ステップ7：（オプション）Slackからのシステムアクセス制限
 
-Slackワークスペース内のどのメンバーがエージェントにアクセスできるかを制御するには、以下の環境変数でSlackユーザーIDのカンマ区切りリストを提供できます：
+Slackワークスペース内のどのメンバーがエージェントにアクセスできるかを制御するには、`.env.local` ファイルにSlackユーザーIDのカンマ区切りリストを記述します：
 
 メンバーのSlackユーザーIDを取得するには、[これらの指示](https://www.google.com/search?q=copy+member+id+slack)に従ってください。
 
 ```sh
-export ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
+SLACK_ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
 ```
 
 指定されたユーザーID以外のすべてのユーザーは、Slackアプリへのアクセスを試みると「Unauthorized」エラーを受け取ります。

@@ -137,31 +137,37 @@ To interact with GitHub, you need to setup GitHub integration. You have two opti
 
 ### Step 4: Environment Variables Setup
 
-The following environment variables are required for deployment:
+Create a `.env.local` file from the example template:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Then edit `.env.local` to configure the required environment variables for deployment:
 
 #### For GitHub App Integration:
 
-When you use GitHub App integration (option 3B above), you must set the below two environment variables when deploying CDK.
+When you use GitHub App integration (option 3B above), set the following variables in your `.env.local` file:
 
 ```sh
-export GITHUB_APP_ID=your-github-app-id
-export GITHUB_INSTALLATION_ID=your-github-installation-id
+GITHUB_APP_ID=your-github-app-id
+GITHUB_INSTALLATION_ID=your-github-installation-id
 ```
 
 #### For Worker Instance Configuration:
 
-You can configure additional AWS managed policies to be attached to the worker instance role:
+You can configure additional AWS managed policies to be attached to the worker instance role by adding this to your `.env.local` file:
 
 ```sh
-export WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
 ```
 
 #### For Webapp User Creation:
 
-You can automatically create an initial webapp user during deployment by setting the following environment variable:
+You can automatically create an initial webapp user during deployment by adding this to your `.env.local` file:
 
 ```sh
-export INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
+INITIAL_WEBAPP_USER_EMAIL=your-email@example.com
 ```
 
 When this variable is set, a Cognito user will be created during deployment, and a temporary password will be sent to the specified email address. You can then use this email and temporary password to log into the webapp.
@@ -213,7 +219,7 @@ Now, you need to set up a Slack App to control agents through the Slack interfac
 Please also refer to this document for more details: [Create and configure apps with manifests](https://api.slack.com/reference/manifests)
 
 > [!NOTE]
-> If you're using a shared (rather than personal) Slack workspace, consider setting the `ADMIN_USER_ID_LIST` environment variable (see below) to control agent access. Without this restriction, anyone in the workspace can access the agents and potentially your GitHub content.
+> If you're using a shared (rather than personal) Slack workspace, consider setting the `SLACK_ADMIN_USER_ID_LIST` environment variable (see below) to control agent access. Without this restriction, anyone in the workspace can access the agents and potentially your GitHub content.
 
 #### Update SSM Parameters for Slack
 
@@ -237,12 +243,12 @@ Replace `your-slack-bot-token` and `your-slack-signing-secret` with the actual v
 
 ### Step 7: (Optional) Restrict Access to the System from Slack
 
-To control which members in the Slack workspace can access the agents, you can provide a comma-separated list of Slack User IDs in the following environment variable:
+To control which members in the Slack workspace can access the agents, you can provide a comma-separated list of Slack User IDs by adding this to your `.env.local` file:
 
 To get a member's Slack user ID, [follow these instructions](https://www.google.com/search?q=copy+member+id+slack).
 
 ```sh
-export ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
+SLACK_ADMIN_USER_ID_LIST=U123ABC456,U789XYZ012
 ```
 
 All users except those with specified user IDs will receive an Unauthorized error when attempting to access the Slack app.
