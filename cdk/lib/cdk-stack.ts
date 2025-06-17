@@ -19,6 +19,7 @@ export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
   readonly domainName?: string;
   readonly sharedCertificate?: ICertificate;
+  readonly cloudFrontWebAclArn?: string;
 
   readonly slack: {
     botTokenParameterName: string;
@@ -153,6 +154,7 @@ export class MainStack extends cdk.Stack {
       hostedZone,
       certificate: props.sharedCertificate,
       signPayloadHandler: props.signPayloadHandler,
+      webAclArn: props.cloudFrontWebAclArn,
       accessLogBucket,
       auth,
       launchTemplateId: worker.launchTemplate.launchTemplateId!,

@@ -8,12 +8,24 @@ const app = new cdk.App();
 
 const targetEnv = process.env.TARGET_ENV ?? 'Sandbox';
 
+// Parse IP addresses and country codes from environment variables
+const parseCommaSeparatedList = (envVar: string | undefined): string[] | undefined => {
+  return envVar ? envVar.split(',').map(item => item.trim()).filter(item => item) : undefined;
+};
+
+const allowedIpV4AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV4_CIDRS);
+const allowedIpV6AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV6_CIDRS);
+const allowedCountryCodes = parseCommaSeparatedList(process.env.ALLOWED_COUNTRY_CODES);
+
 const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'us-east-1',
   },
   crossRegionReferences: true,
+  allowedIpV4AddressRanges,
+  allowedIpV6AddressRanges,
+  allowedCountryCodes,
 });
 
 // Parse additional AWS managed policies from environment variable if provided
@@ -30,6 +42,7 @@ const props: MainStackProps = {
   },
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
+  cloudFrontWebAclArn: virginia.webAclArn,
   workerAmiIdParameterName: '/remote-swe/worker/ami-id',
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',

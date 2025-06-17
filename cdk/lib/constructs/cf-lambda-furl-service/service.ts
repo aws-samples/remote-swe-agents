@@ -41,6 +41,11 @@ export interface CloudFrontLambdaFunctionUrlServiceProps {
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
   signPayloadHandler: EdgeFunction;
+  /**
+   * The ARN of the WAF Web ACL to associate with the CloudFront distribution
+   * @default no WAF Web ACL
+   */
+  webAclArn?: string;
   accessLogBucket: Bucket;
 }
 
@@ -85,6 +90,7 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
 
     const distribution = new Distribution(this, 'Resource', {
       comment: `CloudFront for ${serviceName}`,
+      webAclId: props.webAclArn,
       defaultBehavior: {
         origin,
         cachePolicy,
