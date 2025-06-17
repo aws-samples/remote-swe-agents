@@ -134,6 +134,20 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
 };
 
 const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number }) => {
+  // Validate that timeoutMs and longRunningProcess are not used together
+  if (input.timeoutMs !== undefined && input.longRunningProcess === true) {
+    return JSON.stringify(
+      {
+        error:
+          "Cannot use both 'timeoutMs' and 'longRunningProcess' options together. Use 'timeoutMs' for one-time tasks that need longer execution time, and 'longRunningProcess' for daemon processes that should continue running in the background.",
+        stdout: '',
+        stderr: '',
+      },
+      undefined,
+      1
+    );
+  }
+
   const res = await executeCommand(input.command, input.cwd, input.timeoutMs ?? 60000, input.longRunningProcess);
   return JSON.stringify(res, undefined, 1);
 };
