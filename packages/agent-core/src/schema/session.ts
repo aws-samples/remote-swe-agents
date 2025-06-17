@@ -10,6 +10,13 @@ export const instanceStatusSchema = z.union([
 
 export type InstanceStatus = z.infer<typeof instanceStatusSchema>;
 
+export const systemPromptOverrideSchema = z.object({
+  prompt: z.string(),
+  mode: z.union([z.literal('append'), z.literal('overwrite')]),
+});
+
+export type SystemPromptOverride = z.infer<typeof systemPromptOverrideSchema>;
+
 export const sessionItemSchema = z.object({
   PK: z.literal('sessions'),
   SK: z.string(),
@@ -20,6 +27,7 @@ export const sessionItemSchema = z.object({
   instanceStatus: instanceStatusSchema,
   sessionCost: z.number(),
   agentStatus: agentStatusSchema,
+  systemPromptOverride: systemPromptOverrideSchema.optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;
