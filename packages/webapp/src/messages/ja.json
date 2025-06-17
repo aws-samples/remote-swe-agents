@@ -46,7 +46,7 @@
       "unknown": "不明"
     },
 
-    "forceStopSuccess": "エージェントの作業を停止中...",
+    "forceStopInProgress": "エージェントの作業を停止中...",
     "forceStopError": "エージェントの作業停止に失敗しました",
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
     "aiAgentResponding": "AIエージェントが応答中...",
@@ -77,7 +77,9 @@
     "markAsCompleted": "完了としてマーク",
     "markAsIncomplete": "未完了としてマーク",
     "completed": "完了",
-    "incomplete": "未完了"
+    "incomplete": "未完了",
+    "interrupt": "中断",
+    "interruptToolTip": "Escapeキーで中断"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

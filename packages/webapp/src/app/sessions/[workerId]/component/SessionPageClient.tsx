@@ -69,23 +69,29 @@ export default function SessionPageClient({
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
     onExecute: () => {
-      toast.success(t('forceStopSuccess'));
+      toast.success(t('forceStopInProgress'));
     },
     onError: (error) => {
       toast.error(`${t('forceStopError')}: ${error?.error?.serverError || error}`);
     },
   });
 
+  const handleInterrupt = useCallback(() => {
+    if (agentStatus === 'working') {
+      sendEvent({
+        workerId,
+        event: { type: 'forceStop' },
+      });
+    }
+  }, [workerId, agentStatus, sendEvent]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && agentStatus === 'working') {
-        sendEvent({
-          workerId,
-          event: { type: 'forceStop' },
-        });
+      if (e.key === 'Escape') {
+        handleInterrupt();
       }
     },
-    [workerId, agentStatus, t, sendEvent]
+    [handleInterrupt]
   );
 
   // Add and remove event listener for Escape key
@@ -327,7 +333,12 @@ export default function SessionPageClient({
           </div>
         )}
 
-        <MessageList messages={messages} instanceStatus={instanceStatus} agentStatus={agentStatus} />
+        <MessageList
+          messages={messages}
+          instanceStatus={instanceStatus}
+          agentStatus={agentStatus}
+          onInterrupt={handleInterrupt}
+        />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
 

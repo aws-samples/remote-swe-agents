@@ -46,7 +46,7 @@
       "unknown": "Unknown"
     },
 
-    "forceStopSuccess": "Stopping Agent work...",
+    "forceStopInProgress": "Stopping Agent work...",
     "forceStopError": "Failed to stop agent work",
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
@@ -77,7 +77,9 @@
     "markAsCompleted": "Mark as completed",
     "markAsIncomplete": "Mark as incomplete",
     "completed": "Completed",
-    "incomplete": "Incomplete"
+    "incomplete": "Incomplete",
+    "interrupt": "Interrupt",
+    "interruptToolTip": "Interrupt (or press Escape)"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
