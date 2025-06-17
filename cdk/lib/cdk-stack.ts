@@ -20,6 +20,7 @@ export interface MainStackProps extends cdk.StackProps {
   readonly domainName?: string;
   readonly sharedCertificate?: ICertificate;
   readonly cloudFrontWebAclArn?: string;
+  readonly existingVpcId?: string;
 
   readonly slack: {
     botTokenParameterName: string;
@@ -77,19 +78,22 @@ export class MainStack extends cdk.Stack {
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
     });
 
-    const vpc = new Vpc(this, 'VpcV2', {
-      subnetConfiguration: [
-        {
-          // We use public subnets for worker EC2 instances. Here are the reasons:
-          //   1. to remove NAT Gateway cost
-          //   2. to avoid IP-address-based throttling/filtering from external services
-          // All the instances are securely protected by security groups without any inbound rules.
-          subnetType: SubnetType.PUBLIC,
-          name: 'Public',
-          cidrMask: 20,
-        },
-      ],
-    });
+    // 既存VPCが指定されていればそれを使用し、そうでなければ新規作成
+    const vpc = props.existingVpcId
+      ? Vpc.fromLookup(this, 'ImportedVpc', { vpcId: props.existingVpcId })
+      : new Vpc(this, 'VpcV2', {
+          subnetConfiguration: [
+            {
+              // We use public subnets for worker EC2 instances. Here are the reasons:
+              //   1. to remove NAT Gateway cost
+              //   2. to avoid IP-address-based throttling/filtering from external services
+              // All the instances are securely protected by security groups without any inbound rules.
+              subnetType: SubnetType.PUBLIC,
+              name: 'Public',
+              cidrMask: 20,
+            },
+          ],
+        });
 
     const storage = new Storage(this, 'Storage', { accessLogBucket });
 
