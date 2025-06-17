@@ -15,7 +15,7 @@ env:
   WORKER_ADDITIONAL_POLICIES: ${{ secrets.PROD_WORKER_ADDITIONAL_POLICIES }}
 jobs:
   Deploy-cdk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: add-mask
         run: |

@@ -27,7 +27,7 @@ export class AsyncJob extends Construct {
           .toString()
           .split('\n'),
         cmd: ['async-handler.handler'],
-        platform: Platform.LINUX_AMD64,
+        platform: Platform.LINUX_ARM64,
       }),
       memorySize: 256,
       timeout: Duration.minutes(10),

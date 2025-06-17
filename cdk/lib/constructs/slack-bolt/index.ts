@@ -36,7 +36,7 @@ export class SlackBolt extends Construct {
           .toString()
           .split('\n'),
         cmd: ['async-handler.handler'],
-        platform: Platform.LINUX_AMD64,
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(10),
       environment: {
@@ -48,7 +48,7 @@ export class SlackBolt extends Construct {
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
       },
-      architecture: Architecture.X86_64,
+      architecture: Architecture.ARM_64,
     });
     props.workerAmiIdParameter.grantRead(asyncHandler);
     props.storage.table.grantReadWriteData(asyncHandler);
@@ -61,7 +61,7 @@ export class SlackBolt extends Construct {
         exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore'))
           .toString()
           .split('\n'),
-        platform: Platform.LINUX_AMD64,
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.seconds(29),
       environment: {
@@ -74,7 +74,7 @@ export class SlackBolt extends Construct {
         LOG_GROUP_NAME: props.workerLogGroupName,
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
-      architecture: Architecture.X86_64,
+      architecture: Architecture.ARM_64,
     });
     asyncHandler.grantInvoke(handler);
     props.storage.table.grantReadWriteData(handler);
