@@ -8,6 +8,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 interface SessionsListProps {
   initialSessions: SessionItem[];
@@ -15,34 +16,44 @@ interface SessionsListProps {
 
 export default function SessionsList({ initialSessions }: SessionsListProps) {
   const t = useTranslations('sessions');
+  const router = useRouter();
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
 
   useEventBus({
     channelName: 'webapp/worker/*',
-    onReceived: useCallback((payload: unknown) => {
-      try {
-        const event = webappEventSchema.parse(payload);
+    onReceived: useCallback(
+      (payload: unknown) => {
+        try {
+          const event = webappEventSchema.parse(payload);
+          console.log(`received: `, event);
 
-        if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
-          setSessions((prevSessions) =>
-            prevSessions.map((session) => {
-              if (session.workerId === event.workerId) {
-                return {
-                  ...session,
-                  agentStatus: event.type === 'agentStatusUpdate' ? event.status : session.agentStatus,
-                  instanceStatus: event.type === 'instanceStatusChanged' ? event.status : session.instanceStatus,
-                };
-              }
-              return session;
-            })
-          );
+          if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
+            if (sessions.some((s) => s.workerId == event.workerId)) {
+              setSessions((prevSessions) =>
+                prevSessions.map((session) => {
+                  if (session.workerId === event.workerId) {
+                    return {
+                      ...session,
+                      agentStatus: event.type === 'agentStatusUpdate' ? event.status : session.agentStatus,
+                      instanceStatus: event.type === 'instanceStatusChanged' ? event.status : session.instanceStatus,
+                    };
+                  }
+                  return session;
+                })
+              );
+            } else {
+              // if there is inconsistency, refresh
+              router.refresh();
+            }
+          }
+        } catch (error) {
+          console.error('Failed to parse webapp event:', error);
         }
-      } catch (error) {
-        console.error('Failed to parse webapp event:', error);
-      }
-    }, []),
+      },
+      [router]
+    ),
   });
 
   useEffect(() => {
