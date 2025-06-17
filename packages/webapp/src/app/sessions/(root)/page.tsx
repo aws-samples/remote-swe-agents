@@ -3,6 +3,9 @@ import { getSessions } from '@remote-swe-agents/agent-core/lib';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import SessionsList from './components/SessionsList';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function SessionsPage() {
   const sessions = await getSessions();
 
