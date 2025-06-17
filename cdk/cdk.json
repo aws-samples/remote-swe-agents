@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/cdk.ts",
+  "app": "npx tsx --env-file-if-exists=.env.local bin/cdk.ts",
   "watch": {
     "include": [
       "**"
