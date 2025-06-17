@@ -158,6 +158,16 @@ GITHUB_INSTALLATION_ID=your-github-installation-id
 WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
 ```
 
+#### 既存VPCの使用
+
+新しいVPCを作成する代わりに既存のVPCを使用する場合は、`.env.local` ファイルに以下を記述してVPC IDを指定できます：
+
+```sh
+VPC_ID=vpc-12345abcdef
+```
+
+この環境変数が設定されている場合、デプロイは新しいVPCを作成せずに指定された既存のVPCを使用します。
+
 #### Webappユーザー作成
 
 デプロイ中に初期webappユーザーを自動作成するには、`.env.local` ファイルに以下を記述します：
