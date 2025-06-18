@@ -106,8 +106,12 @@ export class Worker extends Construct {
 
     // Add any additional AWS managed policies if specified
     if (props.additionalAwsManagedPolicies && props.additionalAwsManagedPolicies.length > 0) {
-      props.additionalAwsManagedPolicies.forEach((policyName) => {
-        managedPolicies.push(iam.ManagedPolicy.fromAwsManagedPolicyName(policyName));
+      props.additionalAwsManagedPolicies.forEach((policy) => {
+        if (policy.startsWith('arn:')) {
+          managedPolicies.push(iam.ManagedPolicy.fromManagedPolicyArn(this, `Policy-${policy.split('/').pop()}`, policy));
+        } else {
+          managedPolicies.push(iam.ManagedPolicy.fromAwsManagedPolicyName(policy));
+        }
       });
     }
 
