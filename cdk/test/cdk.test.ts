@@ -46,7 +46,12 @@ test('Snapshot test', () => {
       installationId: '9876543',
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
-    additionalAwsManagedPolicies: ['AmazonS3ReadOnlyAccess', 'AmazonDynamoDBReadOnlyAccess'],
+    additionalAwsManagedPolicies: [
+      'AmazonS3ReadOnlyAccess', 
+      'AmazonDynamoDBReadOnlyAccess',
+      'arn:aws:iam::aws:policy/AmazonECR-FullAccess',
+      'arn:aws:iam::123456789012:policy/CustomPolicy'
+    ],
     initialWebappUserEmail: 'user@example.com',
   });
 
