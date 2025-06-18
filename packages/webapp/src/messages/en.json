@@ -16,6 +16,12 @@
     "newSession": "New Session",
     "noSessions": "No sessions found.",
     "createSession": "Create new session",
+    "editTitle": "Edit title",
+    "save": "Save",
+    "cancel": "Cancel",
+    "titleUpdatedSuccess": "Session title updated successfully",
+    "titleUpdateError": "Failed to update session title",
+    "titleCannotBeEmpty": "Title cannot be empty",
     "form": {
       "message": "Message",
       "send": "Send",

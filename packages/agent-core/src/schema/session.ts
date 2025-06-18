@@ -20,6 +20,7 @@ export const sessionItemSchema = z.object({
   instanceStatus: instanceStatusSchema,
   sessionCost: z.number(),
   agentStatus: agentStatusSchema,
+  title: z.string().optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

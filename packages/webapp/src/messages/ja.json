@@ -16,6 +16,12 @@
     "newSession": "新規セッション",
     "noSessions": "セッションが見つかりませんでした。",
     "createSession": "新規セッションを作成",
+    "editTitle": "タイトル編集",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "titleUpdatedSuccess": "セッションタイトルを更新しました",
+    "titleUpdateError": "セッションタイトルの更新に失敗しました",
+    "titleCannotBeEmpty": "タイトルを入力してください",
     "form": {
       "message": "メッセージ",
       "send": "送信",

@@ -9,6 +9,7 @@ import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/sc
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import EditableSessionTitle from './EditableSessionTitle';
 
 interface SessionsListProps {
   initialSessions: SessionItem[];
@@ -76,18 +77,24 @@ export default function SessionsList({ initialSessions }: SessionsListProps) {
         {sessions.map((session) => {
           const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
           return (
-            <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
+            <div key={session.workerId} className="block group">
               <div
-                className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40`}
+                className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40 cursor-pointer`}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
+                  <EditableSessionTitle 
+                    workerId={session.workerId}
+                    initialTitle={session.title}
+                    fallbackTitle={session.SK} 
+                  />
                 </div>
 
-                <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                  {session.initialMessage}
-                </p>
+                <Link href={`/sessions/${session.workerId}`} className="flex-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
+                    {session.initialMessage}
+                  </p>
+                </Link>
 
                 <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center">
@@ -118,7 +125,7 @@ export default function SessionsList({ initialSessions }: SessionsListProps) {
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

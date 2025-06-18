@@ -123,3 +123,24 @@ export const updateSessionAgentStatus = async (workerId: string, agentStatus: Ag
     })
   );
 };
+
+/**
+ * Update session title
+ * @param workerId Worker ID of the session to update
+ * @param title New title for the session
+ */
+export const updateSessionTitle = async (workerId: string, title: string): Promise<void> => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: {
+        PK: 'sessions',
+        SK: workerId,
+      },
+      UpdateExpression: 'SET title = :title',
+      ExpressionAttributeValues: {
+        ':title': title,
+      },
+    })
+  );
+};
