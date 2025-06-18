@@ -46,7 +46,7 @@ test('Snapshot test', () => {
       installationId: '9876543',
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
-    additionalAwsManagedPolicies: [
+    additionalManagedPolicies: [
       'AmazonS3ReadOnlyAccess',
       'AmazonDynamoDBReadOnlyAccess',
       'arn:aws:iam::aws:policy/AmazonECR-FullAccess',

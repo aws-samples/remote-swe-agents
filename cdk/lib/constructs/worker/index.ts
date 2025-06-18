@@ -29,7 +29,7 @@ export interface WorkerProps {
   };
   accessLogBucket: IBucket;
   amiIdParameterName: string;
-  additionalAwsManagedPolicies?: string[];
+  additionalManagedPolicies?: string[];
 }
 
 export class Worker extends Construct {
@@ -105,8 +105,8 @@ export class Worker extends Construct {
     const managedPolicies = [iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')];
 
     // Add any additional AWS managed policies if specified
-    if (props.additionalAwsManagedPolicies && props.additionalAwsManagedPolicies.length > 0) {
-      props.additionalAwsManagedPolicies.forEach((policy) => {
+    if (props.additionalManagedPolicies && props.additionalManagedPolicies.length > 0) {
+      props.additionalManagedPolicies.forEach((policy) => {
         if (policy.startsWith('arn:')) {
           managedPolicies.push(
             iam.ManagedPolicy.fromManagedPolicyArn(this, `Policy-${policy.split('/').pop()}`, policy)

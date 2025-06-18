@@ -73,7 +73,7 @@ const props: MainStackProps = {
         },
       }
     : {}),
-  ...(additionalPolicies ? { additionalAwsManagedPolicies: additionalPolicies } : {}),
+  ...(additionalPolicies ? { additionalManagedPolicies: additionalPolicies } : {}),
   ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
   initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
 };
