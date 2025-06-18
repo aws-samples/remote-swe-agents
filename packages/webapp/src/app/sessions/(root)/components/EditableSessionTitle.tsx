@@ -14,11 +14,7 @@ interface EditableSessionTitleProps {
   fallbackTitle: string;
 }
 
-export default function EditableSessionTitle({
-  workerId,
-  initialTitle,
-  fallbackTitle,
-}: EditableSessionTitleProps) {
+export default function EditableSessionTitle({ workerId, initialTitle, fallbackTitle }: EditableSessionTitleProps) {
   const t = useTranslations('sessions');
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(initialTitle || fallbackTitle);
@@ -73,13 +69,7 @@ export default function EditableSessionTitle({
           onKeyDown={handleKeyDown}
           maxLength={100}
         />
-        <Button
-          onClick={handleSave}
-          size="sm"
-          variant="ghost"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          title={t('save')}
-        >
+        <Button onClick={handleSave} size="sm" variant="ghost" className="h-6 w-6 p-0 flex-shrink-0" title={t('save')}>
           <CheckIcon className="h-3 w-3 text-green-500" />
         </Button>
         <Button

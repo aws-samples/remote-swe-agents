@@ -83,10 +83,10 @@ export default function SessionsList({ initialSessions }: SessionsListProps) {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <EditableSessionTitle 
+                  <EditableSessionTitle
                     workerId={session.workerId}
                     initialTitle={session.title}
-                    fallbackTitle={session.SK} 
+                    fallbackTitle={session.SK}
                   />
                 </div>
 
