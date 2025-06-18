@@ -19,6 +19,8 @@ export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
   readonly domainName?: string;
   readonly sharedCertificate?: ICertificate;
+  readonly cloudFrontWebAclArn?: string;
+  readonly vpcId?: string;
 
   readonly slack: {
     botTokenParameterName: string;
@@ -39,7 +41,7 @@ export interface MainStackProps extends cdk.StackProps {
     roleName: string;
   };
   readonly workerAmiIdParameterName: string;
-  readonly additionalAwsManagedPolicies?: string[];
+  readonly additionalManagedPolicies?: string[];
   readonly initialWebappUserEmail?: string;
 }
 
@@ -76,19 +78,21 @@ export class MainStack extends cdk.Stack {
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
     });
 
-    const vpc = new Vpc(this, 'VpcV2', {
-      subnetConfiguration: [
-        {
-          // We use public subnets for worker EC2 instances. Here are the reasons:
-          //   1. to remove NAT Gateway cost
-          //   2. to avoid IP-address-based throttling/filtering from external services
-          // All the instances are securely protected by security groups without any inbound rules.
-          subnetType: SubnetType.PUBLIC,
-          name: 'Public',
-          cidrMask: 20,
-        },
-      ],
-    });
+    const vpc = props.vpcId
+      ? Vpc.fromLookup(this, 'VpcV2', { vpcId: props.vpcId })
+      : new Vpc(this, 'VpcV2', {
+          subnetConfiguration: [
+            {
+              // We use public subnets for worker EC2 instances. Here are the reasons:
+              //   1. to remove NAT Gateway cost
+              //   2. to avoid IP-address-based throttling/filtering from external services
+              // All the instances are securely protected by security groups without any inbound rules.
+              subnetType: SubnetType.PUBLIC,
+              name: 'Public',
+              cidrMask: 20,
+            },
+          ],
+        });
 
     const storage = new Storage(this, 'Storage', { accessLogBucket });
 
@@ -118,7 +122,7 @@ export class MainStack extends cdk.Stack {
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
-      additionalAwsManagedPolicies: props.additionalAwsManagedPolicies,
+      additionalManagedPolicies: props.additionalManagedPolicies,
     });
 
     new SlackBolt(this, 'SlackBolt', {
@@ -153,6 +157,7 @@ export class MainStack extends cdk.Stack {
       hostedZone,
       certificate: props.sharedCertificate,
       signPayloadHandler: props.signPayloadHandler,
+      webAclArn: props.cloudFrontWebAclArn,
       accessLogBucket,
       auth,
       launchTemplateId: worker.launchTemplate.launchTemplateId!,

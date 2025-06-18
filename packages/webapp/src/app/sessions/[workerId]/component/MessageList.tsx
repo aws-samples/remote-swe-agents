@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Bot, Loader2 } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { Bot, Loader2, Pause } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import { MessageGroupComponent } from './MessageGroup';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export type MessageView = {
   id: string;
@@ -26,9 +27,10 @@ type MessageListProps = {
   messages: MessageView[];
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   agentStatus?: 'pending' | 'working' | 'completed';
+  onInterrupt: () => void;
 };
 
-export default function MessageList({ messages, instanceStatus, agentStatus }: MessageListProps) {
+export default function MessageList({ messages, instanceStatus, agentStatus, onInterrupt }: MessageListProps) {
   const t = useTranslations('sessions');
   const { isBottom } = useScrollPosition();
 
@@ -83,6 +85,24 @@ export default function MessageList({ messages, instanceStatus, agentStatus }: M
                   <span className="text-gray-600 dark:text-gray-300">
                     {instanceStatus === 'starting' ? t('agentStartingMessage') : t('aiAgentResponding')}
                   </span>
+                  {agentStatus === 'working' && (
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={onInterrupt}
+                            className="ml-1 flex items-center px-4 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <Pause className="w-4 h-4 mr-2" />
+                            {t('interrupt')}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t('interruptToolTip')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
             </div>

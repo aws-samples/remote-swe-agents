@@ -1,9 +1,10 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
 export default async function SignInPage() {
   const t = await getTranslations('auth');
   const headerT = await getTranslations('header');
+  const locale = await getLocale();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -22,7 +23,7 @@ export default async function SignInPage() {
             </p>
 
             <Link
-              href="/api/auth/sign-in"
+              href={`/api/auth/sign-in?lang=${locale}`}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
               prefetch={false} // prevent CORS error
             >

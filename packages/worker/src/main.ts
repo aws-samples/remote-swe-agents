@@ -7,6 +7,7 @@ import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-ti
 import { CancellationToken } from './common/cancellation-token';
 import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
+import { updateAgentStatusWithEvent } from './common/status';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -55,6 +56,7 @@ class ConverseSessionTracker {
       })
       .catch((e) => {
         sendSystemMessage(workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
+        console.log(e);
       })
       .finally(() => {
         restartKillTimer(restartToken);
@@ -71,17 +73,22 @@ class ConverseSessionTracker {
       })
       .catch((e) => {
         sendSystemMessage(workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
+        console.log(e);
       })
       .finally(() => {
         restartKillTimer(restartToken);
       });
   }
 
-  public cancelCurrentSessions() {
+  /**
+   *
+   * @param callback The callback function that is executed when each session is cancelled.
+   */
+  public cancelCurrentSessions(callback?: () => Promise<any>) {
     // cancel unfinished sessions
     for (const task of this.sessions) {
       if (task.isFinished) continue;
-      task.cancellationToken.cancel();
+      task.cancellationToken.cancel(callback);
       console.log(`cancelled an ongoing converse session.`);
     }
     // remove finished sessions
@@ -100,7 +107,7 @@ const main = async () => {
     next: (data) => {
       console.log('received broadcast', data);
     },
-    error: (err) => console.error('error', err),
+    error: (err) => console.log(err),
   });
 
   const unicast = await events.connect(`/event-bus/worker/${workerId}`);
@@ -110,9 +117,15 @@ const main = async () => {
       if (type == 'onMessageReceived') {
         tracker.cancelCurrentSessions();
         tracker.startOnMessageReceived();
+      } else if (type == 'forceStop') {
+        tracker.cancelCurrentSessions(async () => {
+          // Update agent status to pending after force stop
+          await updateAgentStatusWithEvent(workerId, 'pending');
+          await sendSystemMessage(workerId, 'Agent work was stopped.');
+        });
       }
     },
-    error: (err) => console.error('error', err),
+    error: (err) => console.log(err),
   });
 
   setKillTimer();
@@ -125,6 +138,7 @@ const main = async () => {
     tracker.startResume();
   } catch (e) {
     await sendSystemMessage(workerId, `An error occurred: ${e}`);
+    console.log(e);
   }
 };
 

@@ -3,10 +3,14 @@ import { Certificate, CertificateValidation, ICertificate } from 'aws-cdk-lib/aw
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import { EdgeFunction } from './constructs/cf-lambda-furl-service/edge-function';
+import { CommonWebAcl } from './constructs/web-acl';
 import { join } from 'path';
 
 interface UsEast1StackProps extends cdk.StackProps {
   domainName?: string;
+  allowedIpV4AddressRanges?: string[];
+  allowedIpV6AddressRanges?: string[];
+  allowedCountryCodes?: string[];
 }
 
 export class UsEast1Stack extends cdk.Stack {
@@ -19,6 +23,11 @@ export class UsEast1Stack extends cdk.Stack {
    * the signer L@E function (it must be deployed in us-east-1).
    */
   public readonly signPayloadHandler: EdgeFunction;
+  /**
+   * the WAF Web ACL ARN for CloudFront (it must be deployed in us-east-1).
+   * undefined if no IP restrictions are set.
+   */
+  public readonly webAclArn: string | undefined = undefined;
 
   constructor(scope: Construct, id: string, props: UsEast1StackProps) {
     super(scope, id, props);
@@ -49,5 +58,16 @@ export class UsEast1Stack extends cdk.Stack {
     });
 
     this.signPayloadHandler = signPayloadHandler;
+
+    if (props.allowedIpV4AddressRanges || props.allowedIpV6AddressRanges || props.allowedCountryCodes) {
+      const webAcl = new CommonWebAcl(this, 'WebAcl', {
+        scope: 'CLOUDFRONT',
+        allowedIpV4AddressRanges: props.allowedIpV4AddressRanges,
+        allowedIpV6AddressRanges: props.allowedIpV6AddressRanges,
+        allowedCountryCodes: props.allowedCountryCodes,
+      });
+
+      this.webAclArn = webAcl.webAclArn;
+    }
   }
 }

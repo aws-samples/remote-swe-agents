@@ -35,6 +35,11 @@ export interface WebappProps {
    * Use root domain
    */
   subDomain?: string;
+  /**
+   * The ARN of the WAF Web ACL to associate with the CloudFront distribution
+   * @default no WAF Web ACL
+   */
+  webAclArn?: string;
 }
 
 export class Webapp extends Construct {
@@ -108,6 +113,7 @@ export class Webapp extends Construct {
       certificate: props.certificate,
       accessLogBucket: props.accessLogBucket,
       signPayloadHandler: props.signPayloadHandler,
+      webAclArn: props.webAclArn,
     });
     this.baseUrl = service.url;
 

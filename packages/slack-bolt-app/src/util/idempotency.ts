@@ -16,9 +16,12 @@ const config = new IdempotencyConfig({ expiresAfterSeconds: 600 });
  * @param func a function that takes idempotency key as the first argument.
  * @returns
  */
-export const makeIdempotent = <T>(func: (key: string) => Promise<T>): ((key: string) => Promise<T>) => {
+export const makeIdempotent = <T>(
+  func: (key: string) => Promise<T>,
+  option?: { config?: IdempotencyConfig }
+): ((key: string) => Promise<T>) => {
   return idempotency.makeIdempotent(func, {
     persistenceStore,
-    config,
+    config: option?.config ?? config,
   });
 };

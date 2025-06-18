@@ -289,7 +289,7 @@ Users will primarily request software engineering assistance including bug fixes
       },
       { retries: 100, minTimeout: 1000, maxTimeout: 5000 }
     );
-    if (!res) return;
+    if (!res) break;
 
     const lastItem = items.at(-1);
     if (lastItem?.role == 'user') {
@@ -420,11 +420,6 @@ Users will primarily request software engineering assistance including bug fixes
       );
       appendedItems.push(...savedItems);
     } else {
-      if (!cancellationToken.isCancelled) {
-        // Update agent status to 'pending' when finishing a turn.
-        // When the turn is cancelled, do not update the status to avoid race condition.
-        await updateAgentStatusWithEvent(workerId, 'pending');
-      }
       const mention = slackUserId ? `<@${slackUserId}> ` : '';
       const finalMessage = res.output?.message;
       if (finalMessage?.content == null || finalMessage.content?.length == 0) {
@@ -437,12 +432,20 @@ Users will primarily request software engineering assistance including bug fixes
       // Save assistant message with token count
       await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant');
       // When reasoning is enabled, reasoning results are in content[0].
-      const responseText = finalMessage.content?.at(-1)?.text ?? '';
+      const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`);
       break;
     }
+  }
+  if (cancellationToken.isCancelled) {
+    // execute any callback when set in the cancellation token.
+    await cancellationToken.completeCancel();
+  } else {
+    // Update agent status to 'pending' when finishing a turn.
+    // When the turn is cancelled, do not update the status to avoid race condition.
+    await updateAgentStatusWithEvent(workerId, 'pending');
   }
 };
 

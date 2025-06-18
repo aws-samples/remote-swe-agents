@@ -5,6 +5,9 @@ import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import { formatMessage } from '@/lib/message-formatter';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface SessionPageProps {
   params: Promise<{
     workerId: string;

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
 import { ArrowLeft, ListChecks, Check, Plus, Loader2 } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus } from '../actions';
+import { updateAgentStatus, sendEventToAgent } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -18,6 +18,7 @@ import {
 } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
+import { getUnifiedStatus } from '@/utils/session-status';
 import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -44,26 +45,69 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+
+  // Update state when props change (e.g., on refresh)
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
+  useEffect(() => {
+    setInstanceStatus(initialInstanceStatus);
+  }, [initialInstanceStatus]);
+
+  useEffect(() => {
+    setAgentStatus(initialAgentStatus);
+  }, [initialAgentStatus]);
+
+  useEffect(() => {
+    setTodoList(initialTodoList);
+  }, [initialTodoList]);
+
   const [showTodoModal, setShowTodoModal] = useState(false);
   const { isBottom, isHeaderVisible } = useScrollPosition();
 
-  const getUnifiedStatus = () => {
-    if (agentStatus === 'completed') {
-      return { text: t('agentStatus.completed'), color: 'bg-gray-500' };
-    }
-    if (instanceStatus === 'stopped' || instanceStatus === 'terminated') {
-      return { text: t('sessionStatus.stopped'), color: 'bg-gray-500' };
-    }
-    if (instanceStatus === 'starting') {
-      return { text: t('sessionStatus.starting'), color: 'bg-blue-500' };
-    }
-    if (agentStatus === 'pending') {
-      return { text: t('agentStatus.pending'), color: 'bg-yellow-500' };
-    }
+  // Setup event handler for Escape key press to force stop agent work
+  const { execute: sendEvent } = useAction(sendEventToAgent, {
+    onExecute: () => {
+      toast.success(t('forceStopInProgress'));
+    },
+    onError: (error) => {
+      toast.error(`${t('forceStopError')}: ${error?.error?.serverError || error}`);
+    },
+  });
+
+  const handleInterrupt = useCallback(() => {
     if (agentStatus === 'working') {
-      return { text: t('agentStatus.working'), color: 'bg-green-500' };
+      sendEvent({
+        workerId,
+        event: { type: 'forceStop' },
+      });
     }
-    return { text: t('agentStatus.unknown'), color: 'bg-gray-400' };
+  }, [workerId, agentStatus, sendEvent]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleInterrupt();
+      }
+    },
+    [handleInterrupt]
+  );
+
+  // Add and remove event listener for Escape key
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  const getSessionStatus = () => {
+    const status = getUnifiedStatus(agentStatus, instanceStatus);
+    return {
+      text: t(status.i18nKey),
+      color: status.color,
+    };
   };
 
   // Refetch todoList function using safe action
@@ -217,7 +261,7 @@ export default function SessionPageClient({
                 }
                 className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   agentStatus === 'completed'
-                    ? 'border-gray-400 bg-gray-400 dark:border-gray-500 dark:bg-gray-500'
+                    ? 'border-gray-400 bg-gray-400 hover:border-gray-500 hover:bg-gray-500 dark:border-gray-500 dark:bg-gray-500 dark:hover:border-gray-400 dark:hover:bg-gray-400'
                     : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
                 }`}
                 title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
@@ -232,9 +276,9 @@ export default function SessionPageClient({
               {(instanceStatus || agentStatus) && (
                 <div className="flex items-center gap-1 sm:gap-2 w-20 sm:w-24 min-w-0">
                   <span
-                    className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getUnifiedStatus().color}`}
+                    className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getSessionStatus().color}`}
                   />
-                  <span className="text-xs sm:text-sm font-medium truncate">{getUnifiedStatus().text}</span>
+                  <span className="text-xs sm:text-sm font-medium truncate">{getSessionStatus().text}</span>
                 </div>
               )}
               {todoList && (
@@ -289,7 +333,12 @@ export default function SessionPageClient({
           </div>
         )}
 
-        <MessageList messages={messages} instanceStatus={instanceStatus} agentStatus={agentStatus} />
+        <MessageList
+          messages={messages}
+          instanceStatus={instanceStatus}
+          agentStatus={agentStatus}
+          onInterrupt={handleInterrupt}
+        />
 
         <MessageForm onSubmit={onSendMessage} workerId={workerId} />
 

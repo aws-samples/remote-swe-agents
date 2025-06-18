@@ -2074,7 +2074,7 @@ exports.handler = async function (event, context) {
       ],
       "Properties": {
         "Architectures": [
-          "x86_64",
+          "arm64",
         ],
         "Code": {
           "ImageUri": {
@@ -2315,7 +2315,7 @@ exports.handler = async function (event, context) {
       ],
       "Properties": {
         "Architectures": [
-          "x86_64",
+          "arm64",
         ],
         "Code": {
           "ImageUri": {
@@ -2996,6 +2996,23 @@ exports.handler = async function (event, context) {
     "Webapp107041BD": {
       "Properties": {
         "DistributionConfig": {
+          "CacheBehaviors": [
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+              ],
+              "CachePolicyId": {
+                "Ref": "WebappStaticCachePolicy6F41ACA1",
+              },
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "_next/static/*",
+              "TargetOriginId": "TestMainStackWebappOrigin144EF7B3C",
+              "ViewerProtocolPolicy": "allow-all",
+            },
+          ],
           "Comment": "CloudFront for RemoteSweAgentsWebapp",
           "DefaultCacheBehavior": {
             "AllowedMethods": [
@@ -3008,7 +3025,7 @@ exports.handler = async function (event, context) {
               "DELETE",
             ],
             "CachePolicyId": {
-              "Ref": "WebappSharedCachePolicy14FEE4A0",
+              "Ref": "WebappDefaultCachePolicy30DB4EEB",
             },
             "Compress": true,
             "LambdaFunctionAssociations": [
@@ -3074,6 +3091,9 @@ exports.handler = async function (event, context) {
               },
             },
           ],
+          "WebACLId": {
+            "Fn::ImportValue": "TestUsEast1Stack:ExportsOutputFnGetAttWebAcl9BD21CA7Arn85C2A8AC",
+          },
         },
       },
       "Type": "AWS::CloudFront::Distribution",
@@ -3230,6 +3250,37 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::ECR::Repository",
       "UpdateReplacePolicy": "Delete",
+    },
+    "WebappDefaultCachePolicy30DB4EEB": {
+      "Properties": {
+        "CachePolicyConfig": {
+          "DefaultTTL": 0,
+          "MaxTTL": 31536000,
+          "MinTTL": 0,
+          "Name": "TestMainStackWebappDefaultCachePolicy7C393633-us-east-1",
+          "ParametersInCacheKeyAndForwardedToOrigin": {
+            "CookiesConfig": {
+              "CookieBehavior": "all",
+            },
+            "EnableAcceptEncodingBrotli": true,
+            "EnableAcceptEncodingGzip": true,
+            "HeadersConfig": {
+              "HeaderBehavior": "whitelist",
+              "Headers": [
+                "authorization",
+                "Origin",
+                "X-HTTP-Method-Override",
+                "X-HTTP-Method",
+                "X-Method-Override",
+              ],
+            },
+            "QueryStringsConfig": {
+              "QueryStringBehavior": "all",
+            },
+          },
+        },
+      },
+      "Type": "AWS::CloudFront::CachePolicy",
     },
     "WebappHandler8DD158A3": {
       "DependsOn": [
@@ -3649,23 +3700,22 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::SSM::Parameter",
     },
-    "WebappSharedCachePolicy14FEE4A0": {
+    "WebappStaticCachePolicy6F41ACA1": {
       "Properties": {
         "CachePolicyConfig": {
           "DefaultTTL": 0,
           "MaxTTL": 31536000,
           "MinTTL": 0,
-          "Name": "TestMainStackWebappSharedCachePolicy2F06D6AB-us-east-1",
+          "Name": "TestMainStackWebappStaticCachePolicy05C7530B-us-east-1",
           "ParametersInCacheKeyAndForwardedToOrigin": {
             "CookiesConfig": {
-              "CookieBehavior": "all",
+              "CookieBehavior": "none",
             },
             "EnableAcceptEncodingBrotli": true,
             "EnableAcceptEncodingGzip": true,
             "HeadersConfig": {
               "HeaderBehavior": "whitelist",
               "Headers": [
-                "authorization",
                 "Origin",
                 "X-HTTP-Method-Override",
                 "X-HTTP-Method",
@@ -5754,6 +5804,8 @@ systemctl start myapp",
               ],
             ],
           },
+          "arn:aws:iam::aws:policy/AmazonECR-FullAccess",
+          "arn:aws:iam::123456789012:policy/CustomPolicy",
         ],
       },
       "Type": "AWS::IAM::Role",
@@ -6182,6 +6234,17 @@ systemctl start myapp",
 exports[`Snapshot test: UsEast1Stack 1`] = `
 {
   "Outputs": {
+    "ExportsOutputFnGetAttWebAcl9BD21CA7Arn85C2A8AC": {
+      "Export": {
+        "Name": "TestUsEast1Stack:ExportsOutputFnGetAttWebAcl9BD21CA7Arn85C2A8AC",
+      },
+      "Value": {
+        "Fn::GetAtt": [
+          "WebAcl9BD21CA7",
+          "Arn",
+        ],
+      },
+    },
     "ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1": {
       "Export": {
         "Name": "TestUsEast1Stack:ExportsOutputRefSignPayloadHandlerFunctionVersionF9FE430AFB7A5BC1",
@@ -6269,6 +6332,115 @@ exports[`Snapshot test: UsEast1Stack 1`] = `
         ],
       },
       "Type": "AWS::IAM::Role",
+    },
+    "WebAcl9BD21CA7": {
+      "Properties": {
+        "DefaultAction": {
+          "Block": {},
+        },
+        "Rules": [
+          {
+            "Action": {
+              "Allow": {},
+            },
+            "Name": "IpV4SetAndGeoMatchRule",
+            "Priority": 1,
+            "Statement": {
+              "AndStatement": {
+                "Statements": [
+                  {
+                    "IPSetReferenceStatement": {
+                      "Arn": {
+                        "Fn::GetAtt": [
+                          "WebAclIPv4SetA3B84D27",
+                          "Arn",
+                        ],
+                      },
+                    },
+                  },
+                  {
+                    "GeoMatchStatement": {
+                      "CountryCodes": [
+                        "JP",
+                        "US",
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "IpV4SetAndGeoMatchRule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+          {
+            "Action": {
+              "Allow": {},
+            },
+            "Name": "IpV6SetAndGeoMatchRule",
+            "Priority": 2,
+            "Statement": {
+              "AndStatement": {
+                "Statements": [
+                  {
+                    "IPSetReferenceStatement": {
+                      "Arn": {
+                        "Fn::GetAtt": [
+                          "WebAclIPv6SetEBDEE314",
+                          "Arn",
+                        ],
+                      },
+                    },
+                  },
+                  {
+                    "GeoMatchStatement": {
+                      "CountryCodes": [
+                        "JP",
+                        "US",
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            "VisibilityConfig": {
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "IpV6SetAndGeoMatchRule",
+              "SampledRequestsEnabled": true,
+            },
+          },
+        ],
+        "Scope": "CLOUDFRONT",
+        "VisibilityConfig": {
+          "CloudWatchMetricsEnabled": true,
+          "MetricName": "RemoteSweWebAcl-c8201431ad5298a909b974e2cb65af9c87dd0d6c2a",
+          "SampledRequestsEnabled": true,
+        },
+      },
+      "Type": "AWS::WAFv2::WebACL",
+    },
+    "WebAclIPv4SetA3B84D27": {
+      "Properties": {
+        "Addresses": [
+          "192.168.1.0/24",
+          "10.0.0.0/8",
+        ],
+        "IPAddressVersion": "IPV4",
+        "Scope": "CLOUDFRONT",
+      },
+      "Type": "AWS::WAFv2::IPSet",
+    },
+    "WebAclIPv6SetEBDEE314": {
+      "Properties": {
+        "Addresses": [
+          "2001:db8::/32",
+        ],
+        "IPAddressVersion": "IPV6",
+        "Scope": "CLOUDFRONT",
+      },
+      "Type": "AWS::WAFv2::IPSet",
     },
   },
   "Rules": {

@@ -20,6 +20,10 @@ test('Snapshot test', () => {
       region: 'us-east-1',
     },
     crossRegionReferences: true,
+    // Add WAF IP restriction settings for testing
+    allowedIpV4AddressRanges: ['192.168.1.0/24', '10.0.0.0/8'],
+    allowedIpV6AddressRanges: ['2001:db8::/32'],
+    allowedCountryCodes: ['JP', 'US'],
   });
 
   // Create the main stack with signPayloadHandler from UsEast1Stack
@@ -30,6 +34,7 @@ test('Snapshot test', () => {
     },
     crossRegionReferences: true,
     signPayloadHandler: usEast1Stack.signPayloadHandler,
+    cloudFrontWebAclArn: usEast1Stack.webAclArn,
     slack: {
       botTokenParameterName: '/remote-swe/slack/bot-token',
       signingSecretParameterName: '/remote-swe/slack/signing-secret',
@@ -41,7 +46,12 @@ test('Snapshot test', () => {
       installationId: '9876543',
     },
     workerAmiIdParameterName: '/remote-swe/worker/ami-id',
-    additionalAwsManagedPolicies: ['AmazonS3ReadOnlyAccess', 'AmazonDynamoDBReadOnlyAccess'],
+    additionalManagedPolicies: [
+      'AmazonS3ReadOnlyAccess',
+      'AmazonDynamoDBReadOnlyAccess',
+      'arn:aws:iam::aws:policy/AmazonECR-FullAccess',
+      'arn:aws:iam::123456789012:policy/CustomPolicy',
+    ],
     initialWebappUserEmail: 'user@example.com',
   });
 

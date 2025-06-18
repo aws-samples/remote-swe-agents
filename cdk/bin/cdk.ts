@@ -8,20 +8,32 @@ const app = new cdk.App();
 
 const targetEnv = process.env.TARGET_ENV ?? 'Sandbox';
 
+// Parse IP addresses and country codes from environment variables
+const parseCommaSeparatedList = (envVar: string | undefined): string[] | undefined => {
+  return envVar
+    ? envVar
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item)
+    : undefined;
+};
+
+const allowedIpV4AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV4_CIDRS);
+const allowedIpV6AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV6_CIDRS);
+const allowedCountryCodes = parseCommaSeparatedList(process.env.ALLOWED_COUNTRY_CODES);
+
 const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'us-east-1',
   },
   crossRegionReferences: true,
+  allowedIpV4AddressRanges,
+  allowedIpV6AddressRanges,
+  allowedCountryCodes,
 });
 
-// Parse additional AWS managed policies from environment variable if provided
-const additionalAwsManagedPolicies = process.env.WORKER_ADDITIONAL_POLICIES
-  ? process.env.WORKER_ADDITIONAL_POLICIES.split(',')
-      .map((p) => p.trim())
-      .filter((p) => p)
-  : undefined;
+const additionalPolicies = parseCommaSeparatedList(process.env.WORKER_ADDITIONAL_POLICIES);
 
 const props: MainStackProps = {
   env: {
@@ -30,11 +42,12 @@ const props: MainStackProps = {
   },
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
+  cloudFrontWebAclArn: virginia.webAclArn,
   workerAmiIdParameterName: '/remote-swe/worker/ami-id',
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',
     signingSecretParameterName: '/remote-swe/slack/signing-secret',
-    adminUserIdList: process.env.ADMIN_USER_ID_LIST,
+    adminUserIdList: process.env.SLACK_ADMIN_USER_ID_LIST,
   },
   github: {
     ...(process.env.GITHUB_APP_ID
@@ -55,7 +68,8 @@ const props: MainStackProps = {
         },
       }
     : {}),
-  ...(additionalAwsManagedPolicies ? { additionalAwsManagedPolicies } : {}),
+  ...(additionalPolicies ? { additionalManagedPolicies: additionalPolicies } : {}),
+  ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
   initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
 };
 

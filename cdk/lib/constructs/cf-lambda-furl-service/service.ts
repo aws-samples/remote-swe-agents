@@ -41,6 +41,11 @@ export interface CloudFrontLambdaFunctionUrlServiceProps {
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
   signPayloadHandler: EdgeFunction;
+  /**
+   * The ARN of the WAF Web ACL to associate with the CloudFront distribution
+   * @default no WAF Web ACL
+   */
+  webAclArn?: string;
   accessLogBucket: Bucket;
 }
 
@@ -66,7 +71,7 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
       readTimeout: Duration.seconds(60),
     });
 
-    const cachePolicy = new CachePolicy(this, 'SharedCachePolicy', {
+    const defaultCachePolicy = new CachePolicy(this, 'DefaultCachePolicy', {
       queryStringBehavior: CacheQueryStringBehavior.all(),
       headerBehavior: CacheHeaderBehavior.allowList(
         // CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS contains Host header here,
@@ -83,11 +88,29 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
       enableAcceptEncodingGzip: true,
     });
 
+    // this cache policy ignores authorization/cookie header,
+    // which can be used for public cache routes.
+    const staticCachePolicy = new CachePolicy(this, 'StaticCachePolicy', {
+      queryStringBehavior: CacheQueryStringBehavior.all(),
+      headerBehavior: CacheHeaderBehavior.allowList(
+        // CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS contains Host header here,
+        // making it impossible to use with API Gateway
+        'Origin',
+        'X-HTTP-Method-Override',
+        'X-HTTP-Method',
+        'X-Method-Override'
+      ),
+      defaultTtl: Duration.seconds(0),
+      enableAcceptEncodingBrotli: true,
+      enableAcceptEncodingGzip: true,
+    });
+
     const distribution = new Distribution(this, 'Resource', {
       comment: `CloudFront for ${serviceName}`,
+      webAclId: props.webAclArn,
       defaultBehavior: {
         origin,
-        cachePolicy,
+        cachePolicy: defaultCachePolicy,
         allowedMethods: AllowedMethods.ALLOW_ALL,
         originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         edgeLambdas: [
@@ -98,12 +121,18 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
           },
         ],
       },
-      // errorResponses: [{ httpStatus: 404, responsePagePath: '/', responseHttpStatus: 200 }],
+      additionalBehaviors: {
+        '_next/static/*': {
+          origin,
+          cachePolicy: staticCachePolicy,
+          allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          // we won't need lambda@edge for GET/HEAD requests.
+        },
+      },
       logBucket: accessLogBucket,
       logFilePrefix: `${serviceName}/`,
-
       ...(hostedZone ? { certificate: certificate, domainNames: [domainName] } : {}),
-
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
     });
 
