@@ -33,12 +33,7 @@ const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   allowedCountryCodes,
 });
 
-// Parse additional policies (AWS managed policies or custom policy ARNs) from environment variable if provided
-const additionalPolicies = process.env.WORKER_ADDITIONAL_POLICIES
-  ? process.env.WORKER_ADDITIONAL_POLICIES.split(',')
-      .map((p) => p.trim())
-      .filter((p) => p)
-  : undefined;
+const additionalPolicies = parseCommaSeparatedList(process.env.WORKER_ADDITIONAL_POLICIES);
 
 const props: MainStackProps = {
   env: {

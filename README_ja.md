@@ -152,10 +152,10 @@ GITHUB_INSTALLATION_ID=your-github-installation-id
 
 #### ワーカーインスタンス設定
 
-ワーカーインスタンスロールにアタッチする追加のAWSマネージドポリシーを設定するには、`.env.local` ファイルに以下を記述します：
+ワーカーインスタンスロールにアタッチする追加のマネージドポリシーを設定するには、`.env.local` ファイルに以下を記述します。AWSマネージドポリシーの名前とARN形式の両方を設定できます:
 
 ```sh
-WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,arn:aws:iam::123456789012:policy/CustomPolicy
 ```
 
 #### 既存VPCの使用

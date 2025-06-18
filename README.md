@@ -156,10 +156,10 @@ GITHUB_INSTALLATION_ID=your-github-installation-id
 
 #### For Worker Instance Configuration:
 
-You can configure additional AWS managed policies to be attached to the worker instance role by adding this to your `.env.local` file:
+You can configure additional managed policies to be attached to the worker instance role by adding this to your `.env.local` file. You can set both AWS Managed policy name and a policy's full ARN:
 
 ```sh
-WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,AmazonDynamoDBReadOnlyAccess
+WORKER_ADDITIONAL_POLICIES=AmazonS3ReadOnlyAccess,arn:aws:iam::123456789012:policy/CustomPolicy
 ```
 
 #### For Using Existing VPC:
