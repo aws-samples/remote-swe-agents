@@ -26,7 +26,7 @@ export default function EditableSessionTitle({ workerId, initialTitle, fallbackT
       setIsEditing(false);
     },
     onError: (error) => {
-      toast.error(error?.serverError || t('titleUpdateError'));
+      toast.error(error?.error?.serverError || t('titleUpdateError'));
     },
   });
 
