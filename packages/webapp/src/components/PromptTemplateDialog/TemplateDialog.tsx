@@ -66,7 +66,7 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
         window.location.reload(); // Reload page to show the latest templates
       },
       onError: (error) => {
-        toast.error(error.serverError || t('createError'));
+        toast.error(error.error?.serverError || t('createError'));
       },
     },
     formProps: {
@@ -91,7 +91,7 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
         window.location.reload(); // Reload page to show the latest templates
       },
       onError: (error) => {
-        toast.error(error.serverError || t('updateError'));
+        toast.error(error.error?.serverError || t('updateError'));
       },
     },
     formProps: {
@@ -112,7 +112,7 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
       window.location.reload(); // Reload page to show the latest templates
     },
     onError: (error) => {
-      toast.error(error.serverError || t('deleteError'));
+      toast.error(error.error?.serverError || t('deleteError'));
       setDeleteConfirmOpen(false);
     },
   });
