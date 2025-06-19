@@ -23,11 +23,11 @@ phases:
             - docker --version
             - python --version
             - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - sudo -u ubuntu bash -l -c "uv --version"
+            - sudo -u ubuntu bash -l -c "uvx --version"
+            - sudo -u ubuntu bash -l -c "node --version"
+            - sudo -u ubuntu bash -l -c "npm --version"
+            - sudo -u ubuntu bash -l -c "npx --version"
   - name: test
     steps:
       - name: HelloWorldStep
@@ -38,8 +38,8 @@ phases:
             - docker --version
             - python --version
             - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - sudo -u ubuntu bash -l -c "uv --version"
+            - sudo -u ubuntu bash -l -c "uvx --version"
+            - sudo -u ubuntu bash -l -c "node --version"
+            - sudo -u ubuntu bash -l -c "npm --version"
+            - sudo -u ubuntu bash -l -c "npx --version"
