@@ -10,13 +10,14 @@ import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
 import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
-import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 
 export interface WorkerImageBuilderProps {
   vpc: IVpc;
   installDependenciesCommand: string;
   amiIdParameterName: string;
   sourceBucket: IBucket;
+  sourceAssetHash: string;
 }
 
 export class WorkerImageBuilder extends Construct {
@@ -25,7 +26,7 @@ export class WorkerImageBuilder extends Construct {
   constructor(scope: Construct, id: string, props: WorkerImageBuilderProps) {
     super(scope, id);
 
-    const { vpc, installDependenciesCommand, sourceBucket } = props;
+    const { vpc, installDependenciesCommand, sourceBucket, sourceAssetHash } = props;
 
     const componentTemplateString = readFileSync(
       join(__dirname, 'resources', 'image-component-template.yml')
@@ -81,7 +82,11 @@ export class WorkerImageBuilder extends Construct {
       resourceType: 'Custom::ImageBuilderVersioning',
       properties: {
         initialVersion: '0.0.0',
-        key: JSON.stringify({ ...imagePipelineProps, componentsVersion: componentVersion.getAttString('version') }),
+        key: JSON.stringify({
+          ...imagePipelineProps,
+          componentsVersion: componentVersion.getAttString('version'),
+          sourceAssetHash: sourceAssetHash,
+        }),
       },
       serviceTimeout: Duration.seconds(20),
     });
@@ -133,7 +138,7 @@ export class WorkerImageBuilder extends Construct {
           Name: props.amiIdParameterName,
         },
         ignoreErrorCodesMatching: 'ParameterNotFound',
-        physicalResourceId: PhysicalResourceId.of(amiVersion),
+        physicalResourceId: PhysicalResourceId.of(`${amiVersion}`),
       },
       policy: AwsCustomResourcePolicy.fromSdkCalls({
         resources: [
