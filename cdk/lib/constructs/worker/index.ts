@@ -251,6 +251,13 @@ set -e
 # Function to download and extract fresh source files
 download_fresh_files() {
   echo "Downloading fresh source files."
+  
+  # Backup node_modules if it exists
+  if [ -d "node_modules" ]; then
+    echo "Backing up node_modules folder"
+    mv node_modules /tmp/node_modules_backup
+  fi
+  
   # Clean up existing files
   rm -rf ./{*,.*} 2>/dev/null || echo "Cleaning up existing files"
   
@@ -260,6 +267,12 @@ download_fresh_files() {
   # Extract and clean up
   tar -xvzf $SOURCE_TAR_NAME
   rm -f $SOURCE_TAR_NAME
+  
+  # Restore node_modules if it was backed up
+  if [ -d "/tmp/node_modules_backup" ]; then
+    echo "Restoring node_modules folder"
+    mv /tmp/node_modules_backup node_modules
+  fi
   
   # Install dependencies and build
   npm ci
