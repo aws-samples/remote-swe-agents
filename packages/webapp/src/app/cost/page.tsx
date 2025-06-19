@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import { getTranslations } from 'next-intl/server';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { calculateCost, getSessions } from '@remote-swe-agents/agent-core/lib';
+import { calculateCost, getSessions, readMetadata } from '@remote-swe-agents/agent-core/lib';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import CostSummary from './components/CostSummary';
 import CostBreakdown from './components/CostBreakdown';
@@ -90,12 +90,21 @@ export default async function CostAnalysisPage({
   }
 
   // Group data by different dimensions
-  const sessionCosts = filteredSessions.map((session) => ({
-    workerId: session.workerId,
-    initialMessage: session.initialMessage,
-    sessionCost: session.sessionCost || 0,
-    createdAt: session.createdAt,
-  }));
+  const sessionCosts = await Promise.all(
+    filteredSessions.map(async (session) => {
+      // Get repository metadata for this session
+      const repoMetadata = await readMetadata('repo', session.workerId);
+      
+      return {
+        workerId: session.workerId,
+        initialMessage: session.initialMessage,
+        sessionCost: session.sessionCost || 0,
+        createdAt: session.createdAt,
+        repoName: repoMetadata?.repoName,
+        repoOrg: repoMetadata?.repoOrg,
+      };
+    })
+  );
 
   // Group data by model
   const modelCosts = allTokenUsageData.reduce(

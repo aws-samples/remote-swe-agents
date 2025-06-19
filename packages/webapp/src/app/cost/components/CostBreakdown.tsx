@@ -12,6 +12,8 @@ interface SessionCost {
   initialMessage?: string;
   sessionCost: number;
   createdAt: number;
+  repoName?: string;
+  repoOrg?: string;
 }
 
 interface ModelCost {
@@ -67,6 +69,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdow
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="px-4 py-3 text-left">{t('sessionId')}</th>
+                <th className="px-4 py-3 text-left">{t('repository')}</th>
                 <th className="px-4 py-3 text-left">{t('initialPrompt')}</th>
                 <th className="px-4 py-3 text-left">{t('date')}</th>
                 <th className="px-4 py-3 text-right">{t('cost')}</th>
@@ -89,6 +92,20 @@ export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdow
                           {session.workerId}
                         </Link>
                       </td>
+                      <td className="px-4 py-3">
+                        {session.repoOrg && session.repoName ? (
+                          <Link
+                            href={`https://github.com/${session.repoOrg}/${session.repoName}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            {session.repoOrg}/{session.repoName}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-500">{t('noRepository')}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 max-w-[300px] truncate">{session.initialMessage || t('noMessage')}</td>
                       <td className="px-4 py-3">{new Date(session.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3 text-right font-medium">${session.sessionCost.toFixed(2)}</td>
@@ -96,7 +113,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdow
                   ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                     <BarChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>{t('noSessionData')}</p>
                   </td>
@@ -105,7 +122,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdow
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 dark:bg-gray-800">
-                <td colSpan={3} className="px-4 py-3 font-medium">
+                <td colSpan={4} className="px-4 py-3 font-medium">
                   {t('total')}
                 </td>
                 <td className="px-4 py-3 text-right font-bold">
