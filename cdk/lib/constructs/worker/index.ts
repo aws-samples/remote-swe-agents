@@ -94,13 +94,13 @@ export class Worker extends Construct {
         ],
         image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
       },
-      assetHashType: AssetHashType.OUTPUT,
+      assetHashType: AssetHashType.SOURCE,
     };
     // Create the source asset with explicit hash type to ensure changes are detected
     const sourceAsset = new Asset(this, 'SourceAssetForHash', assetProps);
     const sourceAssetHash = sourceAsset.assetHash;
 
-    const sourceDeployment = new BucketDeployment(this, 'SourceDeployment', {
+    new BucketDeployment(this, 'SourceDeployment', {
       destinationBucket: sourceBucket,
       sources: [Source.asset(assetProps.path, assetProps)],
     });

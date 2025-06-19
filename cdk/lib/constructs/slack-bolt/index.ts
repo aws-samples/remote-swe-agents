@@ -1,4 +1,4 @@
-import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
+import { CfnOutput, Duration, IgnoreMode, RemovalPolicy } from 'aws-cdk-lib';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -32,9 +32,7 @@ export class SlackBolt extends Construct {
     const asyncHandler = new DockerImageFunction(this, 'AsyncHandler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore'))
-          .toString()
-          .split('\n'),
+        exclude: readFileSync('.dockerignore').toString().split('\n'),
         cmd: ['async-handler.handler'],
         platform: Platform.LINUX_ARM64,
       }),
@@ -58,9 +56,7 @@ export class SlackBolt extends Construct {
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync(join('..', 'docker', 'slack-bolt-app.Dockerfile.dockerignore'))
-          .toString()
-          .split('\n'),
+        exclude: readFileSync('.dockerignore').toString().split('\n'),
         platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.seconds(29),

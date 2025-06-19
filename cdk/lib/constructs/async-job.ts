@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { CfnOutput, Duration, TimeZone } from 'aws-cdk-lib';
+import { CfnOutput, Duration, IgnoreMode, TimeZone } from 'aws-cdk-lib';
 import { Architecture, DockerImageCode, DockerImageFunction, IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -23,9 +23,7 @@ export class AsyncJob extends Construct {
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'job.Dockerfile'),
-        exclude: readFileSync(join('..', 'docker', 'job.Dockerfile.dockerignore'))
-          .toString()
-          .split('\n'),
+        exclude: readFileSync('.dockerignore').toString().split('\n'),
         cmd: ['async-handler.handler'],
         platform: Platform.LINUX_ARM64,
       }),

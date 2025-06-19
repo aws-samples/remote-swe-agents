@@ -1,11 +1,13 @@
-*
-!packages/agent-core
-!packages/webapp
-!package*.json
-!patches
+# common .dockerignore for cdk asset exclude
+.git
+.github
+cdk
+docs
+resources
 **/node_modules
 **/dist
 **/.next
+**/*.md
 **/.env.local
 **/next-env.d.ts
 **/tsconfig.tsbuildinfo

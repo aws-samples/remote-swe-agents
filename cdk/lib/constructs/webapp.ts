@@ -55,10 +55,12 @@ export class Webapp extends Construct {
       directory: join('..'),
       file: join('docker', 'webapp.Dockerfile'),
       platform: Platform.LINUX_ARM64,
-      ignoreMode: IgnoreMode.DOCKER,
-      exclude: readFileSync(join('..', 'docker', 'webapp.Dockerfile.dockerignore'))
-        .toString()
-        .split('\n'),
+      exclude: [
+        ...readFileSync('.dockerignore').toString().split('\n'),
+        'packages/github-actions',
+        'packages/slack-bolt-app',
+        'packages/worker',
+      ],
       tagPrefix: 'webapp-starter-',
       buildArgs: {
         ALLOWED_ORIGIN_HOST: hostedZone ? `*.${hostedZone.zoneName}` : '*.cloudfront.net',

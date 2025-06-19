@@ -1,13 +1,6 @@
-cdk
-packages/worker
-packages/webapp
-packages/github-actions
+*
+!packages/agent-core
+!packages/slack-bolt-app
+!package*.json
 **/node_modules
-**/dist
-**/.next
-docs
-node_modules
-.github
-.git
-resources
 **/dist
