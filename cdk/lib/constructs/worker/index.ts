@@ -265,6 +265,11 @@ download_fresh_files() {
   npm ci
   npm run build -w packages/agent-core
 
+  # Install Chrome
+  cd packages/worker
+  npx playwright install chromium
+  cd -
+
   # Save the ETag
   echo "$CURRENT_ETAG" > "$ETAG_FILE"
 }
@@ -309,7 +314,6 @@ export GITHUB_PERSONAL_ACCESS_TOKEN=${
 
 # Start app
 cd packages/worker
-npx playwright install chromium
 npx tsx src/main.ts
 EOF
 
