@@ -173,7 +173,7 @@ usermod -aG docker ubuntu
 
 # Install Node.js
 sudo -u ubuntu bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash"
-sudo -u ubuntu bash -c -l "nvm install 22"
+sudo -u ubuntu bash -c -i "nvm install 22"
 
 # Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -225,8 +225,8 @@ mkdir -p /opt/myapp && cd /opt/myapp
 chown -R ubuntu:ubuntu /opt/myapp
 
 # Install Playwright dependencies
-sudo -u ubuntu bash -l -c "npx playwright install-deps"
-sudo -u ubuntu bash -l -c "npx playwright install chromium"
+sudo -u ubuntu bash -i -c "npx playwright install-deps"
+sudo -u ubuntu bash -i -c "npx playwright install chromium"
 # Disable Ubuntu security feature to get chromium working
 # https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
 echo 0 | tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
@@ -318,7 +318,7 @@ chmod +x /opt/scripts/start-app.sh
 chown ubuntu:ubuntu /opt/scripts/start-app.sh
 
 # cache worker files
-sudo -u ubuntu bash -l -c "NO_START=true /opt/scripts/start-app.sh"
+sudo -u ubuntu bash -i -c "NO_START=true /opt/scripts/start-app.sh"
 
 cat << EOF > /etc/systemd/system/myapp.service
 [Unit]
@@ -330,7 +330,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/myapp
 
-ExecStart=/bin/bash -l -c /opt/scripts/start-app.sh
+ExecStart=/bin/bash -i -c /opt/scripts/start-app.sh
 Restart=always
 RestartSec=10
 TimeoutStartSec=600
