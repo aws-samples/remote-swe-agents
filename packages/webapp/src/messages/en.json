@@ -160,7 +160,27 @@
     "createSessionButton": "Create Session & Start Conversation",
     "addImage": "Add Image",
     "imagesCount": "{count} images",
-    "waitingForImageUpload": "Waiting for image upload..."
+    "waitingForImageUpload": "Waiting for image upload...",
+    "templates": "Templates",
+    "templateModal": {
+      "title": "Prompt Templates",
+      "createNew": "Create New Template",
+      "noTemplates": "No templates found. Create your first template!",
+      "placeholder": "Enter template content...",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure you want to delete this template?",
+      "createdAt": "Created: {date}",
+      "createSuccess": "Template created successfully",
+      "createError": "Failed to create template",
+      "updateSuccess": "Template updated successfully",
+      "updateError": "Failed to update template",
+      "deleteSuccess": "Template deleted successfully",
+      "deleteError": "Failed to delete template"
+    }
   },
   "prompt_settings": {
     "title": "Common Prompt Settings",

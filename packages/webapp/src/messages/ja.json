@@ -159,7 +159,27 @@
     "createSessionButton": "セッションを作成して会話を開始",
     "addImage": "画像を追加",
     "imagesCount": "{count} 枚の画像",
-    "waitingForImageUpload": "画像アップロード中..."
+    "waitingForImageUpload": "画像アップロード中...",
+    "templates": "テンプレート",
+    "templateModal": {
+      "title": "プロンプトテンプレート",
+      "createNew": "新しいテンプレートを作成",
+      "noTemplates": "テンプレートが見つかりません。最初のテンプレートを作成しましょう！",
+      "placeholder": "テンプレートの内容を入力してください...",
+      "save": "保存",
+      "saving": "保存中...",
+      "cancel": "キャンセル",
+      "edit": "編集",
+      "delete": "削除",
+      "confirmDelete": "このテンプレートを削除してもよろしいですか？",
+      "createdAt": "作成日: {date}",
+      "createSuccess": "テンプレートが正常に作成されました",
+      "createError": "テンプレートの作成に失敗しました",
+      "updateSuccess": "テンプレートが正常に更新されました",
+      "updateError": "テンプレートの更新に失敗しました",
+      "deleteSuccess": "テンプレートが正常に削除されました",
+      "deleteError": "テンプレートの削除に失敗しました"
+    }
   },
   "prompt_settings": {
     "title": "共通プロンプト設定",
