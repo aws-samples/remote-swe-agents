@@ -350,5 +350,3 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
       </AlertDialogContent>
     </AlertDialog>
   );
-}
-}
