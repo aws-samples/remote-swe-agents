@@ -1,4 +1,5 @@
 # common .dockerignore for cdk asset exclude
+# We use this file because * ignore pattern in each docker/*.dockerignore file does not work with cdk assets.
 .git
 .github
 cdk

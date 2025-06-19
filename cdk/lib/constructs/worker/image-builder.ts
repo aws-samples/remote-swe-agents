@@ -85,7 +85,7 @@ export class WorkerImageBuilder extends Construct {
         key: JSON.stringify({
           ...imagePipelineProps,
           componentsVersion: componentVersion.getAttString('version'),
-          sourceAssetHash: sourceAssetHash,
+          sourceAssetHash: `worker-asset-hash:${sourceAssetHash}`,
         }),
       },
       serviceTimeout: Duration.seconds(20),

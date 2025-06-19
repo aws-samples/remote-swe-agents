@@ -4744,7 +4744,7 @@ phases:
                   "version",
                 ],
               },
-              ""}",
+              "","sourceAssetHash":"REDACTED"}",
             ],
           ],
         },
