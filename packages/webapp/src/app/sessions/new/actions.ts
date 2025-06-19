@@ -92,7 +92,7 @@ export const createPromptTemplateAction = authActionClient
     const { title, content } = parsedInput;
     const now = Date.now();
 
-    // テンプレートをDynamoDBに保存
+    // Save template to DynamoDB
     await ddb.send(
       new PutCommand({
         TableName,
@@ -115,7 +115,7 @@ export const updatePromptTemplateAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const { id, title, content } = parsedInput;
 
-    // テンプレートを更新
+    // Update template
     await ddb.send(
       new UpdateCommand({
         TableName,
@@ -139,7 +139,7 @@ export const deletePromptTemplateAction = authActionClient
   .action(async ({ parsedInput }) => {
     const { id } = parsedInput;
 
-    // テンプレートを削除
+    // Delete template
     await ddb.send(
       new DeleteCommand({
         TableName,

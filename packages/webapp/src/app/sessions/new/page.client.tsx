@@ -123,7 +123,7 @@ export default function NewSessionClient({ templates }: NewSessionClientProps) {
                           className="flex gap-2 items-center"
                         >
                           <FileText className="w-4 h-4" />
-                          テンプレート
+                          {t('templateButton')}
                         </Button>
                         <Button
                           type="button"
@@ -193,7 +193,7 @@ export default function NewSessionClient({ templates }: NewSessionClientProps) {
         </div>
       </main>
 
-      {/* テンプレートダイアログ */}
+      {/* Template dialog */}
       <TemplateDialog
         isOpen={isTemplateDialogOpen}
         onClose={() => setIsTemplateDialogOpen(false)}

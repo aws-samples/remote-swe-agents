@@ -6,14 +6,14 @@ export const createNewWorkerSchema = z.object({
 });
 
 export const promptTemplateSchema = z.object({
-  title: z.string().min(1, 'タイトルは必須です'),
-  content: z.string().min(1, '内容は必須です'),
+  title: z.string().min(1),
+  content: z.string().min(1),
 });
 
 export const updatePromptTemplateSchema = z.object({
   id: z.string(),
-  title: z.string().min(1, 'タイトルは必須です'),
-  content: z.string().min(1, '内容は必須です'),
+  title: z.string().min(1),
+  content: z.string().min(1),
 });
 
 export const deletePromptTemplateSchema = z.object({
