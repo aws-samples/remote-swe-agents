@@ -21,8 +21,8 @@ export default async function NewSessionPage() {
       ScanIndexForward: false, // createdAt DESC
     })
   );
-  
+
   const templates = Items as PromptTemplate[];
-  
+
   return <NewSessionClient templates={templates} />;
 }

@@ -7,21 +7,29 @@ import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hoo
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Pencil, Plus, Save, Trash2 } from 'lucide-react';
-import { promptTemplateSchema, updatePromptTemplateSchema, deletePromptTemplateSchema } from '@/app/sessions/new/schemas';
-import { createPromptTemplateAction, updatePromptTemplateAction, deletePromptTemplateAction } from '@/app/sessions/new/actions';
+import {
+  promptTemplateSchema,
+  updatePromptTemplateSchema,
+  deletePromptTemplateSchema,
+} from '@/app/sessions/new/schemas';
+import {
+  createPromptTemplateAction,
+  updatePromptTemplateAction,
+  deletePromptTemplateAction,
+} from '@/app/sessions/new/actions';
 
 interface PromptTemplate {
   SK: string;
@@ -161,18 +169,18 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-medium">{template.title}</h3>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleEditClick(template)}
                             className="flex gap-1 items-center"
                           >
                             <Pencil className="h-3 w-3" />
                             編集
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleDeleteClick(template.SK)}
                             className="flex gap-1 items-center text-red-600 hover:text-red-700"
                           >
@@ -182,9 +190,9 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{template.content}</p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="mt-2 text-blue-600 dark:text-blue-400"
                         onClick={() => onSelect(template.content)}
                       >
@@ -196,11 +204,7 @@ export default function TemplateDialog({ isOpen, onClose, onSelect, templates }:
               )}
             </div>
             <AlertDialogFooter className="flex justify-between">
-              <Button 
-                onClick={() => setMode('create')} 
-                variant="outline"
-                className="flex gap-1 items-center"
-              >
+              <Button onClick={() => setMode('create')} variant="outline" className="flex gap-1 items-center">
                 <Plus className="h-4 w-4" />
                 新規作成
               </Button>
