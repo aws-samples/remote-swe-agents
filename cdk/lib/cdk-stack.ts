@@ -43,6 +43,7 @@ export interface MainStackProps extends cdk.StackProps {
   readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
   readonly initialWebappUserEmail?: string;
+  readonly workerModelOverride?: string;
 }
 
 export class MainStack extends cdk.Stack {
@@ -123,6 +124,7 @@ export class MainStack extends cdk.Stack {
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
       additionalManagedPolicies: props.additionalManagedPolicies,
+      modelOverride: props.workerModelOverride,
     });
 
     new SlackBolt(this, 'SlackBolt', {
