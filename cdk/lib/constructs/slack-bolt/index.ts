@@ -53,6 +53,12 @@ export class SlackBolt extends Construct {
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
 
+    const originSourceParameter = StringParameter.fromStringParameterName(
+      this,
+      'OriginSourceParameter',
+      'remote-swe-agents-webapp-originSourceParameter'
+    );
+
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
@@ -68,10 +74,12 @@ export class SlackBolt extends Construct {
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
         LOG_GROUP_NAME: props.workerLogGroupName,
+        APP_ORIGIN_SOURCE_PARAMETER: originSourceParameter.parameterName,
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
       architecture: Architecture.ARM_64,
     });
+    originSourceParameter.grantRead(handler);
     asyncHandler.grantInvoke(handler);
     props.storage.table.grantReadWriteData(handler);
     props.storage.bucket.grantReadWrite(handler);
