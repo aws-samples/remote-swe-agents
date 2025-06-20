@@ -12,6 +12,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
   const workerId = `webapp-${Date.now()}`;
   const { message, imageKeys = [] } = parsedInput;
   const now = Date.now();
+  const { userId } = ctx;
 
   const content = [];
   content.push({ text: renderUserMessage({ message }) });
@@ -48,6 +49,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
               instanceStatus: 'starting',
               sessionCost: 0,
               agentStatus: 'pending',
+              initiatorId: userId,
             } satisfies SessionItem,
           },
         },

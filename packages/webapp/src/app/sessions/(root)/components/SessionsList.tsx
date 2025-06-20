@@ -12,9 +12,10 @@ import { useRouter } from 'next/navigation';
 
 interface SessionsListProps {
   initialSessions: SessionItem[];
+  currentUserId: string;
 }
 
-export default function SessionsList({ initialSessions }: SessionsListProps) {
+export default function SessionsList({ initialSessions, currentUserId }: SessionsListProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
   const locale = useLocale();
@@ -75,10 +76,11 @@ export default function SessionsList({ initialSessions }: SessionsListProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {sessions.map((session) => {
           const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
+          const isCurrentUserSession = session.userId === currentUserId;
           return (
             <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
               <div
-                className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40`}
+                className={`border ${isCurrentUserSession ? 'border-blue-300 dark:border-blue-600 ring-2 ring-blue-100 dark:ring-blue-900' : 'border-gray-200 dark:border-gray-700'} ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40`}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
