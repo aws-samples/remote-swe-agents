@@ -66,10 +66,6 @@ exports[`Snapshot test: MainStack 1`] = `
       "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
       "Type": "AWS::SSM::Parameter::Value<String>",
     },
-    "SlackBoltOriginSourceParameterParameterAAC4F693": {
-      "Default": "remote-swe-agents-webapp-originSourceParameter",
-      "Type": "AWS::SSM::Parameter::Value<String>",
-    },
     "SsmParameterValueawsservicecanonicalubuntuserver2404stablecurrentamd64hvmebsgp3amiidC96584B6F00A464EAD1953AFF4B05118Parameter": {
       "Default": "/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id",
       "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
@@ -2339,7 +2335,9 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "APP_ORIGIN_SOURCE_PARAMETER": "remote-swe-agents-webapp-originSourceParameter",
+            "APP_ORIGIN_SOURCE_PARAMETER": {
+              "Ref": "WebappOriginSourceParameterD87E143B",
+            },
             "ASYNC_LAMBDA_NAME": {
               "Ref": "SlackBoltAsyncHandler9A0D467E",
             },
@@ -2424,7 +2422,17 @@ exports.handler = async function (event, context) {
                 "ssm:GetParameters",
               ],
               "Effect": "Allow",
-              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe-agents-webapp-originSourceParameter",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    {
+                      "Ref": "WebappOriginSourceParameterD87E143B",
+                    },
+                  ],
+                ],
+              },
             },
             {
               "Action": "lambda:InvokeFunction",
