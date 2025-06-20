@@ -69,7 +69,7 @@ export async function handleMessage(
   // Get webapp domain from SSM parameter
   const originSourceParameterName = process.env.APP_ORIGIN_SOURCE_PARAMETER;
   let webappUrl: string | undefined = undefined;
-  
+
   if (originSourceParameterName) {
     try {
       webappUrl = await getParameter(originSourceParameterName);
@@ -127,13 +127,17 @@ export async function handleMessage(
               },
             } as SectionBlock,
             // Conditionally add webapp link if available
-            ...(webappUrl ? [{
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `• View this session in WebApp: <${webappUrl}/sessions/${workerId}|*Open in Web UI*>`,
-              },
-            } as SectionBlock] : []),
+            ...(webappUrl
+              ? [
+                  {
+                    type: 'section',
+                    text: {
+                      type: 'mrkdwn',
+                      text: `• View this session in WebApp: <${webappUrl}/sessions/${workerId}|*Open in Web UI*>`,
+                    },
+                  } as SectionBlock,
+                ]
+              : []),
             {
               type: 'section',
               text: {
