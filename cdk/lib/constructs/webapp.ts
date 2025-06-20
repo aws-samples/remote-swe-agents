@@ -152,14 +152,14 @@ export class Webapp extends Construct {
           service: 'ssm',
           action: 'putParameter',
           parameters: {
-            Name: originSourceParameter.parameterName,
+            Name: this.originSourceParameter.parameterName,
             Value: service.url,
             Overwrite: true,
           },
-          physicalResourceId: PhysicalResourceId.of(originSourceParameter.parameterName),
+          physicalResourceId: PhysicalResourceId.of(this.originSourceParameter.parameterName),
         },
         policy: AwsCustomResourcePolicy.fromSdkCalls({
-          resources: [originSourceParameter.parameterArn],
+          resources: [this.originSourceParameter.parameterArn],
         }),
       });
     }
