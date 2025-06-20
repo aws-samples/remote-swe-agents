@@ -49,7 +49,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
               instanceStatus: 'starting',
               sessionCost: 0,
               agentStatus: 'pending',
-              initiatorId: userId,
+              initiator: `webapp#${userId}`,
             } satisfies SessionItem,
           },
         },

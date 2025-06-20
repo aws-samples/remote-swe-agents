@@ -5,7 +5,8 @@ import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { AsyncHandlerEvent } from '../async-handler';
 import { sendWorkerEvent } from '../../../agent-core/src/lib';
-import { saveSessionInfo, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
+import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
+import { saveSessionInfo } from '../util/session';
 
 const BotToken = process.env.BOT_TOKEN!;
 const lambda = new LambdaClient();
@@ -85,7 +86,7 @@ export async function handleMessage(
 
   // Save session info only when starting a new thread
   if (event.thread_ts === undefined) {
-    promises.push(saveSessionInfo(workerId, message));
+    promises.push(saveSessionInfo(workerId, message, userId));
   }
 
   await Promise.all([

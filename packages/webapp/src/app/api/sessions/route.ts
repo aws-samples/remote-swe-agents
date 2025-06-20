@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
               instanceStatus: 'starting',
               agentStatus: 'pending',
               sessionCost: 0,
+              initiator: `rest#`,
             } satisfies SessionItem,
           },
         },
