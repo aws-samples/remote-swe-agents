@@ -1,6 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { WebClient } from '@slack/web-api';
-import { Block, KnownBlock, SectionBlock } from '@slack/types';
 import { saveConversationHistory } from '../util/history';
 import { s3, BucketName, getParameter } from '@remote-swe-agents/agent-core/aws';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
@@ -117,41 +116,87 @@ export async function handleMessage(
                 type: 'mrkdwn',
                 text: `Hi <@${userId}>, please wait for your agent to launch.\n\n*Useful Tips:*`,
               },
-            } as SectionBlock,
-            // Add additional sections with tips
+            },
             {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `• You can view <${cloudwatchUrl}|*the execution log here*>`,
-              },
-            } as SectionBlock,
-            // Conditionally add webapp link if available
-            ...(webappUrl
-              ? [
-                  {
-                    type: 'section',
-                    text: {
-                      type: 'mrkdwn',
-                      text: `• View this session in WebApp: <${webappUrl}/sessions/${workerId}|*Open in Web UI*>`,
+              type: 'rich_text',
+              elements: [
+                {
+                  type: 'rich_text_list',
+                  style: 'bullet',
+                  indent: 0,
+                  elements: [
+                    ...(webappUrl
+                      ? [
+                          {
+                            type: 'rich_text_section',
+                            elements: [
+                              {
+                                type: 'text',
+                                text: 'View this session in WebApp: ',
+                              },
+                              {
+                                type: 'link',
+                                url: `${webappUrl}/sessions/${workerId}`,
+                                text: 'Open in Web UI',
+                                style: {
+                                  bold: true,
+                                },
+                              },
+                            ],
+                          } as any,
+                        ]
+                      : [
+                          {
+                            type: 'rich_text_section',
+                            elements: [
+                              {
+                                type: 'text',
+                                text: 'You can view ',
+                              },
+                              {
+                                type: 'link',
+                                url: cloudwatchUrl,
+                                text: 'the execution log here',
+                                style: {
+                                  bold: true,
+                                },
+                              },
+                            ],
+                          },
+                        ]),
+                    {
+                      type: 'rich_text_section',
+                      elements: [
+                        {
+                          type: 'text',
+                          text: 'Send ',
+                        },
+                        {
+                          type: 'text',
+                          text: 'dump_history',
+                          style: {
+                            code: true,
+                          },
+                        },
+                        {
+                          type: 'text',
+                          text: ' to get conversation history and token consumption stats.',
+                        },
+                      ],
                     },
-                  } as SectionBlock,
-                ]
-              : []),
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: '• Send `dump_history` to get conversation history and token consumption stats.',
-              },
-            } as SectionBlock,
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: '• You can always interrupt and ask them to stop what they are doing.',
-              },
-            } as SectionBlock,
+                    {
+                      type: 'rich_text_section',
+                      elements: [
+                        {
+                          type: 'text',
+                          text: 'You can always interrupt and ask them to stop what they are doing.',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
           ],
         })
       : client.reactions.add({
