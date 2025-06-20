@@ -79,7 +79,8 @@
     "completed": "Completed",
     "incomplete": "Incomplete",
     "interrupt": "Interrupt",
-    "interruptToolTip": "Interrupt (or press Escape)"
+    "interruptToolTip": "Interrupt (or press Escape)",
+    "initiatedByOtherUsers": "Initiated by other users"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

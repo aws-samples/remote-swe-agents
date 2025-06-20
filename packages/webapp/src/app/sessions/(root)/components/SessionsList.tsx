@@ -83,7 +83,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                 className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40 relative`}
               >
                 {isOtherUserSession && (
-                  <div className="absolute bottom-2 right-2">
+                  <div className="absolute bottom-2 right-2" title={t('initiatedByOtherUsers')}>
                     <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
