@@ -136,7 +136,9 @@ export class Webapp extends Construct {
         [`${this.baseUrl}/api/auth/sign-out-callback`, `http://localhost:3011/api/auth/sign-out-callback`]
       );
 
+      // Create parameter with a standardized name that can be referenced by other constructs
       const originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
+        parameterName: `/remote-swe-agents/${Stack.of(this).stackName}/webapp/origin-source`,
         stringValue: 'dummy',
       });
       originSourceParameter.grantRead(handler);

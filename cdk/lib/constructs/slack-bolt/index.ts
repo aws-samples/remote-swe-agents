@@ -1,4 +1,4 @@
-import { CfnOutput, Duration, IgnoreMode, RemovalPolicy } from 'aws-cdk-lib';
+import { CfnOutput, Duration, IgnoreMode, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -53,10 +53,11 @@ export class SlackBolt extends Construct {
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
 
+    // Reference the same parameter name pattern as in webapp.ts
     const originSourceParameter = StringParameter.fromStringParameterName(
       this,
       'OriginSourceParameter',
-      'remote-swe-agents-webapp-originSourceParameter'
+      `/remote-swe-agents/${Stack.of(this).stackName}/webapp/origin-source`
     );
 
     const handler = new DockerImageFunction(this, 'Handler', {
