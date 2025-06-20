@@ -392,7 +392,7 @@ Here we assume you request 100 sessions per month. The monthly cost is proportio
 | AWS service | Dimensions | Cost [USD/month] |
 |-------------|------------|------------------|
 | EC2 | t3.large, 1 hour/session | 8.32 |
-| EBS | 50 GB/instance, 1 day/instance | 13.33 |
+| EBS | 30 GB/instance, 1 day/instance | 8.00 |
 | DynamoDB | Read: 1000 RRU/session | 0.0125 |
 | DynamoDB | Write: 200 WRU/session | 0.0125 |
 | DynamoDB | Storage: 2 MB/session | 0.05 |
@@ -404,7 +404,7 @@ Here we assume you request 100 sessions per month. The monthly cost is proportio
 | Bedrock | Input (cache write): Sonnet 3.7 100k tokens/session | 37.5 |
 | Bedrock | Input (cache read): Sonnet 3.7 1M tokens/session | 30.00 |
 | Bedrock | Output: Sonnet 3.7 20k tokens/session | 30.00 |
-| TOTAL | | 120 |
+| TOTAL | | 115 |
 
 Additionally, when the system is not in use (i.e., no messages are sent to the agents), the ongoing costs are minimal (~0 USD).
 

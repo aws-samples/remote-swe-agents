@@ -136,7 +136,7 @@ export class Worker extends Construct {
       blockDevices: [
         {
           deviceName: '/dev/sda1',
-          volume: ec2.BlockDeviceVolume.ebs(50, {
+          volume: ec2.BlockDeviceVolume.ebs(30, {
             volumeType: ec2.EbsDeviceVolumeType.GP3,
             encrypted: true,
           }),

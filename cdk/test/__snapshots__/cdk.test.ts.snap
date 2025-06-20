@@ -3967,7 +3967,7 @@ exports.handler = async function (event, context) {
             "DeviceName": "/dev/sda1",
             "Ebs": {
               "Encrypted": true,
-              "VolumeSize": 50,
+              "VolumeSize": 30,
               "VolumeType": "gp3",
             },
           },
@@ -4743,7 +4743,7 @@ phases:
                   "GroupId",
                 ],
               },
-              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":50,"volumeType":"gp3"}}],"componentsVersion":"",
+              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":30,"volumeType":"gp3"}}],"componentsVersion":"",
               {
                 "Fn::GetAtt": [
                   "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
@@ -4764,7 +4764,7 @@ phases:
         "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
       ],
       "Properties": {
-        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v2"}}",
+        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v3"}}",
         "InstallLatestAwsSdk": false,
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -4772,7 +4772,7 @@ phases:
             "Arn",
           ],
         },
-        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v2"}}",
+        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v3"}}",
       },
       "Type": "Custom::AWS",
       "UpdateReplacePolicy": "Delete",
@@ -4822,7 +4822,7 @@ phases:
                   "version",
                 ],
               },
-              "#v2"}}",
+              "#v3"}}",
             ],
           ],
         },
@@ -4851,7 +4851,7 @@ phases:
                   "version",
                 ],
               },
-              "#v2"}}",
+              "#v3"}}",
             ],
           ],
         },
@@ -5429,7 +5429,7 @@ phases:
               "DeviceName": "/dev/sda1",
               "Ebs": {
                 "Encrypted": true,
-                "VolumeSize": 50,
+                "VolumeSize": 30,
                 "VolumeType": "gp3",
               },
             },

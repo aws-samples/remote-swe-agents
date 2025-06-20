@@ -70,7 +70,7 @@ export class WorkerImageBuilder extends Construct {
           deviceName: '/dev/sda1',
           ebs: {
             encrypted: true,
-            volumeSize: 50,
+            volumeSize: 30,
             volumeType: 'gp3',
           },
         },
@@ -114,7 +114,7 @@ export class WorkerImageBuilder extends Construct {
 
     // change this physical id manually when you want to force users to remove the AMI cache
     // (e.g. when DynamoDB table ARN changed)
-    const amiVersion = 'v2';
+    const amiVersion = 'v3';
     // Run the build pipeline asynchronously
     new AwsCustomResource(this, 'RunPipeline', {
       onUpdate: {
