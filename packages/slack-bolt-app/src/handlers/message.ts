@@ -142,7 +142,7 @@ export async function handleMessage(
                         },
                       ],
                     },
-                    webappUrl && {
+                    ...(webappUrl ? [{
                       type: 'rich_text_section',
                       elements: [
                         {
@@ -158,7 +158,7 @@ export async function handleMessage(
                           },
                         },
                       ],
-                    },
+                    }] : []),
                     {
                       type: 'rich_text_section',
                       elements: [
@@ -188,7 +188,7 @@ export async function handleMessage(
                         },
                       ],
                     },
-                  ].filter(Boolean),
+                  ],
                 },
               ],
             },
