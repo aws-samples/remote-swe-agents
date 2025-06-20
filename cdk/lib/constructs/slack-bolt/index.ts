@@ -71,7 +71,9 @@ export class SlackBolt extends Construct {
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
         LOG_GROUP_NAME: props.workerLogGroupName,
-        ...(webappOriginSourceParameter ? { APP_ORIGIN_SOURCE_PARAMETER: webappOriginSourceParameter.parameterName } : {}),
+        ...(webappOriginSourceParameter
+          ? { APP_ORIGIN_SOURCE_PARAMETER: webappOriginSourceParameter.parameterName }
+          : {}),
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
       architecture: Architecture.ARM_64,
