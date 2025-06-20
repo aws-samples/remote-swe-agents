@@ -117,7 +117,7 @@ export async function handleMessage(
                 text: `Hi <@${userId}>, please wait for your agent to launch.\n\n*Useful Tips:*`,
               },
             },
-            // Use separate sections instead of rich_text to avoid type issues
+            // Add additional sections with tips
             {
               type: 'section',
               text: {
@@ -125,6 +125,7 @@ export async function handleMessage(
                 text: `• You can view <${cloudwatchUrl}|*the execution log here*>`,
               },
             },
+            // Conditionally add webapp link if available
             ...(webappUrl ? [{
               type: 'section',
               text: {
