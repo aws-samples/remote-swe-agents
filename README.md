@@ -345,17 +345,25 @@ All the new agents can now use MCP servers as their tools.
 
 ### Overriding the Foundation Model
 
-By default the Remote SWE uses Claude Sonnet 3.7 as the foundation model. You can override this configuration by the below steps:
+By default the Remote SWE uses Claude Sonnet 3.7 as the foundation model. You can override this configuration in one of two ways:
 
-1. Edit [cdk/lib/constructs/worker/index.ts](./cdk/lib/constructs/worker/index.ts) to set the environment variable `MODEL_OVERRIDE` for the worker service. The available values are: `sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro, opus4, and sonnet4`
+1. **Using environment variable (recommended)**:
+   ```bash
+   WORKER_MODEL_OVERRIDE=nova-pro npx cdk deploy
+   ```
+
+2. **Directly editing the code**:
+   Edit [cdk/lib/constructs/worker/index.ts](./cdk/lib/constructs/worker/index.ts) to set the environment variable `MODEL_OVERRIDE` for the worker service.
    ```diff
    Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
    + Environment=MODEL_OVERRIDE=nova-pro
 
    [Install]
    ```
-2. Run cdk deploy
-3. New workers now use the override model.
+
+The available model values are: `sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro, opus4, and sonnet4`
+
+After deploying, new workers will use the override model.
 
 Note that this feature is highly experimental and we generally recommend to use the default model for optimized experience.
 

@@ -339,17 +339,25 @@ npx cdk deploy --all
 
 ### 基盤モデルのオーバーライド
 
-デフォルトでは、Remote SWEは基盤モデルとしてClaude Sonnet 3.7を使用しています。以下の手順でこの設定をオーバーライドできます：
+デフォルトでは、Remote SWEは基盤モデルとしてClaude Sonnet 3.7を使用しています。この設定を上書きするには、次の2つの方法があります：
 
-1. [cdk/lib/constructs/worker/index.ts](./cdk/lib/constructs/worker/index.ts)を編集してワーカーサービスの環境変数`MODEL_OVERRIDE`を設定します。利用可能な値は：`sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro`です。
+1. **環境変数の使用（推奨）**:
+   ```bash
+   WORKER_MODEL_OVERRIDE=nova-pro npx cdk deploy
+   ```
+
+2. **コードを直接編集する方法**:
+   [cdk/lib/constructs/worker/index.ts](./cdk/lib/constructs/worker/index.ts)を編集してワーカーサービスの環境変数`MODEL_OVERRIDE`を設定します。
    ```diff
    Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
    + Environment=MODEL_OVERRIDE=nova-pro
 
    [Install]
    ```
-2. cdk deployを実行
-3. これで新しいワーカーがオーバーライドモデルを使用します。
+
+利用可能なモデル値は次のとおりです：`sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro, opus4, sonnet4`
+
+デプロイ後、新しいワーカーはオーバーライドされたモデルを使用します。
 
 この機能は非常に実験的であり、最適な体験のために通常はデフォルトモデルを使用することをお勧めします。
 
