@@ -67,7 +67,7 @@ export async function handleMessage(
 
   // Get webapp domain from SSM parameter
   const originSourceParameterName = process.env.APP_ORIGIN_SOURCE_PARAMETER;
-  let webappUrl = undefined;
+  let webappUrl: string | undefined = undefined;
   
   if (originSourceParameterName) {
     try {
