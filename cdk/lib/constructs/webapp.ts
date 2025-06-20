@@ -17,6 +17,7 @@ import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from '
 import { Storage } from './storage';
 import { WorkerBus } from './worker/bus';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { LambdaWarmer } from './lambda-warmer';
 
 export interface WebappProps {
   storage: Storage;
@@ -159,6 +160,11 @@ export class Webapp extends Construct {
           resources: [originSourceParameter.parameterArn],
         }),
       });
+    }
+
+    if (process.env.ENABLE_LAMBDA_WARMER) {
+      const warmer = new LambdaWarmer(this, 'LambdaWarmer', {});
+      warmer.addTarget('Webapp', this.baseUrl, 5);
     }
   }
 }
