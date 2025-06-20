@@ -67,8 +67,8 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
         <div className="text-left">
           <ImagePreviewList />
 
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="message" className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="flex items-center justify-end mb-2">
+            <label htmlFor="message" className="hidden md:block mr-auto text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('initialMessage')}
             </label>
             <div className="flex gap-2">
