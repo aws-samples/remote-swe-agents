@@ -42,7 +42,7 @@ This project supports two installation patterns depending on your needs. Choose 
 
 ### Prerequisites
 
-- Node.js (version 20 or higher)
+- Node.js (version 22 or higher)
 - npm (version 9 or higher)
 - AWS CLI
 - AWS IAM profile with appropriate permissions
