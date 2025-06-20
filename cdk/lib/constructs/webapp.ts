@@ -45,6 +45,7 @@ export interface WebappProps {
 
 export class Webapp extends Construct {
   public readonly baseUrl: string;
+  public readonly originSourceParameter?: IStringParameter;
 
   constructor(scope: Construct, id: string, props: WebappProps) {
     super(scope, id);
@@ -136,13 +137,12 @@ export class Webapp extends Construct {
         [`${this.baseUrl}/api/auth/sign-out-callback`, `http://localhost:3011/api/auth/sign-out-callback`]
       );
 
-      // Create parameter with a standardized name that can be referenced by other constructs
-      const originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
-        parameterName: `/remote-swe-agents/${Stack.of(this).stackName}/webapp/origin-source`,
+      // Create parameter and expose it publicly for other constructs to use
+      this.originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
         stringValue: 'dummy',
       });
-      originSourceParameter.grantRead(handler);
-      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', originSourceParameter.parameterName);
+      this.originSourceParameter.grantRead(handler);
+      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', this.originSourceParameter.parameterName);
 
       // We need to pass APP_ORIGIN environment variable for callback URL,
       // but we cannot know CloudFront domain before deploying Lambda function.

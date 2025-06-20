@@ -127,23 +127,6 @@ export class MainStack extends cdk.Stack {
       modelOverride: props.workerModelOverride,
     });
 
-    new SlackBolt(this, 'SlackBolt', {
-      botTokenParameter: botToken,
-      signingSecretParameter: signingSecret,
-      launchTemplateId: worker.launchTemplate.launchTemplateId!,
-      subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
-      workerBus: worker.bus,
-      storage,
-      adminUserIdList: props.slack.adminUserIdList,
-      workerLogGroupName: worker.logGroup.logGroupName,
-      workerAmiIdParameter,
-    });
-
-    new EC2GarbageCollector(this, 'EC2GarbageCollector', {
-      expirationInDays: 1,
-      imageRecipeName: worker.imageBuilder.imageRecipeName,
-    });
-
     const auth = new Auth(this, 'Auth', {
       hostedZone,
       sharedCertificate: props.sharedCertificate,
@@ -167,6 +150,24 @@ export class MainStack extends cdk.Stack {
       workerBus: worker.bus,
       asyncJob,
       workerAmiIdParameter,
+    });
+
+    new SlackBolt(this, 'SlackBolt', {
+      botTokenParameter: botToken,
+      signingSecretParameter: signingSecret,
+      launchTemplateId: worker.launchTemplate.launchTemplateId!,
+      subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
+      workerBus: worker.bus,
+      storage,
+      adminUserIdList: props.slack.adminUserIdList,
+      workerLogGroupName: worker.logGroup.logGroupName,
+      workerAmiIdParameter,
+      webappOriginSourceParameter: webapp.originSourceParameter,
+    });
+
+    new EC2GarbageCollector(this, 'EC2GarbageCollector', {
+      expirationInDays: 1,
+      imageRecipeName: worker.imageBuilder.imageRecipeName,
     });
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {

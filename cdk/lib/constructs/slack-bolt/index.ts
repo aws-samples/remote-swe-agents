@@ -22,13 +22,14 @@ export interface SlackBoltProps {
   adminUserIdList?: string;
   workerLogGroupName: string;
   workerAmiIdParameter: IStringParameter;
+  webappOriginSourceParameter?: IStringParameter;
 }
 
 export class SlackBolt extends Construct {
   constructor(scope: Construct, id: string, props: SlackBoltProps) {
     super(scope, id);
 
-    const { botTokenParameter, signingSecretParameter } = props;
+    const { botTokenParameter, signingSecretParameter, webappOriginSourceParameter } = props;
     const asyncHandler = new DockerImageFunction(this, 'AsyncHandler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
@@ -53,12 +54,7 @@ export class SlackBolt extends Construct {
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
 
-    // Reference the same parameter name pattern as in webapp.ts
-    const originSourceParameter = StringParameter.fromStringParameterName(
-      this,
-      'OriginSourceParameter',
-      `/remote-swe-agents/${Stack.of(this).stackName}/webapp/origin-source`
-    );
+    // If webappOriginSourceParameter is provided, grant access to it
 
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
@@ -75,12 +71,14 @@ export class SlackBolt extends Construct {
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
         LOG_GROUP_NAME: props.workerLogGroupName,
-        APP_ORIGIN_SOURCE_PARAMETER: originSourceParameter.parameterName,
+        ...(webappOriginSourceParameter ? { APP_ORIGIN_SOURCE_PARAMETER: webappOriginSourceParameter.parameterName } : {}),
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
       architecture: Architecture.ARM_64,
     });
-    originSourceParameter.grantRead(handler);
+    if (webappOriginSourceParameter) {
+      webappOriginSourceParameter.grantRead(handler);
+    }
     asyncHandler.grantInvoke(handler);
     props.storage.table.grantReadWriteData(handler);
     props.storage.bucket.grantReadWrite(handler);
