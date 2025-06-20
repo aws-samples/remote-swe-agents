@@ -4550,7 +4550,6 @@ phases:
 
               Environment=BEDROCK_AWS_ROLE_NAME=
 
-              # Environment=MODEL_OVERRIDE=nova-pro
 
 
               [Install]
@@ -5258,7 +5257,6 @@ phases:
 
               Environment=BEDROCK_AWS_ROLE_NAME=
 
-              # Environment=MODEL_OVERRIDE=nova-pro
 
 
               [Install]
@@ -5672,7 +5670,7 @@ Environment=BUCKET_NAME=",
                   "
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
-# Environment=MODEL_OVERRIDE=nova-pro
+
 
 [Install]
 WantedBy=multi-user.target
