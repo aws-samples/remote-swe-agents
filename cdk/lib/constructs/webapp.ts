@@ -164,7 +164,7 @@ export class Webapp extends Construct {
 
     if (process.env.ENABLE_LAMBDA_WARMER) {
       const warmer = new LambdaWarmer(this, 'LambdaWarmer', {});
-      warmer.addTarget('Webapp', this.baseUrl, 5);
+      warmer.addTarget('Webapp', `${this.baseUrl}/api/health/warm`, 5);
     }
   }
 }
