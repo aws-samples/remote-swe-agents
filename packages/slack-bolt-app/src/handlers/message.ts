@@ -1,5 +1,6 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { WebClient } from '@slack/web-api';
+import { Block, KnownBlock, SectionBlock } from '@slack/types';
 import { saveConversationHistory } from '../util/history';
 import { s3, BucketName, getParameter } from '@remote-swe-agents/agent-core/aws';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
@@ -116,7 +117,7 @@ export async function handleMessage(
                 type: 'mrkdwn',
                 text: `Hi <@${userId}>, please wait for your agent to launch.\n\n*Useful Tips:*`,
               },
-            },
+            } as SectionBlock,
             // Add additional sections with tips
             {
               type: 'section',
@@ -124,7 +125,7 @@ export async function handleMessage(
                 type: 'mrkdwn',
                 text: `• You can view <${cloudwatchUrl}|*the execution log here*>`,
               },
-            },
+            } as SectionBlock,
             // Conditionally add webapp link if available
             ...(webappUrl ? [{
               type: 'section',
@@ -132,21 +133,21 @@ export async function handleMessage(
                 type: 'mrkdwn',
                 text: `• View this session in WebApp: <${webappUrl}/sessions/${workerId}|*Open in Web UI*>`,
               },
-            }] : []),
+            } as SectionBlock] : []),
             {
               type: 'section',
               text: {
                 type: 'mrkdwn',
                 text: '• Send `dump_history` to get conversation history and token consumption stats.',
               },
-            },
+            } as SectionBlock,
             {
               type: 'section',
               text: {
                 type: 'mrkdwn',
                 text: '• You can always interrupt and ask them to stop what they are doing.',
               },
-            },
+            } as SectionBlock,
           ],
         })
       : client.reactions.add({
