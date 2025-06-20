@@ -117,80 +117,34 @@ export async function handleMessage(
                 text: `Hi <@${userId}>, please wait for your agent to launch.\n\n*Useful Tips:*`,
               },
             },
+            // Use separate sections instead of rich_text to avoid type issues
             {
-              type: 'rich_text',
-              elements: [
-                {
-                  type: 'rich_text_list',
-                  style: 'bullet',
-                  indent: 0,
-                  elements: [
-                    {
-                      type: 'rich_text_section',
-                      elements: [
-                        {
-                          type: 'text',
-                          text: 'You can view ',
-                        },
-                        {
-                          type: 'link',
-                          url: cloudwatchUrl,
-                          text: 'the execution log here',
-                          style: {
-                            bold: true,
-                          },
-                        },
-                      ],
-                    },
-                    ...(webappUrl ? [{
-                      type: 'rich_text_section',
-                      elements: [
-                        {
-                          type: 'text',
-                          text: 'View this session in WebApp: ',
-                        },
-                        {
-                          type: 'link',
-                          url: `${webappUrl}/sessions/${workerId}`,
-                          text: 'Open in Web UI',
-                          style: {
-                            bold: true,
-                          },
-                        },
-                      ],
-                    }] : []),
-                    {
-                      type: 'rich_text_section',
-                      elements: [
-                        {
-                          type: 'text',
-                          text: 'Send ',
-                        },
-                        {
-                          type: 'text',
-                          text: 'dump_history',
-                          style: {
-                            code: true,
-                          },
-                        },
-                        {
-                          type: 'text',
-                          text: ' to get conversation history and token consumption stats.',
-                        },
-                      ],
-                    },
-                    {
-                      type: 'rich_text_section',
-                      elements: [
-                        {
-                          type: 'text',
-                          text: 'You can always interrupt and ask them to stop what they are doing.',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `• You can view <${cloudwatchUrl}|*the execution log here*>`,
+              },
+            },
+            ...(webappUrl ? [{
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `• View this session in WebApp: <${webappUrl}/sessions/${workerId}|*Open in Web UI*>`,
+              },
+            }] : []),
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '• Send `dump_history` to get conversation history and token consumption stats.',
+              },
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '• You can always interrupt and ask them to stop what they are doing.',
+              },
             },
           ],
         })
