@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users } from 'lucide-react';
+import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff } from 'lucide-react';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useCallback, useState, useEffect } from 'react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useAction } from 'next-safe-action/hooks';
+import { hideSessionAction } from '../actions';
 
 interface SessionsListProps {
   initialSessions: SessionItem[];
@@ -21,6 +23,16 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
+  const [showHideButton, setShowHideButton] = useState(false);
+
+  const { execute: hideSession } = useAction(hideSessionAction, {
+    onSuccess: (data) => {
+      router.refresh();
+    },
+    onError: (error) => {
+      console.error('Failed to hide session:', error);
+    },
+  });
 
   useEventBus({
     channelName: 'webapp/worker/*',
@@ -61,6 +73,37 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
     setSessions(initialSessions);
   }, [initialSessions]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.shiftKey) {
+        setShowHideButton(true);
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (!event.shiftKey) {
+        setShowHideButton(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  const handleHideSession = useCallback(
+    (event: React.MouseEvent, workerId: string) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hideSession({ workerId });
+    },
+    [hideSession]
+  );
+
   return (
     <>
       <div className="flex justify-between items-center mb-8">
@@ -85,6 +128,20 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                 {isOtherUserSession && (
                   <div className="absolute bottom-2 right-2" title={t('initiatedByOtherUsers')}>
                     <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                )}
+
+                {showHideButton && (
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 w-6 p-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
+                      onClick={(e) => handleHideSession(e, session.workerId)}
+                      title="Hide session"
+                    >
+                      <EyeOff className="w-3 h-3" />
+                    </Button>
                   </div>
                 )}
 

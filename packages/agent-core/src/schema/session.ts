@@ -21,6 +21,7 @@ export const sessionItemSchema = z.object({
   sessionCost: z.number(),
   agentStatus: agentStatusSchema,
   initiator: z.string().optional(),
+  isHidden: z.boolean().optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

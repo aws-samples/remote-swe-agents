@@ -70,14 +70,15 @@ export const getSessions = async (
         items.push(...(page.Items as SessionItem[]));
       }
     }
-    return items;
+    return items.filter((session) => !session.isHidden);
   }
 
   // Otherwise, use the specified limit
   queryParams.Limit = limit;
   const res = await ddb.send(new QueryCommand(queryParams));
 
-  return (res.Items ?? []) as SessionItem[];
+  const items = (res.Items ?? []) as SessionItem[];
+  return items.filter((session) => !session.isHidden);
 };
 
 /**
@@ -96,6 +97,27 @@ export const updateSessionAgentStatus = async (workerId: string, agentStatus: Ag
       UpdateExpression: 'SET agentStatus = :agentStatus',
       ExpressionAttributeValues: {
         ':agentStatus': agentStatus,
+      },
+    })
+  );
+};
+
+/**
+ * Update isHidden field for a session
+ * @param workerId Worker ID of the session to update
+ * @param isHidden Whether the session should be hidden
+ */
+export const updateSessionVisibility = async (workerId: string, isHidden: boolean): Promise<void> => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: {
+        PK: 'sessions',
+        SK: workerId,
+      },
+      UpdateExpression: 'SET isHidden = :isHidden',
+      ExpressionAttributeValues: {
+        ':isHidden': isHidden,
       },
     })
   );
