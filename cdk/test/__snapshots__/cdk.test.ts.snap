@@ -1457,103 +1457,92 @@ Remote SWE Agents Team",
         "ProcessorConfig": {
           "Mode": "INLINE"
         },
-        "StartAt": "Parallel",
+        "StartAt": "Cleanup",
         "States": {
-          "Parallel": {
-            "Type": "Parallel",
-            "Branches": [
-              {
-                "StartAt": "DeleteImageBuilderImage",
-                "States": {
-                  "DeleteImageBuilderImage": {
-                    "Type": "Task",
-                    "Resource": "arn:aws:states:::aws-sdk:imagebuilder:deleteImage",
-                    "Arguments": {
-                      "ImageBuildVersionArn": "{% $states.input.Tags[Key = 'Ec2ImageBuilderArn'].Value %}"
-                    },
-                    "Next": "Pass",
-                    "Catch": [
-                      {
-                        "ErrorEquals": [
-                          "States.ALL"
-                        ],
-                        "Next": "Pass"
-                      }
-                    ]
-                  },
-                  "Pass": {
-                    "Type": "Pass",
-                    "End": true
-                  }
-                }
+          "Cleanup": {
+            "Type": "Map",
+            "Items": "{% [$states.input] %}",
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "INLINE"
               },
-              {
-                "StartAt": "DeregisterImage",
-                "States": {
-                  "DeregisterImage": {
-                    "Type": "Task",
-                    "Resource": "arn:aws:states:::aws-sdk:ec2:deregisterImage",
-                    "Arguments": {
-                      "ImageId": "{% $states.input.ImageId %}"
-                    },
-                    "Next": "Pass (1)",
-                    "Catch": [
-                      {
-                        "ErrorEquals": [
-                          "States.ALL"
-                        ],
-                        "Next": "Pass (1)"
-                      }
-                    ]
+              "StartAt": "DeleteImageBuilderImage",
+              "States": {
+                "DeleteImageBuilderImage": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:imagebuilder:deleteImage",
+                  "Arguments": {
+                    "ImageBuildVersionArn": "{% $states.input.Tags[Key = 'Ec2ImageBuilderArn'].Value %}"
                   },
-                  "Pass (1)": {
-                    "Type": "Pass",
-                    "End": true
-                  }
-                }
-              },
-              {
-                "StartAt": "ProcessSnapshots",
-                "States": {
-                  "ProcessSnapshots": {
-                    "Type": "Map",
-                    "Items": "{% [$states.input.BlockDeviceMappings[$exists(Ebs)]] %}",
-                    "ItemProcessor": {
-                      "ProcessorConfig": {
-                        "Mode": "INLINE"
-                      },
-                      "StartAt": "DeleteSnapshotInMap",
-                      "States": {
-                        "DeleteSnapshotInMap": {
-                          "Type": "Task",
-                          "Resource": "arn:aws:states:::aws-sdk:ec2:deleteSnapshot",
-                          "Arguments": {
-                            "SnapshotId": "{% $states.input.Ebs.SnapshotId %}"
-                          },
-                          "Next": "Pass (2)",
-                          "Catch": [
-                            {
-                              "ErrorEquals": [
-                                "States.ALL"
-                              ],
-                              "Next": "Pass (2)"
-                            }
-                          ]
+                  "Next": "DeregisterImage",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [
+                        "States.ALL"
+                      ],
+                      "Next": "DeregisterImage"
+                    }
+                  ]
+                },
+                "DeregisterImage": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:ec2:deregisterImage",
+                  "Arguments": {
+                    "ImageId": "{% $states.input.ImageId %}"
+                  },
+                  "Next": "ProcessSnapshots",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [
+                        "States.ALL"
+                      ],
+                      "Next": "Pass"
+                    }
+                  ]
+                },
+                "ProcessSnapshots": {
+                  "Type": "Map",
+                  "Items": "{% [$states.input.BlockDeviceMappings[$exists(Ebs)]] %}",
+                  "ItemProcessor": {
+                    "ProcessorConfig": {
+                      "Mode": "INLINE"
+                    },
+                    "StartAt": "DeleteSnapshotInMap",
+                    "States": {
+                      "DeleteSnapshotInMap": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::aws-sdk:ec2:deleteSnapshot",
+                        "Arguments": {
+                          "SnapshotId": "{% $states.input.Ebs.SnapshotId %}"
                         },
-                        "Pass (2)": {
-                          "Type": "Pass",
-                          "End": true
-                        }
+                        "Next": "Pass (2)",
+                        "Catch": [
+                          {
+                            "ErrorEquals": [
+                              "States.ALL"
+                            ],
+                            "Next": "Pass (2)"
+                          }
+                        ]
+                      },
+                      "Pass (2)": {
+                        "Type": "Pass",
+                        "End": true
                       }
-                    },
-                    "MaxConcurrency": 5,
-                    "End": true
-                  }
+                    }
+                  },
+                  "MaxConcurrency": 5,
+                  "Next": "Pass"
+                },
+                "Pass": {
+                  "Type": "Pass",
+                  "End": true
                 }
               }
-            ],
+            },
+            "MaxConcurrency": 3,
             "End": true
-          }
+          }}
         }
       },
       "MaxConcurrency": 3,
