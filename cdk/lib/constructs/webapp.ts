@@ -45,7 +45,7 @@ export interface WebappProps {
 
 export class Webapp extends Construct {
   public readonly baseUrl: string;
-  public readonly originSourceParameter?: IStringParameter;
+  public readonly originSourceParameter: IStringParameter;
 
   constructor(scope: Construct, id: string, props: WebappProps) {
     super(scope, id);
@@ -131,6 +131,9 @@ export class Webapp extends Construct {
         `${this.baseUrl}/api/auth/sign-out-callback`
       );
       handler.addEnvironment('APP_ORIGIN', service.url);
+      this.originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
+        stringValue: service.url,
+      });
     } else {
       auth.updateAllowedCallbackUrls(
         [`${this.baseUrl}/api/auth/sign-in-callback`, `http://localhost:3011/api/auth/sign-in-callback`],
@@ -138,11 +141,12 @@ export class Webapp extends Construct {
       );
 
       // Create parameter and expose it publicly for other constructs to use
-      this.originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
+      const originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
         stringValue: 'dummy',
       });
-      this.originSourceParameter.grantRead(handler);
-      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', this.originSourceParameter.parameterName);
+      this.originSourceParameter = originSourceParameter;
+      originSourceParameter.grantRead(handler);
+      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', originSourceParameter.parameterName);
 
       // We need to pass APP_ORIGIN environment variable for callback URL,
       // but we cannot know CloudFront domain before deploying Lambda function.
@@ -152,14 +156,14 @@ export class Webapp extends Construct {
           service: 'ssm',
           action: 'putParameter',
           parameters: {
-            Name: this.originSourceParameter.parameterName,
+            Name: originSourceParameter.parameterName,
             Value: service.url,
             Overwrite: true,
           },
-          physicalResourceId: PhysicalResourceId.of(this.originSourceParameter.parameterName),
+          physicalResourceId: PhysicalResourceId.of(originSourceParameter.parameterName),
         },
         policy: AwsCustomResourcePolicy.fromSdkCalls({
-          resources: [this.originSourceParameter.parameterArn],
+          resources: [originSourceParameter.parameterArn],
         }),
       });
     }

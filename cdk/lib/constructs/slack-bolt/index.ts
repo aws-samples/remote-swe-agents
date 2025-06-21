@@ -22,7 +22,7 @@ export interface SlackBoltProps {
   adminUserIdList?: string;
   workerLogGroupName: string;
   workerAmiIdParameter: IStringParameter;
-  webappOriginSourceParameter?: IStringParameter;
+  webappOriginSourceParameter: IStringParameter;
 }
 
 export class SlackBolt extends Construct {
@@ -54,8 +54,6 @@ export class SlackBolt extends Construct {
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
 
-    // If webappOriginSourceParameter is provided, grant access to it
-
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {
         file: join('docker', 'slack-bolt-app.Dockerfile'),
@@ -71,16 +69,12 @@ export class SlackBolt extends Construct {
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
         LOG_GROUP_NAME: props.workerLogGroupName,
-        ...(webappOriginSourceParameter
-          ? { APP_ORIGIN_SOURCE_PARAMETER: webappOriginSourceParameter.parameterName }
-          : {}),
+        APP_ORIGIN_SOURCE_PARAMETER: webappOriginSourceParameter.parameterName,
         ...(props.adminUserIdList ? { ADMIN_USER_ID_LIST: props.adminUserIdList } : {}),
       },
       architecture: Architecture.ARM_64,
     });
-    if (webappOriginSourceParameter) {
-      webappOriginSourceParameter.grantRead(handler);
-    }
+    webappOriginSourceParameter.grantRead(handler);
     asyncHandler.grantInvoke(handler);
     props.storage.table.grantReadWriteData(handler);
     props.storage.bucket.grantReadWrite(handler);
