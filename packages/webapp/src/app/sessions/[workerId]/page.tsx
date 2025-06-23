@@ -1,4 +1,10 @@
-import { getAttachedImageKey, getConversationHistory, getSession, getTodoList, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
+import {
+  getAttachedImageKey,
+  getConversationHistory,
+  getSession,
+  getTodoList,
+  noOpFiltering,
+} from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
@@ -42,13 +48,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
         if (msgBlocks.length > 0) {
           for (const block of msgBlocks) {
             const toolName = block.toolUse!.name;
-            const toolUseId = block.toolUse!.toolUseId;
+            const toolUseId = block.toolUse!.toolUseId!;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const input = block.toolUse?.input as any;
-            const key = getAttachedImageKey(workerId, input.context.toolUseId, input.imagePath);
-            
+
             if (toolName === 'sendImageToUser') {
               const messageText = formatMessage(input?.message ?? '');
+              const key = getAttachedImageKey(workerId, toolUseId, input.imagePath);
+
               messages.push({
                 id: `${item.SK}-${i}-${toolUseId}`,
                 role: 'assistant',

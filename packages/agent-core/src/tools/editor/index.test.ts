@@ -36,17 +36,20 @@ function displayVehicleInfo(vehicle: Vehicle): void {
   writeFileSync(filePath, file, 'utf-8');
 
   // WHEN
-  tool({
-    filePath,
-    oldString: `
+  tool(
+    {
+      filePath,
+      oldString: `
 function displayVehicleInfo(vehicle: Vehicle): void {
     if (vehicle.isElectric) {
         console.log(vehicle.brand + ' (' + vehicle.year + ') - Electric Vehicle');`,
-    newString: `
+      newString: `
 function displayVehicleInfo(vehicle: Vehicle) {
     if (vehicle.isElectric) {
         console.log('Electric Vehicle');`,
-  });
+    },
+    { toolUseId: 'dummy' }
+  );
   const newFile = readFileSync(filePath, 'utf-8');
 
   // THEN
@@ -87,11 +90,14 @@ function getUserDisplayName(user: User): string {
   expect(existsSync(filePath)).toBe(false);
 
   // WHEN
-  const result = await tool({
-    filePath,
-    oldString: '',
-    newString: newContent,
-  });
+  const result = await tool(
+    {
+      filePath,
+      oldString: '',
+      newString: newContent,
+    },
+    { toolUseId: 'dummy' }
+  );
 
   // THEN
   expect(result).toBe('successfully created the file.');
@@ -118,11 +124,14 @@ const config = {
   expect(existsSync(filePath)).toBe(true);
 
   // WHEN
-  const result = await tool({
-    filePath,
-    oldString: '',
-    newString: 'new content that should not be written',
-  });
+  const result = await tool(
+    {
+      filePath,
+      oldString: '',
+      newString: 'new content that should not be written',
+    },
+    { toolUseId: 'dummy' }
+  );
 
   // THEN
   expect(result).toBe('The file already exists. Please provide a non-empty oldString to edit it.');

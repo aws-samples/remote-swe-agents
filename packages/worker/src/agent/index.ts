@@ -367,14 +367,13 @@ Users will primarily request software engineering assistance including bug fixes
               throw new Error(`tool ${name} is not found`);
             }
             const schema = tool.schema;
-            const { success, data: input } = schema.safeParse(toolInput);
+            const { success, data: input, error } = schema.safeParse(toolInput);
             if (!success) {
-              throw new Error('invalid input');
+              throw new Error(`invalid input: ${error}`);
             }
 
             console.log(`using tool: ${name} ${JSON.stringify(input)}`);
-            const inputWithContext = { context: { toolUseId }, ...input };
-            const result = await tool.handler(inputWithContext);
+            const result = await tool.handler(input, { toolUseId });
             if (typeof result == 'string') {
               toolResult = result;
             } else {

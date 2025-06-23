@@ -11,9 +11,6 @@ import { getAttachedImageKey } from '../../lib';
 const inputSchema = z.object({
   imagePath: z.string().describe('the local file system path to the image'),
   message: z.string().describe('message to send along with the image to user'),
-  context: z.object({
-    toolUseId: z.string(),
-  }).optional(),
 });
 
 const name = 'sendImageToUser';
@@ -35,31 +32,31 @@ const getContentTypeFromExtension = (filePath: string): string => {
 
 export const sendImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
-  handler: async (input: z.infer<typeof inputSchema>) => {
+  handler: async (input: z.infer<typeof inputSchema>, context: { toolUseId: string }) => {
     // Send to Slack as before
     await sendFileToSlack(input.imagePath, input.message);
-    
+
     // If context with toolUseId is provided, also upload to S3
-    if (input.context?.toolUseId) {
-      try {
-        const fileBuffer = readFileSync(input.imagePath);
-        const contentType = getContentTypeFromExtension(input.imagePath);
-        const s3Key = getAttachedImageKey(WorkerId, input.context.toolUseId, input.imagePath);
-        
-        await s3.send(new PutObjectCommand({
+    try {
+      const fileBuffer = readFileSync(input.imagePath);
+      const contentType = getContentTypeFromExtension(input.imagePath);
+      const s3Key = getAttachedImageKey(WorkerId, context.toolUseId, input.imagePath);
+
+      await s3.send(
+        new PutObjectCommand({
           Bucket: BucketName,
           Key: s3Key,
           Body: fileBuffer,
           ContentType: contentType,
-        }));
-        
-        console.log(`Image uploaded to S3: ${s3Key}`);
-      } catch (error) {
-        console.error('Failed to upload image to S3:', error);
-        // Don't fail the entire operation if S3 upload fails
-      }
+        })
+      );
+
+      console.log(`Image uploaded to S3: ${s3Key}`);
+    } catch (error) {
+      console.error('Failed to upload image to S3:', error);
+      // Don't fail the entire operation if S3 upload fails
     }
-    
+
     return 'successfully sent an image with message.';
   },
   schema: inputSchema,
