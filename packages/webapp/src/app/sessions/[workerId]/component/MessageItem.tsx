@@ -6,6 +6,7 @@ import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
 import { UrlRenderer } from './UrlRenderer';
+import { ImageViewer } from './ImageViewer';
 
 type MessageItemProps = {
   message: MessageView;
@@ -55,6 +56,7 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                 ) : (
                   <MarkdownRenderer content={message.content} />
                 )}
+                {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
                 <button
