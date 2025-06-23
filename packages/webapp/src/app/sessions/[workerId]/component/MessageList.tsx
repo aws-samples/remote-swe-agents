@@ -16,6 +16,7 @@ export type MessageView = {
   output?: string; // Added for toolResult output JSON
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse';
+  imageKeys?: string[];
 };
 
 type MessageGroup = {

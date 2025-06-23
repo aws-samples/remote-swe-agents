@@ -1,4 +1,4 @@
-import { getConversationHistory, getSession, getTodoList, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
+import { getAttachedImageKey, getConversationHistory, getSession, getTodoList, noOpFiltering } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
@@ -30,7 +30,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
-    ['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(toolName ?? '');
+    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser'].includes(toolName ?? '');
   for (let i = 0; i < filteredMessages.length; i++) {
     const message = filteredMessages[i];
     const item = filteredItems[i];
@@ -40,17 +40,36 @@ export default async function SessionPage({ params }: SessionPageProps) {
         const msgBlocks = message.content?.filter((block) => isMsg(block.toolUse?.name)) ?? [];
 
         if (msgBlocks.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let messageText = msgBlocks.map((b) => (b.toolUse?.input as any)?.message ?? '').join('\n');
-          messageText = formatMessage(messageText);
-          if (messageText) {
-            messages.push({
-              id: `${item.SK}-${i}`,
-              role: 'assistant',
-              content: messageText,
-              timestamp: new Date(parseInt(item.SK)),
-              type: 'message',
-            });
+          for (const block of msgBlocks) {
+            const toolName = block.toolUse!.name;
+            const toolUseId = block.toolUse!.toolUseId;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const input = block.toolUse?.input as any;
+            const key = getAttachedImageKey(workerId, input.context.toolUseId, input.imagePath);
+            
+            if (toolName === 'sendImageToUser') {
+              const messageText = formatMessage(input?.message ?? '');
+              messages.push({
+                id: `${item.SK}-${i}-${toolUseId}`,
+                role: 'assistant',
+                content: messageText,
+                timestamp: new Date(parseInt(item.SK)),
+                type: 'message',
+                imageKeys: [key],
+              });
+            } else {
+              // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
+              const messageText = formatMessage(input?.message ?? '');
+              if (messageText) {
+                messages.push({
+                  id: `${item.SK}-${i}-${toolUseId}`,
+                  role: 'assistant',
+                  content: messageText,
+                  timestamp: new Date(parseInt(item.SK)),
+                  type: 'message',
+                });
+              }
+            }
           }
         }
 

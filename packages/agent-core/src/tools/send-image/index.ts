@@ -6,6 +6,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { readFileSync } from 'fs';
 import { extname } from 'path';
 import { WorkerId } from '../../env';
+import { getAttachedImageKey } from '../../lib';
 
 const inputSchema = z.object({
   imagePath: z.string().describe('the local file system path to the image'),
@@ -43,8 +44,7 @@ export const sendImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
       try {
         const fileBuffer = readFileSync(input.imagePath);
         const contentType = getContentTypeFromExtension(input.imagePath);
-        const ext = extname(input.imagePath);
-        const s3Key = `${WorkerId}/${input.context.toolUseId}${ext}`;
+        const s3Key = getAttachedImageKey(WorkerId, input.context.toolUseId, input.imagePath);
         
         await s3.send(new PutObjectCommand({
           Bucket: BucketName,
