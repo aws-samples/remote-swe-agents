@@ -56,11 +56,11 @@ export const ImageViewer = ({ imageKeys }: ImageViewerProps) => {
         {images.map((image) => (
           <div key={image.key}>
             {image.loading ? (
-              <div className="w-16 h-12 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : image.error ? (
-              <div className="w-16 h-12 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+              <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
                 <span className="text-xs text-gray-500">Error</span>
               </div>
             ) : (
@@ -68,7 +68,7 @@ export const ImageViewer = ({ imageKeys }: ImageViewerProps) => {
                 <img
                   src={image.url}
                   alt={`Image ${image.key}`}
-                  className="w-16 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-32 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
                 />
               </a>
             )}
