@@ -30,6 +30,7 @@ export interface WorkerProps {
   };
   accessLogBucket: IBucket;
   amiIdParameterName: string;
+  webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
   modelOverride?: string;
 }
@@ -352,6 +353,7 @@ Environment=GITHUB_APP_ID=${props.gitHubApp?.appId ?? ''}
 Environment=GITHUB_APP_INSTALLATION_ID=${props.gitHubApp?.installationId ?? ''}
 Environment=TABLE_NAME=${props.storageTable.tableName}
 Environment=BUCKET_NAME=${props.imageBucket.bucketName}
+Environment=WEBAPP_ORIGIN_NAME_PARAMETER=${props.webappOriginSourceParameter.parameterName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
 Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
 ${props.modelOverride ? `Environment=MODEL_OVERRIDE=${props.modelOverride}` : ''}
@@ -444,6 +446,7 @@ systemctl start myapp
       sourceAssetHash,
     });
 
+    props.webappOriginSourceParameter.grantRead(role);
     role.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['bedrock:InvokeModel'],

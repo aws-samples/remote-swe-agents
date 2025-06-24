@@ -79,6 +79,10 @@ export class MainStack extends cdk.Stack {
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
     });
 
+    const originNameParameter = new StringParameter(this, 'WebappOriginNameParameter', {
+      stringValue: 'dummy', // this will be updated from the webapp construct.
+    });
+
     const vpc = props.vpcId
       ? Vpc.fromLookup(this, 'VpcV2', { vpcId: props.vpcId })
       : new Vpc(this, 'VpcV2', {
@@ -123,6 +127,7 @@ export class MainStack extends cdk.Stack {
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
+      webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
       modelOverride: props.workerModelOverride,
     });
@@ -150,6 +155,7 @@ export class MainStack extends cdk.Stack {
       workerBus: worker.bus,
       asyncJob,
       workerAmiIdParameter,
+      originNameParameter,
     });
 
     new SlackBolt(this, 'SlackBolt', {
@@ -162,7 +168,7 @@ export class MainStack extends cdk.Stack {
       adminUserIdList: props.slack.adminUserIdList,
       workerLogGroupName: worker.logGroup.logGroupName,
       workerAmiIdParameter,
-      webappOriginSourceParameter: webapp.originSourceParameter,
+      webappOriginNameParameter: originNameParameter,
     });
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {

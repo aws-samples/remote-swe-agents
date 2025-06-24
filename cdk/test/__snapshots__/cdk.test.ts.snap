@@ -2335,9 +2335,6 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "APP_ORIGIN_SOURCE_PARAMETER": {
-              "Ref": "WebappOriginSourceParameterD87E143B",
-            },
             "ASYNC_LAMBDA_NAME": {
               "Ref": "SlackBoltAsyncHandler9A0D467E",
             },
@@ -2365,6 +2362,9 @@ exports.handler = async function (event, context) {
             "SIGNING_SECRET": "{{resolve:ssm:/remote-swe/slack/signing-secret}}",
             "TABLE_NAME": {
               "Ref": "StorageHistory251A3AE8",
+            },
+            "WEBAPP_ORIGIN_NAME_PARAMETER": {
+              "Ref": "WebappOriginNameParameterBBAD7F85",
             },
           },
         },
@@ -2428,7 +2428,7 @@ exports.handler = async function (event, context) {
                   [
                     "arn:aws:ssm:us-east-1:123456789012:parameter/",
                     {
-                      "Ref": "WebappOriginSourceParameterD87E143B",
+                      "Ref": "WebappOriginNameParameterBBAD7F85",
                     },
                   ],
                 ],
@@ -3385,7 +3385,7 @@ exports.handler = async function (event, context) {
         "Environment": {
           "Variables": {
             "APP_ORIGIN_SOURCE_PARAMETER": {
-              "Ref": "WebappOriginSourceParameterD87E143B",
+              "Ref": "WebappOriginNameParameterBBAD7F85",
             },
             "ASYNC_JOB_HANDLER_ARN": {
               "Fn::GetAtt": [
@@ -3533,7 +3533,7 @@ exports.handler = async function (event, context) {
                     [
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
-                        "Ref": "WebappOriginSourceParameterD87E143B",
+                        "Ref": "WebappOriginNameParameterBBAD7F85",
                       },
                     ],
                   ],
@@ -3727,7 +3727,7 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::Lambda::Permission",
     },
-    "WebappOriginSourceParameterD87E143B": {
+    "WebappOriginNameParameterBBAD7F85": {
       "Properties": {
         "Type": "String",
         "Value": "dummy",
@@ -3764,10 +3764,10 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::CloudFront::CachePolicy",
     },
-    "WebappUpdateAmplifyOriginSourceParameter3F609A08": {
+    "WebappUpdateOriginNameParameter3C4244AE": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
-        "WebappUpdateAmplifyOriginSourceParameterCustomResourcePolicy5D80E122",
+        "WebappUpdateOriginNameParameterCustomResourcePolicy12F42E6C",
       ],
       "Properties": {
         "Create": {
@@ -3776,7 +3776,7 @@ exports.handler = async function (event, context) {
             [
               "{"service":"ssm","action":"putParameter","parameters":{"Name":"",
               {
-                "Ref": "WebappOriginSourceParameterD87E143B",
+                "Ref": "WebappOriginNameParameterBBAD7F85",
               },
               "","Value":"https://",
               {
@@ -3787,7 +3787,7 @@ exports.handler = async function (event, context) {
               },
               "","Overwrite":true},"physicalResourceId":{"id":"",
               {
-                "Ref": "WebappOriginSourceParameterD87E143B",
+                "Ref": "WebappOriginNameParameterBBAD7F85",
               },
               ""}}",
             ],
@@ -3806,7 +3806,7 @@ exports.handler = async function (event, context) {
             [
               "{"service":"ssm","action":"putParameter","parameters":{"Name":"",
               {
-                "Ref": "WebappOriginSourceParameterD87E143B",
+                "Ref": "WebappOriginNameParameterBBAD7F85",
               },
               "","Value":"https://",
               {
@@ -3817,7 +3817,7 @@ exports.handler = async function (event, context) {
               },
               "","Overwrite":true},"physicalResourceId":{"id":"",
               {
-                "Ref": "WebappOriginSourceParameterD87E143B",
+                "Ref": "WebappOriginNameParameterBBAD7F85",
               },
               ""}}",
             ],
@@ -3827,7 +3827,7 @@ exports.handler = async function (event, context) {
       "Type": "Custom::AWS",
       "UpdateReplacePolicy": "Delete",
     },
-    "WebappUpdateAmplifyOriginSourceParameterCustomResourcePolicy5D80E122": {
+    "WebappUpdateOriginNameParameterCustomResourcePolicy12F42E6C": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -3840,7 +3840,7 @@ exports.handler = async function (event, context) {
                   [
                     "arn:aws:ssm:us-east-1:123456789012:parameter/",
                     {
-                      "Ref": "WebappOriginSourceParameterD87E143B",
+                      "Ref": "WebappOriginNameParameterBBAD7F85",
                     },
                   ],
                 ],
@@ -3849,7 +3849,7 @@ exports.handler = async function (event, context) {
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "WebappUpdateAmplifyOriginSourceParameterCustomResourcePolicy5D80E122",
+        "PolicyName": "WebappUpdateOriginNameParameterCustomResourcePolicy12F42E6C",
         "Roles": [
           {
             "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
@@ -4569,6 +4569,12 @@ phases:
               },
               "
 
+              Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
+              {
+                "Ref": "WebappOriginNameParameterBBAD7F85",
+              },
+              "
+
               Environment=BEDROCK_AWS_ACCOUNTS=
 
               Environment=BEDROCK_AWS_ROLE_NAME=
@@ -5276,6 +5282,12 @@ phases:
               },
               "
 
+              Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
+              {
+                "Ref": "WebappOriginNameParameterBBAD7F85",
+              },
+              "
+
               Environment=BEDROCK_AWS_ACCOUNTS=
 
               Environment=BEDROCK_AWS_ROLE_NAME=
@@ -5691,6 +5703,11 @@ Environment=BUCKET_NAME=",
                     "Ref": "StorageImageBucket99BA9550",
                   },
                   "
+Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
+                  {
+                    "Ref": "WebappOriginNameParameterBBAD7F85",
+                  },
+                  "
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
 
@@ -5865,6 +5882,30 @@ systemctl start myapp",
         "PolicyDocument": {
           "Statement": [
             {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/github/app-private-key",
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/slack/bot-token",
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "WebappOriginNameParameterBBAD7F85",
+                      },
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
               "Action": "bedrock:InvokeModel",
               "Effect": "Allow",
               "Resource": "*",
@@ -5986,19 +6027,6 @@ systemctl start myapp",
                     ],
                   ],
                 },
-              ],
-            },
-            {
-              "Action": [
-                "ssm:DescribeParameters",
-                "ssm:GetParameter",
-                "ssm:GetParameterHistory",
-                "ssm:GetParameters",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/github/app-private-key",
-                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/slack/bot-token",
               ],
             },
             {

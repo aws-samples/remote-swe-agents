@@ -11,3 +11,4 @@ export * from './cost';
 export * from './todo';
 export * from './api-key';
 export * from './images';
+export * from './webapp-origin';

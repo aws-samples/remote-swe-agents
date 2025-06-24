@@ -7,6 +7,7 @@ import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '../../lib/aws/ddb';
 import { ciTool } from '../ci';
 import { appendWorkerIdMetadata } from '../../lib/worker-id';
+import { getWebappSessionUrl } from '../../lib/webapp-origin';
 
 const inputSchema = z.object({
   title: z.string().describe('Title of the pull request'),
@@ -122,6 +123,12 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
   // Embed workerId as HTML comment (invisible to users)
   // Regex to search the PR id: /<!-- WORKER_ID:([^-]+) -->/
   finalDescription = appendWorkerIdMetadata(finalDescription);
+
+  // Append webapp session URL if available
+  const sessionUrl = await getWebappSessionUrl(workerId);
+  if (sessionUrl) {
+    finalDescription += `\n\n---\n\n**Open in Web UI**: ${sessionUrl}`;
+  }
 
   // Create markdown file in /tmp to avoid escape issues
   const tempFile = join('/tmp', `pr-description-${Date.now()}.md`);

@@ -12,7 +12,7 @@ import { Auth } from './auth/';
 import { ContainerImageBuild } from 'deploy-time-build';
 import { join } from 'path';
 import { AsyncJob } from './async-job';
-import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { Storage } from './storage';
 import { WorkerBus } from './worker/bus';
@@ -29,6 +29,7 @@ export interface WebappProps {
   subnetIdListForWorkers: string;
   workerBus: WorkerBus;
   workerAmiIdParameter: IStringParameter;
+  originNameParameter: IStringParameter;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -45,12 +46,11 @@ export interface WebappProps {
 
 export class Webapp extends Construct {
   public readonly baseUrl: string;
-  public readonly originSourceParameter: IStringParameter;
 
   constructor(scope: Construct, id: string, props: WebappProps) {
     super(scope, id);
 
-    const { storage, hostedZone, auth, subDomain, workerBus, asyncJob } = props;
+    const { storage, hostedZone, auth, subDomain, workerBus, asyncJob, originNameParameter } = props;
 
     // Use ContainerImageBuild to inject deploy-time values in the build environment
     const image = new ContainerImageBuild(this, 'Build', {
@@ -131,42 +131,34 @@ export class Webapp extends Construct {
         `${this.baseUrl}/api/auth/sign-out-callback`
       );
       handler.addEnvironment('APP_ORIGIN', service.url);
-      this.originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
-        stringValue: service.url,
-      });
     } else {
       auth.updateAllowedCallbackUrls(
         [`${this.baseUrl}/api/auth/sign-in-callback`, `http://localhost:3011/api/auth/sign-in-callback`],
         [`${this.baseUrl}/api/auth/sign-out-callback`, `http://localhost:3011/api/auth/sign-out-callback`]
       );
 
-      // Create parameter and expose it publicly for other constructs to use
-      const originSourceParameter = new StringParameter(this, 'OriginSourceParameter', {
-        stringValue: 'dummy',
-      });
-      this.originSourceParameter = originSourceParameter;
-      originSourceParameter.grantRead(handler);
-      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', originSourceParameter.parameterName);
-
-      // We need to pass APP_ORIGIN environment variable for callback URL,
-      // but we cannot know CloudFront domain before deploying Lambda function.
-      // To avoid the circular dependency, we fetch the domain name on runtime.
-      new AwsCustomResource(this, 'UpdateAmplifyOriginSourceParameter', {
-        onUpdate: {
-          service: 'ssm',
-          action: 'putParameter',
-          parameters: {
-            Name: originSourceParameter.parameterName,
-            Value: service.url,
-            Overwrite: true,
-          },
-          physicalResourceId: PhysicalResourceId.of(originSourceParameter.parameterName),
-        },
-        policy: AwsCustomResourcePolicy.fromSdkCalls({
-          resources: [originSourceParameter.parameterArn],
-        }),
-      });
+      originNameParameter.grantRead(handler);
+      handler.addEnvironment('APP_ORIGIN_SOURCE_PARAMETER', originNameParameter.parameterName);
     }
+
+    // We need to pass APP_ORIGIN environment variable for callback URL,
+    // but we cannot know CloudFront domain before deploying Lambda function.
+    // To avoid the circular dependency, we fetch the domain name on runtime.
+    new AwsCustomResource(this, 'UpdateOriginNameParameter', {
+      onUpdate: {
+        service: 'ssm',
+        action: 'putParameter',
+        parameters: {
+          Name: originNameParameter.parameterName,
+          Value: service.url,
+          Overwrite: true,
+        },
+        physicalResourceId: PhysicalResourceId.of(originNameParameter.parameterName),
+      },
+      policy: AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [originNameParameter.parameterArn],
+      }),
+    });
 
     if (process.env.ENABLE_LAMBDA_WARMER) {
       const warmer = new LambdaWarmer(this, 'LambdaWarmer', {});
