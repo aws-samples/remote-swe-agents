@@ -19,19 +19,17 @@ const getLatestRunResult = async (input: { owner: string; repo: string; pullRequ
 
   while (true) {
     try {
-      const latestRun = await getLatestRunStatus(owner, repo, pullRequestId);
-      if (['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(latestRun.status)) {
+      const checkResult = await getPrCheckStatus(owner, repo, pullRequestId);
+      if (checkResult.status === 'in_progress') {
         await setTimeout(5000);
         continue;
       }
-      if (latestRun.conclusion == 'success') {
+      if (checkResult.status === 'success') {
         return `CI succeeded without errors!`;
-      } else {
-        const result: string = await execute(`gh run view ${latestRun.databaseId} -R ${owner}/${repo}`, true);
-        const logs: string = await execute(
-          `gh run view ${latestRun.databaseId} -R ${owner}/${repo} --log-failed`,
-          true
-        );
+      } else if (checkResult.status === 'failure') {
+        const failed = checkResult.failedRuns;
+        const result: string = await execute(`gh run view ${failed[0].runId} -R ${owner}/${repo}`, true);
+        const logs: string = await execute(`gh run view ${failed[0].runId} -R ${owner}/${repo} --log-failed`, true);
         logs
           .split('\n')
           .map((l) => l.split('\t').at(-1))
@@ -58,23 +56,40 @@ const execute = async (command: string, plain = false): Promise<any> => {
   return parsed;
 };
 
-const getLatestRunStatus = async (owner: string, repo: string, pullRequestId: string) => {
-  const pr = await execute(`gh pr view -R ${owner}/${repo} ${pullRequestId} --json commits`);
-  const commitId = pr?.commits.at(-1).oid;
-  if (!commitId) {
-    throw new Error(`No commit found for the pull request ${pullRequestId} in repository ${owner}/${repo}`);
+const getPrCheckStatus = async (
+  owner: string,
+  repo: string,
+  pullRequestId: string
+): Promise<{ status: 'in_progress' | 'success' } | { status: 'failure'; failedRuns: { runId: string }[] }> => {
+  // Use gh pr checks to get all check runs for the PR
+  const checks = (await execute(
+    `gh pr checks -R ${owner}/${repo} ${pullRequestId} --json state,name,workflow,link,bucket`
+  )) as { link: string; name: string; state: string; workflow: string; bucket: string }[];
+
+  if (!checks || checks.length === 0) {
+    throw new Error('No checks found for this PR');
   }
 
-  // Get latest workflow run for the PR if PR number is provided
-  const runList = await execute(
-    `gh run list -R ${owner}/${repo} -c ${commitId} --json conclusion,status,url,name,startedAt,databaseId`
-  );
-  // queued|in_progress|requested|waiting|pending|
-  const latestRun = runList?.[0];
-  if (!latestRun) {
-    throw new Error('No workflow runs found');
+  // bucket: pass, fail, pending, skipping, or cancel.
+  // Check if any workflow is still running
+  // We have to wait all the runs complete because otherwise we cannot get their execution log by gh run view command.
+  const runningChecks = checks.filter((check) => ['pending'].includes(check.bucket));
+
+  if (runningChecks.length > 0) {
+    return { status: 'in_progress' };
   }
-  return latestRun as { status: string; databaseId: string; conclusion: string };
+
+  // Check if there is failed run
+  const failedChecks = checks.filter((check) => check.bucket === 'fail');
+  const failedRuns = failedChecks.map((check) => {
+    const runId = check.link.split('/actions/runs/')[1].split('/')[0];
+    return { runId };
+  });
+  if (failedRuns.length > 0) {
+    return { status: 'failure', failedRuns };
+  }
+
+  return { status: 'success' };
 };
 
 const name = 'getGitHubActionsLatestResult';
