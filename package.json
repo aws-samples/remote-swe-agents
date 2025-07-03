@@ -9,8 +9,7 @@
     "test": "npm run test --workspaces",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,mts}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,mts}\"",
-    "postinstall": "patch-package",
-    "start:local": "./scripts/start-local.sh"
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "prettier": "^3.5.1",

@@ -7,7 +7,8 @@
     "format:check": "prettier --check './**/*.ts'",
     "test": "npm run testv -- run --silent",
     "testv": "vitest --passWithNoTests",
-    "start:local": "tsx src/local.ts"
+    "start:local": "tsx src/local.ts",
+    "start:local:dynamodb": "tsx scripts/start-local.ts"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
