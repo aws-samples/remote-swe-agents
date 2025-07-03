@@ -52,7 +52,7 @@ jobs:
               - 'docker/**'
   Build-and-Test-CDK:
     needs: changes
-    if: ${{ needs.changes.outputs.cdk == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.cdk == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
         name: Run snapshot test
   Build-and-Test-Slack-Bolt-App:
     needs: changes
-    if: ${{ needs.changes.outputs.slack_bolt_app == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.slack_bolt_app == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
         name: Run static analyses
   Build-and-Test-Worker:
     needs: changes
-    if: ${{ needs.changes.outputs.worker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.worker == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,7 +117,7 @@ jobs:
         name: Run build
   Build-and-Test-Webapp:
     needs: changes
-    if: ${{ needs.changes.outputs.webapp == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.webapp == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
         name: build
   Build-and-Test-AgentCore:
     needs: changes
-    if: ${{ needs.changes.outputs.agent_core == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.agent_core == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,7 +162,7 @@ jobs:
         name: Run build
   Build-and-Test-GitHubActions:
     needs: changes
-    if: ${{ needs.changes.outputs.github_actions == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.github_actions == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -183,7 +183,7 @@ jobs:
         name: Run build
   Build-and-Test-Dockerfiles:
     needs: changes
-    if: ${{ needs.changes.outputs.dockerfiles == 'true' || needs.changes.outputs.slack_bolt_app == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.dockerfiles == 'true' || needs.changes.outputs.slack_bolt_app == 'true' || needs.changes.outputs.agent_core == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
