@@ -13,10 +13,8 @@ npm run watch
 
 ```sh
 export BUCKET_NAME=remoteswestack-sandbox-storageimagebucket99ba9550-xxxxxxx
-export TABLE_NAME=RemoteSweStack-Sandbox-StorageHistory251A3AE8-xxxxxx
-export EVENT_HTTP_ENDPOINT="https://API_ID.appsync-api.ap-northeast-1.amazonaws.com"
+export TABLE_NAME=RemoteSweStack-Sandbox-StorageHistory251A3AE8-xxxxxxx
 export GITHUB_PERSONAL_ACCESS_TOKEN='dummy'
-export BEDROCK_AWS_ACCOUNTS='475977027832'
 npx tsx src/local.ts
 ```
 

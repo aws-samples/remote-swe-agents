@@ -7,8 +7,52 @@ on:
   pull_request:
 env:
   NODE_OPTIONS: --max-old-space-size=4096
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cdk: ${{ steps.filter.outputs.cdk }}
+      agent_core: ${{ steps.filter.outputs.agent_core }}
+      slack_bolt_app: ${{ steps.filter.outputs.slack_bolt_app }}
+      worker: ${{ steps.filter.outputs.worker }}
+      webapp: ${{ steps.filter.outputs.webapp }}
+      github_actions: ${{ steps.filter.outputs.github_actions }}
+      dockerfiles: ${{ steps.filter.outputs.dockerfiles }}
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Filter changed files
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            cdk:
+              - 'cdk/**'
+            agent_core:
+              - 'packages/agent-core/**'
+            slack_bolt_app:
+              - 'packages/slack-bolt-app/**'
+              - 'packages/agent-core/**'
+            worker:
+              - 'packages/worker/**'
+              - 'packages/agent-core/**'
+            webapp:
+              - 'packages/webapp/**'
+              - 'packages/agent-core/**'
+            github_actions:
+              - 'packages/github-actions/**'
+              - 'packages/agent-core/**'
+            dockerfiles:
+              - 'docker/**'
   Build-and-Test-CDK:
+    needs: changes
+    if: ${{ needs.changes.outputs.cdk == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +71,8 @@ jobs:
         working-directory: ./cdk
         name: Run snapshot test
   Build-and-Test-Slack-Bolt-App:
+    needs: changes
+    if: ${{ needs.changes.outputs.slack_bolt_app == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +90,8 @@ jobs:
         working-directory: ./packages/slack-bolt-app
         name: Run static analyses
   Build-and-Test-Worker:
+    needs: changes
+    if: ${{ needs.changes.outputs.worker == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,11 +116,13 @@ jobs:
         working-directory: ./packages/worker
         name: Run build
   Build-and-Test-Webapp:
+    needs: changes
+    if: ${{ needs.changes.outputs.webapp == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
       - run: |
@@ -89,6 +139,8 @@ jobs:
         working-directory: ./packages/webapp
         name: build
   Build-and-Test-AgentCore:
+    needs: changes
+    if: ${{ needs.changes.outputs.agent_core == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,6 +161,8 @@ jobs:
         working-directory: ./packages/agent-core
         name: Run build
   Build-and-Test-GitHubActions:
+    needs: changes
+    if: ${{ needs.changes.outputs.github_actions == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,6 +182,8 @@ jobs:
         working-directory: ./packages/github-actions
         name: Run build
   Build-and-Test-Dockerfiles:
+    needs: changes
+    if: ${{ needs.changes.outputs.dockerfiles == 'true' || needs.changes.outputs.slack_bolt_app == 'true' || needs.changes.outputs.agent_core == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
