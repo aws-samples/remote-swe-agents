@@ -68,7 +68,7 @@ export class MCPClient {
 
   private async _connectAndInitialize() {
     if (!this.transport) throw new Error('Transport not initialized');
-    
+
     await this.mcp.connect(this.transport);
 
     const toolsResult = await this.mcp.listTools();
