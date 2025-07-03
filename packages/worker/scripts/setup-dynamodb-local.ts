@@ -3,7 +3,15 @@
  * Run this script after starting DynamoDB Local with docker-compose.
  */
 
-import { DynamoDBClient, CreateTableCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBClient,
+  CreateTableCommand,
+  ListTablesCommand,
+  ScalarAttributeType,
+  KeyType,
+  ProjectionType,
+  BillingMode,
+} from '@aws-sdk/client-dynamodb';
 
 // Configuration
 const ENDPOINT = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
@@ -22,29 +30,29 @@ const tableParams = {
   AttributeDefinitions: [
     {
       AttributeName: 'pk',
-      AttributeType: 'S',
+      AttributeType: ScalarAttributeType.S,
     },
     {
       AttributeName: 'sk',
-      AttributeType: 'S',
+      AttributeType: ScalarAttributeType.S,
     },
     {
       AttributeName: 'gsi1pk',
-      AttributeType: 'S',
+      AttributeType: ScalarAttributeType.S,
     },
     {
       AttributeName: 'gsi1sk',
-      AttributeType: 'S',
+      AttributeType: ScalarAttributeType.S,
     },
   ],
   KeySchema: [
     {
       AttributeName: 'pk',
-      KeyType: 'HASH',
+      KeyType: KeyType.HASH,
     },
     {
       AttributeName: 'sk',
-      KeyType: 'RANGE',
+      KeyType: KeyType.RANGE,
     },
   ],
   GlobalSecondaryIndexes: [
@@ -53,15 +61,15 @@ const tableParams = {
       KeySchema: [
         {
           AttributeName: 'gsi1pk',
-          KeyType: 'HASH',
+          KeyType: KeyType.HASH,
         },
         {
           AttributeName: 'gsi1sk',
-          KeyType: 'RANGE',
+          KeyType: KeyType.RANGE,
         },
       ],
       Projection: {
-        ProjectionType: 'ALL',
+        ProjectionType: ProjectionType.ALL,
       },
       ProvisionedThroughput: {
         ReadCapacityUnits: 5,
@@ -69,7 +77,7 @@ const tableParams = {
       },
     },
   ],
-  BillingMode: 'PROVISIONED',
+  BillingMode: BillingMode.PROVISIONED,
   ProvisionedThroughput: {
     ReadCapacityUnits: 5,
     WriteCapacityUnits: 5,
