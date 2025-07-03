@@ -40,12 +40,12 @@ async function isDynamoDBRunning(): Promise<boolean> {
  */
 async function startDynamoDBLocal(): Promise<void> {
   console.log('Starting DynamoDB Local using Docker Compose...');
-  
+
   const dockerCompose = spawn('docker-compose', ['up', '-d', 'dynamodb-local', 'dynamodb-admin'], {
     cwd: repoRoot,
     stdio: 'inherit',
   });
-  
+
   return new Promise((resolve, reject) => {
     dockerCompose.on('close', (code) => {
       if (code === 0) {
@@ -54,7 +54,7 @@ async function startDynamoDBLocal(): Promise<void> {
         reject(new Error(`Docker Compose exited with code ${code}`));
       }
     });
-    
+
     dockerCompose.on('error', (err) => {
       reject(err);
     });
@@ -66,21 +66,21 @@ async function startDynamoDBLocal(): Promise<void> {
  */
 async function waitForDynamoDB(): Promise<void> {
   console.log('Waiting for DynamoDB Local to start...');
-  
+
   let retries = 0;
   const maxRetries = 30;
-  
+
   while (retries < maxRetries) {
     if (await isDynamoDBRunning()) {
       console.log('DynamoDB Local is running');
       return;
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     process.stdout.write('.');
     retries++;
   }
-  
+
   throw new Error('Timeout waiting for DynamoDB Local to start');
 }
 
@@ -89,12 +89,12 @@ async function waitForDynamoDB(): Promise<void> {
  */
 async function buildAgentCore(): Promise<void> {
   console.log('Building agent-core...');
-  
+
   const build = spawn('npm', ['run', 'build', '-w', '@remote-swe-agents/agent-core'], {
     cwd: repoRoot,
     stdio: 'inherit',
   });
-  
+
   return new Promise((resolve, reject) => {
     build.on('close', (code) => {
       if (code === 0) {
@@ -103,7 +103,7 @@ async function buildAgentCore(): Promise<void> {
         reject(new Error(`Build exited with code ${code}`));
       }
     });
-    
+
     build.on('error', (err) => {
       reject(err);
     });
@@ -115,16 +115,16 @@ async function buildAgentCore(): Promise<void> {
  */
 async function startLocalWorker(): Promise<void> {
   console.log('Starting local worker...');
-  
+
   // Set environment variables
   const env = { ...process.env, ...defaultEnv };
-  
+
   const worker = spawn('npm', ['run', 'start:local'], {
     cwd: path.join(repoRoot, 'packages', 'worker'),
     stdio: 'inherit',
     env,
   });
-  
+
   return new Promise((resolve, reject) => {
     worker.on('close', (code) => {
       if (code === 0) {
@@ -133,7 +133,7 @@ async function startLocalWorker(): Promise<void> {
         reject(new Error(`Worker exited with code ${code}`));
       }
     });
-    
+
     worker.on('error', (err) => {
       reject(err);
     });
@@ -152,13 +152,13 @@ async function main(): Promise<void> {
       await startDynamoDBLocal();
       await waitForDynamoDB();
     }
-    
+
     // Setup DynamoDB Local
     await setupDynamoDBLocal();
-    
+
     // Build agent-core
     await buildAgentCore();
-    
+
     // Start local worker
     await startLocalWorker();
   } catch (error) {
@@ -169,5 +169,5 @@ async function main(): Promise<void> {
 
 // If this script is run directly
 if (require.main === module) {
-  main().catch(err => console.error('Error:', err));
+  main().catch((err) => console.error('Error:', err));
 }

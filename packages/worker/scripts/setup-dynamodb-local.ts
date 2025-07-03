@@ -3,11 +3,7 @@
  * Run this script after starting DynamoDB Local with docker-compose.
  */
 
-import {
-  DynamoDBClient,
-  CreateTableCommand,
-  ListTablesCommand,
-} from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, CreateTableCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
 
 // Configuration
 const ENDPOINT = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
@@ -94,7 +90,7 @@ async function createTable(): Promise<void> {
   try {
     // Check if table already exists
     const tableExists = await checkTableExists(TABLE_NAME);
-    
+
     if (tableExists) {
       console.log(`Table '${TABLE_NAME}' already exists.`);
       return;
@@ -117,5 +113,5 @@ export async function setupDynamoDBLocal(): Promise<void> {
 
 // If this script is run directly
 if (require.main === module) {
-  setupDynamoDBLocal().catch(err => console.error('Setup failed:', err));
+  setupDynamoDBLocal().catch((err) => console.error('Setup failed:', err));
 }
