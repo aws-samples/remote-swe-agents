@@ -6,11 +6,18 @@ import { Tool } from '@aws-sdk/client-bedrock-runtime';
 const configSchema = z.object({
   mcpServers: z.record(
     z.string(),
-    z.object({
-      command: z.string(),
-      args: z.array(z.string()),
-      env: z.record(z.string(), z.string()).optional(),
-    })
+    z.union([
+      z.object({
+        command: z.string(),
+        args: z.array(z.string()),
+        env: z.record(z.string(), z.string()).optional(),
+        enabled: z.boolean().optional(),
+      }),
+      z.object({
+        url: z.string(),
+        enabled: z.boolean().optional(),
+      }),
+    ])
   ),
 });
 
@@ -25,14 +32,21 @@ const initMcp = async () => {
   }
   clients = (
     await Promise.all(
-      Object.entries(config.mcpServers).map(async ([name, config]) => {
-        try {
-          const client = await MCPClient.fromCommand(config.command, config.args, config.env);
-          return { name, client };
-        } catch (e) {
-          console.log(`MCP server ${name} failed to start: ${e}. Ignoring the server...`);
-        }
-      })
+      Object.entries(config.mcpServers)
+        .filter(([, config]) => config.enabled !== false)
+        .map(async ([name, config]) => {
+          try {
+            let client: MCPClient;
+            if ('command' in config) {
+              client = await MCPClient.fromCommand(config.command, config.args, config.env);
+            } else {
+              client = await MCPClient.fromUrl(config.url);
+            }
+            return { name, client };
+          } catch (e) {
+            console.log(`MCP server ${name} failed to start: ${e}. Ignoring the server...`);
+          }
+        })
     )
   ).filter((c) => c != null);
 };

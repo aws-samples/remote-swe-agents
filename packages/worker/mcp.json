@@ -7,6 +7,10 @@
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@latest", "--headless", "--browser=chromium"]
+    },
+    "DeepWiki": {
+      "url": "https://mcp.deepwiki.com/sse",
+      "enabled": false
     }
   }
 }
