@@ -42,7 +42,7 @@ async function startDynamoDBLocal(): Promise<void> {
   console.log('Starting DynamoDB Local using Docker Compose...');
 
   const dockerCompose = spawn('docker-compose', ['up', '-d', 'dynamodb-local', 'dynamodb-admin'], {
-    cwd: repoRoot,
+    cwd: path.join(repoRoot, 'packages', 'worker'),
     stdio: 'inherit',
   });
 
