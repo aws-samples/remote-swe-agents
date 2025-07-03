@@ -26,7 +26,12 @@ export class MCPClient {
 
   static async fromCommand(command: string, args: string[], env?: Record<string, string>) {
     const client = new MCPClient();
-    await client.connectToServer(command, args, env ?? {});
+    client.transport = new StdioClientTransport({
+      command,
+      args,
+      env: { ...env, ...(process.env as Record<string, string>) },
+    });
+    await client.connectAndInitialize();
     return client;
   }
 
@@ -35,14 +40,14 @@ export class MCPClient {
     try {
       const client = new MCPClient();
       client.transport = new StreamableHTTPClientTransport(baseUrl);
-      await client._connectAndInitialize();
+      await client.connectAndInitialize();
       console.log('Connected using Streamable HTTP transport');
       return client;
     } catch (error) {
       console.log('Streamable HTTP connection failed, falling back to SSE transport');
       const client = new MCPClient();
       client.transport = new SSEClientTransport(baseUrl);
-      await client._connectAndInitialize();
+      await client.connectAndInitialize();
       console.log('Connected using SSE transport');
       return client;
     }
@@ -52,21 +57,7 @@ export class MCPClient {
     return this._tools;
   }
 
-  async connectToServer(command: string, args: string[], env: Record<string, string>) {
-    try {
-      this.transport = new StdioClientTransport({
-        command,
-        args,
-        env: { ...env, ...(process.env as Record<string, string>) },
-      });
-      await this._connectAndInitialize();
-    } catch (e) {
-      console.log('Failed to connect to MCP server: ', e);
-      throw e;
-    }
-  }
-
-  private async _connectAndInitialize() {
+  private async connectAndInitialize() {
     if (!this.transport) throw new Error('Transport not initialized');
 
     await this.mcp.connect(this.transport);
