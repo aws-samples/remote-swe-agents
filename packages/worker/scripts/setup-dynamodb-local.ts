@@ -1,8 +1,3 @@
-/**
- * This script sets up the necessary DynamoDB local table for development.
- * Run this script after starting DynamoDB Local with docker-compose.
- */
-
 import {
   DynamoDBClient,
   CreateTableCommand,
@@ -13,75 +8,58 @@ import {
   BillingMode,
 } from '@aws-sdk/client-dynamodb';
 
-// Configuration
-const ENDPOINT = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
-const TABLE_NAME = process.env.TABLE_NAME || 'RemoteSWEAgentsTable-local';
-const REGION = process.env.AWS_REGION || 'ap-northeast-1';
+const Endpoint = process.env.DYNAMODB_ENDPOINT ?? 'http://localhost:8000';
+const TableName = process.env.TABLE_NAME ?? 'RemoteSWEAgentsTable-local';
 
-// Initialize DynamoDB Client
 const client = new DynamoDBClient({
-  endpoint: ENDPOINT,
-  region: REGION,
+  endpoint: Endpoint,
 });
 
-// Table definition based on the actual schema used in the app
 const tableParams = {
-  TableName: TABLE_NAME,
+  TableName,
   AttributeDefinitions: [
     {
-      AttributeName: 'pk',
+      AttributeName: 'PK',
       AttributeType: ScalarAttributeType.S,
     },
     {
-      AttributeName: 'sk',
+      AttributeName: 'SK',
       AttributeType: ScalarAttributeType.S,
     },
     {
-      AttributeName: 'gsi1pk',
-      AttributeType: ScalarAttributeType.S,
-    },
-    {
-      AttributeName: 'gsi1sk',
+      AttributeName: 'LSI1',
       AttributeType: ScalarAttributeType.S,
     },
   ],
   KeySchema: [
     {
-      AttributeName: 'pk',
+      AttributeName: 'PK',
       KeyType: KeyType.HASH,
     },
     {
-      AttributeName: 'sk',
+      AttributeName: 'SK',
       KeyType: KeyType.RANGE,
     },
   ],
-  GlobalSecondaryIndexes: [
+  LocalSecondaryIndexes: [
     {
-      IndexName: 'gsi1',
+      IndexName: 'LSI1',
       KeySchema: [
         {
-          AttributeName: 'gsi1pk',
+          AttributeName: 'PK',
           KeyType: KeyType.HASH,
         },
         {
-          AttributeName: 'gsi1sk',
+          AttributeName: 'LSI1',
           KeyType: KeyType.RANGE,
         },
       ],
       Projection: {
         ProjectionType: ProjectionType.ALL,
       },
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 5,
-        WriteCapacityUnits: 5,
-      },
     },
   ],
-  BillingMode: BillingMode.PROVISIONED,
-  ProvisionedThroughput: {
-    ReadCapacityUnits: 5,
-    WriteCapacityUnits: 5,
-  },
+  BillingMode: BillingMode.PAY_PER_REQUEST,
 };
 
 async function checkTableExists(tableName: string): Promise<boolean> {
@@ -96,30 +74,26 @@ async function checkTableExists(tableName: string): Promise<boolean> {
 
 async function createTable(): Promise<void> {
   try {
-    // Check if table already exists
-    const tableExists = await checkTableExists(TABLE_NAME);
+    const tableExists = await checkTableExists(TableName);
 
     if (tableExists) {
-      console.log(`Table '${TABLE_NAME}' already exists.`);
+      console.log(`Table '${TableName}' already exists.`);
       return;
     }
 
-    // Create table
     const response = await client.send(new CreateTableCommand(tableParams));
-    console.log(`Table '${TABLE_NAME}' created successfully:`, response);
+    console.log(`Table '${TableName}' created successfully:`, response);
   } catch (error) {
     console.error('Error creating table:', error);
   }
 }
 
-// Main execution
 export async function setupDynamoDBLocal(): Promise<void> {
-  console.log(`Setting up DynamoDB local table '${TABLE_NAME}' at ${ENDPOINT}...`);
+  console.log(`Setting up DynamoDB local table '${TableName}' at ${Endpoint}...`);
   await createTable();
   console.log('Setup complete.');
 }
 
-// If this script is run directly
 if (require.main === module) {
   setupDynamoDBLocal().catch((err) => console.error('Setup failed:', err));
 }

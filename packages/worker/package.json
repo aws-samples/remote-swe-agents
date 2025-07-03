@@ -7,8 +7,8 @@
     "format:check": "prettier --check './**/*.ts'",
     "test": "npm run testv -- run --silent",
     "testv": "vitest --passWithNoTests",
-    "start:local": "tsx src/local.ts",
-    "start:local:dynamodb": "tsx scripts/start-local.ts"
+    "setup:local": "docker compose up -d && npx tsx --env-file=.env.local scripts/setup-dynamodb-local.ts",
+    "start:local": "tsx --env-file=.env.local src/local.ts"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

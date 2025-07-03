@@ -10,7 +10,7 @@ const region = process.env.AWS_REGION!;
 
 async function sendEvent(channelPath: string, payload: any) {
   if (!httpEndpoint) {
-    console.log(`event api is not configured!`);
+    // console.log(`event api is not configured!`);
     return;
   }
 
