@@ -15,4 +15,6 @@ npm run watch
 cd packages/worker
 npm run setup:local
 npm run start:local
+
+# access http://localhost:8001 for DynamoDB Admin
 ```

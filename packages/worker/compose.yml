@@ -21,4 +21,3 @@ services:
       - "8001:8001"
     environment:
       - DYNAMO_ENDPOINT=http://dynamodb-local:8000
-      - AWS_REGION=ap-northeast-1
