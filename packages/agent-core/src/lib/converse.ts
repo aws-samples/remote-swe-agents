@@ -122,7 +122,8 @@ export const bedrockConverse = async (
   }
 };
 
-interface ThinkingBudgetSettings {
+// Thinking budget settings interface
+export interface ThinkingBudgetSettings {
   budgetTokens: number;
   outputTokens: number;
 }
@@ -192,7 +193,7 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
   }
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
-    const settings = detectThinkingBudget(input);
+    const settings: ThinkingBudgetSettings = detectThinkingBudget(input);
 
     // Apply thinking budget settings
     input.additionalModelRequestFields = {

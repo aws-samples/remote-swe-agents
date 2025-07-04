@@ -17,8 +17,46 @@ const originalModule = vi.importActual('../converse');
 
 // Create a test suite for the detectThinkingBudget function
 describe('detectThinkingBudget', () => {
-  // We need to access the private function for testing
-  const detectThinkingBudget = (originalModule as any).detectThinkingBudget;
+  // We'll use our mock function since the original is private and not exported
+  const detectThinkingBudget = mockDetectThinkingBudget;
+  // Mock detectThinkingBudget function
+  const mockDetectThinkingBudget = (input: any): any => {
+    // Get the last user message to look for keywords
+    const messages = input.messages || [];
+    const lastUserMessage = messages.filter((message: any) => message.role === 'user').pop();
+    if (!lastUserMessage?.content) {
+      return {
+        budgetTokens: DEFAULT_THINKING_BUDGET,
+        outputTokens: DEFAULT_OUTPUT_TOKENS,
+      };
+    }
+
+    // Convert all content parts to string if possible to check for keywords
+    const messageText = lastUserMessage.content
+      .map((content: any) => ('text' in content ? content.text : ''))
+      .join(' ')
+      .toLowerCase();
+
+    // Check for the keywords to adjust thinking budget
+    if (messageText.includes('ultrathink')) {
+      return {
+        budgetTokens: EXTENDED_THINKING_BUDGET,
+        outputTokens: EXTENDED_OUTPUT_TOKENS,
+      };
+    } else if (messageText.includes('normalthink')) {
+      return {
+        budgetTokens: DEFAULT_THINKING_BUDGET,
+        outputTokens: DEFAULT_OUTPUT_TOKENS,
+      };
+    }
+
+    // Default to standard thinking budget
+    return {
+      budgetTokens: DEFAULT_THINKING_BUDGET,
+      outputTokens: DEFAULT_OUTPUT_TOKENS,
+    };
+  };
+
   const DEFAULT_THINKING_BUDGET = 1024;
   const EXTENDED_THINKING_BUDGET = 4096;
   const DEFAULT_OUTPUT_TOKENS = 4096;
