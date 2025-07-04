@@ -17,10 +17,8 @@ const originalModule = vi.importActual('../converse');
 
 // Create a test suite for the detectThinkingBudget function
 describe('detectThinkingBudget', () => {
-  // We'll use our mock function since the original is private and not exported
-  const detectThinkingBudget = mockDetectThinkingBudget;
-  // Mock detectThinkingBudget function
-  const mockDetectThinkingBudget = (input: any): any => {
+  // Mock implementation of detectThinkingBudget function for testing
+  const detectThinkingBudget = (input: any): any => {
     // Get the last user message to look for keywords
     const messages = input.messages || [];
     const lastUserMessage = messages.filter((message: any) => message.role === 'user').pop();

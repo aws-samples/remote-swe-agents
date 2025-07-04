@@ -137,7 +137,12 @@ const detectThinkingBudget = (input: ConverseCommandInput): ThinkingBudgetSettin
   // Get the last user message to look for keywords
   const messages = input.messages || [];
   const lastUserMessage = messages.filter((message) => message.role === 'user').pop();
-  if (!lastUserMessage?.content) return DEFAULT_THINKING_BUDGET;
+  if (!lastUserMessage?.content) {
+    return {
+      budgetTokens: DEFAULT_THINKING_BUDGET,
+      outputTokens: DEFAULT_OUTPUT_TOKENS,
+    };
+  }
 
   // Convert all content parts to string if possible to check for keywords
   const messageText = lastUserMessage.content
