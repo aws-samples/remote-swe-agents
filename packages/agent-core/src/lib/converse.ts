@@ -17,6 +17,12 @@ const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 // State management for persistent account selection and retry
 let currentAccountIndex = 0; // Currently used account index
 
+// Keywords for thinking budget adjustment
+const EXTENDED_THINKING_KEYWORD = 'ultrathink';
+const NORMAL_THINKING_KEYWORD = 'normalthink';
+const DEFAULT_THINKING_BUDGET = 1024;
+const EXTENDED_THINKING_BUDGET = 4096;
+
 const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro', 'opus4', 'sonnet4']);
 type ModelType = z.infer<typeof modelTypeSchema>;
 
@@ -114,6 +120,33 @@ export const bedrockConverse = async (
   }
 };
 
+/**
+ * Detects thinking budget adjustment keywords in the latest user message
+ * @param input The converse input containing messages
+ * @returns The adjusted thinking budget value based on keyword detection
+ */
+const detectThinkingBudget = (input: ConverseCommandInput): number => {
+  // Get the last user message to look for keywords
+  const lastUserMessage = input.messages?.findLast(message => message.role === 'user');
+  if (!lastUserMessage?.content) return DEFAULT_THINKING_BUDGET;
+  
+  // Convert all content parts to string if possible to check for keywords
+  const messageText = lastUserMessage.content
+    .map(content => 'text' in content ? content.text : '')
+    .join(' ')
+    .toLowerCase();
+  
+  // Check for the keywords to adjust thinking budget
+  if (messageText.includes(EXTENDED_THINKING_KEYWORD)) {
+    return EXTENDED_THINKING_BUDGET;
+  } else if (messageText.includes(NORMAL_THINKING_KEYWORD)) {
+    return DEFAULT_THINKING_BUDGET;
+  }
+  
+  // Default to standard thinking budget
+  return DEFAULT_THINKING_BUDGET;
+};
+
 const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
   const modelConfig = modelConfigSchema.parse(modelConfigs[modelType]);
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
@@ -141,10 +174,13 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
     }
   }
   if (enableReasoning) {
+    // Detect if we need to adjust the thinking budget based on keywords
+    const thinkingBudget = detectThinkingBudget(input);
+    
     input.additionalModelRequestFields = {
       reasoning_config: {
         type: 'enabled',
-        budget_tokens: 1024,
+        budget_tokens: thinkingBudget,
       },
     };
   } else {
