@@ -227,6 +227,8 @@ Users will primarily request software engineering assistance including bug fixes
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
 
+  let maxTokensExceededCount = 0;
+
   let lastReportedTime = 0;
   while (true) {
     if (cancellationToken.isCancelled) break;
@@ -261,20 +263,35 @@ Users will primarily request software engineering assistance including bug fixes
     });
     firstCachePoint = secondCachePoint;
 
+    class MaxTokenExceededError {}
     const res = await pRetry(
       async () => {
         try {
           if (cancellationToken.isCancelled) return;
 
-          const res = await bedrockConverse(workerId, ['sonnet3.7'], {
-            messages,
-            system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
-            toolConfig,
-          });
+          const res = await bedrockConverse(
+            workerId,
+            ['sonnet3.7'],
+            {
+              messages,
+              system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
+              toolConfig,
+            },
+            maxTokensExceededCount
+          );
+
+          if (res.stopReason == 'max_tokens') {
+            maxTokensExceededCount += 1;
+            throw new MaxTokenExceededError();
+          }
           return res;
         } catch (e) {
           if (e instanceof ThrottlingException) {
             console.log(`retrying... ${e.message}`);
+            throw e;
+          }
+          if (e instanceof MaxTokenExceededError) {
+            console.log(`retrying... maxTokenExceeded ${maxTokensExceededCount} time(s)`);
             throw e;
           }
           console.log(e);
