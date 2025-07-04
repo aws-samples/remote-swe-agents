@@ -38,9 +38,11 @@ const processMessageForLinks = (message: string): string => {
     // If this part is http:// or https://
     if (parts[i] === 'http://' || parts[i] === 'https://') {
       // If not at the beginning and previous character isn't whitespace or newline
+      // We also ignore "(" because it would break [link](https://example.com) notation.
+      // We also ignore "<" because it would break <https://example.com|link> notation.
       if (i > 0 && result.length > 0) {
         const lastChar = result[result.length - 1];
-        if (lastChar !== ' ' && lastChar !== '\n' && lastChar !== '\t') {
+        if (lastChar !== ' ' && lastChar !== '\n' && lastChar !== '\t' && lastChar !== '(' && lastChar !== '<') {
           // Add space before the URL protocol
           result += ' ';
         }

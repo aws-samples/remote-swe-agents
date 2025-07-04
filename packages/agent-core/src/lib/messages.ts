@@ -314,7 +314,7 @@ export const sendSystemMessage = async (workerId: string, message: string, appen
   if (appendWebappUrl) {
     const sessionUrl = await getWebappSessionUrl(workerId);
     if (sessionUrl) {
-      const slackMessage = `${message} ([webapp](${sessionUrl}))`;
+      const slackMessage = `${message} (<${sessionUrl}|*Web UI*>)`;
       await sendMessageToSlack(slackMessage);
     } else {
       await sendMessageToSlack(message);
