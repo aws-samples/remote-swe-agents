@@ -1,4 +1,5 @@
 import { ConverseCommandInput } from '@aws-sdk/client-bedrock-runtime';
+import type { ImageBlock } from '@aws-sdk/client-bedrock-runtime';
 
 // Import and mock the module to isolate the detectThinkingBudget function for testing
 jest.mock('@aws-sdk/client-bedrock-runtime');
@@ -16,18 +17,21 @@ const originalModule = jest.requireActual('../converse');
 // Create a test suite for the detectThinkingBudget function
 describe('detectThinkingBudget', () => {
   // We need to access the private function for testing
-  const detectThinkingBudget: (input: ConverseCommandInput) => number = (originalModule as any).detectThinkingBudget;
+  const detectThinkingBudget = (originalModule as any).detectThinkingBudget;
   const DEFAULT_THINKING_BUDGET = 1024;
   const EXTENDED_THINKING_BUDGET = 4096;
+  const DEFAULT_OUTPUT_TOKENS = 4096;
+  const EXTENDED_OUTPUT_TOKENS = 8192;
 
   // Test case: should return default budget when there are no messages
   test('should return default budget when there are no messages', () => {
     const input: Partial<ConverseCommandInput> = {
       messages: [],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(DEFAULT_OUTPUT_TOKENS);
   });
 
   // Test case: should return default budget for regular message
@@ -44,9 +48,10 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(DEFAULT_OUTPUT_TOKENS);
   });
 
   // Test case: should return extended budget when message contains 'ultrathink'
@@ -63,9 +68,10 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(EXTENDED_OUTPUT_TOKENS);
   });
 
   // Test case: should return default budget when message contains 'normalthink'
@@ -82,9 +88,10 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(DEFAULT_OUTPUT_TOKENS);
   });
 
   // Test case: should handle case-insensitive keywords
@@ -101,9 +108,10 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(EXTENDED_OUTPUT_TOKENS);
   });
 
   // Test case: should only detect keywords in the most recent user message
@@ -136,9 +144,10 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(DEFAULT_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(DEFAULT_OUTPUT_TOKENS);
   });
 
   // Test case: should handle multiple content parts
@@ -158,13 +167,15 @@ describe('detectThinkingBudget', () => {
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(EXTENDED_OUTPUT_TOKENS);
   });
 
   // Test case: should handle non-text content parts
   test('should handle non-text content parts', () => {
+    const imageBuffer = Buffer.from('dummy image data');
     const input: Partial<ConverseCommandInput> = {
       messages: [
         {
@@ -175,14 +186,20 @@ describe('detectThinkingBudget', () => {
             },
             {
               // Non-text content (like an image)
-              image: Buffer.from('dummy image data'),
+              image: {
+                format: 'jpeg',
+                source: {
+                  bytes: imageBuffer,
+                },
+              } as ImageBlock,
             },
           ],
         },
       ],
     };
-    
+
     const result = detectThinkingBudget(input as ConverseCommandInput);
-    expect(result).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.budgetTokens).toBe(EXTENDED_THINKING_BUDGET);
+    expect(result.outputTokens).toBe(EXTENDED_OUTPUT_TOKENS);
   });
 });

@@ -22,6 +22,8 @@ const EXTENDED_THINKING_KEYWORD = 'ultrathink';
 const NORMAL_THINKING_KEYWORD = 'normalthink';
 const DEFAULT_THINKING_BUDGET = 1024;
 const EXTENDED_THINKING_BUDGET = 4096;
+const DEFAULT_OUTPUT_TOKENS = 4096;
+const EXTENDED_OUTPUT_TOKENS = 8192;
 
 const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro', 'opus4', 'sonnet4']);
 type ModelType = z.infer<typeof modelTypeSchema>;
@@ -120,31 +122,46 @@ export const bedrockConverse = async (
   }
 };
 
+interface ThinkingBudgetSettings {
+  budgetTokens: number;
+  outputTokens: number;
+}
+
 /**
  * Detects thinking budget adjustment keywords in the latest user message
  * @param input The converse input containing messages
- * @returns The adjusted thinking budget value based on keyword detection
+ * @returns The adjusted thinking budget settings based on keyword detection
  */
-const detectThinkingBudget = (input: ConverseCommandInput): number => {
+const detectThinkingBudget = (input: ConverseCommandInput): ThinkingBudgetSettings => {
   // Get the last user message to look for keywords
-  const lastUserMessage = input.messages?.findLast(message => message.role === 'user');
+  const messages = input.messages || [];
+  const lastUserMessage = messages.filter((message) => message.role === 'user').pop();
   if (!lastUserMessage?.content) return DEFAULT_THINKING_BUDGET;
-  
+
   // Convert all content parts to string if possible to check for keywords
   const messageText = lastUserMessage.content
-    .map(content => 'text' in content ? content.text : '')
+    .map((content) => ('text' in content ? content.text : ''))
     .join(' ')
     .toLowerCase();
-  
+
   // Check for the keywords to adjust thinking budget
   if (messageText.includes(EXTENDED_THINKING_KEYWORD)) {
-    return EXTENDED_THINKING_BUDGET;
+    return {
+      budgetTokens: EXTENDED_THINKING_BUDGET,
+      outputTokens: EXTENDED_OUTPUT_TOKENS,
+    };
   } else if (messageText.includes(NORMAL_THINKING_KEYWORD)) {
-    return DEFAULT_THINKING_BUDGET;
+    return {
+      budgetTokens: DEFAULT_THINKING_BUDGET,
+      outputTokens: DEFAULT_OUTPUT_TOKENS,
+    };
   }
-  
+
   // Default to standard thinking budget
-  return DEFAULT_THINKING_BUDGET;
+  return {
+    budgetTokens: DEFAULT_THINKING_BUDGET,
+    outputTokens: DEFAULT_OUTPUT_TOKENS,
+  };
 };
 
 const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
@@ -175,13 +192,20 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType) => {
   }
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
-    const thinkingBudget = detectThinkingBudget(input);
-    
+    const settings = detectThinkingBudget(input);
+
+    // Apply thinking budget settings
     input.additionalModelRequestFields = {
       reasoning_config: {
         type: 'enabled',
-        budget_tokens: thinkingBudget,
+        budget_tokens: settings.budgetTokens,
       },
+    };
+
+    // Adjust output tokens as well
+    input.inferenceConfig = {
+      ...input.inferenceConfig,
+      maxTokens: settings.outputTokens,
     };
   } else {
     // when we disable reasoning, we have to remove
