@@ -434,7 +434,8 @@ Users will primarily request software engineering assistance including bug fixes
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
-      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`);
+      // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
+      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
       break;
     }
   }
