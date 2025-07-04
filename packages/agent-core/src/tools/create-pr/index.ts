@@ -15,10 +15,10 @@ const inputSchema = z.object({
   issueId: z.number().optional().describe('Optional issue ID to link with the PR'),
   force: z.boolean().default(false).describe('Ignore duplicate validation and create PR anyway'),
   gitDirectoryPath: z.string().describe('The absolute path to the git local repository'),
-  targetBranch: z
+  baseBranch: z
     .string()
     .optional()
-    .describe('The target branch for the PR. If not provided, the default branch will be used.'),
+    .describe('The base branch for the PR. If not provided, the default branch will be used.'),
 });
 
 interface PRRecord {
@@ -92,7 +92,7 @@ const addIssueReference = (description: string, issueId: number): string => {
 };
 
 const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
-  const { title, description, issueId, force, gitDirectoryPath, targetBranch } = input;
+  const { title, description, issueId, force, gitDirectoryPath, baseBranch } = input;
   const workerId = process.env.WORKER_ID!;
 
   // Check for existing PR unless force is true
@@ -139,10 +139,10 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
   writeFileSync(tempFile, finalDescription);
 
   try {
-    // Create pull request using gh CLI with optional target branch
-    const targetBranchOption = targetBranch ? ` --base "${targetBranch}"` : '';
+    // Create pull request using gh CLI with optional base branch
+    const baseBranchOption = baseBranch ? ` --base "${baseBranch}"` : '';
     const prUrl = await execute(
-      `gh pr create --title "${title}" --body-file "${tempFile}"${targetBranchOption}`,
+      `gh pr create --title "${title}" --body-file "${tempFile}"${baseBranchOption}`,
       gitDirectoryPath
     );
 
