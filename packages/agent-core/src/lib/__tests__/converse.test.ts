@@ -1,18 +1,19 @@
 import { ConverseCommandInput } from '@aws-sdk/client-bedrock-runtime';
 import type { ImageBlock } from '@aws-sdk/client-bedrock-runtime';
+import { describe, test, expect, vi } from 'vitest';
 
 // Import and mock the module to isolate the detectThinkingBudget function for testing
-jest.mock('@aws-sdk/client-bedrock-runtime');
-jest.mock('@aws-sdk/client-sts');
-jest.mock('../aws', () => ({
+vi.mock('@aws-sdk/client-bedrock-runtime');
+vi.mock('@aws-sdk/client-sts');
+vi.mock('../aws', () => ({
   ddb: {
-    send: jest.fn(),
+    send: vi.fn(),
   },
   TableName: undefined,
 }));
 
 // Import the actual module under test
-const originalModule = jest.requireActual('../converse');
+const originalModule = vi.importActual('../converse');
 
 // Create a test suite for the detectThinkingBudget function
 describe('detectThinkingBudget', () => {
