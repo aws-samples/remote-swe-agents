@@ -461,7 +461,7 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
 export const resume = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items } = await getConversationHistory(workerId);
   const lastItem = items.at(-1);
-  if (lastItem?.messageType == 'userMessage') {
+  if (lastItem?.messageType == 'userMessage' || lastItem?.messageType == 'toolResult') {
     return await onMessageReceived(workerId, cancellationToken);
   }
 };
