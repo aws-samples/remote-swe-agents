@@ -227,6 +227,8 @@ Users will primarily request software engineering assistance including bug fixes
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
 
+  // When we get max_tokens stopReason, we double the number of max output tokens for this turn.
+  // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
   let maxTokensExceededCount = 0;
 
   let lastReportedTime = 0;
