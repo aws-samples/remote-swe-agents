@@ -483,18 +483,7 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
 export const resume = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items } = await getConversationHistory(workerId);
   const lastItem = items.at(-1);
-  let shouldResume = lastItem?.messageType == 'userMessage';
-  if (lastItem?.messageType == 'toolResult') {
-    try {
-      const lastToolUse = items.at(-2);
-      const content = JSON.parse(lastToolUse?.content ?? '[]') as ContentBlock[];
-      // When the last tool is reportProgress, we should not resume.
-      if (content?.[0]?.toolUse?.name != reportProgressTool.name) {
-        shouldResume = true;
-      }
-    } catch {}
-  }
-  if (shouldResume) {
+  if (lastItem?.messageType == 'userMessage' || lastItem?.messageType == 'toolResult') {
     return await onMessageReceived(workerId, cancellationToken);
   }
 };
