@@ -8,6 +8,7 @@ import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey } from './aws/s3';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
+import { getWebappSessionUrl } from './webapp-origin';
 import { MessageItem } from '../schema';
 
 // Maximum input token count before applying middle-out strategy
@@ -305,9 +306,20 @@ const postProcessMessageContent = async (content: string) => {
   return flattenedArray;
 };
 
-export const sendSystemMessage = async (workerId: string, message: string) => {
-  await Promise.all([
-    sendWebappEvent(workerId, { type: 'message', role: 'assistant', message }),
-    sendMessageToSlack(message),
-  ]);
+export const sendSystemMessage = async (workerId: string, message: string, appendWebappUrl: boolean = false) => {
+  // Always send original message to webapp
+  await sendWebappEvent(workerId, { type: 'message', role: 'assistant', message });
+
+  // For Slack, optionally append webapp URL
+  if (appendWebappUrl) {
+    const sessionUrl = await getWebappSessionUrl(workerId);
+    if (sessionUrl) {
+      const slackMessage = `${message} ([webapp](${sessionUrl}))`;
+      await sendMessageToSlack(slackMessage);
+    } else {
+      await sendMessageToSlack(message);
+    }
+  } else {
+    await sendMessageToSlack(message);
+  }
 };

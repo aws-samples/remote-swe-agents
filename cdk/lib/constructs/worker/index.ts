@@ -367,17 +367,20 @@ EOF
     userData.addCommands(`
 # Configure Fluent Bit for CloudWatch Logs
 mkdir -p /etc/fluent-bit
+mkdir -p /var/lib/fluent-bit
 
 cat << EOF > /etc/fluent-bit/fluent-bit.conf
 [SERVICE]
     Flush        5
     Daemon       Off
     Log_Level    info
+    storage.path /var/lib/fluent-bit/
 
 [INPUT]
-    Name         systemd
-    Tag          myapp
-    Systemd_Filter    _SYSTEMD_UNIT=myapp.service
+    Name           systemd
+    Tag            myapp
+    Systemd_Filter _SYSTEMD_UNIT=myapp.service
+    DB             /var/lib/fluent-bit/systemd.db
 
 [FILTER]
     Name         modify
