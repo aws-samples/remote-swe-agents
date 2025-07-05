@@ -157,7 +157,7 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
   }
 
   // set maximum number of output tokens
-  const adjustedMaxToken = Math.min(modelConfig.maxOutputTokens, defaultOutputTokenCount * maxTokensExceededCount ** 2);
+  const adjustedMaxToken = Math.min(modelConfig.maxOutputTokens, defaultOutputTokenCount * 2 ** maxTokensExceededCount);
   input.inferenceConfig = { ...input.inferenceConfig, maxTokens: adjustedMaxToken };
 
   // enable or disable reasoning
