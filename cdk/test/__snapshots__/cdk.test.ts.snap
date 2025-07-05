@@ -4474,10 +4474,6 @@ phases:
 
               export WORKER_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 
-              export SLACK_CHANNEL_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-
-              export SLACK_THREAD_TS=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
-
               export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
 
               export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
@@ -4799,7 +4795,7 @@ phases:
         "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
       ],
       "Properties": {
-        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v3"}}",
+        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v4"}}",
         "InstallLatestAwsSdk": false,
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -4807,7 +4803,7 @@ phases:
             "Arn",
           ],
         },
-        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v3"}}",
+        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v4"}}",
       },
       "Type": "Custom::AWS",
       "UpdateReplacePolicy": "Delete",
@@ -4857,7 +4853,7 @@ phases:
                   "version",
                 ],
               },
-              "#v3"}}",
+              "#v4"}}",
             ],
           ],
         },
@@ -4886,7 +4882,7 @@ phases:
                   "version",
                 ],
               },
-              "#v3"}}",
+              "#v4"}}",
             ],
           ],
         },
@@ -5192,10 +5188,6 @@ phases:
               TOKEN=$(curl -s -X PUT \\"http://169.254.169.254/latest/api/token\\" -H \\"X-aws-ec2-metadata-token-ttl-seconds: 900\\")
 
               export WORKER_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-
-              export SLACK_CHANNEL_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-
-              export SLACK_THREAD_TS=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
 
               export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
 
@@ -5657,8 +5649,6 @@ fi
 # Set up dynamic environment variables
 TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-export SLACK_CHANNEL_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-export SLACK_THREAD_TS=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
 export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query "Parameter.Value" --output text)
 export GITHUB_PERSONAL_ACCESS_TOKEN=""
 
