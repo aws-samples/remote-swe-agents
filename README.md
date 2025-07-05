@@ -304,13 +304,26 @@ After successful deployment, you can access the Remote SWE Agents system through
    - Respond to issue comments and assignments
    - Seamless CI/CD integration
 
-For tips on how to effectively use the agents, refer to the "Useful Tips" section below.
+For tips on how to effectively use the agents, refer to the [Useful Tips](#useful-tips) section.
 
 ### GitHub Actions Integration
 
 This repository can be used as a GitHub Action to automatically trigger Remote SWE agents from GitHub events like issue comments, assignments, and PR reviews. The GitHub Action uses the Remote SWE API functionality to create and manage agent sessions.
 
 Use `aws-samples/remote-swe-agents` in your workflow and configure your API base URL and key as repository secrets. You can generate API keys from the deployed webapp interface. See [action.yml](./action.yml) for input parameters and [.github/workflows/remote-swe.yml](./.github/workflows/remote-swe.yml) for a complete example workflow.
+
+### Tenant Isolation Model
+
+This project is currently designed as a single-tenant system, that is, it is meant to be deployed per tenant basis.
+
+Because it is completely a pay-as-you-go model, the overhead of deploying multiple instances is minimal in terms of the infrastructure cost.
+
+To control access to each tenant, you have the following configuration of access permission:
+
+1. For Slack app, you can set `SLACK_ADMIN_USER_ID_LIST` environment variable in CDK to deny access from non-permitted users. You can then add allowed users by using `approve_user` Slack command.
+2. For Webapp, Cognito self-sign-up is disabled by default. You can add a user from Cognito management console. Currently, anyone that has a Cognito account has the equal permissions. Users can configure the system, create a new session, issue an API key, or see the cost analysis from the web UI.
+3. For REST API, anyone who knows API keys can access it. You should delete the keys that are not used any more.
+4. For GitHub Actions, anyone who has write access to the repository (i.e., a collaborator) can invoke the action.
 
 ## Useful Tips
 
