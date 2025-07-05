@@ -42,7 +42,7 @@ export const sendMessageToAgent = authActionClient
 
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
-    await getOrCreateWorkerInstance(workerId, '', '');
+    await getOrCreateWorkerInstance(workerId);
 
     return { success: true, item };
   });

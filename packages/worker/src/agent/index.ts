@@ -41,6 +41,7 @@ import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from '../common/cancellation-token';
 import { updateAgentStatusWithEvent } from '../common/status';
+import { refreshSession } from '../common/refresh-session';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
   const { items: allItems, slackUserId } = await pRetry(
@@ -197,6 +198,8 @@ Users will primarily request software engineering assistance including bug fixes
     }
   };
   await tryAppendRepositoryKnowledge();
+
+  await refreshSession(workerId);
 
   const tools = [
     ciTool,

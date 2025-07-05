@@ -109,8 +109,6 @@ async function fetchWorkerAmiId(workerAmiParameterName: string): Promise<string 
 
 async function createWorkerInstance(
   workerId: string,
-  slackChannelId: string,
-  slackThreadTs: string,
   launchTemplateId: string,
   workerAmiParameterName: string,
   subnetId: string
@@ -142,14 +140,6 @@ async function createWorkerInstance(
             Key: 'RemoteSweWorkerId',
             Value: workerId,
           },
-          {
-            Key: 'SlackChannelId',
-            Value: slackChannelId,
-          },
-          {
-            Key: 'SlackThreadTs',
-            Value: slackThreadTs,
-          },
         ],
       },
     ],
@@ -168,9 +158,7 @@ async function createWorkerInstance(
 }
 
 export async function getOrCreateWorkerInstance(
-  workerId: string,
-  slackChannelId: string,
-  slackThreadTs: string
+  workerId: string
 ): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
@@ -192,8 +180,6 @@ export async function getOrCreateWorkerInstance(
   await updateInstanceStatus(workerId, 'starting');
   const { instanceId, usedCache } = await createWorkerInstance(
     workerId,
-    slackChannelId,
-    slackThreadTs,
     LaunchTemplateId,
     WorkerAmiParameterName,
     subnetId

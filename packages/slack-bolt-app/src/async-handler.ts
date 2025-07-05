@@ -42,7 +42,7 @@ export const handler: Handler<unknown> = async (rawEvent, context) => {
       // the first invocation very soon. To avoid it, we use makeIdempotent here.
       await makeIdempotent(
         async (_: string) => {
-          const res = await getOrCreateWorkerInstance(event.workerId, event.slackChannelId, event.slackThreadTs);
+          const res = await getOrCreateWorkerInstance(event.workerId);
 
           if (res.oldStatus == 'stopped') {
             await app.client.chat.postMessage({

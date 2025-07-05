@@ -88,7 +88,7 @@ export async function handleMessage(
 
   // Save session info only when starting a new thread
   if (event.thread_ts === undefined) {
-    promises.push(saveSessionInfo(workerId, message, userId));
+    promises.push(saveSessionInfo(workerId, message, userId, event.channel, event.ts));
   }
 
   await Promise.all([

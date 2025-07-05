@@ -1,8 +1,16 @@
 import type { App } from '@slack/bolt';
 import { readFileSync } from 'fs';
-import { SlackBotToken, SlackChannelId, SlackThreadTs } from '../env';
+import { SlackBotToken } from '../env';
 
-const disableSlack = !(SlackChannelId && SlackThreadTs);
+let disableSlack = true;
+let SlackChannelId = '';
+let SlackThreadTs = '';
+
+export const setSlackDestination = (channelId: string, threadTs: string) => {
+  SlackChannelId = channelId;
+  SlackThreadTs = threadTs;
+  disableSlack = false;
+};
 
 let _app: App | undefined = undefined;
 

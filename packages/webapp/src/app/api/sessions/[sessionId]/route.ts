@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   );
 
   // Start EC2 instance for the worker
-  await getOrCreateWorkerInstance(sessionId, '', '');
+  await getOrCreateWorkerInstance(sessionId);
 
   // Send worker event to notify message received
   await sendWorkerEvent(sessionId, { type: 'onMessageReceived' });

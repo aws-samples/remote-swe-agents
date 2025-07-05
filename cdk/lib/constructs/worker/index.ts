@@ -304,8 +304,6 @@ fi
 # Set up dynamic environment variables
 TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-export SLACK_CHANNEL_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackChannelId)
-export SLACK_THREAD_TS=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/SlackThreadTs)
 export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${
         props.slackBotTokenParameter.parameterName
       } --query "Parameter.Value" --output text)

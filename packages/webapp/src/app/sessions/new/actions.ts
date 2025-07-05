@@ -71,11 +71,7 @@ export const createNewWorker = authActionClient.schema(createNewWorkerSchema).ac
   );
 
   // Start EC2 instance for the worker
-  await getOrCreateWorkerInstance(
-    workerId,
-    '', // slackChannelId - empty string for webapp
-    '' // slackThreadTs - empty string for webapp
-  );
+  await getOrCreateWorkerInstance(workerId);
 
   // Send worker event to notify message received
   await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
