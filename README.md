@@ -314,16 +314,16 @@ Use `aws-samples/remote-swe-agents` in your workflow and configure your API base
 
 ### Tenant Isolation Model
 
-This project is currently designed as a single-tenant system, that is, it is meant to be deployed per tenant basis.
+This project is currently designed as a single-tenant system, meaning it is intended to be deployed on a per-tenant basis.
 
-Because it is completely a pay-as-you-go model, the overhead of deploying multiple instances is minimal in terms of the infrastructure cost.
+Since it follows a completely pay-as-you-go model, the overhead of deploying multiple instances is minimal in terms of infrastructure costs.
 
-To control access to each tenant, you have the following configuration of access permission:
+To control access for each tenant, you have the following access permission configurations:
 
-1. For Slack app, you can set `SLACK_ADMIN_USER_ID_LIST` environment variable in CDK to deny access from non-permitted users. You can then add allowed users by using `approve_user` Slack command.
-2. For Webapp, Cognito self-sign-up is disabled by default. You can add a user from Cognito management console. Currently, anyone that has a Cognito account has the equal permissions. Users can configure the system, create a new session, issue an API key, or see the cost analysis from the web UI.
-3. For REST API, anyone who knows API keys can access it. You should delete the keys that are not used any more.
-4. For GitHub Actions, anyone who has write access to the repository (i.e., a collaborator) can invoke the action.
+1. **Slack App**: You can set the `SLACK_ADMIN_USER_ID_LIST` environment variable in CDK to deny access from non-permitted users. You can then add allowed users using the `approve_user` Slack command.
+2. **Webapp**: Cognito self-sign-up is disabled by default. You can add users from the Cognito management console. Currently, anyone with a Cognito account has equal permissions. Users can configure the system, create new sessions, issue API keys, or view cost analysis from the web UI.
+3. **REST API**: Anyone who knows the API keys can access it. You should delete keys that are no longer in use.
+4. **GitHub Actions**: Anyone with write access to the repository (i.e., collaborators) can invoke the action.
 
 ## Useful Tips
 
