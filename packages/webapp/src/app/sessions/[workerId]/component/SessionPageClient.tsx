@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Plus, Loader2, Share } from 'lucide-react';
+import { ArrowLeft, ListChecks, Check, Plus, Loader2 } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
@@ -23,7 +23,6 @@ import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
-import TakeOverModal from './TakeOverModal';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -65,7 +64,6 @@ export default function SessionPageClient({
   }, [initialTodoList]);
 
   const [showTodoModal, setShowTodoModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
   const { isBottom, isHeaderVisible } = useScrollPosition();
 
   // Setup event handler for Escape key press to force stop agent work
@@ -242,8 +240,6 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-
-
   const { execute: executeUpdateStatus, isExecuting: isUpdatingStatus } = useAction(updateAgentStatus, {
     onSuccess: ({ input }) => {
       setAgentStatus(input.status);
@@ -319,13 +315,6 @@ export default function SessionPageClient({
                   </span>
                 </button>
               )}
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                title="Share session"
-              >
-                <Share className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
               <Link
                 href="/sessions/new"
                 className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -361,12 +350,6 @@ export default function SessionPageClient({
             </div>
           </div>
         )}
-
-        <TakeOverModal
-          workerId={workerId}
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-        />
 
         <MessageList
           messages={messages}
