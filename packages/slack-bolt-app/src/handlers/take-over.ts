@@ -1,4 +1,4 @@
-import { getConversationHistory, getSession } from '@remote-swe-agents/agent-core/lib';
+import { getConversationHistory, getSession, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { WebClient } from '@slack/web-api';
 import { SessionMap } from '../util/session-map';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
@@ -47,6 +47,7 @@ export async function handleTakeOver(
   }
 
   await takeOverSessionToSlack(sessionId, event.channel, event.ts, event.user ?? '');
+  await sendWorkerEvent(sessionId, { type: 'sessionUpdated' });
 
   await client.chat.postMessage({
     channel: event.channel,
