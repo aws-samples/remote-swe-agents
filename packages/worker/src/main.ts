@@ -5,9 +5,10 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import './common/signal-handler';
 import { setKillTimer, pauseKillTimer, restartKillTimer } from './common/kill-timer';
 import { CancellationToken } from './common/cancellation-token';
-import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
+import { sendSystemMessage, updateInstanceStatus, workerEventSchema } from '@remote-swe-agents/agent-core/lib';
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
 import { updateAgentStatusWithEvent } from './common/status';
+import { refreshSession } from './common/refresh-session';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -113,7 +114,13 @@ const main = async () => {
   const unicast = await events.connect(`/event-bus/worker/${workerId}`);
   unicast.subscribe({
     next: async (data) => {
-      const type = data.event?.type;
+      const { data: event, error, success } = workerEventSchema.safeParse(data.event);
+      if (!success || error) {
+        console.log(`The worker event does not conform to the schema. Ignoring... ${JSON.stringify(data)}`);
+        console.log(error);
+        return;
+      }
+      const type = event.type;
       if (type == 'onMessageReceived') {
         tracker.cancelCurrentSessions();
         tracker.startOnMessageReceived();
@@ -123,6 +130,8 @@ const main = async () => {
           await updateAgentStatusWithEvent(workerId, 'pending');
           await sendSystemMessage(workerId, 'Agent work was stopped.');
         });
+      } else if (type == 'sessionUpdated') {
+        await refreshSession(workerId);
       }
     },
     error: (err) => console.log(err),
