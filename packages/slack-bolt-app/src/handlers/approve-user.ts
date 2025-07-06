@@ -1,5 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { ApproveUsers } from '../util/auth';
+import { ValidationError } from '../util/error';
 
 export async function handleApproveUser(
   event: {
@@ -24,10 +25,10 @@ export async function handleApproveUser(
         .filter((elem: any) => elem.type == 'user')
         .map((elem: any) => elem.user_id);
       if (users.length >= 25) {
-        throw new Error('too many users.');
+        throw new ValidationError('too many users.');
       }
       if (users.length == 0) {
-        throw new Error('no user is specified.');
+        throw new ValidationError('no user is specified.');
       }
       await ApproveUsers(users, channel);
       await client.chat.postMessage({
@@ -38,5 +39,5 @@ export async function handleApproveUser(
       return;
     }
   }
-  throw new Error('Usage: @remote-swe approve_user @user1 @user2');
+  throw new ValidationError('Usage: @remote-swe approve_user @user1 @user2');
 }

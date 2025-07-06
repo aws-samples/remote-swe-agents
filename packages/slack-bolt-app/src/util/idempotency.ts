@@ -2,7 +2,7 @@ import { IdempotencyConfig } from '@aws-lambda-powertools/idempotency';
 import * as idempotency from '@aws-lambda-powertools/idempotency';
 import { DynamoDBPersistenceLayer } from '@aws-lambda-powertools/idempotency/dynamodb';
 
-// TODO: possibly use this: https://docs.powertools.aws.dev/lambda/typescript/latest/utilities/idempotency/#installation
+// https://docs.powertools.aws.dev/lambda/typescript/latest/utilities/idempotency/#installation
 const persistenceStore = new DynamoDBPersistenceLayer({
   tableName: process.env.TABLE_NAME!,
   keyAttr: 'PK',

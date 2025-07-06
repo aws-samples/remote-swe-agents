@@ -3,6 +3,7 @@ import { WebClient } from '@slack/web-api';
 import { SessionMap } from '../util/session-map';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { TransactWriteCommand, TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
+import { ValidationError } from '../util/error';
 
 export async function handleTakeOver(
   event: {
@@ -17,7 +18,7 @@ export async function handleTakeOver(
   client: WebClient
 ): Promise<void> {
   if (event.thread_ts) {
-    throw new Error('You can only take over a session from a new Slack thread.');
+    throw new ValidationError('You can only take over a session from a new Slack thread.');
   }
 
   const message = event.text
@@ -27,7 +28,7 @@ export async function handleTakeOver(
 
   const match = message.match(/take_over\s+(https?:\/\/[^\s]+\/sessions\/([^\s\/]+))/);
   if (!match) {
-    throw new Error('Invalid format. Expected: take_over <session URL>');
+    throw new ValidationError('Invalid format. Expected: take_over <session URL>');
   }
 
   const sessionUrl = match[1];
@@ -38,11 +39,11 @@ export async function handleTakeOver(
 
   const session = await getSession(sessionId);
   if (!session) {
-    throw new Error(`No session was found for ${sessionId}`);
+    throw new ValidationError(`No session was found for ${sessionId}`);
   }
 
   if (session.slackChannelId && session.slackThreadTs) {
-    throw new Error(`This session already belongs to other Slack thread.`);
+    throw new ValidationError(`This session already belongs to other Slack thread.`);
   }
 
   await takeOverSessionToSlack(sessionId, event.channel, event.ts, event.user ?? '');

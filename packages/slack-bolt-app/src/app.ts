@@ -7,6 +7,7 @@ import { handleMessage } from './handlers/message';
 import { handleTakeOver } from './handlers/take-over';
 import { IdempotencyAlreadyInProgressError } from '@aws-lambda-powertools/idempotency';
 import { WebClient } from '@slack/web-api';
+import { NonRetryableError } from './util/error';
 
 const SigningSecret = process.env.SIGNING_SECRET!;
 const BotToken = process.env.BOT_TOKEN!;
@@ -27,7 +28,7 @@ const app = new App({
 let botId: string | undefined;
 
 // Retrieve the bot ID on app startup
-(async () => {
+const getBotIdPromise = (async () => {
   try {
     const authInfo = await app.client.auth.test();
     botId = authInfo.user_id;
@@ -61,24 +62,37 @@ async function processMessage(
   try {
     // Include event type in idempotency key to prevent duplicate processing
     await makeIdempotent(async (_: string) => {
-      const authorized = await isAuthorized(userId, channel);
-      if (!authorized) {
-        throw new Error('Unauthorized');
-      }
+      try {
+        const authorized = await isAuthorized(userId, channel);
+        if (!authorized) {
+          throw new NonRetryableError('Unauthorized');
+        }
 
-      if (message.toLowerCase().startsWith('approve_user')) {
-        await handleApproveUser(event, client);
-      } else if (message.toLowerCase().startsWith('dump_history')) {
-        await handleDumpHistory(event, client);
-      } else if (message.toLowerCase().startsWith('take_over')) {
-        await handleTakeOver(event, client);
-      } else {
-        await handleMessage(event, client);
+        if (message.toLowerCase().startsWith('approve_user')) {
+          await handleApproveUser(event, client);
+        } else if (message.toLowerCase().startsWith('dump_history')) {
+          await handleDumpHistory(event, client);
+        } else if (message.toLowerCase().startsWith('take_over')) {
+          await handleTakeOver(event, client);
+        } else {
+          await handleMessage(event, client);
+        }
+      } catch (e: any) {
+        console.log(e);
+        if (e.message.includes('already_reacted')) return;
+        if (e instanceof NonRetryableError) {
+          await client.chat.postMessage({
+            channel,
+            text: `<@${userId}> Error: ${e.message}`,
+            thread_ts: event.thread_ts ?? event.ts,
+          });
+          return;
+        }
+        throw e;
       }
     })(`${eventType}_${event.ts}`); // Use event type in key to avoid duplicates
   } catch (e: any) {
     console.log(e);
-    if (e.message.includes('already_reacted')) return;
     if (e instanceof IdempotencyAlreadyInProgressError) return;
 
     await client.chat.postMessage({
@@ -86,6 +100,8 @@ async function processMessage(
       text: `<@${userId}> Error: ${e.message}`,
       thread_ts: event.thread_ts ?? event.ts,
     });
+
+    throw e;
   }
 }
 
@@ -95,6 +111,8 @@ app.event('app_mention', async ({ event, client }) => {
 
 // Message event handler for processing messages without @mentions
 app.event('message', async ({ event, client }) => {
+  await getBotIdPromise;
+
   // Cast event to a type with properties we need
   const messageEvent = event as {
     text?: string;
