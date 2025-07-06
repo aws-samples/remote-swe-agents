@@ -1,6 +1,5 @@
 import {
   GetCommand,
-  PutCommand,
   QueryCommand,
   QueryCommandInput,
   UpdateCommand,
@@ -8,6 +7,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem } from '../schema';
+import { getConversationHistory } from './messages';
 
 /**
  * Get session information from DynamoDB

@@ -4,6 +4,7 @@ import { calculateCost } from '../util/cost';
 import { Message } from '@aws-sdk/client-bedrock-runtime';
 import * as fs from 'fs';
 import * as os from 'os';
+import { getSessionIdFromSlack } from '../util/session-map';
 
 export async function handleDumpHistory(
   event: {
@@ -17,7 +18,7 @@ export async function handleDumpHistory(
   },
   client: WebClient
 ): Promise<void> {
-  const workerId = (event.thread_ts ?? event.ts).replace('.', '');
+  const workerId = await getSessionIdFromSlack(event.channel, event.thread_ts ?? event.ts, false);
   const [history, tokenUsage] = await Promise.all([getConversationHistory(workerId), getTokenUsage(workerId)]);
 
   const tempFile = os.tmpdir() + `/worker_${workerId}_history.txt`;

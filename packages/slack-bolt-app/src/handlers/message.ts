@@ -7,6 +7,7 @@ import { AsyncHandlerEvent } from '../async-handler';
 import { sendWorkerEvent } from '../../../agent-core/src/lib';
 import { getWebappSessionUrl, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { saveSessionInfo } from '../util/session';
+import { getSessionIdFromSlack } from '../util/session-map';
 
 const BotToken = process.env.BOT_TOKEN!;
 const lambda = new LambdaClient();
@@ -27,8 +28,9 @@ export async function handleMessage(
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
+  const isThreadRoot = event.thread_ts == null;
 
-  const workerId = (event.thread_ts ?? event.ts).replace('.', '');
+  const workerId = await getSessionIdFromSlack(channel, event.thread_ts ?? event.ts, isThreadRoot);
 
   // Process image attachments if present
   const imageKeys = (

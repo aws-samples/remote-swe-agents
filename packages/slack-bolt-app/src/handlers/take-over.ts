@@ -1,0 +1,106 @@
+import { getConversationHistory, getSession } from '@remote-swe-agents/agent-core/lib';
+import { WebClient } from '@slack/web-api';
+import { SessionMap } from '../util/session-map';
+import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
+import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+
+export async function handleTakeOver(
+  event: {
+    text: string;
+    user?: string;
+    channel: string;
+    ts: string;
+    thread_ts?: string;
+    blocks?: any[];
+    files?: any[];
+  },
+  client: WebClient
+): Promise<void> {
+  if (event.thread_ts) {
+    throw new Error('You can only take over a session from a new Slack thread.');
+  }
+
+  const message = event.text
+    .replace(/<@[A-Z0-9]+>\s*/g, '')
+    .replace(/[<>]/g, '')
+    .trim();
+
+  const match = message.match(/take_over\s+(https?:\/\/[^\s]+\/sessions\/([^\s\/]+))/);
+  if (!match) {
+    throw new Error('Invalid format. Expected: take_over <session URL>');
+  }
+
+  const sessionUrl = match[1];
+  const sessionId = match[2];
+
+  console.log('Session URL:', sessionUrl);
+  console.log('Session ID:', sessionId);
+
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error(`No session was found for ${sessionId}`);
+  }
+
+  if (session.slackChannelId && session.slackThreadTs) {
+    throw new Error(`This session already belongs to other Slack thread.`);
+  }
+
+  await takeOverSessionToSlack(sessionId, event.channel, event.ts, event.user ?? '');
+
+  await client.chat.postMessage({
+    channel: event.channel,
+    thread_ts: event.ts,
+    text: `<@${event.user}> Successfully took over the session ${sessionId}.`,
+  });
+}
+
+const takeOverSessionToSlack = async (
+  workerId: string,
+  slackChannelId: string,
+  slackThreadTs: string,
+  slackUserId: string
+) => {
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: {
+        PK: 'session-map',
+        SK: `slack-${slackChannelId}-${slackThreadTs}`,
+        sessionId: workerId,
+      } satisfies SessionMap,
+    })
+  );
+
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: {
+        PK: 'sessions',
+        SK: workerId,
+      },
+      UpdateExpression: 'SET slackChannelId = :slackChannelId, slackThreadTs = :slackThreadTs',
+      ExpressionAttributeValues: {
+        ':slackChannelId': slackChannelId,
+        ':slackThreadTs': slackThreadTs,
+      },
+    })
+  );
+
+  const { items } = await getConversationHistory(workerId);
+  const lastUserMessage = items.findLast((i) => i.messageType == 'userMessage');
+  if (lastUserMessage) {
+    await ddb.send(
+      new UpdateCommand({
+        TableName,
+        Key: {
+          PK: lastUserMessage.PK,
+          SK: lastUserMessage.SK,
+        },
+        UpdateExpression: 'SET slackUserId = :slackUserId',
+        ExpressionAttributeValues: {
+          ':slackUserId': slackUserId,
+        },
+      })
+    );
+  }
+};
