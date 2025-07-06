@@ -83,7 +83,7 @@ async function processMessage(
 
     await client.chat.postMessage({
       channel,
-      text: `<@${userId}> Error occurred ${e.message}`,
+      text: `<@${userId}> Error: ${e.message}`,
       thread_ts: event.thread_ts ?? event.ts,
     });
   }

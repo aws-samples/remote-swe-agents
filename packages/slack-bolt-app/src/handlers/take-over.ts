@@ -2,7 +2,7 @@ import { getConversationHistory, getSession } from '@remote-swe-agents/agent-cor
 import { WebClient } from '@slack/web-api';
 import { SessionMap } from '../util/session-map';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { TransactWriteCommand, TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 
 export async function handleTakeOver(
   event: {
@@ -60,37 +60,39 @@ const takeOverSessionToSlack = async (
   slackThreadTs: string,
   slackUserId: string
 ) => {
-  await ddb.send(
-    new PutCommand({
-      TableName,
-      Item: {
-        PK: 'session-map',
-        SK: `slack-${slackChannelId}-${slackThreadTs}`,
-        sessionId: workerId,
-      } satisfies SessionMap,
-    })
-  );
-
-  await ddb.send(
-    new UpdateCommand({
-      TableName,
-      Key: {
-        PK: 'sessions',
-        SK: workerId,
-      },
-      UpdateExpression: 'SET slackChannelId = :slackChannelId, slackThreadTs = :slackThreadTs',
-      ExpressionAttributeValues: {
-        ':slackChannelId': slackChannelId,
-        ':slackThreadTs': slackThreadTs,
-      },
-    })
-  );
-
   const { items } = await getConversationHistory(workerId);
   const lastUserMessage = items.findLast((i) => i.messageType == 'userMessage');
+
+  const transactItems: TransactWriteCommandInput['TransactItems'] = [
+    {
+      Put: {
+        TableName,
+        Item: {
+          PK: 'session-map',
+          SK: `slack-${slackChannelId}-${slackThreadTs}`,
+          sessionId: workerId,
+        } satisfies SessionMap,
+      },
+    },
+    {
+      Update: {
+        TableName,
+        Key: {
+          PK: 'sessions',
+          SK: workerId,
+        },
+        UpdateExpression: 'SET slackChannelId = :slackChannelId, slackThreadTs = :slackThreadTs',
+        ExpressionAttributeValues: {
+          ':slackChannelId': slackChannelId,
+          ':slackThreadTs': slackThreadTs,
+        },
+      },
+    },
+  ];
+
   if (lastUserMessage) {
-    await ddb.send(
-      new UpdateCommand({
+    transactItems.push({
+      Update: {
         TableName,
         Key: {
           PK: lastUserMessage.PK,
@@ -100,7 +102,13 @@ const takeOverSessionToSlack = async (
         ExpressionAttributeValues: {
           ':slackUserId': slackUserId,
         },
-      })
-    );
+      },
+    });
   }
+
+  await ddb.send(
+    new TransactWriteCommand({
+      TransactItems: transactItems,
+    })
+  );
 };
