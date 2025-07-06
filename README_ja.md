@@ -27,7 +27,7 @@ Remote SWE エージェントによるセッション例：
 
 ### Remote SWE Agentsによって作成されたプルリクエスト
 
-エージェントによって作成された公開プルリクエストはすべて[こちら](https://github.com/search?q=is%3Apr+author%3Aremote-swe-user&type=pullrequests)で確認できます。GitHubユーザーからプッシュされたすべてのコミットは、エージェントによって自律的に作成されています。
+エージェントによって作成された公開プルリクエストはすべて[こちら](https://github.com/search?q=is%3Apr+author%3Aremote-swe-user&type=pullrequests)で確認できます。このGitHubユーザーからプッシュされたすべてのコミットは、エージェントによって自律的に作成されています。
 
 ## インストール手順
 
