@@ -321,8 +321,8 @@ Since it follows a completely pay-as-you-go model, the overhead of deploying mul
 To control access for each tenant, you have the following access permission configurations:
 
 1. **Slack App**: You can set the `SLACK_ADMIN_USER_ID_LIST` environment variable in CDK to deny access from non-permitted users. You can then add allowed users using the `approve_user` Slack command.
-2. **Webapp**: Cognito self-sign-up is disabled by default. You can add users from the Cognito management console. Currently, anyone with a Cognito account has equal permissions. Users can configure the system, create new sessions, issue API keys, or view cost analysis from the web UI.
-3. **REST API**: Anyone who knows the API keys can access it. You should delete keys that are no longer in use.
+2. **Webapp**: Cognito self-sign-up is disabled by default. You can add users from the Cognito management console. Currently, anyone with a Cognito account has equal permissions. Users can configure the system, create new sessions, issue API keys, or view cost analysis from the web UI. Additionally, you can apply IP address restrictions using AWS WAF to further limit access to the web interface.
+3. **REST API**: Anyone who knows the API keys can access it. You should delete keys that are no longer in use. For additional security, you can implement IP address restrictions using AWS WAF, though be aware that this may limit the ability to use the API from public CI/CD environments like GitHub Actions running on public runners, as these use dynamic IP addresses.
 4. **GitHub Actions**: Anyone with write access to the repository (i.e., collaborators) can invoke the action.
 
 ## Useful Tips
