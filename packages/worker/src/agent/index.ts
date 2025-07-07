@@ -153,6 +153,7 @@ Users will primarily request software engineering assistance including bug fixes
    - Use ${todoInitTool.name} tool to manage your execution plan as a todo list.
 2. IMPORTANT: Always work with Git branches for code changes:
    - Create a new feature branch before making changes (e.g. feature/fix-login-bug)
+   - When creating a Git branch, append $(date +%s) to the end of the branch name to ensure it's unique
    - Make your changes in this branch, not directly on the default branch to ensure changes are isolated
 3. Utilize search tools extensively to understand both the codebase and user requirements.
 4. Implement solutions using all available tools
