@@ -54,13 +54,14 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
   });
 
   const message = watch('message');
+  const { ref: messageRef, ...messageRegister } = register('message');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const autoResize = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const maxHeight = 200; // max height in pixels
+      const maxHeight = 600; // max height in pixels
       const newHeight = Math.min(textarea.scrollHeight, maxHeight);
       textarea.style.height = `${newHeight}px`;
       textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
@@ -95,10 +96,14 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
 
           <div className="relative">
             <textarea
-              {...register('message')}
-              ref={textareaRef}
+              // https://qiita.com/P-man_Brown/items/63fc7d281baae22c74e5
+              {...messageRegister}
+              ref={(e) => {
+                messageRef(e);
+                textareaRef.current = e;
+              }}
               placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}
-              className="w-full resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 pt-3 pb-12 pr-24 focus:outline-none focus:ring-0 focus:border-gray-400 dark:focus:border-gray-500 min-h-[3rem] overflow-hidden"
+              className="w-full resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 pt-3 pb-10 focus:outline-none focus:ring-0 focus:border-gray-400 dark:focus:border-gray-500 min-h-[2rem] overflow-hidden"
               disabled={isExecuting || isUploading}
               onKeyDown={enterPost}
               onPaste={handlePaste}
@@ -154,14 +159,15 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
                       type="submit"
                       disabled={!message?.trim() || isExecuting || isUploading}
                       size="sm"
-                      className="h-8 w-8 p-0"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     >
                       {isExecuting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
                       ) : isUploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
                       ) : (
-                        <Send className="w-4 h-4" />
+                        <Send className="w-6 h-6" strokeWidth={2.5} />
                       )}
                     </Button>
                   </TooltipTrigger>
