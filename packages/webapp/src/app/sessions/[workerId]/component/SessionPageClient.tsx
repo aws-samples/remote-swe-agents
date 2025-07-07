@@ -242,8 +242,6 @@ export default function SessionPageClient({
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-
-
   const { execute: executeUpdateStatus, isExecuting: isUpdatingStatus } = useAction(updateAgentStatus, {
     onSuccess: ({ input }) => {
       setAgentStatus(input.status);
@@ -355,11 +353,7 @@ export default function SessionPageClient({
           </div>
         )}
 
-        <TakeOverModal
-          workerId={workerId}
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-        />
+        <TakeOverModal workerId={workerId} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
 
         <MessageList
           messages={messages}

@@ -11,7 +11,7 @@ interface TakeOverModalProps {
 
 export default function TakeOverModal({ workerId, isOpen, onClose }: TakeOverModalProps) {
   const t = useTranslations('sessions');
-  
+
   if (!isOpen) return null;
 
   const getShareText = () => {
@@ -54,9 +54,7 @@ export default function TakeOverModal({ workerId, isOpen, onClose }: TakeOverMod
           </button>
         </div>
         <div className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-            {t('shareSessionDescription')}
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{t('shareSessionDescription')}</p>
           <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md mb-4 overflow-x-auto">
             <code className="text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap">{getShareText()}</code>
           </div>
