@@ -319,13 +319,6 @@ export default function SessionPageClient({
                   </span>
                 </button>
               )}
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                title="Share session"
-              >
-                <Share className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
               <Link
                 href="/sessions/new"
                 className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -375,7 +368,7 @@ export default function SessionPageClient({
           onInterrupt={handleInterrupt}
         />
 
-        <MessageForm onSubmit={onSendMessage} workerId={workerId} />
+        <MessageForm onSubmit={onSendMessage} workerId={workerId} onShareSession={() => setShowShareModal(true)} />
 
         {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { Loader2, Send, Image as ImageIcon, Paperclip, Smile, AtSign, Hash, Plus } from 'lucide-react';
+import { Loader2, Send, Image as ImageIcon, Paperclip, Smile, AtSign, Hash, Plus, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
@@ -16,9 +16,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
   workerId: string;
+  onShareSession: () => void;
 };
 
-export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
+export default function MessageForm({ onSubmit, workerId, onShareSession }: MessageFormProps) {
   const t = useTranslations('sessions');
 
   const {
@@ -131,6 +132,9 @@ export default function MessageForm({ onSubmit, workerId }: MessageFormProps) {
               </Button>
               <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
                 <Plus className="w-4 h-4" />
+              </Button>
+              <Button type="button" onClick={onShareSession} disabled={isExecuting} size="icon" variant="ghost">
+                <Share className="w-4 h-4" />
               </Button>
             </div>
             
