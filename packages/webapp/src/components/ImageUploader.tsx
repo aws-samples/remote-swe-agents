@@ -116,6 +116,15 @@ export default function ImageUploader({ workerId, onImagesChange, onPasteOverrid
     fileInputRef.current?.click();
   };
 
+  const clearImages = () => {
+    uploadingImages.forEach((image) => {
+      if (image.previewUrl) {
+        URL.revokeObjectURL(image.previewUrl);
+      }
+    });
+    setUploadingImages([]);
+  };
+
   return {
     uploadingImages,
     fileInputRef,
@@ -123,6 +132,7 @@ export default function ImageUploader({ workerId, onImagesChange, onPasteOverrid
     handleImageChange,
     handlePaste,
     removeImage,
+    clearImages,
     ImagePreviewList: () => (
       <>
         {uploadingImages.length > 0 && (

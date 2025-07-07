@@ -39,6 +39,7 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
           });
         }
         reset();
+        clearImages();
       },
       onError: ({ error }) => {
         toast.error(typeof error === 'string' ? error : 'Failed to send the message');
@@ -79,7 +80,7 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
     }
   };
 
-  const { uploadingImages, fileInputRef, handleImageSelect, handlePaste, ImagePreviewList } = ImageUploader({
+  const { uploadingImages, handleImageSelect, handlePaste, ImagePreviewList, clearImages } = ImageUploader({
     workerId,
     onImagesChange: (imageKeys) => {
       setValue('imageKeys', imageKeys);
