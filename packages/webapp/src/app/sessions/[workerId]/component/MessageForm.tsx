@@ -93,23 +93,30 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
         <form onSubmit={handleSubmitWithAction} className="flex flex-col gap-4">
           <ImagePreviewList />
 
-          <textarea
-            {...register('message')}
-            ref={textareaRef}
-            placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}
-            className="w-full resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 min-h-[3rem] overflow-hidden"
-            disabled={isExecuting || isUploading}
-            onKeyDown={enterPost}
-            onPaste={handlePaste}
-            onInput={autoResize}
-          />
+          <div className="relative">
+            <textarea
+              {...register('message')}
+              ref={textareaRef}
+              placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}
+              className="w-full resize-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-4 pt-3 pb-12 pr-24 focus:outline-none focus:ring-0 focus:border-gray-400 dark:focus:border-gray-500 min-h-[3rem] overflow-hidden"
+              disabled={isExecuting || isUploading}
+              onKeyDown={enterPost}
+              onPaste={handlePaste}
+              onInput={autoResize}
+            />
 
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+            <div className="absolute bottom-2 left-2 flex gap-1">
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button type="button" onClick={handleImageSelect} disabled={isExecuting} size="icon" variant="ghost">
+                    <Button
+                      type="button"
+                      onClick={handleImageSelect}
+                      disabled={isExecuting}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
                       <ImageIcon className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
@@ -118,44 +125,52 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
-                <Smile className="w-4 h-4" />
-              </Button>
-              <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
-                <AtSign className="w-4 h-4" />
-              </Button>
-              <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
-                <Hash className="w-4 h-4" />
-              </Button>
-              <Button type="button" disabled={isExecuting} size="icon" variant="ghost">
-                <Plus className="w-4 h-4" />
-              </Button>
-              <Button type="button" onClick={onShareSession} disabled={isExecuting} size="icon" variant="ghost">
-                <Share className="w-4 h-4" />
-              </Button>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      onClick={onShareSession}
+                      disabled={isExecuting}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <Share className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('shareSession')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="submit" disabled={!message.trim() || isExecuting || isUploading} size="icon">
-                    {isExecuting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isUploading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('sendWithCtrlEnter')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+
+            <div className="absolute bottom-2 right-2">
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="submit"
+                      disabled={!message?.trim() || isExecuting || isUploading}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                    >
+                      {isExecuting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('sendWithCtrlEnter')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
 
           <input hidden {...register('workerId')} />
