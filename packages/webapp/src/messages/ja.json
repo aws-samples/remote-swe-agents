@@ -80,7 +80,8 @@
     "incomplete": "未完了",
     "interrupt": "中断",
     "interruptToolTip": "Escapeキーで中断",
-    "initiatedByOtherUsers": "他のユーザーが開始"
+    "initiatedByOtherUsers": "他のユーザーが開始",
+    "attachImage": "画像を添付"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
