@@ -396,6 +396,38 @@ This architecture enables a scalable and reliable messaging processing system. T
 
 ![AWS architecture](./docs/imgs/architecture.png)
 
+### AI Agent Security Best Practices
+
+AI agents provide powerful capabilities but also introduce potential security risks. Here are recommended practices to mitigate these risks:
+
+1. **Isolation of Execution Environment**
+   - Agents run on dedicated VMs, limiting any potential filesystem damage to that environment only
+   - User systems remain unaffected by any agent misbehavior
+
+2. **Principle of Least Privilege**
+   - By default, worker instances are assigned minimal IAM policies (logging, self-termination, S3 read access)
+   - When adding permissions via `WORKER_ADDITIONAL_POLICIES` environment variable, carefully evaluate the risks associated with potential agent misbehavior
+   - Consider the blast radius of permissions and limit them to what is absolutely necessary
+
+3. **Token Security Management**
+   - Agents have access to configured Slack bot tokens and GitHub access tokens
+   - Follow the principle of minimal access permissions when configuring these tokens
+   - For GitHub, consider using dedicated machine users or GitHub Apps with scoped permissions
+   - For Slack, use the admin user restriction feature to limit which users can interact with the agent
+
+4. **Network Access Controls**
+   - AI agents may attempt unintended outbound access using tools like `curl` or the `fetch` utility
+   - To mitigate this risk, deploy in a VPC with outbound traffic filtering through proxy servers or firewalls
+   - Use the `VPC_ID` environment variable to import existing VPCs with appropriate security controls
+   - Consider implementing egress filtering to limit which external services agents can communicate with
+
+5. **Regular Monitoring and Auditing**
+   - Review logs and agent activities to detect any unusual behavior
+   - Monitor GitHub and Slack activities initiated by the agent
+   - Regularly review and rotate access tokens and credentials
+
+By implementing these security practices, you can significantly reduce risks while leveraging the benefits of autonomous AI agents.
+
 ## Cost
 
 The following table provides a sample cost breakdown for deploying this system in the us-east-1 (N. Virginia) region for one month.
