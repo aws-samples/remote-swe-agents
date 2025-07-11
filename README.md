@@ -312,7 +312,7 @@ This repository can be used as a GitHub Action to automatically trigger Remote S
 
 Use `aws-samples/remote-swe-agents` in your workflow and configure your API base URL and key as repository secrets. You can generate API keys from the deployed webapp interface. See [action.yml](./action.yml) for input parameters and [.github/workflows/remote-swe.yml](./.github/workflows/remote-swe.yml) for a complete example workflow.
 
-### Tenant Isolation Model
+### Access Control (or Tenant Isolation Model)
 
 This project is currently designed as a single-tenant system, meaning it is intended to be deployed on a per-tenant basis.
 
