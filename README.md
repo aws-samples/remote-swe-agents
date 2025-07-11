@@ -402,7 +402,7 @@ AI agents provide powerful capabilities but also introduce potential security ri
 
 1. **Isolation of Execution Environment**
    - Agents run on dedicated VMs, limiting any potential filesystem damage to that environment only
-   - User systems remain unaffected by any agent misbehavior
+   - User systems remain unaffected by any agent misbehavior that manipulates its local file system
 
 2. **Principle of Least Privilege**
    - By default, worker instances are assigned minimal IAM policies (logging, self-termination, S3 read access)
@@ -413,18 +413,13 @@ AI agents provide powerful capabilities but also introduce potential security ri
    - Agents have access to configured Slack bot tokens and GitHub access tokens
    - Follow the principle of minimal access permissions when configuring these tokens
    - For GitHub, consider using dedicated machine users or GitHub Apps with scoped permissions
-   - For Slack, use the admin user restriction feature to limit which users can interact with the agent
+   - For Slack, consider limiting scope of the bot token
 
 4. **Network Access Controls**
    - AI agents may attempt unintended outbound access using tools like `curl` or the `fetch` utility
    - To mitigate this risk, deploy in a VPC with outbound traffic filtering through proxy servers or firewalls
    - Use the `VPC_ID` environment variable to import existing VPCs with appropriate security controls
    - Consider implementing egress filtering to limit which external services agents can communicate with
-
-5. **Regular Monitoring and Auditing**
-   - Review logs and agent activities to detect any unusual behavior
-   - Monitor GitHub and Slack activities initiated by the agent
-   - Regularly review and rotate access tokens and credentials
 
 By implementing these security practices, you can significantly reduce risks while leveraging the benefits of autonomous AI agents.
 
