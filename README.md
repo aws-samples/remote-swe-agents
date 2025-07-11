@@ -413,7 +413,7 @@ AI agents provide powerful capabilities but also introduce potential security ri
    - Agents have access to configured Slack bot tokens and GitHub access tokens
    - Follow the principle of minimal access permissions when configuring these tokens
    - For GitHub, consider using dedicated machine users or GitHub Apps with scoped permissions
-   - For Slack, consider limiting scope of the bot token
+   - For Slack, the default configuration (slack-app-manifest.json) uses minimal scopes; exercise caution when expanding these permissions
 
 4. **Network Access Controls**
    - AI agents may attempt unintended outbound access using tools like `curl` or the `fetch` utility
