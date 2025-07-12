@@ -3,42 +3,28 @@ import * as cdk from 'aws-cdk-lib';
 import { MainStack, MainStackProps } from '../lib/cdk-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { UsEast1Stack } from '../lib/us-east-1-stack';
+import { loadConfigFromEnv } from './config';
 
 const app = new cdk.App();
 
-const targetEnv = process.env.TARGET_ENV ?? 'Sandbox';
+// Load all configuration from environment variables
+const config = loadConfigFromEnv();
 
-// Parse IP addresses and country codes from environment variables
-const parseCommaSeparatedList = (envVar: string | undefined): string[] | undefined => {
-  return envVar
-    ? envVar
-        .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item)
-    : undefined;
-};
-
-const allowedIpV4AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV4_CIDRS);
-const allowedIpV6AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV6_CIDRS);
-const allowedCountryCodes = parseCommaSeparatedList(process.env.ALLOWED_COUNTRY_CODES);
-
-const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
+const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${config.targetEnv}`, {
   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
+    account: config.cdkDefaultAccount,
     region: 'us-east-1',
   },
   crossRegionReferences: true,
-  allowedIpV4AddressRanges,
-  allowedIpV6AddressRanges,
-  allowedCountryCodes,
+  allowedIpV4AddressRanges: config.allowedIpV4AddressRanges,
+  allowedIpV6AddressRanges: config.allowedIpV6AddressRanges,
+  allowedCountryCodes: config.allowedCountryCodes,
 });
-
-const additionalPolicies = parseCommaSeparatedList(process.env.WORKER_ADDITIONAL_POLICIES);
 
 const props: MainStackProps = {
   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
+    account: config.cdkDefaultAccount,
+    region: config.cdkDefaultRegion,
   },
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
@@ -47,34 +33,34 @@ const props: MainStackProps = {
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',
     signingSecretParameterName: '/remote-swe/slack/signing-secret',
-    adminUserIdList: process.env.SLACK_ADMIN_USER_ID_LIST,
+    adminUserIdList: config.slackAdminUserIdList,
   },
   github: {
-    ...(process.env.GITHUB_APP_ID
+    ...(config.githubAppId
       ? {
           privateKeyParameterName: '/remote-swe/github/app-private-key',
-          appId: process.env.GITHUB_APP_ID!,
-          installationId: process.env.GITHUB_INSTALLATION_ID!,
+          appId: config.githubAppId,
+          installationId: config.githubInstallationId!,
         }
       : {
           personalAccessTokenParameterName: '/remote-swe/github/personal-access-token',
         }),
   },
-  ...(process.env.AWS_ACCOUNT_ID_LIST_FOR_LB
+  ...(config.awsAccountIdListForLb
     ? {
         loadBalancing: {
-          awsAccounts: process.env.AWS_ACCOUNT_ID_LIST_FOR_LB.split(','),
-          roleName: process.env.ROLE_NAME_FOR_LB ?? 'bedrock-remote-swe-role',
+          awsAccounts: config.awsAccountIdListForLb,
+          roleName: config.roleNameForLb ?? 'bedrock-remote-swe-role',
         },
       }
     : {}),
-  ...(additionalPolicies ? { additionalManagedPolicies: additionalPolicies } : {}),
-  ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
-  initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
-  ...(process.env.WORKER_MODEL_OVERRIDE ? { workerModelOverride: process.env.WORKER_MODEL_OVERRIDE } : {}),
+  ...(config.workerAdditionalPolicies ? { additionalManagedPolicies: config.workerAdditionalPolicies } : {}),
+  ...(config.vpcId ? { vpcId: config.vpcId } : {}),
+  initialWebappUserEmail: config.initialWebappUserEmail,
+  ...(config.workerModelOverride ? { workerModelOverride: config.workerModelOverride } : {}),
 };
 
-new MainStack(app, `RemoteSweStack-${targetEnv}`, {
+new MainStack(app, `RemoteSweStack-${config.targetEnv}`, {
   ...props,
 });
 // cdk.Aspects.of(app).add(new AwsSolutionsChecks());
