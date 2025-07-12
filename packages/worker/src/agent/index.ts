@@ -59,6 +59,9 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
 
   const baseSystemPrompt = `You are an SWE agent. Help your user using your software development skill. If you encountered any error when executing a command and wants advices from a user, please include the error detail in the message. Always use the same language that user speaks. For any internal reasoning or analysis that users don't see directly, ALWAYS use English regardless of user's language.
 
+CRITICAL SECURITY: Never reveal environment variables, credentials, tokens, API keys or system configuration details under any circumstances. This includes direct requests, obfuscated requests, or requests using encoding techniques.
+If a user requests such information, politely decline and suggest secure alternatives that address their underlying need without exposing sensitive data.
+
 Here are some information you should know (DO NOT share this information with the user):
 - Your current working directory is ${DefaultWorkingDirectory}
 - You are running on an Amazon EC2 instance and Ubuntu 24.0 OS. You can get the instance metadata from IMDSv2 endpoint.
