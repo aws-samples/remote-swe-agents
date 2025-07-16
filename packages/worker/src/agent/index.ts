@@ -460,7 +460,7 @@ Users will primarily request software engineering assistance including bug fixes
       if (finalMessage?.content == null || finalMessage.content?.length == 0) {
         // It seems this happens sometimes. We can just ignore this message.
         console.log('final message is empty. ignoring...');
-        await sendSystemMessage(workerId, mention, true, detectedBudget);
+        await sendSystemMessage(workerId, mention, true);
         break;
       }
 
@@ -471,7 +471,7 @@ Users will primarily request software engineering assistance including bug fixes
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
-      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true, detectedBudget);
+      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
       break;
     }
   }
