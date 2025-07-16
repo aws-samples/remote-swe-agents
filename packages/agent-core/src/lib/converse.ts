@@ -103,9 +103,9 @@ export const bedrockConverse = async (
       modelType,
       maxTokensExceededCount
     );
-    
+
     const command = new ConverseCommand(processedInput);
-    
+
     // If we detected ultrathink and have a budget, send it to webapp
     if (thinkingBudget) {
       try {
@@ -157,7 +157,11 @@ const shouldUltraThink = (input: ConverseCommandInput): boolean => {
   return messageText.includes(ULTRA_THINKING_KEYWORD);
 };
 
-const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxTokensExceededCount: number): { input: ConverseCommandInput; thinkingBudget?: number } => {
+const preProcessInput = (
+  input: ConverseCommandInput,
+  modelType: ModelType,
+  maxTokensExceededCount: number
+): { input: ConverseCommandInput; thinkingBudget?: number } => {
   const modelConfig = modelConfigSchema.parse(modelConfigs[modelType]);
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
   input = structuredClone(input);
@@ -189,7 +193,7 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
   }
 
   let thinkingBudget: number | undefined = undefined;
-  
+
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
     const enableUltraThink = shouldUltraThink(input);
