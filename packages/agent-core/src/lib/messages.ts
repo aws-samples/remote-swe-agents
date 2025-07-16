@@ -18,7 +18,8 @@ export const saveConversationHistoryAtomic = async (
   workerId: string,
   toolUseMessage: Message,
   toolResultMessage: Message,
-  outputTokenCount: number
+  outputTokenCount: number,
+  thinkingBudget?: number
 ) => {
   const now = Date.now();
   const toolUseItem: MessageItem = {
@@ -28,6 +29,7 @@ export const saveConversationHistoryAtomic = async (
     role: toolUseMessage.role ?? 'unknown',
     tokenCount: outputTokenCount,
     messageType: 'toolUse',
+    ...(thinkingBudget !== undefined ? { thinkingBudget } : {}),
   };
 
   const toolResultItem: MessageItem = {

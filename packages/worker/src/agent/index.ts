@@ -451,7 +451,8 @@ Users will primarily request software engineering assistance including bug fixes
         workerId,
         toolUseMessage,
         toolResultMessage,
-        outputTokenCount
+        outputTokenCount,
+        detectedBudget
       );
       appendedItems.push(...savedItems);
     } else {
