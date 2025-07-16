@@ -17,6 +17,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     toolUseId: z.string(),
     input: z.string(),
     timestamp: z.number(),
+    thinkingBudget: z.number().optional(),
   }),
   z.object({
     type: z.literal('toolResult'),

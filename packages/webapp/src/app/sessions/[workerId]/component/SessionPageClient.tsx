@@ -216,6 +216,7 @@ export default function SessionPageClient({
                   detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
                   timestamp: new Date(event.timestamp),
                   type: 'toolUse',
+                  ...(event.thinkingBudget !== undefined ? { thinkingBudget: event.thinkingBudget } : {}),
                 },
               ]);
             }

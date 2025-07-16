@@ -360,6 +360,7 @@ Users will primarily request software engineering assistance including bug fixes
           toolName: toolUse.name ?? '',
           toolUseId: toolUseId,
           input: JSON.stringify(toolUse.input),
+          ...(detectedBudget !== undefined ? { thinkingBudget: detectedBudget } : {}),
         });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
