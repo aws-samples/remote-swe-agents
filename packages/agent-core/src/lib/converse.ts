@@ -95,16 +95,29 @@ export const bedrockConverse = async (
     const modelType = modelOverride || chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);
     console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
-    const command = new ConverseCommand(
-      preProcessInput(
-        {
-          ...input,
-          modelId,
-        },
-        modelType,
-        maxTokensExceededCount
-      )
+    const { input: processedInput, thinkingBudget } = preProcessInput(
+      {
+        ...input,
+        modelId,
+      },
+      modelType,
+      maxTokensExceededCount
     );
+    
+    const command = new ConverseCommand(processedInput);
+    
+    // If we detected ultrathink and have a budget, send it to webapp
+    if (thinkingBudget) {
+      try {
+        const { sendWebappEvent } = require('./events');
+        sendWebappEvent(workerId, {
+          type: 'thinkingBudget',
+          budget: thinkingBudget,
+        });
+      } catch (e) {
+        console.error('Failed to send thinking budget event:', e);
+      }
+    }
     const response = await client.send(command);
 
     // Track token usage for analytics
@@ -144,7 +157,7 @@ const shouldUltraThink = (input: ConverseCommandInput): boolean => {
   return messageText.includes(ULTRA_THINKING_KEYWORD);
 };
 
-const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxTokensExceededCount: number) => {
+const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxTokensExceededCount: number): { input: ConverseCommandInput; thinkingBudget?: number } => {
   const modelConfig = modelConfigSchema.parse(modelConfigs[modelType]);
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
   input = structuredClone(input);
@@ -175,6 +188,8 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
     }
   }
 
+  let thinkingBudget: number | undefined = undefined;
+  
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
     const enableUltraThink = shouldUltraThink(input);
@@ -188,19 +203,9 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
       },
     };
 
-    // Send thinking budget event to webapp if workerId is available
-    const workerId = input.conversationId;
-    if (workerId && typeof workerId === 'string') {
-      try {
-        // Import here to avoid circular dependency
-        const { sendWebappEvent } = require('./events');
-        sendWebappEvent(workerId, {
-          type: 'thinkingBudget',
-          budget,
-        });
-      } catch (e) {
-        console.error('Failed to send thinking budget event:', e);
-      }
+    // Save the budget value to return it to the caller
+    if (enableUltraThink) {
+      thinkingBudget = budget;
     }
 
     // Adjust output tokens as well
@@ -244,7 +249,7 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
     }
   }
 
-  return input;
+  return { input, thinkingBudget };
 };
 
 const getModelClient = async (modelType: ModelType) => {
