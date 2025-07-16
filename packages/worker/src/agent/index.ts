@@ -280,7 +280,7 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           if (cancellationToken.isCancelled) return;
 
-          const res = await bedrockConverse(
+          const { response: res, thinkingBudget } = await bedrockConverse(
             workerId,
             ['sonnet3.7'],
             {
@@ -452,18 +452,18 @@ Users will primarily request software engineering assistance including bug fixes
       if (finalMessage?.content == null || finalMessage.content?.length == 0) {
         // It seems this happens sometimes. We can just ignore this message.
         console.log('final message is empty. ignoring...');
-        await sendSystemMessage(workerId, mention, true);
+        await sendSystemMessage(workerId, mention, true, thinkingBudget);
         break;
       }
 
       // Save assistant message with token count
-      await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant');
+      await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant', thinkingBudget);
       // When reasoning is enabled, reasoning results are in content[0].
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
-      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
+      await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true, thinkingBudget);
       break;
     }
   }

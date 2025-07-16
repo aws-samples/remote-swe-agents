@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot, User } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { MessageView } from './MessageList';
 import { MessageItem } from './MessageItem';
 
@@ -15,6 +15,7 @@ type MessageGroupProps = {
 
 export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
   const locale = useLocale();
+  const t = useTranslations('sessions');
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const firstMessage = group.messages[0];
   const firstMessageDate = new Date(firstMessage.timestamp);
@@ -22,6 +23,11 @@ export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
   const isSameTime = (timestamp1: Date, timestamp2: Date): boolean => {
     return timestamp1.getHours() === timestamp2.getHours() && timestamp1.getMinutes() === timestamp2.getMinutes();
   };
+
+  // Check if any message in the group has thinkingBudget
+  const thinkingBudget = group.role === 'assistant' 
+    ? group.messages.find(msg => msg.thinkingBudget !== undefined)?.thinkingBudget 
+    : undefined;
 
   return (
     <div className="mb-3">
@@ -46,6 +52,14 @@ export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
           {firstMessageDate.toLocaleDateString(localeForDate)}{' '}
           {firstMessageDate.toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
         </div>
+        {thinkingBudget && (
+          <div className="ml-auto">
+            <div className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
+              <span className="hidden sm:inline">{t('thinkingBudget')}: </span>
+              <span>{thinkingBudget.toLocaleString()} tokens</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1">

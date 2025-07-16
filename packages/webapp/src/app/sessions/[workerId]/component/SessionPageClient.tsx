@@ -143,6 +143,7 @@ export default function SessionPageClient({
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
                     type: 'message',
+                    ...(event.thinkingBudget !== undefined ? { thinkingBudget: event.thinkingBudget } : {}),
                   },
                 ]);
               }
@@ -183,6 +184,7 @@ export default function SessionPageClient({
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
                     type: 'message',
+                    // We can't pass thinking budget here as it's not part of the sendMessageToUser input
                   },
                 ]);
               }

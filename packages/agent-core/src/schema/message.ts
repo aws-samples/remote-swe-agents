@@ -9,4 +9,8 @@ export type MessageItem = {
   tokenCount: number;
   messageType: string;
   slackUserId?: string;
+  /**
+   * Thinking budget in tokens when ultrathink is enabled
+   */
+  thinkingBudget?: number;
 };

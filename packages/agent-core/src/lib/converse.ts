@@ -83,7 +83,7 @@ export const bedrockConverse = async (
   modelTypes: ModelType[],
   input: Omit<ConverseCommandInput, 'modelId'>,
   maxTokensExceededCount = 0
-) => {
+): Promise<{ response: ConverseResponse; thinkingBudget?: number }> => {
   if (maxTokensExceededCount > 5) {
     throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
   }
@@ -95,22 +95,22 @@ export const bedrockConverse = async (
     const modelType = modelOverride || chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);
     console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
-    const command = new ConverseCommand(
-      preProcessInput(
-        {
-          ...input,
-          modelId,
-        },
-        modelType,
-        maxTokensExceededCount
-      )
+    const { input: processedInput, thinkingBudget } = preProcessInput(
+      {
+        ...input,
+        modelId,
+      },
+      modelType,
+      maxTokensExceededCount
     );
+    
+    const command = new ConverseCommand(processedInput);
     const response = await client.send(command);
 
     // Track token usage for analytics
     await trackTokenUsage(workerId, modelId, response);
 
-    return response;
+    return { response, thinkingBudget };
   } catch (error) {
     if (error instanceof ThrottlingException) {
       // Rotate to next account
@@ -144,7 +144,11 @@ const shouldUltraThink = (input: ConverseCommandInput): boolean => {
   return messageText.includes(ULTRA_THINKING_KEYWORD);
 };
 
-const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxTokensExceededCount: number) => {
+const preProcessInput = (
+  input: ConverseCommandInput,
+  modelType: ModelType,
+  maxTokensExceededCount: number
+): { input: ConverseCommandInput; thinkingBudget?: number } => {
   const modelConfig = modelConfigSchema.parse(modelConfigs[modelType]);
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
   input = structuredClone(input);
@@ -175,6 +179,8 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
     }
   }
 
+  let thinkingBudget: number | undefined = undefined;
+
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
     const enableUltraThink = shouldUltraThink(input);
@@ -187,6 +193,11 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
         budget_tokens: budget,
       },
     };
+
+    // If we're using ultrathink (non-default budget), store the budget value
+    if (enableUltraThink) {
+      thinkingBudget = budget;
+    }
 
     // Adjust output tokens as well
     input.inferenceConfig = {
@@ -229,7 +240,7 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
     }
   }
 
-  return input;
+  return { input, thinkingBudget };
 };
 
 const getModelClient = async (modelType: ModelType) => {
