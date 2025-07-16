@@ -103,7 +103,7 @@ export const bedrockConverse = async (
       modelType,
       maxTokensExceededCount
     );
-    
+
     const command = new ConverseCommand(processedInput);
     const response = await client.send(command);
 

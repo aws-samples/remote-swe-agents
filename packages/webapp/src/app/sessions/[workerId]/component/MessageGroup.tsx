@@ -25,9 +25,10 @@ export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
   };
 
   // Check if any message in the group has thinkingBudget
-  const thinkingBudget = group.role === 'assistant' 
-    ? group.messages.find(msg => msg.thinkingBudget !== undefined)?.thinkingBudget 
-    : undefined;
+  const thinkingBudget =
+    group.role === 'assistant'
+      ? group.messages.find((msg) => msg.thinkingBudget !== undefined)?.thinkingBudget
+      : undefined;
 
   return (
     <div className="mb-3">
