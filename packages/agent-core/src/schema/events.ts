@@ -37,4 +37,10 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('thinkingBudget'),
+    budget: z.number(),
+    timestamp: z.number(),
+    workerId: z.string(),
+  }),
 ]);

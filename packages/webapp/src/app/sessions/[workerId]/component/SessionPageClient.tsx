@@ -46,6 +46,7 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+  const [thinkingBudget, setThinkingBudget] = useState<number | null>(null);
 
   // Update state when props change (e.g., on refresh)
   useEffect(() => {
@@ -153,6 +154,9 @@ export default function SessionPageClient({
             break;
           case 'agentStatusUpdate':
             setAgentStatus(event.status);
+            break;
+          case 'thinkingBudget':
+            setThinkingBudget(event.budget);
             break;
           case 'toolResult':
             setMessages((prev) => {
@@ -299,6 +303,14 @@ export default function SessionPageClient({
                     className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getSessionStatus().color}`}
                   />
                   <span className="text-xs sm:text-sm font-medium truncate">{getSessionStatus().text}</span>
+                </div>
+              )}
+              {thinkingBudget && (
+                <div className="flex items-center gap-1 sm:gap-2 ml-2">
+                  <div className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
+                    <span className="hidden sm:inline">{t('thinkingBudget')}: </span>
+                    <span>{thinkingBudget.toLocaleString()} tokens</span>
+                  </div>
                 </div>
               )}
               {todoList && (

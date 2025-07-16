@@ -188,6 +188,21 @@ const preProcessInput = (input: ConverseCommandInput, modelType: ModelType, maxT
       },
     };
 
+    // Send thinking budget event to webapp if workerId is available
+    const workerId = input.conversationId;
+    if (workerId && typeof workerId === 'string') {
+      try {
+        // Import here to avoid circular dependency
+        const { sendWebappEvent } = require('./events');
+        sendWebappEvent(workerId, {
+          type: 'thinkingBudget',
+          budget,
+        });
+      } catch (e) {
+        console.error('Failed to send thinking budget event:', e);
+      }
+    }
+
     // Adjust output tokens as well
     input.inferenceConfig = {
       ...input.inferenceConfig,
