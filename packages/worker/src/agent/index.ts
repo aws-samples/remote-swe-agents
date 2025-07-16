@@ -275,6 +275,9 @@ Users will primarily request software engineering assistance including bug fixes
     firstCachePoint = secondCachePoint;
 
     class MaxTokenExceededError {}
+    // Will hold the detected budget from bedrockConverse
+    let detectedBudget: number | undefined;
+    
     const res = await pRetry(
       async () => {
         try {
@@ -292,7 +295,8 @@ Users will primarily request software engineering assistance including bug fixes
           );
 
           const res = converseResult.response;
-          const detectedBudget = converseResult.thinkingBudget;
+          // Store the detected budget in the outer scope variable
+          detectedBudget = converseResult.thinkingBudget;
 
           if (res.stopReason == 'max_tokens') {
             maxTokensExceededCount += 1;
