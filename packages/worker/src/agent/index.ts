@@ -280,7 +280,7 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           if (cancellationToken.isCancelled) return;
 
-          const { response: res, thinkingBudget: detectedBudget } = await bedrockConverse(
+          const converseResult = await bedrockConverse(
             workerId,
             ['sonnet3.7'],
             {
@@ -291,6 +291,9 @@ Users will primarily request software engineering assistance including bug fixes
             maxTokensExceededCount
           );
 
+          const res = converseResult.response;
+          const detectedBudget = converseResult.thinkingBudget;
+          
           if (res.stopReason == 'max_tokens') {
             maxTokensExceededCount += 1;
             throw new MaxTokenExceededError();
