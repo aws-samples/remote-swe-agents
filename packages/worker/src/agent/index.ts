@@ -277,7 +277,7 @@ Users will primarily request software engineering assistance including bug fixes
     class MaxTokenExceededError {}
     // Will hold the detected budget from bedrockConverse
     let detectedBudget: number | undefined;
-    
+
     const res = await pRetry(
       async () => {
         try {
