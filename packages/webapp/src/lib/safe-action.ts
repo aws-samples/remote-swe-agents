@@ -1,6 +1,6 @@
 import { runWithAmplifyServerContext } from '@/lib/amplifyServerUtils';
 import { getCurrentUser } from 'aws-amplify/auth/server';
-import { createSafeActionClient, DEFAULT_SERVER_ERROR_MESSAGE } from 'next-safe-action';
+import { createSafeActionClient } from 'next-safe-action';
 import { cookies } from 'next/headers';
 
 export class MyCustomError extends Error {
@@ -11,22 +11,28 @@ export class MyCustomError extends Error {
 }
 
 const actionClient = createSafeActionClient({
-  handleServerError(e) {
+  handleServerErrorLog(e) {
     // Log to console.
     console.error('Action error:', e.message);
-
+  },
+  
+  handleReturnedServerError(e) {
     // In this case, we can use the 'MyCustomError` class to unmask errors
     // and return them with their actual messages to the client.
     if (e instanceof MyCustomError) {
-      return e.message;
+      return {
+        serverError: e.message,
+      };
     }
 
     // Every other error that occurs will be masked with the default message.
-    return DEFAULT_SERVER_ERROR_MESSAGE;
+    return {
+      serverError: 'An error occurred while executing this action.',
+    };
   },
 });
 
-export const authActionClient = actionClient.use(async ({ next }) => {
+export const authActionClient = actionClient.middleware(async ({ next }) => {
   const currentUser = await runWithAmplifyServerContext({
     nextServerContext: { cookies },
     operation: (contextSpec) => getCurrentUser(contextSpec),
@@ -36,5 +42,5 @@ export const authActionClient = actionClient.use(async ({ next }) => {
     throw new Error('Session is not valid!');
   }
 
-  return next({ ctx: { userId: currentUser.userId } });
+  return next({ userId: currentUser.userId });
 });

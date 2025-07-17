@@ -9,8 +9,8 @@ const hideSessionSchema = z.object({
 });
 
 export const hideSessionAction = authActionClient
-  .schema(hideSessionSchema)
-  .action(async ({ parsedInput: { workerId } }) => {
+  .inputSchema(hideSessionSchema)
+  .action(async ({ workerId }, { userId }) => {
     await updateSessionVisibility(workerId, true);
     return { success: true };
   });

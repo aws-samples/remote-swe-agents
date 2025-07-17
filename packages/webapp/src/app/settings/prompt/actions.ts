@@ -6,8 +6,8 @@ import { writeCommonPrompt } from '@remote-swe-agents/agent-core/lib';
 
 // Create action using the safe-action client
 export const savePromptAction = authActionClient
-  .schema(savePromptSchema)
-  .action(async ({ parsedInput: { additionalSystemPrompt } }) => {
+  .inputSchema(savePromptSchema)
+  .action(async ({ additionalSystemPrompt }) => {
     try {
       await writeCommonPrompt({
         additionalSystemPrompt: additionalSystemPrompt || '',

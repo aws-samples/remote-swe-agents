@@ -8,11 +8,9 @@ import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents
 import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem, SessionItem } from '@remote-swe-agents/agent-core/schema';
 
-export const createNewWorker = authActionClient.schema(createNewWorkerSchema).action(async ({ parsedInput, ctx }) => {
+export const createNewWorker = authActionClient.inputSchema(createNewWorkerSchema).action(async ({ message, imageKeys = [] }, { userId }) => {
   const workerId = `webapp-${Date.now()}`;
-  const { message, imageKeys = [] } = parsedInput;
   const now = Date.now();
-  const { userId } = ctx;
 
   const content = [];
   content.push({ text: renderUserMessage({ message }) });

@@ -16,8 +16,8 @@ const getUploadUrlSchema = z.object({
 });
 
 export const getUploadUrl = authActionClient
-  .schema(getUploadUrlSchema)
-  .action(async ({ parsedInput: { workerId, contentType } }) => {
+  .inputSchema(getUploadUrlSchema)
+  .action(async ({ workerId, contentType }) => {
     if (!bucketName) {
       throw new Error('S3 bucket name is not configured');
     }
