@@ -1,6 +1,6 @@
 import { runWithAmplifyServerContext } from '@/lib/amplifyServerUtils';
 import { getCurrentUser } from 'aws-amplify/auth/server';
-import { createSafeActionClient } from 'next-safe-action';
+import { createSafeActionClient, DEFAULT_SERVER_ERROR_MESSAGE } from 'next-safe-action';
 import { cookies } from 'next/headers';
 
 export class MyCustomError extends Error {
@@ -18,15 +18,11 @@ const actionClient = createSafeActionClient({
     // In this case, we can use the 'MyCustomError` class to unmask errors
     // and return them with their actual messages to the client.
     if (e instanceof MyCustomError) {
-      return {
-        serverError: e.message,
-      };
+      return e.message;
     }
 
     // Every other error that occurs will be masked with the default message.
-    return {
-      serverError: 'An error occurred while executing this action.',
-    };
+    return DEFAULT_SERVER_ERROR_MESSAGE;
   },
 });
 
