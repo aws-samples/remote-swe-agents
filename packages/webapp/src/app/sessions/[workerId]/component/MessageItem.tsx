@@ -58,10 +58,11 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                       onClick={() => setShowReasoning(!showReasoning)}
                       className="flex items-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-1"
                     >
-                      {showReasoning ? 
-                        <ChevronDown className="w-3.5 h-3.5 mr-1" /> : 
+                      {showReasoning ? (
+                        <ChevronDown className="w-3.5 h-3.5 mr-1" />
+                      ) : (
                         <ChevronRight className="w-3.5 h-3.5 mr-1" />
-                      }
+                      )}
                       {showReasoning ? t('hideThinking') || 'Hide thinking' : t('showThinking') || 'Show thinking'}
                     </button>
                     {showReasoning && (
