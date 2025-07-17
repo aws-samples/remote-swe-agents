@@ -138,7 +138,7 @@ export default function SessionPageClient({
                 setMessages((prev) => [
                   ...prev,
                   {
-                    id: Date.now().toString(),
+                    id: event.SK || Date.now().toString(),
                     role: event.role,
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
@@ -179,7 +179,7 @@ export default function SessionPageClient({
                 setMessages((prev) => [
                   ...prev,
                   {
-                    id: Date.now().toString(),
+                    id: event.SK || Date.now().toString(),
                     role: 'assistant',
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
@@ -198,7 +198,7 @@ export default function SessionPageClient({
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: Date.now().toString(),
+                  id: event.SK || Date.now().toString(),
                   role: 'assistant',
                   content: messageText,
                   timestamp: new Date(event.timestamp),
@@ -211,7 +211,7 @@ export default function SessionPageClient({
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: Date.now().toString(),
+                  id: event.SK || Date.now().toString(),
                   role: 'assistant',
                   content: event.toolName,
                   detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,

@@ -57,7 +57,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
               const key = getAttachedImageKey(workerId, toolUseId, input.imagePath);
 
               messages.push({
-                id: `${item.SK}-${i}-${toolUseId}`,
+                id: item.SK,
                 role: 'assistant',
                 content: messageText,
                 timestamp: new Date(parseInt(item.SK)),
@@ -70,7 +70,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
               const messageText = formatMessage(input?.message ?? '');
               if (messageText) {
                 messages.push({
-                  id: `${item.SK}-${i}-${toolUseId}`,
+                  id: item.SK,
                   role: 'assistant',
                   content: messageText,
                   timestamp: new Date(parseInt(item.SK)),
@@ -96,7 +96,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
             .join('\n\n');
 
           messages.push({
-            id: `${item.SK}-${i}`,
+            id: item.SK,
             role: 'assistant',
             content,
             detail,
@@ -133,7 +133,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         const extracted = extractUserMessage(text);
 
         messages.push({
-          id: `${item.SK}-${i}`,
+          id: item.SK,
           role: 'user',
           content: extracted,
           timestamp: new Date(parseInt(item.SK)),
@@ -146,7 +146,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         const formatted = formatMessage(text);
         if (formatted) {
           messages.push({
-            id: `${item.SK}-${i}`,
+            id: item.SK,
             role: 'assistant',
             content: text,
             timestamp: new Date(parseInt(item.SK)),

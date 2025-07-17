@@ -9,6 +9,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     message: z.string(),
     timestamp: z.number(),
     thinkingBudget: z.number().optional(),
+    SK: z.string().optional(), // DynamoDBのSK値（メッセージID）
   }),
   z.object({
     type: z.literal('toolUse'),
@@ -18,6 +19,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     input: z.string(),
     timestamp: z.number(),
     thinkingBudget: z.number().optional(),
+    SK: z.string().optional(), // DynamoDBのSK値（メッセージID）
   }),
   z.object({
     type: z.literal('toolResult'),
@@ -26,6 +28,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     toolUseId: z.string(),
     output: z.string(),
     timestamp: z.number(),
+    SK: z.string().optional(), // DynamoDBのSK値（メッセージID）
   }),
   z.object({
     type: z.literal('instanceStatusChanged'),
