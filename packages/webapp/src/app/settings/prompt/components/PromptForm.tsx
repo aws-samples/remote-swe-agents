@@ -21,7 +21,7 @@ export default function PromptForm({ initialPrompt }: PromptFormProps) {
       toast.success(t('saveSuccess'));
     },
     onError: (error) => {
-      const errorMessage = error.error?.serverError || t('saveError');
+      const errorMessage = error.error?.serverError?.toString() || t('saveError');
       toast.error(errorMessage);
     },
   });

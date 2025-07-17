@@ -49,7 +49,7 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
         router.refresh();
       },
       onError: (result) => {
-        toast.error(result.error.serverError || t('createError'));
+        toast.error(result.error?.serverError?.toString() || t('createError'));
       },
     },
     formProps: {
@@ -68,7 +68,7 @@ export default function ApiKeyClientActions({ apiKeys }: ApiKeyClientActionsProp
       router.refresh();
     },
     onError: (error) => {
-      toast.error(error.error.serverError || t('deleteError'));
+      toast.error(error.error?.serverError?.toString() || t('deleteError'));
       setIsDeleteDialogOpen(false);
     },
   });
