@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Brain } from 'lucide-react';
+import { Copy, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { MessageView } from './MessageList';
@@ -52,20 +52,16 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
           <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
               <div className="flex-1">
-                {message.role === 'user' ? (
-                  <UrlRenderer content={message.content} />
-                ) : (
-                  <MarkdownRenderer content={message.content} />
-                )}
-                {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
-
                 {message.reasoningText && (
-                  <div className="mt-2">
+                  <div className="mb-3">
                     <button
                       onClick={() => setShowReasoning(!showReasoning)}
                       className="flex items-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-1"
                     >
-                      <Brain className="w-3.5 h-3.5 mr-1" />
+                      {showReasoning ? 
+                        <ChevronDown className="w-3.5 h-3.5 mr-1" /> : 
+                        <ChevronRight className="w-3.5 h-3.5 mr-1" />
+                      }
                       {showReasoning ? t('hideThinking') || 'Hide thinking' : t('showThinking') || 'Show thinking'}
                     </button>
                     {showReasoning && (
@@ -75,6 +71,12 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                     )}
                   </div>
                 )}
+                {message.role === 'user' ? (
+                  <UrlRenderer content={message.content} />
+                ) : (
+                  <MarkdownRenderer content={message.content} />
+                )}
+                {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
                 <button
