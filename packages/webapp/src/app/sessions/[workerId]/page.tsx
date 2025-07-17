@@ -63,6 +63,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
                 timestamp: new Date(parseInt(item.SK)),
                 type: 'message',
                 imageKeys: [key],
+                thinkingBudget: item.thinkingBudget,
               });
             } else {
               // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
@@ -74,6 +75,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
                   content: messageText,
                   timestamp: new Date(parseInt(item.SK)),
                   type: 'message',
+                  thinkingBudget: item.thinkingBudget,
                 });
               }
             }
@@ -100,6 +102,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
             detail,
             timestamp: new Date(parseInt(item.SK)),
             type: 'toolUse',
+            thinkingBudget: item.thinkingBudget,
           });
         }
         break;
@@ -148,6 +151,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
             content: text,
             timestamp: new Date(parseInt(item.SK)),
             type: 'message',
+            thinkingBudget: item.thinkingBudget,
           });
         }
         break;

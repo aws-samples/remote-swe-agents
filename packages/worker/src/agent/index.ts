@@ -275,12 +275,15 @@ Users will primarily request software engineering assistance including bug fixes
     firstCachePoint = secondCachePoint;
 
     class MaxTokenExceededError {}
+    // Will hold the detected budget from bedrockConverse
+    let detectedBudget: number | undefined;
+
     const res = await pRetry(
       async () => {
         try {
           if (cancellationToken.isCancelled) return;
 
-          const res = await bedrockConverse(
+          const converseResult = await bedrockConverse(
             workerId,
             ['sonnet3.7'],
             {
@@ -290,6 +293,10 @@ Users will primarily request software engineering assistance including bug fixes
             },
             maxTokensExceededCount
           );
+
+          const res = converseResult.response;
+          // Store the detected budget in the outer scope variable
+          detectedBudget = converseResult.thinkingBudget;
 
           if (res.stopReason == 'max_tokens') {
             maxTokensExceededCount += 1;
@@ -353,6 +360,7 @@ Users will primarily request software engineering assistance including bug fixes
           toolName: toolUse.name ?? '',
           toolUseId: toolUseId,
           input: JSON.stringify(toolUse.input),
+          thinkingBudget: detectedBudget,
         });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
@@ -443,7 +451,8 @@ Users will primarily request software engineering assistance including bug fixes
         workerId,
         toolUseMessage,
         toolResultMessage,
-        outputTokenCount
+        outputTokenCount,
+        detectedBudget
       );
       appendedItems.push(...savedItems);
     } else {
@@ -457,7 +466,7 @@ Users will primarily request software engineering assistance including bug fixes
       }
 
       // Save assistant message with token count
-      await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant');
+      await saveConversationHistory(workerId, finalMessage, outputTokenCount, 'assistant', detectedBudget);
       // When reasoning is enabled, reasoning results are in content[0].
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bot, User } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { Bot, User, Brain } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageView } from './MessageList';
 import { MessageItem } from './MessageItem';
 
@@ -15,12 +16,26 @@ type MessageGroupProps = {
 
 export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
   const locale = useLocale();
+  const t = useTranslations('sessions');
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const firstMessage = group.messages[0];
   const firstMessageDate = new Date(firstMessage.timestamp);
 
   const isSameTime = (timestamp1: Date, timestamp2: Date): boolean => {
     return timestamp1.getHours() === timestamp2.getHours() && timestamp1.getMinutes() === timestamp2.getMinutes();
+  };
+
+  // Get thinking budget from assistant messages only
+  const thinkingBudget =
+    group.role === 'assistant' ? group.messages.find((msg) => msg.thinkingBudget)?.thinkingBudget || 0 : 0;
+
+  const getBrainColor = (budget: number): string => {
+    if (budget === 0) return 'text-gray-300 dark:text-gray-600';
+    if (budget < 1000) return 'text-gray-400 dark:text-gray-500';
+    if (budget < 5000) return 'text-gray-500 dark:text-gray-400';
+    if (budget < 10000) return 'text-gray-600 dark:text-gray-300';
+    if (budget < 20000) return 'text-gray-700 dark:text-gray-200';
+    return 'text-gray-800 dark:text-gray-100';
   };
 
   return (
@@ -42,9 +57,28 @@ export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
         <div className="font-semibold text-gray-900 dark:text-white">
           {group.role === 'assistant' ? 'Assistant' : 'User'}
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
           {firstMessageDate.toLocaleDateString(localeForDate)}{' '}
           {firstMessageDate.toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+          {group.role === 'assistant' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="ml-2">
+                  <Brain className={`w-4 h-4 ${getBrainColor(thinkingBudget)}`} />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {group.messages.find((msg) => msg.thinkingBudget)
+                    ? `${t('thinkingBudget')}: ${thinkingBudget.toLocaleString()}`
+                    : `${t('thinkingBudget')}: ${t('defaultThinkingBudget')}`}
+                </p>
+                {!group.messages.find((msg) => msg.thinkingBudget) && (
+                  <p className="text-xs mt-1">{t('ultrathinkInstruction')}</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 

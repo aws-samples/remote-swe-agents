@@ -143,6 +143,7 @@ export default function SessionPageClient({
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
                     type: 'message',
+                    thinkingBudget: event.thinkingBudget,
                   },
                 ]);
               }
@@ -183,6 +184,7 @@ export default function SessionPageClient({
                     content: cleanedMessage,
                     timestamp: new Date(event.timestamp),
                     type: 'message',
+                    thinkingBudget: event.thinkingBudget,
                   },
                 ]);
               }
@@ -202,6 +204,7 @@ export default function SessionPageClient({
                   timestamp: new Date(event.timestamp),
                   type: 'message',
                   imageKeys: [key],
+                  thinkingBudget: event.thinkingBudget,
                 },
               ]);
             } else {
@@ -214,6 +217,7 @@ export default function SessionPageClient({
                   detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
                   timestamp: new Date(event.timestamp),
                   type: 'toolUse',
+                  thinkingBudget: event.thinkingBudget,
                 },
               ]);
             }

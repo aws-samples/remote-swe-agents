@@ -18,7 +18,8 @@ export const saveConversationHistoryAtomic = async (
   workerId: string,
   toolUseMessage: Message,
   toolResultMessage: Message,
-  outputTokenCount: number
+  outputTokenCount: number,
+  thinkingBudget?: number
 ) => {
   const now = Date.now();
   const toolUseItem: MessageItem = {
@@ -28,6 +29,7 @@ export const saveConversationHistoryAtomic = async (
     role: toolUseMessage.role ?? 'unknown',
     tokenCount: outputTokenCount,
     messageType: 'toolUse',
+    thinkingBudget,
   };
 
   const toolResultItem: MessageItem = {
@@ -51,7 +53,8 @@ export const saveConversationHistory = async (
   workerId: string,
   message: Message,
   tokenCount: number,
-  messageType: string
+  messageType: string,
+  thinkingBudget?: number
 ) => {
   const item = {
     PK: `message-${workerId}`,
@@ -60,6 +63,7 @@ export const saveConversationHistory = async (
     role: message.role ?? 'unknown',
     tokenCount,
     messageType,
+    thinkingBudget,
   } satisfies MessageItem;
 
   await ddb.send(
@@ -308,7 +312,11 @@ const postProcessMessageContent = async (content: string) => {
 
 export const sendSystemMessage = async (workerId: string, message: string, appendWebappUrl: boolean = false) => {
   // Always send original message to webapp
-  await sendWebappEvent(workerId, { type: 'message', role: 'assistant', message });
+  await sendWebappEvent(workerId, {
+    type: 'message',
+    role: 'assistant',
+    message,
+  });
 
   // For Slack, optionally append webapp URL
   if (appendWebappUrl) {
