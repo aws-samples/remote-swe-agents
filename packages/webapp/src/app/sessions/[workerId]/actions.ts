@@ -47,12 +47,10 @@ export const sendMessageToAgent = authActionClient
     return { success: true, item };
   });
 
-export const fetchLatestTodoList = authActionClient
-  .inputSchema(fetchTodoListSchema)
-  .action(async ({ workerId }) => {
-    const todoList = await getTodoList(workerId);
-    return { todoList };
-  });
+export const fetchLatestTodoList = authActionClient.inputSchema(fetchTodoListSchema).action(async ({ workerId }) => {
+  const todoList = await getTodoList(workerId);
+  return { todoList };
+});
 
 export const updateAgentStatus = authActionClient
   .inputSchema(updateAgentStatusSchema)
@@ -61,9 +59,7 @@ export const updateAgentStatus = authActionClient
     return { success: true };
   });
 
-export const sendEventToAgent = authActionClient
-  .inputSchema(sendEventSchema)
-  .action(async ({ workerId, event }) => {
-    await sendWorkerEvent(workerId, event);
-    return { success: true };
-  });
+export const sendEventToAgent = authActionClient.inputSchema(sendEventSchema).action(async ({ workerId, event }) => {
+  await sendWorkerEvent(workerId, event);
+  return { success: true };
+});

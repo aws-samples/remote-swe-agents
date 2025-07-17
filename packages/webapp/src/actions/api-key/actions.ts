@@ -10,10 +10,12 @@ export const listApiKeysAction = authActionClient.action(async (_, { userId }) =
   return { apiKeys };
 });
 
-export const createApiKeyAction = authActionClient.inputSchema(createApiKeySchema).action(async ({ description }, { userId }) => {
-  const apiKey = await createApiKey(description, userId);
-  return { apiKey };
-});
+export const createApiKeyAction = authActionClient
+  .inputSchema(createApiKeySchema)
+  .action(async ({ description }, { userId }) => {
+    const apiKey = await createApiKey(description, userId);
+    return { apiKey };
+  });
 
 export const deleteApiKeyAction = authActionClient.inputSchema(deleteApiKeySchema).action(async ({ apiKey }) => {
   await deleteApiKey(apiKey);
