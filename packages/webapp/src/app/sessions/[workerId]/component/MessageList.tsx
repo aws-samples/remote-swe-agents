@@ -18,6 +18,7 @@ export type MessageView = {
   type: 'message' | 'toolResult' | 'toolUse';
   imageKeys?: string[];
   thinkingBudget?: number;
+  reasoningText?: string;
 };
 
 type MessageGroup = {
