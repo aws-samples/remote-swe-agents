@@ -77,10 +77,10 @@ export async function sendWebappEvent(
   try {
     // タイムスタンプを生成
     const now = Date.now();
-    
+
     // DynamoDB で使用するパディングされたタイムスタンプ形式のSKを生成
     const SK = `${String(now).padStart(15, '0')}`;
-    
+
     // イベントタイプに基づいて適切な処理を行う
     switch (event.type) {
       case 'message':
