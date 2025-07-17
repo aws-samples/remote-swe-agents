@@ -5,7 +5,7 @@ import { ApiKeyItem } from '@remote-swe-agents/agent-core/schema';
 import { authActionClient } from '@/lib/safe-action';
 import { createApiKeySchema, deleteApiKeySchema } from './schemas';
 
-export const listApiKeysAction = authActionClient.action(async (_, { userId }) => {
+export const listApiKeysAction = authActionClient.action(async (_: Record<string, never>, { userId }) => {
   const apiKeys = await getApiKeys();
   return { apiKeys };
 });
