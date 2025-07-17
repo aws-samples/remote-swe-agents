@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, ThoughtBubble } from 'lucide-react';
+import { Copy, Brain } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { MessageView } from './MessageList';
@@ -65,7 +65,7 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                       onClick={() => setShowReasoning(!showReasoning)}
                       className="flex items-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-1"
                     >
-                      <ThoughtBubble className="w-3.5 h-3.5 mr-1" />
+                      <Brain className="w-3.5 h-3.5 mr-1" />
                       {showReasoning ? t('hideThinking') || 'Hide thinking' : t('showThinking') || 'Show thinking'}
                     </button>
                     {showReasoning && (
