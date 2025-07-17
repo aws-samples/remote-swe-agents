@@ -32,7 +32,7 @@ const actionClient = createSafeActionClient({
   },
 });
 
-export const authActionClient = actionClient.middleware(async ({ next }) => {
+export const authActionClient = actionClient.use(async ({ next }) => {
   const currentUser = await runWithAmplifyServerContext({
     nextServerContext: { cookies },
     operation: (contextSpec) => getCurrentUser(contextSpec),
@@ -42,5 +42,5 @@ export const authActionClient = actionClient.middleware(async ({ next }) => {
     throw new Error('Session is not valid!');
   }
 
-  return next({ userId: currentUser.userId });
+  return next({ ctx: { userId: currentUser.userId } });
 });

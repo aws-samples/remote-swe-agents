@@ -10,9 +10,11 @@ import { MessageItem, SessionItem } from '@remote-swe-agents/agent-core/schema';
 
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
-  .action(async ({ message, imageKeys = [] }, { userId }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const workerId = `webapp-${Date.now()}`;
+    const { message, imageKeys = [] } = parsedInput;
     const now = Date.now();
+    const { userId } = ctx;
 
     const content = [];
     content.push({ text: renderUserMessage({ message }) });
