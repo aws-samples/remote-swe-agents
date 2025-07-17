@@ -63,6 +63,8 @@
     "copyMessage": "メッセージをコピー",
     "copySuccess": "クリップボードにコピーしました",
     "copyFailed": "コピーに失敗しました",
+    "showThinking": "思考内容を表示",
+    "hideThinking": "思考内容を非表示",
     "scrollToTop": "一番上までスクロール",
     "scrollToBottom": "一番下までスクロール",
     "todoList": "Todoリスト",

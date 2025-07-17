@@ -56,6 +56,13 @@ export default async function SessionPage({ params }: SessionPageProps) {
               const messageText = formatMessage(input?.message ?? '');
               const key = getAttachedImageKey(workerId, toolUseId, input.imagePath);
 
+              // Extract reasoning content if available
+              let reasoningText: string | undefined;
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
+              if (reasoningBlocks.length > 0) {
+                reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
+              }
+
               messages.push({
                 id: `${item.SK}-${i}-${toolUseId}`,
                 role: 'assistant',
@@ -64,10 +71,19 @@ export default async function SessionPage({ params }: SessionPageProps) {
                 type: 'message',
                 imageKeys: [key],
                 thinkingBudget: item.thinkingBudget,
+                reasoningText,
               });
             } else {
               // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
               const messageText = formatMessage(input?.message ?? '');
+
+              // Extract reasoning content if available
+              let reasoningText: string | undefined;
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
+              if (reasoningBlocks.length > 0) {
+                reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
+              }
+
               if (messageText) {
                 messages.push({
                   id: `${item.SK}-${i}-${toolUseId}`,
@@ -76,6 +92,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
                   timestamp: new Date(parseInt(item.SK)),
                   type: 'message',
                   thinkingBudget: item.thinkingBudget,
+                  reasoningText,
                 });
               }
             }
@@ -144,6 +161,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
       case 'assistant': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const formatted = formatMessage(text);
+
+        // Extract reasoning content if available
+        let reasoningText: string | undefined;
+        const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
+        if (reasoningBlocks.length > 0) {
+          reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
+        }
+
         if (formatted) {
           messages.push({
             id: `${item.SK}-${i}`,
@@ -152,6 +177,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
             timestamp: new Date(parseInt(item.SK)),
             type: 'message',
             thinkingBudget: item.thinkingBudget,
+            reasoningText,
           });
         }
         break;

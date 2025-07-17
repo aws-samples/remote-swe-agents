@@ -9,6 +9,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     message: z.string(),
     timestamp: z.number(),
     thinkingBudget: z.number().optional(),
+    reasoningText: z.string().optional(),
   }),
   z.object({
     type: z.literal('toolUse'),
@@ -18,6 +19,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     input: z.string(),
     timestamp: z.number(),
     thinkingBudget: z.number().optional(),
+    reasoningText: z.string().optional(),
   }),
   z.object({
     type: z.literal('toolResult'),

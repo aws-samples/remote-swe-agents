@@ -1,5 +1,5 @@
-import React from 'react';
-import { Copy } from 'lucide-react';
+import React, { useState } from 'react';
+import { Copy, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { MessageView } from './MessageList';
@@ -17,6 +17,7 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const copyMessageToClipboard = (content: string) => {
     navigator.clipboard
@@ -51,6 +52,26 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
           <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
               <div className="flex-1">
+                {message.reasoningText && (
+                  <div className="mb-3">
+                    <button
+                      onClick={() => setShowReasoning(!showReasoning)}
+                      className="flex items-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-1"
+                    >
+                      {showReasoning ? (
+                        <ChevronDown className="w-3.5 h-3.5 mr-1" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      {showReasoning ? t('hideThinking') || 'Hide thinking' : t('showThinking') || 'Show thinking'}
+                    </button>
+                    {showReasoning && (
+                      <div className="mt-1 p-2 rounded-md bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        <MarkdownRenderer content={message.reasoningText} />
+                      </div>
+                    )}
+                  </div>
+                )}
                 {message.role === 'user' ? (
                   <UrlRenderer content={message.content} />
                 ) : (

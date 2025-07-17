@@ -144,6 +144,7 @@ export default function SessionPageClient({
                     timestamp: new Date(event.timestamp),
                     type: 'message',
                     thinkingBudget: event.thinkingBudget,
+                    reasoningText: event.reasoningText,
                   },
                 ]);
               }
@@ -185,6 +186,7 @@ export default function SessionPageClient({
                     timestamp: new Date(event.timestamp),
                     type: 'message',
                     thinkingBudget: event.thinkingBudget,
+                    reasoningText: event.reasoningText,
                   },
                 ]);
               }

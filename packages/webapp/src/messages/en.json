@@ -63,6 +63,8 @@
     "copyMessage": "Copy message",
     "copySuccess": "Copied to clipboard",
     "copyFailed": "Failed to copy",
+    "showThinking": "Show thinking",
+    "hideThinking": "Hide thinking",
     "scrollToTop": "Scroll to top",
     "scrollToBottom": "Scroll to bottom",
     "todoList": "Todo List",

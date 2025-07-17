@@ -355,12 +355,20 @@ Users will primarily request software engineering assistance including bug fixes
         if (toolUse == null || toolUseId == null) {
           throw new Error('toolUse is null');
         }
+        // Extract reasoning content if available
+        const reasoningBlocks = toolUseMessage.content?.filter((block) => block.reasoningContent) ?? [];
+        let reasoningText: string | undefined;
+        if (reasoningBlocks.length > 0) {
+          reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
+        }
+
         await sendWebappEvent(workerId, {
           type: 'toolUse',
           toolName: toolUse.name ?? '',
           toolUseId: toolUseId,
           input: JSON.stringify(toolUse.input),
           thinkingBudget: detectedBudget,
+          reasoningText,
         });
         let toolResult = '';
         let toolResultObject: ToolResultContentBlock[] | undefined = undefined;
