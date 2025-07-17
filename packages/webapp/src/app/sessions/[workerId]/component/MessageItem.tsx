@@ -58,7 +58,7 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                   <MarkdownRenderer content={message.content} />
                 )}
                 {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
-                
+
                 {message.reasoningText && (
                   <div className="mt-2">
                     <button

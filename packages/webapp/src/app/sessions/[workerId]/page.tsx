@@ -58,11 +58,11 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
               // Extract reasoning content if available
               let reasoningText: string | undefined;
-              const reasoningBlocks = message.content?.filter(block => block.reasoningContent) ?? [];
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
               if (reasoningBlocks.length > 0) {
                 reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
               }
-              
+
               messages.push({
                 id: `${item.SK}-${i}-${toolUseId}`,
                 role: 'assistant',
@@ -76,14 +76,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
             } else {
               // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
               const messageText = formatMessage(input?.message ?? '');
-              
+
               // Extract reasoning content if available
               let reasoningText: string | undefined;
-              const reasoningBlocks = message.content?.filter(block => block.reasoningContent) ?? [];
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
               if (reasoningBlocks.length > 0) {
                 reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
               }
-              
+
               if (messageText) {
                 messages.push({
                   id: `${item.SK}-${i}-${toolUseId}`,
@@ -161,14 +161,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
       case 'assistant': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const formatted = formatMessage(text);
-        
+
         // Extract reasoning content if available
         let reasoningText: string | undefined;
-        const reasoningBlocks = message.content?.filter(block => block.reasoningContent) ?? [];
+        const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
         if (reasoningBlocks.length > 0) {
           reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
         }
-        
+
         if (formatted) {
           messages.push({
             id: `${item.SK}-${i}`,

@@ -356,7 +356,7 @@ Users will primarily request software engineering assistance including bug fixes
           throw new Error('toolUse is null');
         }
         // Extract reasoning content if available
-        const reasoningBlocks = toolUseMessage.content?.filter(block => block.reasoningContent) ?? [];
+        const reasoningBlocks = toolUseMessage.content?.filter((block) => block.reasoningContent) ?? [];
         let reasoningText: string | undefined;
         if (reasoningBlocks.length > 0) {
           reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
@@ -479,14 +479,14 @@ Users will primarily request software engineering assistance including bug fixes
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
-      
+
       // Extract reasoning content if available
-      const reasoningBlocks = finalMessage.content?.filter(block => block.reasoningContent) ?? [];
+      const reasoningBlocks = finalMessage.content?.filter((block) => block.reasoningContent) ?? [];
       let reasoningText: string | undefined;
       if (reasoningBlocks.length > 0) {
         reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
       }
-      
+
       // Send message event to webapp with reasoning text
       if (responseTextWithoutThinking.trim() !== '') {
         await sendWebappEvent(workerId, {
@@ -497,7 +497,7 @@ Users will primarily request software engineering assistance including bug fixes
           reasoningText,
         });
       }
-      
+
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
       break;
