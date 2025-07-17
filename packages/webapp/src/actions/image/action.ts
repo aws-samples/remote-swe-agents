@@ -10,7 +10,8 @@ const getImageUrlsSchema = z.object({
   keys: z.array(z.string()),
 });
 
-export const getImageUrls = authActionClient.schema(getImageUrlsSchema).action(async ({ parsedInput: { keys } }) => {
+export const getImageUrls = authActionClient.inputSchema(getImageUrlsSchema).action(async ({ parsedInput }) => {
+  const { keys } = parsedInput;
   if (!BucketName) {
     throw new Error('S3 bucket name is not configured');
   }

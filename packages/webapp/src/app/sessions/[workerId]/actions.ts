@@ -9,8 +9,9 @@ import { sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/ag
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 
 export const sendMessageToAgent = authActionClient
-  .schema(sendMessageToAgentSchema)
-  .action(async ({ parsedInput: { workerId, message, imageKeys = [] }, ctx }) => {
+  .inputSchema(sendMessageToAgentSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { workerId, message, imageKeys = [] } = parsedInput;
     const content = [];
     content.push({ text: renderUserMessage({ message }) });
     imageKeys.forEach((key) => {
@@ -47,22 +48,22 @@ export const sendMessageToAgent = authActionClient
     return { success: true, item };
   });
 
-export const fetchLatestTodoList = authActionClient
-  .schema(fetchTodoListSchema)
-  .action(async ({ parsedInput: { workerId } }) => {
-    const todoList = await getTodoList(workerId);
-    return { todoList };
-  });
+export const fetchLatestTodoList = authActionClient.inputSchema(fetchTodoListSchema).action(async ({ parsedInput }) => {
+  const { workerId } = parsedInput;
+  const todoList = await getTodoList(workerId);
+  return { todoList };
+});
 
 export const updateAgentStatus = authActionClient
-  .schema(updateAgentStatusSchema)
-  .action(async ({ parsedInput: { workerId, status } }) => {
+  .inputSchema(updateAgentStatusSchema)
+  .action(async ({ parsedInput }) => {
+    const { workerId, status } = parsedInput;
     await updateSessionAgentStatus(workerId, status);
-  });
-
-export const sendEventToAgent = authActionClient
-  .schema(sendEventSchema)
-  .action(async ({ parsedInput: { workerId, event } }) => {
-    await sendWorkerEvent(workerId, event);
     return { success: true };
   });
+
+export const sendEventToAgent = authActionClient.inputSchema(sendEventSchema).action(async ({ parsedInput }) => {
+  const { workerId, event } = parsedInput;
+  await sendWorkerEvent(workerId, event);
+  return { success: true };
+});
