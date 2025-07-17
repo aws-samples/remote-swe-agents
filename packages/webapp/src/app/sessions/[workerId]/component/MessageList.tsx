@@ -17,7 +17,7 @@ export type MessageView = {
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse';
   imageKeys?: string[];
-  thinkingBudget?: number; // Added for thinking budget
+  thinkingBudget?: number;
 };
 
 type MessageGroup = {

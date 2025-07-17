@@ -29,7 +29,7 @@ export const saveConversationHistoryAtomic = async (
     role: toolUseMessage.role ?? 'unknown',
     tokenCount: outputTokenCount,
     messageType: 'toolUse',
-    ...(thinkingBudget !== undefined ? { thinkingBudget } : {}),
+    thinkingBudget,
   };
 
   const toolResultItem: MessageItem = {
@@ -63,7 +63,7 @@ export const saveConversationHistory = async (
     role: message.role ?? 'unknown',
     tokenCount,
     messageType,
-    ...(thinkingBudget !== undefined ? { thinkingBudget } : {}),
+    thinkingBudget,
   } satisfies MessageItem;
 
   await ddb.send(

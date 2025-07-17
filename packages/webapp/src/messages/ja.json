@@ -83,6 +83,8 @@
     "initiatedByOtherUsers": "他のユーザーが開始",
     "attachImage": "画像を添付",
     "thinkingBudget": "思考予算",
+    "defaultThinkingBudget": "デフォルト",
+    "ultrathinkInstruction": "メッセージにultrathinkと入力することで、最大の思考予算を付与します",
     "shareSession": "セッションを引き継ぎ",
     "shareSessionDescription": "このテキストをアプリへのメンション付きでSlackに投稿すると、セッションにSlackからメッセージを送ったり通知を受信したりできます。",
     "copyToClipboard": "クリップボードにコピー",
