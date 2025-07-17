@@ -74,7 +74,7 @@ export default function SessionPageClient({
       toast.success(t('forceStopInProgress'));
     },
     onError: (error) => {
-      toast.error(`${t('forceStopError')}: ${error?.error?.serverError?.toString() || error}`);
+      toast.error(`${t('forceStopError')}: ${error?.error?.serverError || error}`);
     },
   });
 
