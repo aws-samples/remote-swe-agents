@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { initializeTodoList, formatTodoList } from '../../lib/todo';
 import { fileEditTool } from '../editor';

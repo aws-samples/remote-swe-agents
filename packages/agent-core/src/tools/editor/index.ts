@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 
@@ -54,7 +55,8 @@ export const fileEditTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: editFile,
   schema: inputSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name,
     description: `
 This tool edits files. For moving/renaming, use the Bash tool with 'mv' instead.
@@ -94,7 +96,8 @@ Best Practices:
 - Bundle multiple edits to same file in one message
 `,
     inputSchema: {
-      json: zodToJsonSchemaBody(inputSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(inputSchema),
+      } as ToolInputSchema,
+  };
+  },
 };

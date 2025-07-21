@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { promises as fs } from 'fs';
 import sharp from 'sharp';
@@ -29,11 +30,13 @@ export const readImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
     ];
   },
   schema: inputSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name,
     description: `Read an image in the local file system. Use this tool to get the visual details of an image. You cannot pass an Internet URL here; you must download the image locally first.`,
     inputSchema: {
-      json: zodToJsonSchemaBody(inputSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(inputSchema),
+      } as ToolInputSchema,
+  };
+  },
 };

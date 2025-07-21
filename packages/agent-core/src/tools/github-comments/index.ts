@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { Octokit } from '@octokit/rest';
 import { authorizeGitHubCli } from '../command-execution/github';
@@ -173,39 +174,45 @@ export const getPRCommentsTool: ToolDefinition<z.infer<typeof getPRCommentsSchem
   name: 'getPRComments',
   handler: getPRCommentsHandler,
   schema: getPRCommentsSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name: 'getPRComments',
     description: 'Get review comments for a specific GitHub PR.',
     inputSchema: {
-      json: zodToJsonSchemaBody(getPRCommentsSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(getPRCommentsSchema),
+      } as ToolInputSchema,
+  };
+  },
 };
 
 export const replyPRCommentTool: ToolDefinition<z.infer<typeof replyPRCommentSchema>> = {
   name: 'replyPRComment',
   handler: replyPRCommentHandler,
   schema: replyPRCommentSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name: 'replyPRComment',
     description: 'Reply to a specific comment in a GitHub pull request.',
     inputSchema: {
-      json: zodToJsonSchemaBody(replyPRCommentSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(replyPRCommentSchema),
+      } as ToolInputSchema,
+  };
+  },
 };
 
 export const addIssueCommentTool: ToolDefinition<z.infer<typeof addIssueCommentSchema>> = {
   name: 'addIssueComment',
   handler: addIssueCommentHandler,
   schema: addIssueCommentSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name: 'addIssueComment',
     description: 'Add a comment to a specific GitHub issue.',
     inputSchema: {
-      json: zodToJsonSchemaBody(addIssueCommentSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(addIssueCommentSchema),
+      } as ToolInputSchema,
+  };
+  },
 };
 
 // Test script code - only runs when file is executed directly

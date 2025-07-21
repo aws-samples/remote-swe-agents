@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { randomBytes } from 'crypto';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -68,14 +69,16 @@ export const cloneRepositoryTool: ToolDefinition<z.infer<typeof inputSchema>> = 
   name,
   handler: cloneRepository,
   schema: inputSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name,
     description: `Clone a GitHub repository into the local file system. Pass the repository's owner organization and name to clone.
 If you do not have write access to the repository, a fork will be created and the repository will be cloned into the forked repository. If the directory with the same name exists, the existing directory is removed and overwritten by the new repository.
 The local file system path to the cloned repository will be returned.
 `,
     inputSchema: {
-      json: zodToJsonSchemaBody(inputSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(inputSchema),
+      } as ToolInputSchema,
+  };
+  },
 };

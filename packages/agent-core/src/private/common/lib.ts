@@ -1,6 +1,5 @@
-import { Tool, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
-import { ZodSchema } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { Tool, ToolInputSchema, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
+import { ZodSchema, z } from 'zod';
 
 export type ToolDefinition<Input> = {
   /**
@@ -12,10 +11,20 @@ export type ToolDefinition<Input> = {
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
 };
 
-export const zodToJsonSchemaBody = (schema: ZodSchema) => {
-  const key = 'mySchema';
-  const jsonSchema = zodToJsonSchema(schema, key);
-  return jsonSchema.definitions?.[key] as any;
+/**
+ * Converts a Zod schema to a JSON schema compatible with Bedrock's ToolInputSchema
+ * @param schema Zod schema to convert
+ * @returns JSON schema
+ */
+export const zodToJsonSchemaBody = (schema: ZodSchema): any => {
+  const jsonSchema = z.toJSONSchema(schema, { 
+    target: "draft-2020-12",
+    unrepresentable: "any" 
+  });
+  
+  // Return the JSON schema as a raw object that can be assigned to the json property
+  // This will be used in toolSpec implementations as { json: zodToJsonSchemaBody(schema) }
+  return jsonSchema;
 };
 
 export const truncate = (str: string, maxLength: number = 10 * 1e3, headRatio = 0.2) => {

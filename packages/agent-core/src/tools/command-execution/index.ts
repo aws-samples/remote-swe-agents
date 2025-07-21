@@ -3,6 +3,7 @@ import { authorizeGitHubCli } from './github';
 import { homedir } from 'os';
 import { join } from 'path';
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { ToolDefinition, truncate, zodToJsonSchemaBody } from '../../private/common/lib';
 import { generateSuggestion } from './suggestion';
 
@@ -153,7 +154,8 @@ export const commandExecutionTool: ToolDefinition<z.infer<typeof inputSchema>> =
   name,
   handler,
   schema: inputSchema,
-  toolSpec: async () => ({
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
     name,
     description: `Execute any shell command. If you need to run a command in a specific directory, set \`cwd\` argument (optional).
 
@@ -175,9 +177,10 @@ Some example commands:
 IMPORTANT: Sometimes the tool result object contains "suggestion" property reflecting the command execution result. When you see it, you must follow the suggested actions.
 `,
     inputSchema: {
-      json: zodToJsonSchemaBody(inputSchema),
-    },
-  }),
+        json: zodToJsonSchemaBody(inputSchema),
+      } as ToolInputSchema,
+  };
+  },
 };
 
 // (async () => {

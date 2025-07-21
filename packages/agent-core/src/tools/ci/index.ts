@@ -1,6 +1,7 @@
 import { setTimeout } from 'timers/promises';
 import { executeCommand } from '../command-execution';
 import { z } from 'zod';
+import { Tool, ToolInputSchema } from '@aws-sdk/client-bedrock-runtime';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 
 const inputSchema = z.object({
@@ -98,12 +99,14 @@ export const ciTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: getLatestRunResult,
   schema: inputSchema,
-  toolSpec: async () => ({
-    name,
-    description: `Wait for the GitHub Actions workflow to complete and get its status and logs for a specific PR.
+  toolSpec: async (): Promise<NonNullable<Tool['toolSpec']>> => {
+    return {
+      name,
+      description: `Wait for the GitHub Actions workflow to complete and get its status and logs for a specific PR.
 IMPORTANT: You should always use this tool after pushing a commit to pull requests unless user requested otherwise.`,
-    inputSchema: {
-      json: zodToJsonSchemaBody(inputSchema),
-    },
-  }),
+      inputSchema: {
+        json: zodToJsonSchemaBody(inputSchema),
+      } as ToolInputSchema,
+    };
+  },
 };
