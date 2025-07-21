@@ -31,7 +31,9 @@ Remote SWE エージェントによるセッション例：
 
 ## インストール手順
 
-このプロジェクトはニーズに応じて2つのインストールパターンをサポートしています。要件に最も適したパターンを選択してください：
+最小限の設定で簡単にデプロイするには、ワンクリックデプロイメントソリューションをご利用いただけます: [AWS Sample One-Click Generative AI Solutions](https://aws-samples.github.io/sample-one-click-generative-ai-solutions/)
+
+このプロジェクトはニーズに応じて2つの詳細なインストールパターンもサポートしています。要件に最も適したパターンを選択してください：
 
 - **パターンA（Webインターフェースのみ）**：webappアクセスのみのクイックセットアップ
 - **パターンB（Web + Slack統合）**：webappとSlackボット機能の両方を含む完全セットアップ
