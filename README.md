@@ -35,7 +35,9 @@ You can view all the public pull requests created by the agent [here](https://gi
 
 ## Installation Steps
 
-This project supports two installation patterns depending on your needs. Choose the pattern that best fits your requirements:
+For a simple deployment with minimal configuration, you can use our one-click deployment solution: [AWS Sample One-Click Generative AI Solutions](https://aws-samples.github.io/sample-one-click-generative-ai-solutions/)
+
+This project also supports two detailed installation patterns depending on your needs. Choose the pattern that best fits your requirements:
 
 - **Pattern A (Web Interface Only)**: Quick setup for webapp access only
 - **Pattern B (Web + Slack Integration)**: Full setup with both webapp and Slack bot functionality
