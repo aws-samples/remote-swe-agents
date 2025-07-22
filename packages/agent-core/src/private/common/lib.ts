@@ -1,6 +1,5 @@
 import { Tool, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
-import z from 'zod';
-import { $ZodType } from 'zod/v4/core';
+import z, { ZodType } from 'zod';
 
 export type ToolDefinition<Input> = {
   /**
@@ -8,11 +7,11 @@ export type ToolDefinition<Input> = {
    */
   readonly name: string;
   readonly handler: (input: Input, context: { toolUseId: string }) => Promise<string | ToolResultContentBlock[]>;
-  readonly schema: $ZodType;
+  readonly schema: ZodType;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
 };
 
-export const zodToJsonSchemaBody = (schema: $ZodType) => {
+export const zodToJsonSchemaBody = (schema: ZodType) => {
   return z.toJSONSchema(schema) as any;
 };
 
