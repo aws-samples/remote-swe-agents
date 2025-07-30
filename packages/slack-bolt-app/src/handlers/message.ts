@@ -106,7 +106,7 @@ export async function handleMessage(
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `Hi <@${userId}>, please wait for your agent to launch.\n\n*Useful Tips:*`,
+                text: `${userId ? `Hi <@${userId}>, p` : 'P'}lease wait for your agent to launch.\n\n*Useful Tips:*`,
               },
             },
             {

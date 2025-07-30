@@ -11,9 +11,7 @@ export const saveConversationHistory = async (
   imageS3Keys: string[] = []
 ) => {
   const content = [];
-  if (message) {
-    content.push({ text: renderUserMessage({ message }) });
-  }
+  content.push({ text: renderUserMessage({ message }) });
   imageS3Keys.forEach((key) => {
     content.push({
       image: {
