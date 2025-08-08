@@ -22,7 +22,16 @@ const ULTRA_THINKING_KEYWORD = 'ultrathink';
 
 const defaultOutputTokenCount = 8192;
 
-const modelTypeSchema = z.enum(['sonnet3.5v1', 'sonnet3.5', 'sonnet3.7', 'haiku3.5', 'nova-pro', 'opus4', 'sonnet4']);
+const modelTypeSchema = z.enum([
+  'sonnet3.5v1',
+  'sonnet3.5',
+  'sonnet3.7',
+  'haiku3.5',
+  'nova-pro',
+  'opus4',
+  'opus4.1',
+  'sonnet4',
+]);
 type ModelType = z.infer<typeof modelTypeSchema>;
 
 const modelConfigSchema = z.object({
@@ -63,6 +72,13 @@ const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>
     toolChoiceSupport: ['auto'],
   },
   opus4: {
+    maxOutputTokens: 32_000,
+    maxInputTokens: 200_000,
+    cacheSupport: ['system', 'message', 'tool'],
+    reasoningSupport: true,
+    toolChoiceSupport: ['any', 'auto', 'tool'],
+  },
+  'opus4.1': {
     maxOutputTokens: 32_000,
     maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
@@ -292,6 +308,9 @@ const chooseModelAndRegion = (modelType: ModelType) => {
       break;
     case 'opus4':
       modelId = 'anthropic.claude-opus-4-20250514-v1:0';
+      break;
+    case 'opus4.1':
+      modelId = 'anthropic.claude-opus-4-1-20250805-v1:0';
       break;
     case 'sonnet4':
       modelId = 'anthropic.claude-sonnet-4-20250514-v1:0';
