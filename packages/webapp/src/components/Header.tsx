@@ -75,12 +75,6 @@ export default function Header() {
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/settings/prompt" className="w-full cursor-default flex items-center" prefetch={false}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>{t('promptSettings')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link href="/settings/api-keys" className="w-full cursor-default flex items-center" prefetch={false}>
                     <Key className="mr-2 h-4 w-4" />
                     <span>{t('apiKeys')}</span>
@@ -103,6 +97,12 @@ export default function Header() {
                       <path d="M12 18V6" />
                     </svg>
                     <span>{t('costAnalysis')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings/prompt" className="w-full cursor-default flex items-center" prefetch={false}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>{t('preferences')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

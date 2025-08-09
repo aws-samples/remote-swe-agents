@@ -14,7 +14,7 @@ interface PromptFormProps {
 
 export default function PromptForm({ initialPrompt }: PromptFormProps) {
   const [prompt, setPrompt] = useState<string>(initialPrompt);
-  const t = useTranslations('prompt_settings');
+  const t = useTranslations('preferences.prompt');
 
   const { execute: savePrompt, status: saveStatus } = useAction(savePromptAction, {
     onSuccess: () => {
