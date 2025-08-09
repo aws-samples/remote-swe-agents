@@ -428,6 +428,10 @@ Users will primarily request software engineering assistance including bug fixes
 
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
+            // Capture progress report messages for title generation
+            if (typeof toolInput === 'object' && toolInput.message) {
+              conversation += `Assistant: ${toolInput.message}\n`;
+            }
           }
           if (name == cloneRepositoryTool.name) {
             // now that repository is determined, we try to update the system prompt
@@ -493,6 +497,9 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
   // Update agent status to 'working' when starting a turn
   await updateAgentStatusWithEvent(workerId, 'working');
 
+  // Initialize conversation context for title generation
+  let conversation = '';
+
   try {
     await agentLoop(workerId, cancellationToken);
   } finally {
@@ -509,10 +516,19 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       if (session && !session.title) {
         try {
           const { items } = await getConversationHistory(workerId);
-          const firstUserMessage = items.find((item) => item.messageType === 'userMessage');
 
-          if (firstUserMessage && firstUserMessage.content) {
-            const title = await generateSessionTitle(firstUserMessage.content);
+          // Build conversation context with User and Assistant messages
+          for (const item of items) {
+            if (item.messageType === 'userMessage' && item.content) {
+              conversation += `User: ${item.content}\n`;
+            } else if (item.messageType === 'assistantMessage' && item.content) {
+              conversation += `Assistant: ${item.content}\n`;
+            }
+          }
+
+          // Generate title using the full conversation context
+          if (conversation) {
+            const title = await generateSessionTitle(conversation);
             await updateSessionTitle(workerId, title);
             console.log(`Generated title for session ${workerId}: ${title}`);
           }
