@@ -46,7 +46,16 @@ import { CancellationToken } from '../common/cancellation-token';
 import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 
-const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
+// Interface to collect conversation data
+interface ConversationCollector {
+  text: string;
+}
+
+const agentLoop = async (
+  workerId: string,
+  cancellationToken: CancellationToken,
+  conversationCollector: ConversationCollector = { text: '' }
+) => {
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -429,8 +438,13 @@ Users will primarily request software engineering assistance including bug fixes
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
             // Capture progress report messages for title generation
-            if (typeof toolInput === 'object' && toolInput.message) {
-              conversation += `Assistant: ${toolInput.message}\n`;
+            if (
+              typeof toolInput === 'object' &&
+              toolInput !== null &&
+              'message' in toolInput &&
+              typeof toolInput.message === 'string'
+            ) {
+              conversationCollector.text += `Assistant: ${toolInput.message}\n`;
             }
           }
           if (name == cloneRepositoryTool.name) {
@@ -497,11 +511,11 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
   // Update agent status to 'working' when starting a turn
   await updateAgentStatusWithEvent(workerId, 'working');
 
-  // Initialize conversation context for title generation
-  let conversation = '';
+  // Initialize conversation collector
+  const conversationCollector: ConversationCollector = { text: '' };
 
   try {
-    await agentLoop(workerId, cancellationToken);
+    await agentLoop(workerId, cancellationToken, conversationCollector);
   } finally {
     if (cancellationToken.isCancelled) {
       // execute any callback when set in the cancellation token.
@@ -520,15 +534,15 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
           // Build conversation context with User and Assistant messages
           for (const item of items) {
             if (item.messageType === 'userMessage' && item.content) {
-              conversation += `User: ${item.content}\n`;
+              conversationCollector.text += `User: ${item.content}\n`;
             } else if (item.messageType === 'assistantMessage' && item.content) {
-              conversation += `Assistant: ${item.content}\n`;
+              conversationCollector.text += `Assistant: ${item.content}\n`;
             }
           }
 
           // Generate title using the full conversation context
-          if (conversation) {
-            const title = await generateSessionTitle(conversation);
+          if (conversationCollector.text) {
+            const title = await generateSessionTitle(conversationCollector.text);
             await updateSessionTitle(workerId, title);
             console.log(`Generated title for session ${workerId}: ${title}`);
           }
