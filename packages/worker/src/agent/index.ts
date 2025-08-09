@@ -46,16 +46,9 @@ import { CancellationToken } from '../common/cancellation-token';
 import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 
-// Interface to collect conversation data
-interface ConversationCollector {
-  text: string;
-}
-
-const agentLoop = async (
-  workerId: string,
-  cancellationToken: CancellationToken,
-  conversationCollector: ConversationCollector = { text: '' }
-) => {
+const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
+  // For session title generation
+  let conversation = '';
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -444,7 +437,7 @@ Users will primarily request software engineering assistance including bug fixes
               'message' in toolInput &&
               typeof toolInput.message === 'string'
             ) {
-              conversationCollector.text += `Assistant: ${toolInput.message}\n`;
+              conversation += `Assistant: ${toolInput.message}\n`;
             }
           }
           if (name == cloneRepositoryTool.name) {
@@ -511,11 +504,8 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
   // Update agent status to 'working' when starting a turn
   await updateAgentStatusWithEvent(workerId, 'working');
 
-  // Initialize conversation collector
-  const conversationCollector: ConversationCollector = { text: '' };
-
   try {
-    await agentLoop(workerId, cancellationToken, conversationCollector);
+    await agentLoop(workerId, cancellationToken);
   } finally {
     if (cancellationToken.isCancelled) {
       // execute any callback when set in the cancellation token.
@@ -530,19 +520,20 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       if (session && !session.title) {
         try {
           const { items } = await getConversationHistory(workerId);
+          let conversationText = '';
 
           // Build conversation context with User and Assistant messages
           for (const item of items) {
             if (item.messageType === 'userMessage' && item.content) {
-              conversationCollector.text += `User: ${item.content}\n`;
+              conversationText += `User: ${item.content}\n`;
             } else if (item.messageType === 'assistantMessage' && item.content) {
-              conversationCollector.text += `Assistant: ${item.content}\n`;
+              conversationText += `Assistant: ${item.content}\n`;
             }
           }
 
           // Generate title using the full conversation context
-          if (conversationCollector.text) {
-            const title = await generateSessionTitle(conversationCollector.text);
+          if (conversationText) {
+            const title = await generateSessionTitle(conversationText);
             await updateSessionTitle(workerId, title);
             console.log(`Generated title for session ${workerId}: ${title}`);
           }
