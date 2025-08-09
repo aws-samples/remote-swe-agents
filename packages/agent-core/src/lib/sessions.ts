@@ -126,7 +126,7 @@ export const updateSessionVisibility = async (workerId: string, isHidden: boolea
 export const generateSessionTitle = async (message: string): Promise<string> => {
   try {
     const client = new BedrockRuntimeClient({ region: 'us-west-2' });
-    
+
     const prompt = `
     Based on the following message, create a concise title that is 10 characters or less.
     The title should be brief but descriptive of the message content or intent.
@@ -136,7 +136,7 @@ export const generateSessionTitle = async (message: string): Promise<string> => 
     
     Title:
     `;
-    
+
     const command = new InvokeModelCommand({
       modelId: 'anthropic.claude-3-5-haiku-20241022-v1:0',
       contentType: 'application/json',
@@ -146,19 +146,19 @@ export const generateSessionTitle = async (message: string): Promise<string> => 
         temperature: 0.7,
       }),
     });
-    
+
     const response = await client.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
     let title = responseBody.completion.trim();
-    
+
     // Remove any quotes if the model included them
     title = title.replace(/^["']|["']$/g, '');
-    
+
     // Ensure title is 10 characters or less
     if (title.length > 10) {
       title = title.substring(0, 10);
     }
-    
+
     return title;
   } catch (error) {
     console.error('Error generating session title:', error);

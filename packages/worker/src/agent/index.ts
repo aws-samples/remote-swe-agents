@@ -503,14 +503,14 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       // Update agent status to 'pending' when finishing a turn.
       // When the turn is cancelled, do not update the status to avoid race condition.
       await updateAgentStatusWithEvent(workerId, 'pending');
-      
+
       // Generate session title if it doesn't exist yet
       const session = await getSession(workerId);
       if (session && !session.title) {
         try {
           const { items } = await getConversationHistory(workerId);
-          const firstUserMessage = items.find(item => item.messageType === 'userMessage');
-          
+          const firstUserMessage = items.find((item) => item.messageType === 'userMessage');
+
           if (firstUserMessage && firstUserMessage.content) {
             const title = await generateSessionTitle(firstUserMessage.content);
             await updateSessionTitle(workerId, title);
