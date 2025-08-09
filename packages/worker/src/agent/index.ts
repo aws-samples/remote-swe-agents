@@ -17,6 +17,9 @@ import {
   sendSystemMessage,
   updateSessionCost,
   readCommonPrompt,
+  getSession,
+  generateSessionTitle,
+  updateSessionTitle,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -44,6 +47,8 @@ import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
+  // For session title generation
+  let conversation = '';
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -425,6 +430,15 @@ Users will primarily request software engineering assistance including bug fixes
 
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
+            // Capture progress report messages for title generation
+            if (
+              typeof toolInput === 'object' &&
+              toolInput !== null &&
+              'message' in toolInput &&
+              typeof toolInput.message === 'string'
+            ) {
+              conversation += `Assistant: ${toolInput.message}\n`;
+            }
           }
           if (name == cloneRepositoryTool.name) {
             // now that repository is determined, we try to update the system prompt
@@ -500,6 +514,34 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       // Update agent status to 'pending' when finishing a turn.
       // When the turn is cancelled, do not update the status to avoid race condition.
       await updateAgentStatusWithEvent(workerId, 'pending');
+
+      // Generate session title if it doesn't exist yet
+      const session = await getSession(workerId);
+      if (session && !session.title) {
+        try {
+          const { items } = await getConversationHistory(workerId);
+          let conversationText = '';
+
+          // Build conversation context with User and Assistant messages
+          for (const item of items) {
+            if (item.messageType === 'userMessage' && item.content) {
+              conversationText += `User: ${item.content}\n`;
+            } else if (item.messageType === 'assistantMessage' && item.content) {
+              conversationText += `Assistant: ${item.content}\n`;
+            }
+          }
+
+          // Generate title using the full conversation context
+          if (conversationText) {
+            const title = await generateSessionTitle(conversationText);
+            await updateSessionTitle(workerId, title);
+            console.log(`Generated title for session ${workerId}: ${title}`);
+          }
+        } catch (error) {
+          console.error(`Error generating session title for ${workerId}:`, error);
+          // Continue even if title generation fails
+        }
+      }
     }
   }
 };
