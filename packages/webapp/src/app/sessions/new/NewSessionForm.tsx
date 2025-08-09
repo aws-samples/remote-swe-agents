@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, FileText } from 'lucide-react';
 import { createNewWorker } from './actions';
@@ -19,22 +18,17 @@ interface NewSessionFormProps {
 }
 
 export default function NewSessionForm({ templates }: NewSessionFormProps) {
-  const router = useRouter();
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const {
     form: { register, formState, reset, setValue, watch },
-    action: { isExecuting },
+    action: { isPending },
     handleSubmitWithAction,
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
     actionProps: {
-      onSuccess: (args) => {
-        if (args.data) {
-          router.push(`/sessions/${args.data.workerId}`);
-        }
-      },
+      onSuccess: (args) => {},
       onError: ({ error }) => {
         toast.error(typeof error === 'string' ? error : 'Failed to create session');
       },
@@ -78,7 +72,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
               <Button
                 type="button"
                 onClick={() => setIsTemplateModalOpen(true)}
-                disabled={isExecuting}
+                disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
@@ -89,7 +83,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
               <Button
                 type="button"
                 onClick={handleImageSelect}
-                disabled={isExecuting}
+                disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
@@ -106,13 +100,13 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
             placeholder={t('placeholder')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
             rows={4}
-            disabled={isExecuting}
+            disabled={isPending}
             onPaste={handlePaste}
             onKeyDown={(e) => {
               if (
                 e.key === 'Enter' &&
                 (e.ctrlKey || e.altKey || e.metaKey) &&
-                !isExecuting &&
+                !isPending &&
                 formState.isValid &&
                 !isUploading
               ) {
@@ -129,15 +123,11 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
             <TooltipTrigger asChild>
               <Button
                 type="submit"
-                disabled={isExecuting || !formState.isValid || isUploading}
+                disabled={isPending || !formState.isValid || isUploading}
                 className="w-full"
                 size="lg"
               >
-                {isExecuting
-                  ? t('creatingSession')
-                  : isUploading
-                    ? t('waitingForImageUpload')
-                    : t('createSessionButton')}
+                {isPending ? t('creatingSession') : isUploading ? t('waitingForImageUpload') : t('createSessionButton')}
               </Button>
             </TooltipTrigger>
             <TooltipContent>

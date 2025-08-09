@@ -7,6 +7,7 @@ import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { getOrCreateWorkerInstance, renderUserMessage } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem, SessionItem } from '@remote-swe-agents/agent-core/schema';
+import { redirect } from 'next/navigation';
 
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
@@ -78,5 +79,5 @@ export const createNewWorker = authActionClient
     // Send worker event to notify message received
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
-    return { workerId };
+    redirect(`/sessions/${workerId}`);
   });
