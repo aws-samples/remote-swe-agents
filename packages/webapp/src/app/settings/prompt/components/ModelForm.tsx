@@ -13,7 +13,7 @@ export default function ModelForm() {
 
   const { execute: fetchSettings } = useAction(getModelSettingAction, {
     onSuccess: (result) => {
-      if ('modelId' in result && result.modelId) {
+      if ('modelId' in result && typeof result.modelId === 'string') {
         setSelectedModel(result.modelId);
       }
       setIsLoading(false);
