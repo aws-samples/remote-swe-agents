@@ -98,17 +98,58 @@ export const bedrockConverse = async (
   workerId: string,
   modelTypes: ModelType[],
   input: Omit<ConverseCommandInput, 'modelId'>,
-  maxTokensExceededCount = 0
+  maxTokensExceededCount = 0,
+  customModelOverride?: string,
 ): Promise<{ response: ConverseResponse; thinkingBudget?: number }> => {
   if (maxTokensExceededCount > 5) {
     throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
   }
   try {
-    const modelOverride = modelTypeSchema
-      .optional()
-      // empty string to undefined
-      .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
-    const modelType = modelOverride || chooseRandom(modelTypes);
+    // Resolution priority:
+    // 1. customModelOverride (from MessageItem.modelOverride)
+    // 2. DynamoDB global setting
+    // 3. Environment variable MODEL_OVERRIDE
+    // 4. Default model selection logic
+    
+    let resolvedModelType: ModelType | undefined;
+    
+    // Priority 1: Use customModelOverride if provided (from MessageItem)
+    if (customModelOverride) {
+      resolvedModelType = modelTypeSchema.optional().parse(customModelOverride);
+      if (resolvedModelType) {
+        console.log(`Using model override from MessageItem: ${resolvedModelType}`);
+      }
+    }
+    
+    // Priority 2: Try to get global config from DynamoDB if Priority 1 is not set
+    if (!resolvedModelType) {
+      try {
+        const globalModelConfig = await getModelConfig();
+        if (globalModelConfig) {
+          resolvedModelType = modelTypeSchema.optional().parse(globalModelConfig);
+          if (resolvedModelType) {
+            console.log(`Using global model config from DynamoDB: ${resolvedModelType}`);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching global model config:', err);
+        // Continue to next priority
+      }
+    }
+    
+    // Priority 3: Use environment variable if Priorities 1-2 are not set
+    if (!resolvedModelType) {
+      resolvedModelType = modelTypeSchema
+        .optional()
+        // empty string to undefined
+        .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
+      if (resolvedModelType) {
+        console.log(`Using model override from environment: ${resolvedModelType}`);
+      }
+    }
+    
+    // Priority 4: Default selection logic if all above fail
+    const modelType = resolvedModelType || chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);
     console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
     const { input: processedInput, thinkingBudget } = preProcessInput(

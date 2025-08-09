@@ -11,7 +11,7 @@ import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 export const sendMessageToAgent = authActionClient
   .inputSchema(sendMessageToAgentSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { workerId, message, imageKeys = [] } = parsedInput;
+    const { workerId, message, imageKeys = [], modelOverride } = parsedInput;
     const content = [];
     content.push({ text: renderUserMessage({ message }) });
     imageKeys.forEach((key) => {
@@ -32,6 +32,7 @@ export const sendMessageToAgent = authActionClient
       role: 'user',
       tokenCount: 0,
       messageType: 'userMessage',
+      modelOverride,
     };
 
     await ddb.send(

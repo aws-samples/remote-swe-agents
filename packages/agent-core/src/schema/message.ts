@@ -13,4 +13,8 @@ export type MessageItem = {
    * Thinking budget in tokens when ultrathink is enabled
    */
   thinkingBudget?: number;
+  /**
+   * Override the model to use for this message
+   */
+  modelOverride?: string;
 };

@@ -283,6 +283,13 @@ Users will primarily request software engineering assistance including bug fixes
         try {
           if (cancellationToken.isCancelled) return;
 
+          // Check if there's a model override in the latest message from the user
+          let modelOverride: string | undefined;
+          const latestUserMessage = items.filter(item => item.role === 'user').pop();
+          if (latestUserMessage && latestUserMessage.modelOverride) {
+            modelOverride = latestUserMessage.modelOverride;
+          }
+
           const converseResult = await bedrockConverse(
             workerId,
             ['sonnet3.7'],
@@ -291,7 +298,8 @@ Users will primarily request software engineering assistance including bug fixes
               system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
               toolConfig,
             },
-            maxTokensExceededCount
+            maxTokensExceededCount,
+            modelOverride
           );
 
           const res = converseResult.response;

@@ -5,6 +5,7 @@ export const sendMessageToAgentSchema = z.object({
   workerId: z.string(),
   message: z.string(),
   imageKeys: z.array(z.string()).optional(),
+  modelOverride: z.string().optional(),
 });
 
 export const fetchTodoListSchema = z.object({

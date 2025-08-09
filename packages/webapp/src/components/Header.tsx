@@ -100,7 +100,7 @@ export default function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings/prompt" className="w-full cursor-default flex items-center" prefetch={false}>
+                  <Link href="/settings" className="w-full cursor-default flex items-center" prefetch={false}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t('preferences')}</span>
                   </Link>
