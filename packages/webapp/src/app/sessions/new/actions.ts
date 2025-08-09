@@ -79,5 +79,5 @@ export const createNewWorker = authActionClient
     // Send worker event to notify message received
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
-    redirect(`/sessions/${workerId}`)
+    redirect(`/sessions/${workerId}`);
   });

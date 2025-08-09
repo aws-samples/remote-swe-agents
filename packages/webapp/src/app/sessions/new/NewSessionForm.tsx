@@ -28,8 +28,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
     handleSubmitWithAction,
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
     actionProps: {
-      onSuccess: (args) => {
-      },
+      onSuccess: (args) => {},
       onError: ({ error }) => {
         toast.error(typeof error === 'string' ? error : 'Failed to create session');
       },
@@ -128,11 +127,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
                 className="w-full"
                 size="lg"
               >
-                {isPending
-                  ? t('creatingSession')
-                  : isUploading
-                    ? t('waitingForImageUpload')
-                    : t('createSessionButton')}
+                {isPending ? t('creatingSession') : isUploading ? t('waitingForImageUpload') : t('createSessionButton')}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
