@@ -17,6 +17,9 @@ import {
   sendSystemMessage,
   updateSessionCost,
   readCommonPrompt,
+  getSession,
+  generateSessionTitle,
+  updateSessionTitle,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -500,6 +503,24 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       // Update agent status to 'pending' when finishing a turn.
       // When the turn is cancelled, do not update the status to avoid race condition.
       await updateAgentStatusWithEvent(workerId, 'pending');
+      
+      // Generate session title if it doesn't exist yet
+      const session = await getSession(workerId);
+      if (session && !session.title) {
+        try {
+          const { items } = await getConversationHistory(workerId);
+          const firstUserMessage = items.find(item => item.messageType === 'userMessage');
+          
+          if (firstUserMessage && firstUserMessage.content) {
+            const title = await generateSessionTitle(firstUserMessage.content);
+            await updateSessionTitle(workerId, title);
+            console.log(`Generated title for session ${workerId}: ${title}`);
+          }
+        } catch (error) {
+          console.error(`Error generating session title for ${workerId}:`, error);
+          // Continue even if title generation fails
+        }
+      }
     }
   }
 };
