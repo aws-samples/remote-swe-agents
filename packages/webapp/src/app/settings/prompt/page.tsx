@@ -3,6 +3,7 @@ import { readCommonPrompt } from '@remote-swe-agents/agent-core/lib';
 import PromptForm from './components/PromptForm';
 import PreferenceSection from './components/PreferenceSection';
 import { getTranslations } from 'next-intl/server';
+import ModelSettings from './components/model/ModelSettings';
 
 export default async function PreferencesPage() {
   // Get the current prompt directly in server component
@@ -26,7 +27,12 @@ export default async function PreferencesPage() {
             <PromptForm initialPrompt={additionalSystemPrompt} />
           </PreferenceSection>
 
-          {/* Future preference sections can be added here */}
+          <PreferenceSection
+            title="Foundation Model"
+            description="Select the default foundation model to use for all agents. Individual agents can override this setting."
+          >
+            <ModelSettings />
+          </PreferenceSection>
         </div>
       </main>
     </div>

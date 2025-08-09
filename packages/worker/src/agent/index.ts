@@ -285,7 +285,7 @@ Users will primarily request software engineering assistance including bug fixes
 
           // Check if there's a model override in the latest message from the user
           let modelOverride: string | undefined;
-          const latestUserMessage = items.filter(item => item.role === 'user').pop();
+          const latestUserMessage = items.filter((item) => item.role === 'user').pop();
           if (latestUserMessage && latestUserMessage.modelOverride) {
             modelOverride = latestUserMessage.modelOverride;
           }

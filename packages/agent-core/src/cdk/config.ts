@@ -4,7 +4,7 @@ import { CONFIG_TABLE_NAME } from '../schema/config';
 
 export async function createConfigTable() {
   const client = new DynamoDBClient({});
-  
+
   try {
     const command = new CreateTableCommand({
       TableName: CONFIG_TABLE_NAME,
@@ -18,7 +18,7 @@ export async function createConfigTable() {
       ],
       BillingMode: 'PAY_PER_REQUEST',
     });
-    
+
     await client.send(command);
     console.log(`Config table created: ${CONFIG_TABLE_NAME}`);
     return true;

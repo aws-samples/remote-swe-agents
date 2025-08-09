@@ -100,7 +100,7 @@ export const bedrockConverse = async (
   modelTypes: ModelType[],
   input: Omit<ConverseCommandInput, 'modelId'>,
   maxTokensExceededCount = 0,
-  customModelOverride?: string,
+  customModelOverride?: string
 ): Promise<{ response: ConverseResponse; thinkingBudget?: number }> => {
   if (maxTokensExceededCount > 5) {
     throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
@@ -111,9 +111,9 @@ export const bedrockConverse = async (
     // 2. DynamoDB global setting
     // 3. Environment variable MODEL_OVERRIDE
     // 4. Default model selection logic
-    
+
     let resolvedModelType: ModelType | undefined;
-    
+
     // Priority 1: Use customModelOverride if provided (from MessageItem)
     if (customModelOverride) {
       resolvedModelType = modelTypeSchema.optional().parse(customModelOverride);
@@ -121,7 +121,7 @@ export const bedrockConverse = async (
         console.log(`Using model override from MessageItem: ${resolvedModelType}`);
       }
     }
-    
+
     // Priority 2: Try to get global config from DynamoDB if Priority 1 is not set
     if (!resolvedModelType) {
       try {
@@ -137,7 +137,7 @@ export const bedrockConverse = async (
         // Continue to next priority
       }
     }
-    
+
     // Priority 3: Use environment variable if Priorities 1-2 are not set
     if (!resolvedModelType) {
       resolvedModelType = modelTypeSchema
@@ -148,7 +148,7 @@ export const bedrockConverse = async (
         console.log(`Using model override from environment: ${resolvedModelType}`);
       }
     }
-    
+
     // Priority 4: Default selection logic if all above fail
     const modelType = resolvedModelType || chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);

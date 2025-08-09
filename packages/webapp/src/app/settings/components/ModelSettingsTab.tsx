@@ -64,8 +64,7 @@ export default function ModelSettingsTab() {
       <CardHeader>
         <CardTitle>Default Foundation Model</CardTitle>
         <CardDescription>
-          Select the default foundation model to use for all agents.
-          Individual agents can override this setting.
+          Select the default foundation model to use for all agents. Individual agents can override this setting.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -87,38 +86,28 @@ export default function ModelSettingsTab() {
                         <FormControl>
                           <RadioGroupItem value="sonnet3.7" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Claude 3.5 Sonnet
-                        </FormLabel>
+                        <FormLabel className="font-normal">Claude 3.5 Sonnet</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="opus" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Claude 3 Opus
-                        </FormLabel>
+                        <FormLabel className="font-normal">Claude 3 Opus</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="sonnet" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Claude 3 Sonnet
-                        </FormLabel>
+                        <FormLabel className="font-normal">Claude 3 Sonnet</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
-                  <FormDescription>
-                    This setting will apply to all new sessions.
-                  </FormDescription>
+                  <FormDescription>This setting will apply to all new sessions.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
-              disabled={saveStatus === 'executing'}>
+            <Button type="submit" disabled={saveStatus === 'executing'}>
               {saveStatus === 'executing' ? 'Saving...' : 'Save Settings'}
             </Button>
           </form>

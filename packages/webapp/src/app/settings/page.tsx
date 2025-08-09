@@ -16,7 +16,7 @@ export default function SettingsPage() {
     <div className="container mx-auto py-6">
       <div className="flex flex-col">
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
-        
+
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Settings</CardTitle>

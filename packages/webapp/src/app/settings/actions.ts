@@ -14,14 +14,12 @@ export const getModelSettingAction = authActionClient.action(async () => {
   }
 });
 
-export const saveModelSettingAction = authActionClient
-  .schema(modelConfigSchema)
-  .action(async ({ parsedInput }) => {
-    try {
-      await setModelConfig(parsedInput.modelId);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to save model settings:', error);
-      return { error: 'Failed to save model settings', success: false };
-    }
-  });
+export const saveModelSettingAction = authActionClient.schema(modelConfigSchema).action(async ({ parsedInput }) => {
+  try {
+    await setModelConfig(parsedInput.modelId);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to save model settings:', error);
+    return { error: 'Failed to save model settings', success: false };
+  }
+});
