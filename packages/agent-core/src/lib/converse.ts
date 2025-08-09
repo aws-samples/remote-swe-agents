@@ -9,6 +9,7 @@ import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
+import { getModelConfig } from './config';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
