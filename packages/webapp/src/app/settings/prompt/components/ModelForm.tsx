@@ -12,9 +12,9 @@ export default function ModelForm() {
   const [selectedModel, setSelectedModel] = useState('sonnet3.7');
 
   const { execute: fetchSettings } = useAction(getModelSettingAction, {
-    onSuccess: (data) => {
-      if (data.modelId) {
-        setSelectedModel(data.modelId);
+    onSuccess: (result) => {
+      if ('modelId' in result && result.modelId) {
+        setSelectedModel(result.modelId);
       }
       setIsLoading(false);
     },
