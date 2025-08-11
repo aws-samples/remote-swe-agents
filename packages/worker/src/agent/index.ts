@@ -430,14 +430,9 @@ Users will primarily request software engineering assistance including bug fixes
 
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
-            // Capture progress report messages for title generation
-            if (
-              typeof toolInput === 'object' &&
-              toolInput !== null &&
-              'message' in toolInput &&
-              typeof toolInput.message === 'string'
-            ) {
-              conversation += `Assistant: ${toolInput.message}\n`;
+            const { data: input, success } = reportProgressTool.schema.safeParse(toolInput);
+            if (success) {
+              conversation += `Assistant: ${input.message}\n`;
             }
           }
           if (name == cloneRepositoryTool.name) {
