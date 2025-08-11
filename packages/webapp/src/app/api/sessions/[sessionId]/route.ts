@@ -12,6 +12,7 @@ import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
 import { extractUserMessage, formatMessage } from '@/lib/message-formatter';
+import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 
 // Schema for request validation
 const sendMessageSchema = z.object({
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         role: 'user',
         tokenCount: 0,
         messageType: 'userMessage',
-      },
+      } satisfies MessageItem,
     })
   );
 

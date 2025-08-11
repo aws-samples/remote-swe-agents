@@ -41,4 +41,10 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('sessionTitleUpdate'),
+    newTitle: z.string(),
+    timestamp: z.number(),
+    workerId: z.string(),
+  }),
 ]);

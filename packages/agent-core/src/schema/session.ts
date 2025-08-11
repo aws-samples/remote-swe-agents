@@ -24,6 +24,7 @@ export const sessionItemSchema = z.object({
   isHidden: z.boolean().optional(),
   slackChannelId: z.string().optional(),
   slackThreadTs: z.string().optional(),
+  title: z.string().optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

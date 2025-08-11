@@ -17,6 +17,9 @@ import {
   sendSystemMessage,
   updateSessionCost,
   readCommonPrompt,
+  getSession,
+  generateSessionTitle,
+  updateSessionTitle,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -44,6 +47,7 @@ import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
+  // For session title generation
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -229,12 +233,13 @@ Users will primarily request software engineering assistance including bug fixes
     ],
   };
 
-  const { items: initialItems } = await middleOutFiltering(allItems);
+  const { items: initialItems, messages: initialMessages } = await middleOutFiltering(allItems);
   // usually cache was created with the last user message (including toolResult), so try to get at(-3) here.
   // at(-1) is usually the latest user message received, at(-2) is usually the last assistant output
   let firstCachePoint = initialItems.length > 2 ? initialItems.length - 3 : initialItems.length - 1;
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
+  let conversation = `User: ${initialMessages.findLast((msg) => msg.role == 'user')?.content?.[0].text ?? ''}\n`;
 
   // When we get max_tokens stopReason, we double the number of max output tokens for this turn.
   // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
@@ -425,6 +430,10 @@ Users will primarily request software engineering assistance including bug fixes
 
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
+            const { data: input, success } = reportProgressTool.schema.safeParse(toolInput);
+            if (success) {
+              conversation += `Assistant: ${input.message}\n`;
+            }
           }
           if (name == cloneRepositoryTool.name) {
             // now that repository is determined, we try to update the system prompt
@@ -481,8 +490,25 @@ Users will primarily request software engineering assistance including bug fixes
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
+      conversation += `Assistant: ${responseTextWithoutThinking}\n`;
       break;
     }
+  }
+
+  try {
+    const session = await getSession(workerId);
+    // Generate title using the full conversation context
+    if (conversation && !session?.title) {
+      const title = await generateSessionTitle(workerId, conversation);
+      if (title) {
+        await updateSessionTitle(workerId, title);
+        console.log(`Generated title for session ${workerId}: ${title}`);
+        await sendWebappEvent(workerId, { type: 'sessionTitleUpdate', newTitle: title });
+      }
+    }
+  } catch (error) {
+    console.error(`Error generating session title for ${workerId}:`, error);
+    // Continue even if title generation fails
   }
 };
 
