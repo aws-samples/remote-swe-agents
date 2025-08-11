@@ -138,7 +138,7 @@ Messages: ${message}
     const { response } = await bedrockConverse(workerId, ['haiku3.5'], {
       inferenceConfig: {
         maxTokens: 50,
-        temperature: 0,
+        temperature: 0.8,
       },
       messages: [
         {
