@@ -48,7 +48,6 @@ import { refreshSession } from '../common/refresh-session';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
   // For session title generation
-  let conversation = '';
   const { items: allItems, slackUserId } = await pRetry(
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
@@ -234,12 +233,13 @@ Users will primarily request software engineering assistance including bug fixes
     ],
   };
 
-  const { items: initialItems } = await middleOutFiltering(allItems);
+  const { items: initialItems, messages: initialMessages } = await middleOutFiltering(allItems);
   // usually cache was created with the last user message (including toolResult), so try to get at(-3) here.
   // at(-1) is usually the latest user message received, at(-2) is usually the last assistant output
   let firstCachePoint = initialItems.length > 2 ? initialItems.length - 3 : initialItems.length - 1;
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
+  let conversation = `User: ${initialMessages.findLast((msg) => msg.role == 'user')?.content?.[0].text ?? ''}\n`;
 
   // When we get max_tokens stopReason, we double the number of max output tokens for this turn.
   // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
@@ -495,8 +495,25 @@ Users will primarily request software engineering assistance including bug fixes
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
+      conversation += `Assistant: ${responseTextWithoutThinking}\n`;
       break;
     }
+  }
+
+  try {
+    const session = await getSession(workerId);
+    // Generate title using the full conversation context
+    if (conversation && !session?.title) {
+      const title = await generateSessionTitle(workerId, conversation);
+      if (title) {
+        await updateSessionTitle(workerId, title);
+        console.log(`Generated title for session ${workerId}: ${title}`);
+        await sendWebappEvent(workerId, { type: 'sessionTitleUpdate', newTitle: title });
+      }
+    }
+  } catch (error) {
+    console.error(`Error generating session title for ${workerId}:`, error);
+    // Continue even if title generation fails
   }
 };
 
@@ -514,34 +531,6 @@ export const onMessageReceived = async (workerId: string, cancellationToken: Can
       // Update agent status to 'pending' when finishing a turn.
       // When the turn is cancelled, do not update the status to avoid race condition.
       await updateAgentStatusWithEvent(workerId, 'pending');
-
-      // Generate session title if it doesn't exist yet
-      const session = await getSession(workerId);
-      if (session && !session.title) {
-        try {
-          const { items } = await getConversationHistory(workerId);
-          let conversationText = '';
-
-          // Build conversation context with User and Assistant messages
-          for (const item of items) {
-            if (item.messageType === 'userMessage' && item.content) {
-              conversationText += `User: ${item.content}\n`;
-            } else if (item.messageType === 'assistantMessage' && item.content) {
-              conversationText += `Assistant: ${item.content}\n`;
-            }
-          }
-
-          // Generate title using the full conversation context
-          if (conversationText) {
-            const title = await generateSessionTitle(conversationText);
-            await updateSessionTitle(workerId, title);
-            console.log(`Generated title for session ${workerId}: ${title}`);
-          }
-        } catch (error) {
-          console.error(`Error generating session title for ${workerId}:`, error);
-          // Continue even if title generation fails
-        }
-      }
     }
   }
 };

@@ -192,6 +192,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
     <>
       <SessionPageClient
         workerId={workerId}
+        initialTitle={session.title}
         initialMessages={messages}
         initialInstanceStatus={session.instanceStatus}
         initialAgentStatus={session.agentStatus}

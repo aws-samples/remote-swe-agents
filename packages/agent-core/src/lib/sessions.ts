@@ -1,8 +1,7 @@
 import { GetCommand, QueryCommand, QueryCommandInput, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem } from '../schema';
-import { getConversationHistory } from './messages';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { bedrockConverse } from './converse';
 
 /**
  * Get session information from DynamoDB
@@ -120,50 +119,44 @@ export const updateSessionVisibility = async (workerId: string, isHidden: boolea
 
 /**
  * Generate a session title using Bedrock Claude Haiku model
+ * @param workerId Worker ID of the session to update (to track token usage)
  * @param message The message content to generate title from
  * @returns A generated title (10 characters or less)
  */
-export const generateSessionTitle = async (message: string): Promise<string> => {
+export const generateSessionTitle = async (workerId: string, message: string): Promise<string> => {
   try {
-    const client = new BedrockRuntimeClient({ region: 'us-west-2' });
-
+    console.log(message);
     const prompt = `
-    Based on the following message, create a concise title that is 10 characters or less.
-    The title should be brief but descriptive of the message content or intent.
-    Only return the title itself without any explanation or additional text.
-    
-    Message: "${message}"
-    
-    Title:
-    `;
+Based on the following chat history, create a concise title for the conversation that is 15 characters or less.
+The title should be brief but descriptive of the message content or intent.
+Only return the title itself without any explanation or additional text.
+Use the same language that was used in the conversation.
 
-    const command = new InvokeModelCommand({
-      modelId: 'anthropic.claude-3-5-haiku-20241022-v1:0',
-      contentType: 'application/json',
-      body: JSON.stringify({
-        prompt,
-        max_tokens_to_sample: 20,
-        temperature: 0.7,
-      }),
+Messages: ${message}
+    `.trim();
+
+    const { response } = await bedrockConverse(workerId, ['haiku3.5'], {
+      inferenceConfig: {
+        maxTokens: 50,
+        temperature: 0,
+      },
+      messages: [
+        {
+          role: 'user',
+          content: [{ text: prompt }],
+        },
+        {
+          role: 'assistant',
+          content: [{ text: 'Title:' }],
+        },
+      ],
     });
-
-    const response = await client.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    let title = responseBody.completion.trim();
-
-    // Remove any quotes if the model included them
-    title = title.replace(/^["']|["']$/g, '');
-
-    // Ensure title is 10 characters or less
-    if (title.length > 10) {
-      title = title.substring(0, 10);
-    }
-
+    const output = response?.output?.message?.content?.[0].text ?? '';
+    let title = output.trim();
     return title;
   } catch (error) {
     console.error('Error generating session title:', error);
-    // Return a default title if generation fails
-    return 'New Chat';
+    return '';
   }
 };
 
