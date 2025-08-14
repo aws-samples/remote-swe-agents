@@ -9,6 +9,7 @@ import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
+import { ModelType, modelTypeSchema } from '../schema';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
@@ -21,18 +22,6 @@ let currentAccountIndex = 0; // Currently used account index
 const ULTRA_THINKING_KEYWORD = 'ultrathink';
 
 const defaultOutputTokenCount = 8192;
-
-const modelTypeSchema = z.enum([
-  'sonnet3.5v1',
-  'sonnet3.5',
-  'sonnet3.7',
-  'haiku3.5',
-  'nova-pro',
-  'opus4',
-  'opus4.1',
-  'sonnet4',
-]);
-type ModelType = z.infer<typeof modelTypeSchema>;
 
 const modelConfigSchema = z.object({
   maxOutputTokens: z.number().default(4096),
