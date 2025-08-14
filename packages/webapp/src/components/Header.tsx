@@ -75,7 +75,7 @@ export default function Header() {
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/settings/api-keys" className="w-full cursor-default flex items-center" prefetch={false}>
+                  <Link href="/api-keys" className="w-full cursor-default flex items-center" prefetch={false}>
                     <Key className="mr-2 h-4 w-4" />
                     <span>{t('apiKeys')}</span>
                   </Link>
@@ -100,7 +100,7 @@ export default function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings/prompt" className="w-full cursor-default flex items-center" prefetch={false}>
+                  <Link href="/preferences" className="w-full cursor-default flex items-center" prefetch={false}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t('preferences')}</span>
                   </Link>
