@@ -43,5 +43,12 @@ export const getPreferences = async (): Promise<GlobalPreference> => {
     })
   );
 
-  return globalPreferenceSchema.parse(res.Item);
+  const item =
+    res.Item ??
+    ({
+      PK: 'global-config',
+      SK: 'general',
+    } satisfies z.infer<typeof keySchema>);
+
+  return globalPreferenceSchema.parse(item);
 };

@@ -197,6 +197,14 @@
   "preferences": {
     "title": "Preferences",
     "description": "Configure your application preferences and settings",
+    "global": {
+      "title": "Global Preferences",
+      "description": "Configure global application settings and preferences"
+    },
+    "updateSuccess": "Preference updated successfully",
+    "updateError": "Failed to update preference",
+    "defaultModel": "Default Model",
+    "defaultModelDescription": "Choose the default AI model",
     "prompt": {
       "title": "Agent Prompt Configuration",
       "description": "This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.",

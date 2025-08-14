@@ -196,6 +196,14 @@
   "preferences": {
     "title": "設定",
     "description": "アプリケーションの設定を行います",
+    "global": {
+      "title": "グローバル設定",
+      "description": "アプリケーションのグローバル設定を行います"
+    },
+    "updateSuccess": "設定が正常に更新されました",
+    "updateError": "設定の更新に失敗しました",
+    "defaultModel": "デフォルトモデル",
+    "defaultModelDescription": "デフォルトのAIモデルを選択してください",
     "prompt": {
       "title": "エージェントプロンプト設定",
       "description": "このプロンプトはすべてのエージェントのシステムプロンプトに追加されます。組織全体のガイドラインや指示を設定するために使用してください。",
