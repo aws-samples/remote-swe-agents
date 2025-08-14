@@ -2,19 +2,27 @@
 
 import { authActionClient } from '@/lib/safe-action';
 import { savePromptSchema } from './schemas';
-import { writeCommonPrompt } from '@remote-swe-agents/agent-core/lib';
+import { writeCommonPrompt, updatePreferences } from '@remote-swe-agents/agent-core/lib';
+import { updateGlobalPreferenceSchema } from '@remote-swe-agents/agent-core/schema';
 
-// Create action using the safe-action client
-export const savePromptAction = authActionClient.inputSchema(savePromptSchema).action(async ({ parsedInput }) => {
-  const { additionalSystemPrompt } = parsedInput;
-  try {
-    await writeCommonPrompt({
-      additionalSystemPrompt: additionalSystemPrompt || '',
-    });
+export const updateAdditionalSystemPrompt = authActionClient
+  .inputSchema(savePromptSchema)
+  .action(async ({ parsedInput }) => {
+    const { additionalSystemPrompt } = parsedInput;
+    try {
+      await writeCommonPrompt({
+        additionalSystemPrompt: additionalSystemPrompt || '',
+      });
 
-    return { success: true };
-  } catch (error) {
-    console.error('Error saving prompt:', error);
-    throw new Error('Failed to save prompt configuration');
-  }
-});
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      throw new Error('Failed to save prompt configuration');
+    }
+  });
+
+export const updateGlobalPreferences = authActionClient
+  .inputSchema(updateGlobalPreferenceSchema)
+  .action(async ({ parsedInput }) => {
+    await updatePreferences(parsedInput);
+  });
