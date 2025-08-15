@@ -20,6 +20,7 @@ import {
   getSession,
   generateSessionTitle,
   updateSessionTitle,
+  getPreferences,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -209,6 +210,11 @@ Users will primarily request software engineering assistance including bug fixes
 
   await refreshSession(workerId);
 
+  let modelOverride = allItems.findLast((i) => i.modelOverride)?.modelOverride;
+  if (!modelOverride) {
+    modelOverride = (await getPreferences()).modelOverride;
+  }
+
   const tools = [
     ciTool,
     cloneRepositoryTool,
@@ -290,7 +296,7 @@ Users will primarily request software engineering assistance including bug fixes
 
           const converseResult = await bedrockConverse(
             workerId,
-            ['sonnet3.7'],
+            [modelOverride],
             {
               messages,
               system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],

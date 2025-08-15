@@ -38,9 +38,11 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
             content: args.input.message,
             timestamp: new Date(parseInt(args.data.item.SK)),
             type: 'message',
+            modelOverride: args.input.modelOverride,
           });
         }
         reset();
+        setValue('modelOverride', args.input.modelOverride);
         clearImages();
       },
       onError: ({ error }) => {

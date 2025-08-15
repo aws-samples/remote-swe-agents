@@ -71,7 +71,6 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     cacheSupport: ['system'],
     toolChoiceSupport: ['auto'],
-    isHidden: true,
   },
   opus4: {
     name: 'Claude 4 Opus',
