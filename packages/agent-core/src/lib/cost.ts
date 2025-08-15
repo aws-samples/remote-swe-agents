@@ -1,13 +1,6 @@
 import { QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws/ddb';
-
-const modelPricing = {
-  '3-7-sonnet': { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
-  '3-5-sonnet': { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
-  '3-5-haiku': { input: 0.0008, output: 0.004, cacheRead: 0.00008, cacheWrite: 0.001 },
-  'sonnet-4': { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
-  'opus-4': { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
-};
+import { modelConfigs } from '../schema/model';
 
 // Calculate cost in USD based on token usage
 export const calculateCost = (
@@ -17,8 +10,10 @@ export const calculateCost = (
   cacheReadTokens: number,
   cacheWriteTokens: number
 ) => {
-  const pricing = Object.entries(modelPricing).find(([key]) => modelId.includes(key))?.[1];
-  if (pricing == null) return 0;
+  const config = Object.values(modelConfigs).find((config) => modelId.includes(config.modelId));
+  if (!config) return 0;
+
+  const pricing = config.pricing;
   return (
     (inputTokens * pricing.input +
       outputTokens * pricing.output +
