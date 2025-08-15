@@ -5,7 +5,7 @@ export const globalPreferencesSchema = z.object({
   PK: z.literal('global-config'),
   SK: z.literal('general'),
   modelOverride: modelTypeSchema.default('sonnet3.7'),
-  updatedAt: z.number(),
+  updatedAt: z.number().default(0),
 });
 
 export const updateGlobalPreferenceSchema = globalPreferencesSchema
