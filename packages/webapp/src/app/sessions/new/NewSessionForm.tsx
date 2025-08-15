@@ -10,14 +10,17 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
+import { GlobalPreference, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface NewSessionFormProps {
   templates: PromptTemplate[];
+  preferences: GlobalPreference;
 }
 
-export default function NewSessionForm({ templates }: NewSessionFormProps) {
+export default function NewSessionForm({ templates, preferences }: NewSessionFormProps) {
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -37,6 +40,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
       defaultValues: {
         message: '',
         imageKeys: [],
+        modelOverride: preferences.modelOverride,
       },
     },
   });
