@@ -32,7 +32,6 @@ export interface WorkerProps {
   amiIdParameterName: string;
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
-  modelOverride?: string;
 }
 
 export class Worker extends Construct {
@@ -354,7 +353,6 @@ Environment=BUCKET_NAME=${props.imageBucket.bucketName}
 Environment=WEBAPP_ORIGIN_NAME_PARAMETER=${props.webappOriginSourceParameter.parameterName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
 Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
-${props.modelOverride ? `Environment=MODEL_OVERRIDE=${props.modelOverride}` : ''}
 
 [Install]
 WantedBy=multi-user.target

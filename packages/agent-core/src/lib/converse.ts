@@ -8,7 +8,7 @@ import {
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { modelConfigs, ModelType, modelTypeSchema } from '../schema';
+import { modelConfigs, ModelType } from '../schema';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
@@ -32,11 +32,7 @@ export const bedrockConverse = async (
     throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
   }
   try {
-    const modelOverride = modelTypeSchema
-      .optional()
-      // empty string to undefined
-      .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
-    const modelType = modelOverride || chooseRandom(modelTypes);
+    const modelType = chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);
     console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
     const { input: processedInput, thinkingBudget } = preProcessInput(

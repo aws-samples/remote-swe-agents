@@ -71,7 +71,6 @@ const props: MainStackProps = {
   ...(additionalPolicies ? { additionalManagedPolicies: additionalPolicies } : {}),
   ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
   initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
-  ...(process.env.WORKER_MODEL_OVERRIDE ? { workerModelOverride: process.env.WORKER_MODEL_OVERRIDE } : {}),
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {
