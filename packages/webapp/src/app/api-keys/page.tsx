@@ -1,6 +1,6 @@
 import Header from '@/components/Header';
 import { getApiKeys } from '@remote-swe-agents/agent-core/lib';
-import { ApiKeyItem } from '@remote-swe-agents/agent-core/schema';
+import { ApiKeyItem, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { getTranslations } from 'next-intl/server';
 import ApiKeyClientActions from './components/ApiKeyClientActions';
@@ -45,7 +45,8 @@ export default async function ApiKeysPage() {
                       <code>{`POST /api/sessions
 
 {
-  "message": "Your initial message to the agent"
+  "message": "Your initial message to the agent",
+  "modelOverride": ${modelTypeList.join(' | ') + ' | undefined'}
 }`}</code>
                     </pre>
                     <p className="text-gray-600 dark:text-gray-300 mt-2">{documentationT('createSessionReturns')}</p>
