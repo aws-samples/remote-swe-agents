@@ -22,6 +22,12 @@ const modelConfigSchema = z.object({
   reasoningSupport: z.boolean(),
   toolChoiceSupport: z.array(z.enum(['any', 'auto', 'tool'])),
   isHidden: z.boolean().optional(),
+  pricing: z.object({
+    input: z.number(),
+    output: z.number(),
+    cacheRead: z.number(),
+    cacheWrite: z.number(),
+  }),
 });
 
 export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> = {
@@ -34,6 +40,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'sonnet3.5': {
     name: 'Claude 3.5 Sonnet v2',
@@ -43,6 +50,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: [],
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'sonnet3.7': {
     name: 'Claude 3.7 Sonnet',
@@ -52,6 +60,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'haiku3.5': {
     name: 'Claude 3.5 Haiku',
@@ -62,6 +71,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    pricing: { input: 0.0008, output: 0.004, cacheRead: 0.00008, cacheWrite: 0.001 },
   },
   'nova-pro': {
     name: 'Amazon Nova Pro',
@@ -71,6 +81,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     cacheSupport: ['system'],
     toolChoiceSupport: ['auto'],
+    pricing: { input: 0.0008, output: 0.0032, cacheRead: 0.0002, cacheWrite: 0.0008 },
   },
   opus4: {
     name: 'Claude 4 Opus',
@@ -81,6 +92,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   'opus4.1': {
     name: 'Claude 4.1 Opus',
@@ -90,6 +102,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   sonnet4: {
     name: 'Claude 4 Sonnet',
@@ -99,5 +112,6 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
 };
