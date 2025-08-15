@@ -3,11 +3,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { Loader2, Send, Image as ImageIcon, Paperclip, Smile, AtSign, Hash, Plus, Share } from 'lucide-react';
+import { Loader2, Send, Image as ImageIcon, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler, useEffect, useRef } from 'react';
+import { KeyboardEventHandler, useCallback, useRef } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
@@ -59,24 +59,29 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
     },
   });
 
-  const message = watch('message');
   const { ref: messageRef, ...messageRegister } = register('message');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const autoResize = () => {
+  const autoResize = useCallback(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      const maxHeight = 600; // max height in pixels
-      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-      textarea.style.height = `${newHeight}px`;
-      textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
-    }
-  };
+    if (!textarea) return;
 
-  useEffect(() => {
-    autoResize();
-  }, [message]);
+    const currentHeight = textarea.style.height;
+    textarea.style.height = 'auto';
+    const maxHeight = 600;
+    const scrollHeight = textarea.scrollHeight;
+    const newHeight = Math.min(scrollHeight, maxHeight);
+    const newHeightPx = `${newHeight}px`;
+
+    // skip updating the height when it is not changed.
+    if (currentHeight === newHeightPx) {
+      textarea.style.height = currentHeight;
+      return;
+    }
+
+    textarea.style.height = newHeightPx;
+    textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, []);
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
     if (isExecuting || isUploading) return;
@@ -177,7 +182,7 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
                     <TooltipTrigger asChild>
                       <Button
                         type="submit"
-                        disabled={!message?.trim() || isExecuting || isUploading}
+                        disabled={!formState.isValid || isExecuting || isUploading}
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
