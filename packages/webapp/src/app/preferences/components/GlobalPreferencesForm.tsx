@@ -5,10 +5,10 @@ import { useOptimisticAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { updateGlobalPreferences } from '../actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GlobalPreference, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { GlobalPreferences, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface GlobalPreferencesFormProps {
-  preference: GlobalPreference;
+  preference: GlobalPreferences;
 }
 
 export default function GlobalPreferencesForm({ preference }: GlobalPreferencesFormProps) {

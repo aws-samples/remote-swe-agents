@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { GlobalPreference, globalPreferenceSchema, updateGlobalPreferenceSchema } from '../schema';
+import { GlobalPreferences, globalPreferencesSchema, updateGlobalPreferenceSchema } from '../schema';
 import { ddb, TableName } from './aws';
 
-const keySchema = globalPreferenceSchema.pick({ PK: true, SK: true });
+const keySchema = globalPreferencesSchema.pick({ PK: true, SK: true });
 
 export const updatePreferences = async (params: z.infer<typeof updateGlobalPreferenceSchema>) => {
   const updateExpression: string[] = ['#updatedAt = :updatedAt'];
@@ -32,7 +32,7 @@ export const updatePreferences = async (params: z.infer<typeof updateGlobalPrefe
   );
 };
 
-export const getPreferences = async (): Promise<GlobalPreference> => {
+export const getPreferences = async (): Promise<GlobalPreferences> => {
   const res = await ddb.send(
     new GetCommand({
       TableName,
@@ -50,5 +50,5 @@ export const getPreferences = async (): Promise<GlobalPreference> => {
       SK: 'general',
     } satisfies z.infer<typeof keySchema>);
 
-  return globalPreferenceSchema.parse(item);
+  return globalPreferencesSchema.parse(item);
 };

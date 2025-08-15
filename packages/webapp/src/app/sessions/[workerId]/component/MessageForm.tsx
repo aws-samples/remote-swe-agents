@@ -12,14 +12,16 @@ import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ModelType } from '@remote-swe-agents/agent-core/schema';
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
   workerId: string;
   onShareSession: () => void;
+  defaultModelOverride: ModelType;
 };
 
-export default function MessageForm({ onSubmit, workerId, onShareSession }: MessageFormProps) {
+export default function MessageForm({ onSubmit, workerId, onShareSession, defaultModelOverride }: MessageFormProps) {
   const t = useTranslations('sessions');
 
   const {
@@ -50,6 +52,7 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
         message: '',
         workerId: workerId,
         imageKeys: [],
+        modelOverride: defaultModelOverride,
       },
     },
   });

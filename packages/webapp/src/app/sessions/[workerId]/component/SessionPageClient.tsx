@@ -15,6 +15,7 @@ import {
   TodoList as TodoListType,
   AgentStatus,
   InstanceStatus,
+  GlobalPreferences,
 } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
@@ -27,6 +28,7 @@ import TakeOverModal from './TakeOverModal';
 
 interface SessionPageClientProps {
   workerId: string;
+  preferences: GlobalPreferences;
   initialTitle: string | undefined;
   initialMessages: MessageView[];
   initialInstanceStatus?: InstanceStatus;
@@ -36,6 +38,7 @@ interface SessionPageClientProps {
 
 export default function SessionPageClient({
   workerId,
+  preferences,
   initialTitle,
   initialMessages,
   initialInstanceStatus,
@@ -374,7 +377,12 @@ export default function SessionPageClient({
           onInterrupt={handleInterrupt}
         />
 
-        <MessageForm onSubmit={onSendMessage} workerId={workerId} onShareSession={() => setShowShareModal(true)} />
+        <MessageForm
+          onSubmit={onSendMessage}
+          workerId={workerId}
+          onShareSession={() => setShowShareModal(true)}
+          defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
+        />
 
         {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">

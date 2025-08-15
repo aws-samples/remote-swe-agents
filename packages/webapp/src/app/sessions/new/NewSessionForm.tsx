@@ -12,11 +12,11 @@ import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
-import { GlobalPreference, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { GlobalPreferences, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface NewSessionFormProps {
   templates: PromptTemplate[];
-  preferences: GlobalPreference;
+  preferences: GlobalPreferences;
 }
 
 export default function NewSessionForm({ templates, preferences }: NewSessionFormProps) {
