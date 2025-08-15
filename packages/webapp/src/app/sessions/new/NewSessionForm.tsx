@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
 import { GlobalPreference, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
@@ -65,6 +64,26 @@ export default function NewSessionForm({ templates, preferences }: NewSessionFor
         <div className="text-left">
           <ImagePreviewList />
 
+          {/* Model Override Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('modelOverride')}
+            </label>
+            <select
+              {...register('modelOverride')}
+              disabled={isPending}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              {modelTypeList
+                .filter((type) => !modelConfigs[type].isHidden)
+                .map((type) => (
+                  <option key={type} value={type}>
+                    {modelConfigs[type].name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
           <div className="flex items-center justify-end mb-2">
             <label
               htmlFor="message"
@@ -102,7 +121,7 @@ export default function NewSessionForm({ templates, preferences }: NewSessionFor
             id="message"
             {...register('message')}
             placeholder={t('placeholder')}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
             rows={4}
             disabled={isPending}
             onPaste={handlePaste}

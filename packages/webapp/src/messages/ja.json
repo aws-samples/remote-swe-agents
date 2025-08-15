@@ -173,6 +173,7 @@
     "imagesCount": "{count} 枚の画像",
     "waitingForImageUpload": "画像アップロード中...",
     "templates": "テンプレート",
+    "modelOverride": "モデル",
     "templateModal": {
       "title": "プロンプトテンプレート",
       "createNew": "新しいテンプレートを作成",
