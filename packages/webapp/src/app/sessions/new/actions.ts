@@ -13,7 +13,7 @@ export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const workerId = `webapp-${Date.now()}`;
-    const { message, imageKeys = [] } = parsedInput;
+    const { message, imageKeys = [], modelOverride } = parsedInput;
     const now = Date.now();
     const { userId } = ctx;
 
@@ -66,6 +66,7 @@ export const createNewWorker = authActionClient
                 role: 'user',
                 tokenCount: 0,
                 messageType: 'userMessage',
+                modelOverride,
               } satisfies MessageItem,
             },
           },

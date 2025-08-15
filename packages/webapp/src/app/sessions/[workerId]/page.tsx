@@ -1,6 +1,7 @@
 import {
   getAttachedImageKey,
   getConversationHistory,
+  getPreferences,
   getSession,
   getTodoList,
   noOpFiltering,
@@ -22,17 +23,15 @@ interface SessionPageProps {
 
 export default async function SessionPage({ params }: SessionPageProps) {
   const { workerId } = await params;
-
-  // Load conversation history from DynamoDB
-  const { items: historyItems } = await getConversationHistory(workerId);
-  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
-
-  // Get session info including instance status
   const session = await getSession(workerId);
-
   if (!session) {
     notFound();
   }
+
+  const preferences = await getPreferences();
+  // Load conversation history from DynamoDB
+  const { items: historyItems } = await getConversationHistory(workerId);
+  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
 
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
@@ -155,6 +154,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
           content: extracted,
           timestamp: new Date(parseInt(item.SK)),
           type: 'message',
+          modelOverride: item.modelOverride,
         });
         break;
       }
@@ -192,6 +192,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
     <>
       <SessionPageClient
         workerId={workerId}
+        preferences={preferences}
         initialTitle={session.title}
         initialMessages={messages}
         initialInstanceStatus={session.instanceStatus}

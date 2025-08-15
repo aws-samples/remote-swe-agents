@@ -8,7 +8,7 @@ import {
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { z } from 'zod';
+import { modelConfigs, ModelType } from '../schema';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
@@ -22,78 +22,6 @@ const ULTRA_THINKING_KEYWORD = 'ultrathink';
 
 const defaultOutputTokenCount = 8192;
 
-const modelTypeSchema = z.enum([
-  'sonnet3.5v1',
-  'sonnet3.5',
-  'sonnet3.7',
-  'haiku3.5',
-  'nova-pro',
-  'opus4',
-  'opus4.1',
-  'sonnet4',
-]);
-type ModelType = z.infer<typeof modelTypeSchema>;
-
-const modelConfigSchema = z.object({
-  maxOutputTokens: z.number().default(4096),
-  maxInputTokens: z.number(),
-  cacheSupport: z.array(z.enum(['system', 'tool', 'message'])).default([]),
-  reasoningSupport: z.boolean().default(false),
-  toolChoiceSupport: z.array(z.enum(['any', 'auto', 'tool'])).default([]),
-});
-
-const modelConfigs: Record<ModelType, Partial<z.infer<typeof modelConfigSchema>>> = {
-  'sonnet3.5v1': {
-    maxOutputTokens: 4096,
-    maxInputTokens: 200_000,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  'sonnet3.5': {
-    maxOutputTokens: 4096,
-    maxInputTokens: 200_000,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  'sonnet3.7': {
-    maxOutputTokens: 64_000,
-    maxInputTokens: 200_000,
-    cacheSupport: ['system', 'message', 'tool'],
-    reasoningSupport: true,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  'haiku3.5': {
-    maxOutputTokens: 4096,
-    maxInputTokens: 200_000,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  'nova-pro': {
-    maxOutputTokens: 10_000,
-    maxInputTokens: 300_000,
-    cacheSupport: ['system'],
-    toolChoiceSupport: ['auto'],
-  },
-  opus4: {
-    maxOutputTokens: 32_000,
-    maxInputTokens: 200_000,
-    cacheSupport: ['system', 'message', 'tool'],
-    reasoningSupport: true,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  'opus4.1': {
-    maxOutputTokens: 32_000,
-    maxInputTokens: 200_000,
-    cacheSupport: ['system', 'message', 'tool'],
-    reasoningSupport: true,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-  sonnet4: {
-    maxOutputTokens: 64_000,
-    maxInputTokens: 200_000,
-    cacheSupport: ['system', 'message', 'tool'],
-    reasoningSupport: true,
-    toolChoiceSupport: ['any', 'auto', 'tool'],
-  },
-};
-
 export const bedrockConverse = async (
   workerId: string,
   modelTypes: ModelType[],
@@ -104,11 +32,7 @@ export const bedrockConverse = async (
     throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
   }
   try {
-    const modelOverride = modelTypeSchema
-      .optional()
-      // empty string to undefined
-      .parse(process.env.MODEL_OVERRIDE ? process.env.MODEL_OVERRIDE : undefined);
-    const modelType = modelOverride || chooseRandom(modelTypes);
+    const modelType = chooseRandom(modelTypes);
     const { client, modelId, awsRegion, account } = await getModelClient(modelType);
     console.log(`Using ${JSON.stringify({ modelId, awsRegion, account, roleName })}`);
     const { input: processedInput, thinkingBudget } = preProcessInput(
@@ -165,7 +89,7 @@ const preProcessInput = (
   modelType: ModelType,
   maxTokensExceededCount: number
 ): { input: ConverseCommandInput; thinkingBudget?: number } => {
-  const modelConfig = modelConfigSchema.parse(modelConfigs[modelType]);
+  const modelConfig = modelConfigs[modelType];
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
   input = structuredClone(input);
 
@@ -289,35 +213,7 @@ const chooseModelAndRegion = (modelType: ModelType) => {
   let awsRegion = 'us-west-2';
   if (region == 'eu') awsRegion = 'eu-west-1';
   if (region == 'apac') awsRegion = 'ap-northeast-1';
-  let modelId = '';
-  switch (modelType) {
-    case 'sonnet3.5v1':
-      modelId = 'anthropic.claude-3-5-sonnet-20240620-v1:0';
-      break;
-    case 'sonnet3.5':
-      modelId = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
-      break;
-    case 'sonnet3.7':
-      modelId = 'anthropic.claude-3-7-sonnet-20250219-v1:0';
-      break;
-    case 'haiku3.5':
-      modelId = 'anthropic.claude-3-5-haiku-20241022-v1:0';
-      break;
-    case 'nova-pro':
-      modelId = 'amazon.nova-pro-v1:0';
-      break;
-    case 'opus4':
-      modelId = 'anthropic.claude-opus-4-20250514-v1:0';
-      break;
-    case 'opus4.1':
-      modelId = 'anthropic.claude-opus-4-1-20250805-v1:0';
-      break;
-    case 'sonnet4':
-      modelId = 'anthropic.claude-sonnet-4-20250514-v1:0';
-      break;
-    default:
-      throw new Error(`Unknown model type: ${modelType}`);
-  }
+  let modelId = modelConfigs[modelType].modelId;
   modelId = `${region}.${modelId}`;
   return {
     modelId,

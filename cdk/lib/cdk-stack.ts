@@ -43,7 +43,6 @@ export interface MainStackProps extends cdk.StackProps {
   readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
   readonly initialWebappUserEmail?: string;
-  readonly workerModelOverride?: string;
 }
 
 export class MainStack extends cdk.Stack {
@@ -129,7 +128,6 @@ export class MainStack extends cdk.Stack {
       amiIdParameterName: workerAmiIdParameter.parameterName,
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
-      modelOverride: props.workerModelOverride,
     });
 
     const auth = new Auth(this, 'Auth', {

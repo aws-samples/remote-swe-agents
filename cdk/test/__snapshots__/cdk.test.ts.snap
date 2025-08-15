@@ -4576,7 +4576,6 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
 
-
               [Install]
 
               WantedBy=multi-user.target
@@ -5291,7 +5290,6 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
 
-
               [Install]
 
               WantedBy=multi-user.target
@@ -5712,7 +5710,6 @@ Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
                   "
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
-
 
 [Install]
 WantedBy=multi-user.target

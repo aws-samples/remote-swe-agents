@@ -12,11 +12,12 @@ import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
 import { extractUserMessage, formatMessage } from '@/lib/message-formatter';
-import { MessageItem } from '@remote-swe-agents/agent-core/schema';
+import { MessageItem, modelTypeSchema } from '@remote-swe-agents/agent-core/schema';
 
 // Schema for request validation
 const sendMessageSchema = z.object({
   message: z.string().min(1),
+  modelOverride: modelTypeSchema.optional(),
 });
 
 interface RouteParams {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
   }
 
-  const { message } = parsedBody.data;
+  const { message, modelOverride } = parsedBody.data;
 
   // Check if session exists
   const session = await getSession(sessionId);
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         role: 'user',
         tokenCount: 0,
         messageType: 'userMessage',
+        modelOverride,
       } satisfies MessageItem,
     })
   );
