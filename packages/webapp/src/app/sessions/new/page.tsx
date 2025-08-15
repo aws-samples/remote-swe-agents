@@ -63,7 +63,7 @@ export default async function NewSessionPage() {
                   </ul>
                 </div>
 
-                <NewSessionForm templates={templates} preferences={preferences}/>
+                <NewSessionForm templates={templates} preferences={preferences} />
               </div>
             </div>
           </div>

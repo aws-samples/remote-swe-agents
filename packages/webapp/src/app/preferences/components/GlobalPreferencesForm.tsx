@@ -13,7 +13,7 @@ interface GlobalPreferencesFormProps {
 
 export default function GlobalPreferencesForm({ preference }: GlobalPreferencesFormProps) {
   const t = useTranslations('preferences');
-  
+
   const { execute, optimisticState, isPending } = useOptimisticAction(updateGlobalPreferences, {
     currentState: { modelOverride: preference.modelOverride },
     updateFn: (state, input) => ({

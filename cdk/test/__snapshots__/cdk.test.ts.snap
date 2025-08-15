@@ -832,7 +832,11 @@ Remote SWE Agents Team",
           ],
         },
         "Source": {
-          "BuildSpec": "{
+          "BuildSpec": {
+            "Fn::Join": [
+              "",
+              [
+                "{
   "version": "0.2",
   "phases": {
     "build": {
@@ -846,9 +850,96 @@ Remote SWE Agents Team",
         "ls -la",
         "aws ecr get-login-password | docker login --username AWS --password-stdin $repositoryAuthUri",
         "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws",
-        "docker buildx create --use",
         "docker buildx ls",
-        "eval \\"$buildCommand\\""
+        "echo \\"$buildCommand\\"",
+        "eval \\"$buildCommand\\"",
+        "docker images",
+        "docker tag artifact:$imageTag ",
+                {
+                  "Fn::Select": [
+                    4,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "WebappBuildRepository4C93D48D",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".dkr.ecr.",
+                {
+                  "Fn::Select": [
+                    3,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "WebappBuildRepository4C93D48D",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/",
+                {
+                  "Ref": "WebappBuildRepository4C93D48D",
+                },
+                ":$imageTag",
+        "docker push ",
+                {
+                  "Fn::Select": [
+                    4,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "WebappBuildRepository4C93D48D",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".dkr.ecr.",
+                {
+                  "Fn::Select": [
+                    3,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "WebappBuildRepository4C93D48D",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/",
+                {
+                  "Ref": "WebappBuildRepository4C93D48D",
+                },
+                ":$imageTag"
       ]
     },
     "post_build": {
@@ -859,6 +950,9 @@ Remote SWE Agents Team",
     }
   }
 }",
+              ],
+            ],
+          },
           "Type": "NO_SOURCE",
         },
       },
@@ -1283,7 +1377,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -3157,49 +3251,7 @@ exports.handler = async function (event, context) {
                   "Dns.Http",
                 ],
               },
-              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --file docker/webapp.Dockerfile --platform linux/arm64 --output type=image,name=",
-              {
-                "Fn::Select": [
-                  4,
-                  {
-                    "Fn::Split": [
-                      ":",
-                      {
-                        "Fn::GetAtt": [
-                          "WebappBuildRepository4C93D48D",
-                          "Arn",
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              ".dkr.ecr.",
-              {
-                "Fn::Select": [
-                  3,
-                  {
-                    "Fn::Split": [
-                      ":",
-                      {
-                        "Fn::GetAtt": [
-                          "WebappBuildRepository4C93D48D",
-                          "Arn",
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              ".",
-              {
-                "Ref": "AWS::URLSuffix",
-              },
-              "/",
-              {
-                "Ref": "WebappBuildRepository4C93D48D",
-              },
-              ":<IMAGE_TAG>,push=true --provenance=false .",
+              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --file docker/webapp.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
             ],
           ],
         },
@@ -4576,7 +4628,6 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
 
-
               [Install]
 
               WantedBy=multi-user.target
@@ -5291,7 +5342,6 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
 
-
               [Install]
 
               WantedBy=multi-user.target
@@ -5712,7 +5762,6 @@ Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
                   "
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
-
 
 [Install]
 WantedBy=multi-user.target
