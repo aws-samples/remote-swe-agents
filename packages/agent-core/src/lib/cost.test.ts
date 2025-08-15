@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
 import { calculateCost } from './cost';
 
-test('calculateCost for sonnet4 model', () => {
+test('calculateCost for sonnet3.7 model', () => {
   // GIVEN
-  const modelId = 'anthropic.claude-sonnet-4-20250514-v1:0';
+  const modelId = 'us.anthropic.claude-3-7-sonnet-20250219-v1:0';
   const inputTokens = 1000;
   const outputTokens = 500;
   const cacheReadTokens = 200;
@@ -19,7 +19,7 @@ test('calculateCost for sonnet4 model', () => {
 
 test('calculateCost for haiku3.5 model', () => {
   // GIVEN
-  const modelId = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+  const modelId = 'apac.anthropic.claude-3-5-haiku-20241022-v1:0';
   const inputTokens = 2000;
   const outputTokens = 1000;
   const cacheReadTokens = 500;
