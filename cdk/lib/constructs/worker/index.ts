@@ -12,6 +12,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import { WorkerImageBuilder } from './image-builder';
 import { readFileSync } from 'fs';
 import { Asset, AssetProps } from 'aws-cdk-lib/aws-s3-assets';
+import { AgentCoreRuntime } from './agent-core-runtime';
 
 export interface WorkerProps {
   vpc: ec2.IVpc;
@@ -443,6 +444,9 @@ systemctl start myapp
       amiIdParameterName: props.amiIdParameterName,
       sourceBucket,
       sourceAssetHash,
+    });
+
+    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
     });
 
     props.webappOriginSourceParameter.grantRead(role);
