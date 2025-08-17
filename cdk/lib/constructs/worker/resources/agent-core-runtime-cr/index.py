@@ -89,6 +89,7 @@ def create(event, context):
     #     'status': 'CREATING'|'CREATE_FAILED'|'UPDATING'|'UPDATE_FAILED'|'READY'|'DELETING'
     # }
 
+    helper.Data.update({"agentRuntimeArn": response['agentRuntimeArn']})
     return response['agentRuntimeArn']
 
 @helper.update
@@ -130,6 +131,7 @@ def update(event, context):
 
     # todo: use status
 
+    helper.Data.update({"agentRuntimeArn": response['agentRuntimeArn']})
     return response['agentRuntimeArn']
 
 @helper.delete

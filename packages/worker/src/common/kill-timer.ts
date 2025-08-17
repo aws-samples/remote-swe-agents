@@ -1,5 +1,5 @@
 import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
-import { stopMyself } from '@remote-swe-agents/agent-core/aws';
+import { stopMyself } from './ec2';
 import { randomBytes } from 'crypto';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
