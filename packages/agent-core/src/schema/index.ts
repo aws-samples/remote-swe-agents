@@ -6,3 +6,5 @@ export * from './agent';
 export * from './session';
 export * from './message';
 export * from './api-key';
+export * from './model';
+export * from './preferences';

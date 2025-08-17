@@ -4,11 +4,12 @@ import { getOrCreateWorkerInstance, sendWorkerEvent } from '@remote-swe-agents/a
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
-import { MessageItem, SessionItem } from '@remote-swe-agents/agent-core/schema';
+import { MessageItem, modelTypeSchema, SessionItem } from '@remote-swe-agents/agent-core/schema';
 
 // Schema for request validation
 const createSessionSchema = z.object({
   message: z.string().min(1),
+  modelOverride: modelTypeSchema.optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
   }
 
-  const { message } = parsedBody.data;
+  const { message, modelOverride } = parsedBody.data;
   const workerId = `api-${Date.now()}`;
   const now = Date.now();
 
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
               role: 'user',
               tokenCount: 0,
               messageType: 'userMessage',
+              modelOverride,
             } satisfies MessageItem,
           },
         },

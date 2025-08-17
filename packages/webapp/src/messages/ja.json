@@ -7,7 +7,7 @@
     "signOut": "サインアウト",
     "menu": "メニュー",
     "language": "言語",
-    "promptSettings": "プロンプト設定",
+    "preferences": "設定",
     "apiKeys": "APIキー",
     "costAnalysis": "コスト分析"
   },
@@ -173,6 +173,7 @@
     "imagesCount": "{count} 枚の画像",
     "waitingForImageUpload": "画像アップロード中...",
     "templates": "テンプレート",
+    "modelOverride": "モデル",
     "templateModal": {
       "title": "プロンプトテンプレート",
       "createNew": "新しいテンプレートを作成",
@@ -193,15 +194,25 @@
       "deleteError": "テンプレートの削除に失敗しました"
     }
   },
-  "prompt_settings": {
-    "title": "共通プロンプト設定",
-    "description": "すべてのエージェントとのやり取りに追加される共通プロンプトを設定します",
-    "configTitle": "エージェントプロンプト設定",
-    "configDescription": "このプロンプトはすべてのエージェントのシステムプロンプトに追加されます。組織全体のガイドラインや指示を設定するために使用してください。",
-    "placeholder": "共通プロンプトテキストを入力してください...",
-    "saveButton": "プロンプトを保存",
-    "saveSuccess": "共通プロンプトが正常に保存されました",
-    "saveError": "共通プロンプトの保存に失敗しました"
+  "preferences": {
+    "title": "設定",
+    "description": "アプリケーションの設定を行います",
+    "global": {
+      "title": "グローバル設定",
+      "description": "アプリケーションのグローバル設定を行います"
+    },
+    "updateSuccess": "設定が正常に更新されました",
+    "updateError": "設定の更新に失敗しました",
+    "defaultModel": "デフォルトモデル",
+    "defaultModelDescription": "デフォルトのAIモデルを選択してください",
+    "prompt": {
+      "title": "エージェントプロンプト設定",
+      "description": "このプロンプトはすべてのエージェントのシステムプロンプトに追加されます。組織全体のガイドラインや指示を設定するために使用してください。",
+      "placeholder": "共通プロンプトテキストを入力してください...",
+      "saveButton": "プロンプトを保存",
+      "saveSuccess": "共通プロンプトが正常に保存されました",
+      "saveError": "共通プロンプトの保存に失敗しました"
+    }
   },
   "api_settings": {
     "title": "APIキー",

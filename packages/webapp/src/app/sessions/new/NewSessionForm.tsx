@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, FileText } from 'lucide-react';
 import { createNewWorker } from './actions';
@@ -13,28 +12,25 @@ import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
+import { GlobalPreferences, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface NewSessionFormProps {
   templates: PromptTemplate[];
+  preferences: GlobalPreferences;
 }
 
-export default function NewSessionForm({ templates }: NewSessionFormProps) {
-  const router = useRouter();
+export default function NewSessionForm({ templates, preferences }: NewSessionFormProps) {
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const {
     form: { register, formState, reset, setValue, watch },
-    action: { isExecuting },
+    action: { isPending },
     handleSubmitWithAction,
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
     actionProps: {
-      onSuccess: (args) => {
-        if (args.data) {
-          router.push(`/sessions/${args.data.workerId}`);
-        }
-      },
+      onSuccess: (args) => {},
       onError: ({ error }) => {
         toast.error(typeof error === 'string' ? error : 'Failed to create session');
       },
@@ -43,6 +39,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
       defaultValues: {
         message: '',
         imageKeys: [],
+        modelOverride: preferences.modelOverride,
       },
     },
   });
@@ -67,6 +64,26 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
         <div className="text-left">
           <ImagePreviewList />
 
+          {/* Model Override Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('modelOverride')}
+            </label>
+            <select
+              {...register('modelOverride')}
+              disabled={isPending}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              {modelTypeList
+                .filter((type) => !modelConfigs[type].isHidden)
+                .map((type) => (
+                  <option key={type} value={type}>
+                    {modelConfigs[type].name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
           <div className="flex items-center justify-end mb-2">
             <label
               htmlFor="message"
@@ -78,7 +95,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
               <Button
                 type="button"
                 onClick={() => setIsTemplateModalOpen(true)}
-                disabled={isExecuting}
+                disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
@@ -89,7 +106,7 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
               <Button
                 type="button"
                 onClick={handleImageSelect}
-                disabled={isExecuting}
+                disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
@@ -104,15 +121,15 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
             id="message"
             {...register('message')}
             placeholder={t('placeholder')}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
             rows={4}
-            disabled={isExecuting}
+            disabled={isPending}
             onPaste={handlePaste}
             onKeyDown={(e) => {
               if (
                 e.key === 'Enter' &&
                 (e.ctrlKey || e.altKey || e.metaKey) &&
-                !isExecuting &&
+                !isPending &&
                 formState.isValid &&
                 !isUploading
               ) {
@@ -129,15 +146,11 @@ export default function NewSessionForm({ templates }: NewSessionFormProps) {
             <TooltipTrigger asChild>
               <Button
                 type="submit"
-                disabled={isExecuting || !formState.isValid || isUploading}
+                disabled={isPending || !formState.isValid || isUploading}
                 className="w-full"
                 size="lg"
               >
-                {isExecuting
-                  ? t('creatingSession')
-                  : isUploading
-                    ? t('waitingForImageUpload')
-                    : t('createSessionButton')}
+                {isPending ? t('creatingSession') : isUploading ? t('waitingForImageUpload') : t('createSessionButton')}
               </Button>
             </TooltipTrigger>
             <TooltipContent>

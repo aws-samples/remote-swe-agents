@@ -62,6 +62,21 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
               router.refresh();
             }
           }
+          if (event.type == 'sessionTitleUpdate') {
+            if (sessions.some((s) => s.workerId == event.workerId)) {
+              setSessions((prevSessions) =>
+                prevSessions.map((session) => {
+                  if (session.workerId === event.workerId) {
+                    return {
+                      ...session,
+                      title: event.newTitle,
+                    };
+                  }
+                  return session;
+                })
+              );
+            }
+          }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
@@ -148,7 +163,9 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
 
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{session.SK}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {session.title || session.SK}
+                  </h3>
                 </div>
 
                 <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">

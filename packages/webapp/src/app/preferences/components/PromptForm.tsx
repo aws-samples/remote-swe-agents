@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAction } from 'next-safe-action/hooks';
-import { savePromptAction } from '../actions';
+import { updateAdditionalSystemPrompt } from '../actions';
 import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -14,9 +14,9 @@ interface PromptFormProps {
 
 export default function PromptForm({ initialPrompt }: PromptFormProps) {
   const [prompt, setPrompt] = useState<string>(initialPrompt);
-  const t = useTranslations('prompt_settings');
+  const t = useTranslations('preferences.prompt');
 
-  const { execute: savePrompt, status: saveStatus } = useAction(savePromptAction, {
+  const { execute: savePrompt, status: saveStatus } = useAction(updateAdditionalSystemPrompt, {
     onSuccess: () => {
       toast.success(t('saveSuccess'));
     },

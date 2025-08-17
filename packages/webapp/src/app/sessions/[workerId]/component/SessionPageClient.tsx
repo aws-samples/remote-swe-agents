@@ -15,6 +15,7 @@ import {
   TodoList as TodoListType,
   AgentStatus,
   InstanceStatus,
+  GlobalPreferences,
 } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
@@ -27,6 +28,8 @@ import TakeOverModal from './TakeOverModal';
 
 interface SessionPageClientProps {
   workerId: string;
+  preferences: GlobalPreferences;
+  initialTitle: string | undefined;
   initialMessages: MessageView[];
   initialInstanceStatus?: InstanceStatus;
   initialAgentStatus?: AgentStatus;
@@ -35,6 +38,8 @@ interface SessionPageClientProps {
 
 export default function SessionPageClient({
   workerId,
+  preferences,
+  initialTitle,
   initialMessages,
   initialInstanceStatus,
   initialAgentStatus,
@@ -46,6 +51,7 @@ export default function SessionPageClient({
   const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
   const [todoList, setTodoList] = useState<TodoListType | null>(initialTodoList);
+  const [sessionTitle, setSessionTitle] = useState(initialTitle ?? '');
 
   // Update state when props change (e.g., on refresh)
   useEffect(() => {
@@ -155,6 +161,9 @@ export default function SessionPageClient({
             break;
           case 'agentStatusUpdate':
             setAgentStatus(event.status);
+            break;
+          case 'sessionTitleUpdate':
+            setSessionTitle(event.newTitle);
             break;
           case 'toolResult':
             setMessages((prev) => {
@@ -273,7 +282,7 @@ export default function SessionPageClient({
                 <span className="hidden sm:inline truncate text-sm sm:text-base">{t('sessionList')}</span>
               </Link>
               <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">
-                {workerId}
+                {sessionTitle || workerId}
               </h1>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -368,7 +377,12 @@ export default function SessionPageClient({
           onInterrupt={handleInterrupt}
         />
 
-        <MessageForm onSubmit={onSendMessage} workerId={workerId} onShareSession={() => setShowShareModal(true)} />
+        <MessageForm
+          onSubmit={onSendMessage}
+          workerId={workerId}
+          onShareSession={() => setShowShareModal(true)}
+          defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
+        />
 
         {/* Scroll buttons */}
         <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">

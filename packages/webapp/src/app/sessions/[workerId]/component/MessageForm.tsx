@@ -3,23 +3,25 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { Loader2, Send, Image as ImageIcon, Paperclip, Smile, AtSign, Hash, Plus, Share } from 'lucide-react';
+import { Loader2, Send, Image as ImageIcon, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler, useEffect, useRef } from 'react';
+import { KeyboardEventHandler, useCallback, useRef } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
   workerId: string;
   onShareSession: () => void;
+  defaultModelOverride: ModelType;
 };
 
-export default function MessageForm({ onSubmit, workerId, onShareSession }: MessageFormProps) {
+export default function MessageForm({ onSubmit, workerId, onShareSession, defaultModelOverride }: MessageFormProps) {
   const t = useTranslations('sessions');
 
   const {
@@ -36,9 +38,11 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
             content: args.input.message,
             timestamp: new Date(parseInt(args.data.item.SK)),
             type: 'message',
+            modelOverride: args.input.modelOverride,
           });
         }
         reset();
+        setValue('modelOverride', args.input.modelOverride);
         clearImages();
       },
       onError: ({ error }) => {
@@ -50,28 +54,34 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
         message: '',
         workerId: workerId,
         imageKeys: [],
+        modelOverride: defaultModelOverride,
       },
     },
   });
 
-  const message = watch('message');
   const { ref: messageRef, ...messageRegister } = register('message');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const autoResize = () => {
+  const autoResize = useCallback(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      const maxHeight = 600; // max height in pixels
-      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-      textarea.style.height = `${newHeight}px`;
-      textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
-    }
-  };
+    if (!textarea) return;
 
-  useEffect(() => {
-    autoResize();
-  }, [message]);
+    const currentHeight = textarea.style.height;
+    textarea.style.height = 'auto';
+    const maxHeight = 600;
+    const scrollHeight = textarea.scrollHeight;
+    const newHeight = Math.min(scrollHeight, maxHeight);
+    const newHeightPx = `${newHeight}px`;
+
+    // skip updating the height when it is not changed.
+    if (currentHeight === newHeightPx) {
+      textarea.style.height = currentHeight;
+      return;
+    }
+
+    textarea.style.height = newHeightPx;
+    textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, []);
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
     if (isExecuting || isUploading) return;
@@ -153,13 +163,26 @@ export default function MessageForm({ onSubmit, workerId, onShareSession }: Mess
                 </TooltipProvider>
               </div>
 
-              <div>
+              <div className="flex gap-2 items-center">
+                <select
+                  {...register('modelOverride')}
+                  disabled={isExecuting}
+                  className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white focus:outline-none"
+                >
+                  {modelTypeList
+                    .filter((type) => !modelConfigs[type].isHidden)
+                    .map((type) => (
+                      <option key={type} value={type}>
+                        {modelConfigs[type].name}
+                      </option>
+                    ))}
+                </select>
                 <TooltipProvider delayDuration={100}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         type="submit"
-                        disabled={!message?.trim() || isExecuting || isUploading}
+                        disabled={!formState.isValid || isExecuting || isUploading}
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"

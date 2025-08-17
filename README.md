@@ -358,20 +358,6 @@ As our agent can work as an MCP client, you can easily integrate it with various
 
 All the new agents can now use MCP servers as their tools.
 
-### Overriding the Foundation Model
-
-By default the Remote SWE uses Claude Sonnet 3.7 as the foundation model. You can override this configuration using an environment variable:
-
-```bash
-WORKER_MODEL_OVERRIDE=nova-pro npx cdk deploy
-```
-
-The available model values are: `sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro, opus4, and sonnet4`
-
-After deploying, new workers will use the override model.
-
-Note that this feature is highly experimental and we generally recommend to use the default model for optimized experience.
-
 ## How it works
 
 This system utilizes a Slack Bolt application to manage user interactions and implement a scalable worker system. Here's the main workflow:

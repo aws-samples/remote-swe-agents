@@ -1,5 +1,8 @@
 import { getSession, setSlackDestination } from '@remote-swe-agents/agent-core/lib';
 
+/**
+ * Set required global variables for the session (this is dirty but at least is working...)
+ */
 export const refreshSession = async (workerId: string) => {
   const session = await getSession(workerId);
   if (!session) return;

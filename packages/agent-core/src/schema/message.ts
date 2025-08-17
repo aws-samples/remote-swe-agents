@@ -1,5 +1,13 @@
+import { ModelType } from './model';
+
 export type MessageItem = {
-  PK: string;
+  /**
+   * message-${workerId}`
+   */
+  PK: `message-${string}`;
+  /**
+   * chronologically-sortable key (usually stringified timestamp)
+   */
   SK: string;
   /**
    * messsage.content in json string
@@ -13,4 +21,5 @@ export type MessageItem = {
    * Thinking budget in tokens when ultrathink is enabled
    */
   thinkingBudget?: number;
+  modelOverride?: ModelType;
 };
