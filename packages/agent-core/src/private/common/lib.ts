@@ -1,6 +1,5 @@
 import { Tool, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
-import { ZodSchema } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import z, { ZodType } from 'zod';
 
 export type ToolDefinition<Input> = {
   /**
@@ -8,14 +7,12 @@ export type ToolDefinition<Input> = {
    */
   readonly name: string;
   readonly handler: (input: Input, context: { toolUseId: string }) => Promise<string | ToolResultContentBlock[]>;
-  readonly schema: ZodSchema;
+  readonly schema: ZodType<Input>;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
 };
 
-export const zodToJsonSchemaBody = (schema: ZodSchema) => {
-  const key = 'mySchema';
-  const jsonSchema = zodToJsonSchema(schema, key);
-  return jsonSchema.definitions?.[key] as any;
+export const zodToJsonSchemaBody = (schema: ZodType) => {
+  return z.toJSONSchema(schema) as any;
 };
 
 export const truncate = (str: string, maxLength: number = 10 * 1e3, headRatio = 0.2) => {
