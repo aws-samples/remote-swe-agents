@@ -1,18 +1,42 @@
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
-import { CustomResource, Duration } from 'aws-cdk-lib';
+import { CfnOutput, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { IGrantable, IPrincipal, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { IBucket } from 'aws-cdk-lib/aws-s3';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { ContainerImageBuild } from 'deploy-time-build';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { WorkerBus } from './bus';
 
-export interface AgentCoreRuntimeProps {}
+export interface AgentCoreRuntimeProps {
+  storageTable: ITableV2;
+  imageBucket: IBucket;
+  bus: WorkerBus;
+  slackBotTokenParameter: IStringParameter;
+  gitHubApp?: {
+    privateKeyParameterName: string;
+    appId: string;
+    installationId: string;
+  };
+  gitHubAppPrivateKeyParameter?: IStringParameter;
+  githubPersonalAccessTokenParameter?: IStringParameter;
+  loadBalancing?: {
+    awsAccounts: string[];
+    roleName: string;
+  };
+  accessLogBucket: IBucket;
+  amiIdParameterName: string;
+  webappOriginSourceParameter: IStringParameter;
+}
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
   public grantPrincipal: IPrincipal;
+  public runtimeArn: string;
 
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
@@ -71,6 +95,8 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
           'logs:DescribeLogStreams',
           'logs:DescribeLogGroups',
           'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
           'bedrock-agentcore:GetWorkloadAccessToken',
           'bedrock-agentcore:GetWorkloadAccessTokenForJWT',
           'bedrock-agentcore:GetWorkloadAccessTokenForUserId',
@@ -78,6 +104,19 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         resources: ['*'],
       })
     );
+    role.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: ['*'],
+      })
+    );
+    props.storageTable.grantReadWriteData(role);
+    props.imageBucket.grantReadWrite(role);
+    props.gitHubAppPrivateKeyParameter?.grantRead(role);
+    props.githubPersonalAccessTokenParameter?.grantRead(role);
+    props.slackBotTokenParameter.grantRead(role);
+    props.bus.api.grantPublishAndSubscribe(role);
+    props.bus.api.grantConnect(role);
 
     const resource = new CustomResource(this, 'Resource', {
       serviceToken: crHandler.functionArn,
@@ -86,9 +125,26 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         ContainerUri: `${repository.repositoryUri}:${image.imageTag}`,
         RoleArn: role.roleArn,
         ServerProtocol: 'HTTP',
-        Env: {},
+        Env: {
+          AWS_REGION: Stack.of(this).region,
+          EVENT_HTTP_ENDPOINT: props.bus.httpEndpoint,
+          GITHUB_APP_PRIVATE_KEY_PATH: props.gitHubAppPrivateKeyParameter ? '/opt/private-key.pem' : '',
+          GITHUB_APP_ID: props.gitHubApp?.appId ?? '',
+          GITHUB_APP_INSTALLATION_ID: props.gitHubApp?.installationId ?? '',
+          TABLE_NAME: props.storageTable.tableName,
+          BUCKET_NAME: props.imageBucket.bucketName,
+          WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
+          // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
+          // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
+          WORKER_ID: 'test',
+          SLACK_BOT_TOKEN: props.slackBotTokenParameter.stringValue,
+          GITHUB_PERSONAL_ACCESS_TOKEN: props.githubPersonalAccessTokenParameter?.stringValue ?? '',
+        },
       },
       serviceTimeout: Duration.seconds(20),
     });
+
+    this.runtimeArn = resource.getAttString('agentRuntimeArn');
+    new CfnOutput(this, 'RuntimeArn', { value: this.runtimeArn });
   }
 }

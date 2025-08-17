@@ -447,6 +447,17 @@ systemctl start myapp
     });
 
     const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
+      storageTable: props.storageTable,
+      imageBucket: props.imageBucket,
+      bus: bus,
+      slackBotTokenParameter: props.slackBotTokenParameter,
+      gitHubApp: props.gitHubApp,
+      gitHubAppPrivateKeyParameter: privateKey,
+      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
+      loadBalancing: props.loadBalancing,
+      accessLogBucket: props.accessLogBucket,
+      amiIdParameterName: props.amiIdParameterName,
+      webappOriginSourceParameter: props.webappOriginSourceParameter,
     });
 
     props.webappOriginSourceParameter.grantRead(role);

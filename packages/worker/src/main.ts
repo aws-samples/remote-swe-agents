@@ -9,6 +9,7 @@ import { sendSystemMessage, updateInstanceStatus, workerEventSchema } from '@rem
 import { WorkerId } from '@remote-swe-agents/agent-core/env';
 import { updateAgentStatusWithEvent } from './common/status';
 import { refreshSession } from './common/refresh-session';
+import { startAgentCoreRuntimeApi } from './api';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -99,10 +100,24 @@ class ConverseSessionTracker {
       }
     }
   }
+
+  /**
+   * return true if there is ongoing session.
+   */
+  public isBusy() {
+    return this.sessions.some((session) => !session.isFinished);
+  }
 }
 
 const main = async () => {
   const tracker = new ConverseSessionTracker(workerId);
+  await startAgentCoreRuntimeApi(() => {
+    if (tracker.isBusy()) {
+      return 'busy';
+    }
+    return 'idle';
+  });
+
   const broadcast = await events.connect('/event-bus/broadcast');
   broadcast.subscribe({
     next: (data) => {

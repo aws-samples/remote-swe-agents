@@ -1,6 +1,3 @@
-# FROM public.ecr.aws/docker/library/node:22 AS builder
-
-
 FROM public.ecr.aws/ubuntu/ubuntu:noble
 
 RUN apt-get update && apt-get install -y
@@ -25,6 +22,6 @@ RUN npm ci
 COPY ./ ./
 RUN cd packages/agent-core && npm run build
 RUN cd packages/worker && npm run bundle
-# COPY packages/worker/dist packages/worker/
 
+EXPOSE 8080
 CMD ["node", "packages/worker/dist/main.js"]
