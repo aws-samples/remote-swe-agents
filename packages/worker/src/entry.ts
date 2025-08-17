@@ -148,4 +148,3 @@ export const main = async (workerId: string) => {
     console.log(e);
   }
 };
-
