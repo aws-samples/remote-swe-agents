@@ -61,7 +61,7 @@ export class Webapp extends Construct {
         ...readFileSync('.dockerignore').toString().split('\n'),
         'packages/github-actions',
         'packages/slack-bolt-app',
-        'packages/worker',
+        // 'packages/worker',
       ],
       tagPrefix: 'webapp-starter-',
       buildArgs: {
