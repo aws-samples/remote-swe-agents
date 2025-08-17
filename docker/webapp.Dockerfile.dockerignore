@@ -1,10 +1,6 @@
 *
 !packages/agent-core
 !packages/webapp
-# temporarily adding to avoid @hookform/resolver dependency issue
-# https://github.com/react-hook-form/resolvers/issues/762
-# to include zod v3 library
-!packages/worker
 !package*.json
 !patches
 **/node_modules
