@@ -18,10 +18,6 @@
     "./tools": {
       "types": "./dist/tools/index.d.ts",
       "default": "./dist/tools/index.js"
-    },
-    "./env": {
-      "types": "./dist/env.d.ts",
-      "default": "./dist/env.js"
     }
   },
   "scripts": {

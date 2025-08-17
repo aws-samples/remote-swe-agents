@@ -6,7 +6,10 @@ export type ToolDefinition<Input> = {
    * Name of the tool. This is the identifier of the tool for the agent.
    */
   readonly name: string;
-  readonly handler: (input: Input, context: { toolUseId: string }) => Promise<string | ToolResultContentBlock[]>;
+  readonly handler: (
+    input: Input,
+    context: { workerId: string; toolUseId: string }
+  ) => Promise<string | ToolResultContentBlock[]>;
   readonly schema: ZodType<Input>;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
 };

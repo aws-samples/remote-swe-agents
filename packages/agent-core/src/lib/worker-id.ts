@@ -1,5 +1,3 @@
-import { WorkerId } from '../env';
-
 /**
  * Extracts worker ID from a text that contains the WORKER_ID metadata
  * @param text - The text to search
@@ -15,6 +13,6 @@ export const extractWorkerIdFromText = (text: string): string | null => {
  * @param content - The original content
  * @returns The content with worker ID metadata appended
  */
-export const appendWorkerIdMetadata = (content: string, workerId = WorkerId): string => {
+export const appendWorkerIdMetadata = (content: string, workerId: string): string => {
   return `${content}\n\n<!-- DO NOT EDIT: System generated metadata -->\n<!-- WORKER_ID:${workerId} -->`;
 };

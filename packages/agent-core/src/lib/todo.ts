@@ -1,4 +1,3 @@
-import { WorkerId } from '../env';
 import { readMetadata, writeMetadata } from './metadata';
 import { TodoItem, TodoList } from '../schema/todo';
 
@@ -8,7 +7,7 @@ export const TODO_METADATA_KEY = 'todo-list';
  * Retrieve the current todo list for the session
  * @returns The current todo list or null if none exists
  */
-export async function getTodoList(workerId = WorkerId): Promise<TodoList | null> {
+export async function getTodoList(workerId: string): Promise<TodoList | null> {
   const metadata = await readMetadata(TODO_METADATA_KEY, workerId);
   if (!metadata?.items) {
     return null;
@@ -20,7 +19,7 @@ export async function getTodoList(workerId = WorkerId): Promise<TodoList | null>
  * Save a todo list to session metadata
  * @param todoList The todo list to save
  */
-export async function saveTodoList(todoList: TodoList, workerId = WorkerId): Promise<void> {
+export async function saveTodoList(todoList: TodoList, workerId: string): Promise<void> {
   await writeMetadata(TODO_METADATA_KEY, todoList, workerId);
 }
 
@@ -29,7 +28,7 @@ export async function saveTodoList(todoList: TodoList, workerId = WorkerId): Pro
  * @param items Array of task descriptions to initialize
  * @returns The newly created todo list
  */
-export async function initializeTodoList(items: string[]): Promise<TodoList> {
+export async function initializeTodoList(items: string[], workerId: string): Promise<TodoList> {
   const now = Date.now();
 
   const todoList: TodoList = {
@@ -43,7 +42,7 @@ export async function initializeTodoList(items: string[]): Promise<TodoList> {
     lastUpdated: now,
   };
 
-  await saveTodoList(todoList);
+  await saveTodoList(todoList, workerId);
   return todoList;
 }
 
@@ -57,29 +56,15 @@ export interface TodoItemUpdate {
 }
 
 /**
- * Update a task in the todo list
- * @param id ID of the task to update
- * @param status New status for the task
- * @param description Optional new description for the task
- * @returns Updated todo list or null if no list exists
- */
-export async function updateTodoItem(
-  id: string,
-  status: TodoItem['status'],
-  description?: string
-): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
-  return updateTodoItems([{ id, status, description }]);
-}
-
-/**
  * Update multiple tasks in the todo list
  * @param updates Array of task updates with id, status and optional description
  * @returns Updated todo list or error if any update fails
  */
 export async function updateTodoItems(
-  updates: TodoItemUpdate[]
+  updates: TodoItemUpdate[],
+  workerId: string
 ): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
-  const todoList = await getTodoList();
+  const todoList = await getTodoList(workerId);
   if (!todoList) {
     return { success: false, currentList: null, error: 'No todo list exists. Please create one first.' };
   }
@@ -122,7 +107,7 @@ export async function updateTodoItems(
     throw e;
   }
 
-  await saveTodoList(updatedList);
+  await saveTodoList(updatedList, workerId);
   return { success: true, updatedList };
 }
 
@@ -143,15 +128,6 @@ export function formatTodoList(todoList: TodoList | null): string {
   });
 
   return markdown;
-}
-
-/**
- * Get the current todo list as markdown string to include in messages
- * @returns Formatted markdown string of the todo list or empty string if none exists
- */
-export async function getCurrentTodoList(workerId = WorkerId): Promise<string> {
-  const todoList = await getTodoList(workerId);
-  return formatTodoList(todoList);
 }
 
 class TodoListValidationError extends Error {}
