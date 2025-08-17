@@ -1,7 +1,6 @@
 import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
 import { stopMyself } from '@remote-swe-agents/agent-core/aws';
 import { randomBytes } from 'crypto';
-import { WorkerId } from '@remote-swe-agents/agent-core/env';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
@@ -22,16 +21,16 @@ let paused = false;
 // A: call restartKillTimer
 //  -> process can be killed despite pause request from B.
 
-export const setKillTimer = () => {
+export const setKillTimer = (workerId: string) => {
   if (paused) return;
   if (killTimer) {
     clearTimeout(killTimer);
   }
   killTimer = setTimeout(
     async () => {
-      await sendSystemMessage(WorkerId, 'Going to sleep mode. You can wake me up at any time.');
+      await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
       // Update instance status to stopped in DynamoDB before stopping the instance
-      await updateInstanceStatus(WorkerId, 'stopped');
+      await updateInstanceStatus(workerId, 'stopped');
       await stopMyself();
     },
     30 * 60 * 1000
@@ -50,9 +49,9 @@ export const pauseKillTimer = () => {
   return restartToken;
 };
 
-export const restartKillTimer = (token: string) => {
+export const restartKillTimer = (workerId: string, token: string) => {
   if (token == restartToken) {
     paused = false;
-    setKillTimer();
+    setKillTimer(workerId);
   }
 };

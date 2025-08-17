@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
-import { updateTodoItem, updateTodoItems, TodoItemUpdate, formatTodoList } from '../../lib/todo';
+import { updateTodoItems, TodoItemUpdate, formatTodoList } from '../../lib/todo';
 import { todoInitTool } from './todo-init';
 
 // Item update schema
@@ -15,12 +15,15 @@ const todoUpdateInputSchema = z.object({
   updates: z.array(todoItemUpdateSchema).nonempty().describe('Array of task updates to process in batch'),
 });
 
-async function todoUpdate(params: z.infer<typeof todoUpdateInputSchema>): Promise<string> {
+async function todoUpdate(
+  params: z.infer<typeof todoUpdateInputSchema>,
+  context: { workerId: string }
+): Promise<string> {
   // Get updates from params
   const updates: TodoItemUpdate[] = params.updates;
 
   // Update the todo items
-  const result = await updateTodoItems(updates);
+  const result = await updateTodoItems(updates, context.workerId);
 
   if (!result.success) {
     return `Update failed: ${result.error}\n\n${result.currentList ? `Current todo list:\n${formatTodoList(result.currentList)}` : ''}`.trim();

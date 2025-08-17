@@ -1,7 +1,7 @@
 import type { App } from '@slack/bolt';
 import { readFileSync } from 'fs';
-import { SlackBotToken } from '../env';
 
+const SlackBotToken = process.env.SLACK_BOT_TOKEN!;
 let disableSlack = true;
 let SlackChannelId = '';
 let SlackThreadTs = '';

@@ -426,7 +426,7 @@ Users will primarily request software engineering assistance including bug fixes
             }
 
             console.log(`using tool: ${name} ${JSON.stringify(input)}`);
-            const result = await tool.handler(input as any, { toolUseId });
+            const result = await tool.handler(input as any, { toolUseId, workerId });
             if (typeof result == 'string') {
               toolResult = result;
             } else {
