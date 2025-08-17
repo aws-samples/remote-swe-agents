@@ -1,15 +1,15 @@
 import { createInterface } from 'readline';
 import { onMessageReceived } from './agent';
-import { WorkerId } from '@remote-swe-agents/agent-core/env';
 import { renderUserMessage, saveConversationHistory } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from './common/cancellation-token';
 import './common/signal-handler';
+import { randomBytes } from 'crypto';
 
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-const workerId = WorkerId;
+const workerId = process.env.WORKER_ID ?? randomBytes(10).toString('hex');
 
 async function processInput(input: string) {
   try {

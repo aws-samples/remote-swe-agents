@@ -48,7 +48,7 @@ function displayVehicleInfo(vehicle: Vehicle) {
     if (vehicle.isElectric) {
         console.log('Electric Vehicle');`,
     },
-    { toolUseId: 'dummy' }
+    { toolUseId: 'dummy', workerId: 'dummy' }
   );
   const newFile = readFileSync(filePath, 'utf-8');
 
@@ -96,7 +96,7 @@ function getUserDisplayName(user: User): string {
       oldString: '',
       newString: newContent,
     },
-    { toolUseId: 'dummy' }
+    { toolUseId: 'dummy', workerId: 'dummy' }
   );
 
   // THEN
@@ -130,7 +130,7 @@ const config = {
       oldString: '',
       newString: 'new content that should not be written',
     },
-    { toolUseId: 'dummy' }
+    { toolUseId: 'dummy', workerId: 'dummy' }
   );
 
   // THEN

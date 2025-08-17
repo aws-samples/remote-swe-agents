@@ -126,7 +126,7 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
 
   // Embed workerId as HTML comment (invisible to users)
   // Regex to search the PR id: /<!-- WORKER_ID:([^-]+) -->/
-  finalDescription = appendWorkerIdMetadata(finalDescription);
+  finalDescription = appendWorkerIdMetadata(finalDescription, workerId);
 
   // Append webapp session URL if available
   const sessionUrl = await getWebappSessionUrl(workerId);

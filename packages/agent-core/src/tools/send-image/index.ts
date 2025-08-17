@@ -5,7 +5,6 @@ import { s3, BucketName } from '../../lib/aws/s3';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { readFileSync } from 'fs';
 import { extname } from 'path';
-import { WorkerId } from '../../env';
 import { getAttachedImageKey } from '../../lib';
 
 const inputSchema = z.object({
@@ -32,12 +31,12 @@ const getContentTypeFromExtension = (filePath: string): string => {
 
 export const sendImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
-  handler: async (input: z.infer<typeof inputSchema>, context: { toolUseId: string }) => {
+  handler: async (input: z.infer<typeof inputSchema>, context) => {
     await sendFileToSlack(input.imagePath, input.message);
 
     const fileBuffer = readFileSync(input.imagePath);
     const contentType = getContentTypeFromExtension(input.imagePath);
-    const s3Key = getAttachedImageKey(WorkerId, context.toolUseId, input.imagePath);
+    const s3Key = getAttachedImageKey(context.workerId, context.toolUseId, input.imagePath);
 
     await s3.send(
       new PutObjectCommand({

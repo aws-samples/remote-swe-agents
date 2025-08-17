@@ -129,13 +129,13 @@ const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>) 
   return formatCommentsAsThreads(data);
 };
 
-const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>) => {
+const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>, context: { workerId: string }) => {
   const { owner, repo, pullRequestId, commentId, body } = input;
 
   const octokit = await getOctokitClient();
 
   // Append workerId metadata to comment body
-  const finalBody = appendWorkerIdMetadata(body);
+  const finalBody = appendWorkerIdMetadata(body, context.workerId);
 
   // Use Octokit to reply to a comment
   await octokit.pulls.createReplyForReviewComment({
@@ -149,13 +149,13 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
   return `Successfully replied to comment ${commentId}`;
 };
 
-const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchema>) => {
+const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchema>, context: { workerId: string }) => {
   const { owner, repo, issueNumber, body } = input;
 
   const octokit = await getOctokitClient();
 
   // Append workerId metadata to comment body
-  const finalBody = appendWorkerIdMetadata(body);
+  const finalBody = appendWorkerIdMetadata(body, context.workerId);
 
   // Use Octokit to add a comment to an issue
   await octokit.issues.createComment({
@@ -259,13 +259,16 @@ if (false) {
           console.log(`Replying to comment ${commentId} in PR #${replyPullRequestId} of ${replyOwner}/${replyRepo}...`);
           console.log(`Message: "${body}"`);
 
-          const replyResult = await replyPRCommentHandler({
-            owner: replyOwner,
-            repo: replyRepo,
-            pullRequestId: parseInt(replyPullRequestId),
-            commentId: parseInt(commentId),
-            body,
-          });
+          const replyResult = await replyPRCommentHandler(
+            {
+              owner: replyOwner,
+              repo: replyRepo,
+              pullRequestId: parseInt(replyPullRequestId),
+              commentId: parseInt(commentId),
+              body,
+            },
+            { workerId: 'test' }
+          );
 
           console.log('Result:');
           console.log(replyResult);
@@ -284,12 +287,15 @@ if (false) {
           console.log(`Adding comment to issue #${issueNumber} in ${issueOwner}/${issueRepo}...`);
           console.log(`Message: "${issueBody}"`);
 
-          const issueCommentResult = await addIssueCommentHandler({
-            owner: issueOwner,
-            repo: issueRepo,
-            issueNumber: parseInt(issueNumber),
-            body: issueBody,
-          });
+          const issueCommentResult = await addIssueCommentHandler(
+            {
+              owner: issueOwner,
+              repo: issueRepo,
+              issueNumber: parseInt(issueNumber),
+              body: issueBody,
+            },
+            { workerId: 'test' }
+          );
 
           console.log('Result:');
           console.log(issueCommentResult);
