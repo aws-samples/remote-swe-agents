@@ -62,7 +62,7 @@ export interface TodoItemUpdate {
  */
 export async function updateTodoItems(
   updates: TodoItemUpdate[],
-  workerId: string,
+  workerId: string
 ): Promise<{ success: true; updatedList: TodoList } | { success: false; error: string; currentList: TodoList | null }> {
   const todoList = await getTodoList(workerId);
   if (!todoList) {
