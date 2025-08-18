@@ -64,7 +64,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         resources: ['*'],
       })
     );
-    crHandler.role?.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
+    crHandler.role?.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('BedrockAgentCoreFullAccess'));
 
     const role = new Role(this, 'Role', {
       assumedBy: ServicePrincipal.fromStaticServicePrincipleName('bedrock-agentcore.amazonaws.com'),

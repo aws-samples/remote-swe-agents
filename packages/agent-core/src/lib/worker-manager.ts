@@ -165,15 +165,19 @@ export async function getOrCreateWorkerInstance(
   workerType: 'agentCore' | 'ec2' = 'ec2'
 ): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
   if (workerType == 'agentCore') {
-    await agentCore.send(
+    console.log(workerId);
+    const res = await agentCore.send(
       new InvokeAgentRuntimeCommand({
         agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
         runtimeSessionId: workerId,
         payload: JSON.stringify({ sessionId: workerId }),
+        contentType: 'application/json',
       })
     );
+    console.log(res);
     return { instanceId: 'local', oldStatus: 'running' };
   }
+
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
   if (runningInstanceId) {

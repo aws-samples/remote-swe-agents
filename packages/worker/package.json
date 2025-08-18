@@ -2,7 +2,7 @@
   "name": "worker",
   "scripts": {
     "build": "tsc",
-    "bundle": "esbuild src/main.ts --bundle --outdir=dist --platform=node --charset=utf8",
+    "bundle": "esbuild src/*.ts --bundle --outdir=dist --platform=node --charset=utf8",
     "format": "prettier --write './**/*.ts'",
     "format:check": "prettier --check './**/*.ts'",
     "test": "npm run testv -- run --silent",

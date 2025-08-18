@@ -12,7 +12,12 @@ import { redirect } from 'next/navigation';
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const workerId = `webapp-${Date.now()}`;
+    const workerId =
+      `webapp-${Date.now()}` +
+      new Array(20)
+        .fill(0)
+        .map((_) => '0')
+        .join('');
     const { message, imageKeys = [], modelOverride } = parsedInput;
     const now = Date.now();
     const { userId } = ctx;
@@ -75,7 +80,7 @@ export const createNewWorker = authActionClient
     );
 
     // Start EC2 instance for the worker
-    await getOrCreateWorkerInstance(workerId);
+    await getOrCreateWorkerInstance(workerId, 'agentCore');
 
     // Send worker event to notify message received
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });

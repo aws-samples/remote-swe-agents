@@ -21,7 +21,8 @@ COPY packages/worker/package*.json ./packages/worker/
 RUN npm ci
 COPY ./ ./
 RUN cd packages/agent-core && npm run build
-RUN cd packages/worker && npm run bundle
+# RUN cd packages/worker && npm run bundle
 
+WORKDIR /app/packages/worker
 EXPOSE 8080
-CMD ["node", "packages/worker/dist/main.js"]
+CMD ["npx", "tsx", "src/agent-core.ts"]
