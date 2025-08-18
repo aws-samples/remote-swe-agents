@@ -2,11 +2,27 @@ import Header from '@/components/Header';
 import { getTranslations } from 'next-intl/server';
 import CustomAgentForm from './components/CustomAgentForm';
 import PreferenceSection from '../preferences/components/PreferenceSection';
+import {
+  cloneRepositoryTool,
+  fileEditTool,
+  readImageTool,
+  ciTool,
+  commandExecutionTool,
+  createPRTool,
+} from '@remote-swe-agents/agent-core/tools';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CustomAgentPage() {
   const t = await getTranslations('customAgent');
+  const availableTools = await Promise.all(
+    [fileEditTool, readImageTool, cloneRepositoryTool, createPRTool, ciTool, commandExecutionTool].map(
+      async (tool) => ({
+        name: tool.name,
+        description: (await tool.toolSpec()).description ?? '',
+      })
+    )
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -20,7 +36,7 @@ export default async function CustomAgentPage() {
 
         <div className="space-y-6">
           <PreferenceSection title={t('create.title')} description={t('create.description')}>
-            <CustomAgentForm />
+            <CustomAgentForm availableTools={availableTools} />
           </PreferenceSection>
         </div>
       </main>

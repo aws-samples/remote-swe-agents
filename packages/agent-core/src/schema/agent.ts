@@ -9,10 +9,12 @@ export const customAgentSchema = z.object({
   PK: z.literal('custom-agent'),
   SK: z.string(),
   name: z.string(),
+  description: z.string(),
   defaultModel: modelTypeSchema,
   systemPrompt: z.string(),
   tools: z.array(z.string()),
   mcpConfig: z.string(),
+  runtimeType: z.union([z.literal('ec2'), z.literal('agent-core')]),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

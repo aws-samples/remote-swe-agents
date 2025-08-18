@@ -2,19 +2,22 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { Controller } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { createCustomAgent } from '../actions';
 import { createCustomAgentSchema } from '../schemas';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 
-export default function CustomAgentForm() {
+type CustomAgentFormProps = {
+  availableTools: { name: string; description: string }[];
+};
+
+export default function CustomAgentForm(props: CustomAgentFormProps) {
   const t = useTranslations('customAgent');
   const [toolsInput, setToolsInput] = useState('');
 
