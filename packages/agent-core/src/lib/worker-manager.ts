@@ -1,8 +1,11 @@
 import { DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
 import { GetParameterCommand, ParameterNotFound } from '@aws-sdk/client-ssm';
+import { BedrockAgentCoreClient, InvokeAgentRuntimeCommand } from '@aws-sdk/client-bedrock-agentcore';
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, ec2, ssm, TableName } from './aws';
 import { sendWebappEvent } from './events';
+
+const agentCore = new BedrockAgentCoreClient({ region: 'us-east-1' });
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
@@ -158,8 +161,23 @@ async function createWorkerInstance(
 }
 
 export async function getOrCreateWorkerInstance(
-  workerId: string
+  workerId: string,
+  workerType: 'agentCore' | 'ec2' = 'ec2'
 ): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
+  if (workerType == 'agentCore') {
+    console.log(workerId);
+    const res = await agentCore.send(
+      new InvokeAgentRuntimeCommand({
+        agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
+        runtimeSessionId: workerId,
+        payload: JSON.stringify({ sessionId: workerId }),
+        contentType: 'application/json',
+      })
+    );
+    console.log(res);
+    return { instanceId: 'local', oldStatus: 'running' };
+  }
+
   // First, check if an instance with this workerId is already running
   const runningInstanceId = await findRunningWorkerInstance(workerId);
   if (runningInstanceId) {

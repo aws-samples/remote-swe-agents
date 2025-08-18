@@ -12,6 +12,8 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import { WorkerImageBuilder } from './image-builder';
 import { readFileSync } from 'fs';
 import { Asset, AssetProps } from 'aws-cdk-lib/aws-s3-assets';
+import { AgentCoreRuntime } from './agent-core-runtime';
+import { IRepository } from 'aws-cdk-lib/aws-ecr';
 
 export interface WorkerProps {
   vpc: ec2.IVpc;
@@ -32,6 +34,7 @@ export interface WorkerProps {
   amiIdParameterName: string;
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
+  agentCoreRepository?: IRepository;
 }
 
 export class Worker extends Construct {
@@ -39,6 +42,7 @@ export class Worker extends Construct {
   public readonly bus: WorkerBus;
   public readonly logGroup: logs.LogGroup;
   public readonly imageBuilder: WorkerImageBuilder;
+  public readonly agentCoreRuntimeArn?: string;
 
   constructor(scope: Construct, id: string, props: WorkerProps) {
     super(scope, id);
@@ -343,6 +347,7 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=myapp
 # Static environment variables
+Environment=WORKER_RUNTIME=ec2
 Environment=AWS_REGION=${Stack.of(this).region}
 Environment=EVENT_HTTP_ENDPOINT=${bus.httpEndpoint}
 Environment=GITHUB_APP_PRIVATE_KEY_PATH=${privateKey ? '/opt/private-key.pem' : ''}
@@ -444,6 +449,24 @@ systemctl start myapp
       sourceBucket,
       sourceAssetHash,
     });
+
+    if (props.agentCoreRepository) {
+      const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
+        repository: props.agentCoreRepository,
+        storageTable: props.storageTable,
+        imageBucket: props.imageBucket,
+        bus: bus,
+        slackBotTokenParameter: props.slackBotTokenParameter,
+        gitHubApp: props.gitHubApp,
+        gitHubAppPrivateKeyParameter: privateKey,
+        githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
+        loadBalancing: props.loadBalancing,
+        accessLogBucket: props.accessLogBucket,
+        amiIdParameterName: props.amiIdParameterName,
+        webappOriginSourceParameter: props.webappOriginSourceParameter,
+      });
+      this.agentCoreRuntimeArn = agentCoreRuntime.runtimeArn;
+    }
 
     props.webappOriginSourceParameter.grantRead(role);
     role.addToPrincipalPolicy(

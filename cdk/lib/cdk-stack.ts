@@ -14,6 +14,7 @@ import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Auth } from './constructs/auth';
 import { AsyncJob } from './constructs/async-job';
 import { Webapp } from './constructs/webapp';
+import { IRepository } from 'aws-cdk-lib/aws-ecr';
 
 export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
@@ -43,6 +44,7 @@ export interface MainStackProps extends cdk.StackProps {
   readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
   readonly initialWebappUserEmail?: string;
+  readonly agentCoreRepository?: IRepository;
 }
 
 export class MainStack extends cdk.Stack {
@@ -128,6 +130,7 @@ export class MainStack extends cdk.Stack {
       amiIdParameterName: workerAmiIdParameter.parameterName,
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
+      agentCoreRepository: props.agentCoreRepository,
     });
 
     const auth = new Auth(this, 'Auth', {
@@ -154,6 +157,7 @@ export class MainStack extends cdk.Stack {
       asyncJob,
       workerAmiIdParameter,
       originNameParameter,
+      agentCoreRuntimeArn: worker.agentCoreRuntimeArn,
     });
 
     new SlackBolt(this, 'SlackBolt', {

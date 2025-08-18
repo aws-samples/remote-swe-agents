@@ -2,7 +2,7 @@
   "name": "worker",
   "scripts": {
     "build": "tsc",
-    "bundle": "esbuild src/main.ts --bundle --outdir=dist --platform=node --charset=utf8",
+    "bundle": "esbuild src/*.ts --bundle --outdir=dist --platform=node --charset=utf8",
     "format": "prettier --write './**/*.ts'",
     "format:check": "prettier --check './**/*.ts'",
     "test": "npm run testv -- run --silent",
@@ -21,7 +21,8 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.744.0",
     "@aws-sdk/client-dynamodb": "^3.744.0",
-    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-ec2": "^3.868.0",
+    "@aws-sdk/client-s3": "^3.864.0",
     "@aws-sdk/client-sts": "^3.758.0",
     "@aws-sdk/credential-providers": "^3.750.0",
     "@aws-sdk/lib-dynamodb": "^3.744.0",
@@ -29,6 +30,7 @@
     "@remote-swe-agents/agent-core": "file:../agent-core",
     "@slack/bolt": "^4.2.0",
     "aws-amplify": "^6.12.3",
+    "express": "^5.1.0",
     "p-retry": "^6.2.1",
     "playwright": "^1.52.0",
     "sharp": "^0.33.5",

@@ -30,6 +30,7 @@ export interface WebappProps {
   workerBus: WorkerBus;
   workerAmiIdParameter: IStringParameter;
   originNameParameter: IStringParameter;
+  agentCoreRuntimeArn?: string;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -85,6 +86,7 @@ export class Webapp extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
+        AGENT_RUNTIME_ARN: props.agentCoreRuntimeArn ?? '',
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,

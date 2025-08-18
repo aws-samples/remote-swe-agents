@@ -97,10 +97,25 @@ class ConverseSessionTracker {
       }
     }
   }
+
+  /**
+   * return true if there is ongoing session.
+   */
+  public isBusy() {
+    return this.sessions.some((session) => !session.isFinished);
+  }
 }
 
+const isStarted: { [key: string]: boolean } = {};
 export const main = async (workerId: string) => {
+  if (isStarted[workerId]) {
+    console.log(`The worker ${workerId} is already started.`);
+    return;
+  }
+
+  isStarted[workerId] = true;
   const tracker = new ConverseSessionTracker(workerId);
+
   const broadcast = await events.connect('/event-bus/broadcast');
   broadcast.subscribe({
     next: (data) => {
@@ -147,4 +162,6 @@ export const main = async (workerId: string) => {
     await sendSystemMessage(workerId, `An error occurred: ${e}`);
     console.log(e);
   }
+
+  return tracker;
 };
