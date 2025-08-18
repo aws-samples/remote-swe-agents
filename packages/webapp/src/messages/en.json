@@ -260,5 +260,44 @@
       "getSessionReturns": "Returns session details:",
       "exampleCurl": "cURL command example:"
     }
+  },
+  "customAgent": {
+    "title": "Custom Agents",
+    "description": "Create and manage custom AI agents with specific behaviors and capabilities",
+    "create": {
+      "title": "Create Custom Agent",
+      "description": "Define a custom AI agent with specific system prompts, tools, and configurations"
+    },
+    "createSuccess": "Custom agent created successfully",
+    "createError": "Failed to create custom agent",
+    "form": {
+      "name": {
+        "label": "Agent Name",
+        "placeholder": "Enter agent name (e.g., Code Reviewer, Bug Hunter)",
+        "description": "A descriptive name for your custom agent"
+      },
+      "defaultModel": {
+        "label": "Default Model",
+        "placeholder": "Select a model",
+        "description": "The AI model this agent will use by default"
+      },
+      "systemPrompt": {
+        "label": "System Prompt",
+        "placeholder": "You are a helpful assistant specialized in...",
+        "description": "Define the agent's behavior, expertise, and response style"
+      },
+      "tools": {
+        "label": "Tools",
+        "placeholder": "bash, file-editor, web-search",
+        "description": "Comma-separated list of tools the agent can use"
+      },
+      "mcpConfig": {
+        "label": "MCP Configuration",
+        "placeholder": "Enter MCP configuration JSON (optional)",
+        "description": "Optional MCP (Model Context Protocol) configuration for advanced integrations"
+      },
+      "create": "Create Agent",
+      "creating": "Creating..."
+    }
   }
 }

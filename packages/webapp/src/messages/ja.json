@@ -259,5 +259,44 @@
       "getSessionReturns": "セッション詳細が返されます：",
       "exampleCurl": "cURLコマンドの例："
     }
+  },
+  "customAgent": {
+    "title": "カスタムエージェント",
+    "description": "特定の動作と機能を持つカスタムAIエージェントを作成・管理",
+    "create": {
+      "title": "カスタムエージェントを作成",
+      "description": "特定のシステムプロンプト、ツール、設定でカスタムAIエージェントを定義"
+    },
+    "createSuccess": "カスタムエージェントが正常に作成されました",
+    "createError": "カスタムエージェントの作成に失敗しました",
+    "form": {
+      "name": {
+        "label": "エージェント名",
+        "placeholder": "エージェント名を入力 (例: コードレビューアー、バグハンター)",
+        "description": "カスタムエージェントの説明的な名前"
+      },
+      "defaultModel": {
+        "label": "デフォルトモデル",
+        "placeholder": "モデルを選択",
+        "description": "このエージェントがデフォルトで使用するAIモデル"
+      },
+      "systemPrompt": {
+        "label": "システムプロンプト",
+        "placeholder": "あなたは〜を専門とする有能なアシスタントです...",
+        "description": "エージェントの動作、専門性、応答スタイルを定義"
+      },
+      "tools": {
+        "label": "ツール",
+        "placeholder": "bash, file-editor, web-search",
+        "description": "エージェントが使用できるツールのカンマ区切りリスト"
+      },
+      "mcpConfig": {
+        "label": "MCP設定",
+        "placeholder": "MCP設定JSONを入力 (任意)",
+        "description": "高度な統合のためのオプションのMCP (Model Context Protocol) 設定"
+      },
+      "create": "エージェント作成",
+      "creating": "作成中..."
+    }
   }
 }
