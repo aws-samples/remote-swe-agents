@@ -1,31 +1,13 @@
 import { readFileSync } from 'fs';
-import { z } from 'zod';
 import { MCPClient } from './mcp-client';
 import { Tool } from '@aws-sdk/client-bedrock-runtime';
-
-const configSchema = z.object({
-  mcpServers: z.record(
-    z.string(),
-    z.union([
-      z.object({
-        command: z.string(),
-        args: z.array(z.string()),
-        env: z.record(z.string(), z.string()).optional(),
-        enabled: z.boolean().optional(),
-      }),
-      z.object({
-        url: z.string(),
-        enabled: z.boolean().optional(),
-      }),
-    ])
-  ),
-});
+import { mcpConfigSchema } from '@remote-swe-agents/agent-core/schema';
 
 let clients: { name: string; client: MCPClient }[] = [];
 
 const initMcp = async () => {
   const configJson = JSON.parse(readFileSync('./mcp.json').toString());
-  const { success, data: config } = configSchema.safeParse(configJson);
+  const { success, data: config } = mcpConfigSchema.safeParse(configJson);
   if (!success) {
     // how to handle this?
     throw new Error('Invalid config');

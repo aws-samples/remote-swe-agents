@@ -5,9 +5,24 @@ import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hoo
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { ChevronDownIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { createCustomAgent } from '../actions';
 import { createCustomAgentSchema } from '../schemas';
@@ -17,9 +32,9 @@ type CustomAgentFormProps = {
   availableTools: { name: string; description: string }[];
 };
 
-export default function CustomAgentForm(props: CustomAgentFormProps) {
+export default function CustomAgentForm({ availableTools }: CustomAgentFormProps) {
   const t = useTranslations('customAgent');
-  const [toolsInput, setToolsInput] = useState('');
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
 
   const {
     form,
@@ -31,7 +46,7 @@ export default function CustomAgentForm(props: CustomAgentFormProps) {
         toast.success(t('createSuccess'));
         // Reset form
         reset();
-        setToolsInput('');
+        setSelectedTools([]);
       },
       onError: ({ error }) => {
         const errorMessage = typeof error === 'string' ? error : t('createError');
@@ -50,14 +65,17 @@ export default function CustomAgentForm(props: CustomAgentFormProps) {
   });
   const { register, formState, setValue, reset, control } = form;
 
-  const handleToolsChange = (value: string) => {
-    setToolsInput(value);
-    const toolsArray = value
-      .split(',')
-      .map((tool) => tool.trim())
-      .filter((tool) => tool.length > 0);
-    setValue('tools', toolsArray);
+  const handleToolToggle = (toolName: string, checked: boolean) => {
+    let newSelectedTools: string[];
+    if (checked) {
+      newSelectedTools = [...selectedTools, toolName];
+    } else {
+      newSelectedTools = selectedTools.filter((tool) => tool !== toolName);
+    }
+    setSelectedTools(newSelectedTools);
+    setValue('tools', newSelectedTools);
   };
+
 
   return (
     <Form {...form}>
@@ -136,14 +154,47 @@ export default function CustomAgentForm(props: CustomAgentFormProps) {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('form.tools.label')}
           </label>
-          <Input
-            type="text"
-            value={toolsInput}
-            onChange={(e) => handleToolsChange(e.target.value)}
-            placeholder={t('form.tools.placeholder')}
-            disabled={isPending}
-            className="w-full"
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between" disabled={isPending}>
+                <span className={selectedTools.length === 0 ? "font-normal text-muted-foreground" : ""}>
+                  {selectedTools.length > 0 
+                    ? `${selectedTools.length} tool${selectedTools.length > 1 ? 's' : ''} selected`
+                    : t('form.tools.placeholder')
+                  }
+                </span>
+                <ChevronDownIcon className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full min-w-[400px]" align="start">
+              <DropdownMenuLabel>Available Tools</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <TooltipProvider>
+                {availableTools.map((tool) => (
+                  <DropdownMenuCheckboxItem
+                    key={tool.name}
+                    checked={selectedTools.includes(tool.name)}
+                    onCheckedChange={(checked) => handleToolToggle(tool.name, checked)}
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{tool.name}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-sm text-gray-500 cursor-help max-w-lg overflow-hidden text-ellipsis whitespace-nowrap block">
+                            {tool.description}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-md">
+                          <p className="whitespace-pre-wrap break-words">{tool.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </TooltipProvider>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.tools.description')}</p>
         </div>
 

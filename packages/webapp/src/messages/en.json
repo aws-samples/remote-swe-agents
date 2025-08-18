@@ -288,8 +288,8 @@
       },
       "tools": {
         "label": "Tools",
-        "placeholder": "bash, file-editor, web-search",
-        "description": "Comma-separated list of tools the agent can use"
+        "placeholder": "No tools selected",
+        "description": "Select tools from the available options that the agent can use"
       },
       "mcpConfig": {
         "label": "MCP Configuration",

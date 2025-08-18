@@ -19,7 +19,7 @@ export default async function CustomAgentPage() {
     [fileEditTool, readImageTool, cloneRepositoryTool, createPRTool, ciTool, commandExecutionTool].map(
       async (tool) => ({
         name: tool.name,
-        description: (await tool.toolSpec()).description ?? '',
+        description: (await tool.toolSpec()).description?.trim() ?? '',
       })
     )
   );

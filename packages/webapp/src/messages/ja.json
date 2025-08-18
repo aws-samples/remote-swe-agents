@@ -287,8 +287,8 @@
       },
       "tools": {
         "label": "ツール",
-        "placeholder": "bash, file-editor, web-search",
-        "description": "エージェントが使用できるツールのカンマ区切りリスト"
+        "placeholder": "ツールが選択されていません",
+        "description": "利用可能なオプションからエージェントが使用できるツールを選択"
       },
       "mcpConfig": {
         "label": "MCP設定",
