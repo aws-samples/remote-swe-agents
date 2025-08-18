@@ -1,3 +1,4 @@
+# Original: https://github.com/jamesward/cfn-customresource-agentcore/blob/main/agentcoreruntime.py
 from typing import Optional
 
 from crhelper import CfnResource

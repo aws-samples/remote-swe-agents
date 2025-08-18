@@ -132,6 +132,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         ServerProtocol: 'HTTP',
         Env: {
           AWS_REGION: Stack.of(this).region,
+          WORKER_RUNTIME: 'agent-core',
           EVENT_HTTP_ENDPOINT: props.bus.httpEndpoint,
           GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME: props.gitHubAppPrivateKeyParameter?.parameterName ?? '',
           GITHUB_APP_ID: props.gitHubApp?.appId ?? '',
