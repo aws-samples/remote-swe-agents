@@ -24,6 +24,7 @@ test('Snapshot test', () => {
     allowedIpV4AddressRanges: ['192.168.1.0/24', '10.0.0.0/8'],
     allowedIpV6AddressRanges: ['2001:db8::/32'],
     allowedCountryCodes: ['JP', 'US'],
+    enableAgentCore: false,
   });
 
   // Create the main stack with signPayloadHandler from UsEast1Stack

@@ -1,8 +1,8 @@
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import { CfnOutput, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { IRepository, Repository } from 'aws-cdk-lib/aws-ecr';
+import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
@@ -12,8 +12,10 @@ import { ContainerImageBuild } from 'deploy-time-build';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { WorkerBus } from './bus';
+import { DockerImageName, ECRDeployment } from 'cdk-ecr-deployment';
 
 export interface AgentCoreRuntimeProps {
+  repository: IRepository;
   storageTable: ITableV2;
   imageBucket: IBucket;
   bus: WorkerBus;
@@ -41,11 +43,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
 
-    const repository = Repository.fromRepositoryArn(
-      this,
-      'Repository',
-      'arn:aws:ecr:us-east-1:198634196645:repository/import-test-repository'
-    );
+    const repository = props.repository;
 
     const crHandler = new PythonFunction(this, 'CustomResourceHandler', {
       runtime: Runtime.PYTHON_3_13,
@@ -71,17 +69,23 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     });
     this.grantPrincipal = role;
 
-    const image = new ContainerImageBuild(this, 'WorkerImage', {
+    const image = new DockerImageAsset(this, 'WorkerImage', {
       directory: '..',
       file: join('docker', 'agent.Dockerfile'),
       exclude: readFileSync('.dockerignore').toString().split('\n'),
       platform: Platform.LINUX_ARM64,
-      repository,
     });
+    const deployDest = new DockerImageName(`${repository.repositoryUri}:${image.imageTag}`);
+    const deploy = new ECRDeployment(this, 'ImageDeploy', {
+      src: new DockerImageName(image.imageUri),
+      dest: deployDest,
+      imageArch: ['arm64'],
+    });
+
     role.addToPrincipalPolicy(
       new PolicyStatement({
         actions: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer'],
-        resources: [`${image.repository.repositoryArn}`],
+        resources: [`${repository.repositoryArn}`],
       })
     );
     role.addToPrincipalPolicy(
@@ -129,7 +133,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         Env: {
           AWS_REGION: Stack.of(this).region,
           EVENT_HTTP_ENDPOINT: props.bus.httpEndpoint,
-          GITHUB_APP_PRIVATE_KEY_PATH: props.gitHubAppPrivateKeyParameter ? '/opt/private-key.pem' : '',
+          GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME: props.gitHubAppPrivateKeyParameter?.parameterName ?? '',
           GITHUB_APP_ID: props.gitHubApp?.appId ?? '',
           GITHUB_APP_INSTALLATION_ID: props.gitHubApp?.installationId ?? '',
           TABLE_NAME: props.storageTable.tableName,
@@ -137,13 +141,13 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
           WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
           // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
           // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
-          WORKER_ID: 'test',
-          SLACK_BOT_TOKEN: props.slackBotTokenParameter.stringValue,
-          GITHUB_PERSONAL_ACCESS_TOKEN: props.githubPersonalAccessTokenParameter?.stringValue ?? '',
+          SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
+          GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
         },
       },
       serviceTimeout: Duration.seconds(20),
     });
+    resource.node.addDependency(deploy.node.findChild('CustomResource'));
 
     this.runtimeArn = resource.getAttString('agentRuntimeArn');
     new CfnOutput(this, 'RuntimeArn', { value: this.runtimeArn });

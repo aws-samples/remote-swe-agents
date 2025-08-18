@@ -844,11 +844,14 @@ Remote SWE Agents Team",
         "aws s3 cp \\"$sourceS3Url\\" temp.zip",
         "unzip temp.zip",
         "ls -la",
-        "aws ecr get-login-password | docker login --username AWS --password-stdin $repositoryAuthUri",
+        "aws ecr get-login-password --region $repositoryRegion | docker login --username AWS --password-stdin $repositoryAuthUri",
         "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws",
-        "docker buildx create --use",
         "docker buildx ls",
-        "eval \\"$buildCommand\\""
+        "echo \\"$buildCommand\\"",
+        "eval \\"$buildCommand\\"",
+        "docker images",
+        "docker tag artifact:$imageTag $repositoryUri:$imageTag",
+        "docker push $repositoryUri:$imageTag"
       ]
     },
     "post_build": {
@@ -1283,7 +1286,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -3157,49 +3160,7 @@ exports.handler = async function (event, context) {
                   "Dns.Http",
                 ],
               },
-              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --file docker/webapp.Dockerfile --platform linux/arm64 --output type=image,name=",
-              {
-                "Fn::Select": [
-                  4,
-                  {
-                    "Fn::Split": [
-                      ":",
-                      {
-                        "Fn::GetAtt": [
-                          "WebappBuildRepository4C93D48D",
-                          "Arn",
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              ".dkr.ecr.",
-              {
-                "Fn::Select": [
-                  3,
-                  {
-                    "Fn::Split": [
-                      ":",
-                      {
-                        "Fn::GetAtt": [
-                          "WebappBuildRepository4C93D48D",
-                          "Arn",
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              ".",
-              {
-                "Ref": "AWS::URLSuffix",
-              },
-              "/",
-              {
-                "Ref": "WebappBuildRepository4C93D48D",
-              },
-              ":<IMAGE_TAG>,push=true --provenance=false .",
+              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --file docker/webapp.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
             ],
           ],
         },
@@ -3384,6 +3345,7 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
+            "AGENT_RUNTIME_ARN": "",
             "APP_ORIGIN_SOURCE_PARAMETER": {
               "Ref": "WebappOriginNameParameterBBAD7F85",
             },
@@ -4536,6 +4498,8 @@ phases:
 
               # Static environment variables
 
+              Environment=WORKER_RUNTIME=ec2
+
               Environment=AWS_REGION=us-east-1
 
               Environment=EVENT_HTTP_ENDPOINT=https://",
@@ -5250,6 +5214,8 @@ phases:
 
               # Static environment variables
 
+              Environment=WORKER_RUNTIME=ec2
+
               Environment=AWS_REGION=us-east-1
 
               Environment=EVENT_HTTP_ENDPOINT=https://",
@@ -5681,6 +5647,7 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=myapp
 # Static environment variables
+Environment=WORKER_RUNTIME=ec2
 Environment=AWS_REGION=us-east-1
 Environment=EVENT_HTTP_ENDPOINT=https://",
                   {
@@ -6363,6 +6330,9 @@ exports[`Snapshot test: UsEast1Stack 1`] = `
       "Type": "AWS::Lambda::Function",
     },
     "SignPayloadHandlerCurrentVersionF9D1B5C2b714756b2226025fe03626397b33cde4": {
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
       "Properties": {
         "FunctionName": {
           "Ref": "SignPayloadHandlerCFEAA14C",
