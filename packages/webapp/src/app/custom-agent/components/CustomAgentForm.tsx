@@ -56,10 +56,12 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
     formProps: {
       defaultValues: {
         name: '',
+        description: '',
         defaultModel: 'sonnet3.7',
         systemPrompt: '',
         tools: [],
         mcpConfig: '',
+        runtimeType: 'agent-core',
       },
     },
   });
@@ -96,6 +98,24 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.name.message}</p>
           )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.name.description')}</p>
+        </div>
+
+        {/* Agent Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('form.description.label')}
+          </label>
+          <textarea
+            {...register('description')}
+            placeholder={t('form.description.placeholder')}
+            disabled={isPending}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+          />
+          {formState.errors.description && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.description.message}</p>
+          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.description.description')}</p>
         </div>
 
         {/* Default Model */}
@@ -211,6 +231,34 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
           />
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.mcpConfig.description')}</p>
+        </div>
+
+        {/* Runtime Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('form.runtimeType.label')}
+          </label>
+          <FormField
+            name="runtimeType"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange} disabled={isPending}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('form.runtimeType.placeholder')} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="agent-core">AgentCore Runtime</SelectItem>
+                  <SelectItem value="ec2">EC2</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {formState.errors.runtimeType && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.runtimeType.message}</p>
+          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.runtimeType.description')}</p>
         </div>
 
         {/* Submit Button */}

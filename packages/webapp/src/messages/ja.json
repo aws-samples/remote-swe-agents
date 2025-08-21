@@ -275,6 +275,11 @@
         "placeholder": "エージェント名を入力 (例: コードレビューアー、バグハンター)",
         "description": "カスタムエージェントの説明的な名前"
       },
+      "description": {
+        "label": "説明",
+        "placeholder": "エージェントの説明を入力 (例: コードレビューとバグ発見を専門とするエージェント)",
+        "description": "このエージェントの目的と機能の説明"
+      },
       "defaultModel": {
         "label": "デフォルトモデル",
         "placeholder": "モデルを選択",
@@ -294,6 +299,11 @@
         "label": "MCP設定",
         "placeholder": "MCP設定JSONを入力 (任意)",
         "description": "高度な統合のためのオプションのMCP (Model Context Protocol) 設定"
+      },
+      "runtimeType": {
+        "label": "ランタイムタイプ",
+        "placeholder": "ランタイムタイプを選択",
+        "description": "エージェントが動作するランタイム環境"
       },
       "create": "エージェント作成",
       "creating": "作成中..."

@@ -276,6 +276,11 @@
         "placeholder": "Enter agent name (e.g., Code Reviewer, Bug Hunter)",
         "description": "A descriptive name for your custom agent"
       },
+      "description": {
+        "label": "Description",
+        "placeholder": "Enter agent description (e.g., Agent specialized in code review and bug detection)",
+        "description": "Description of this agent's purpose and capabilities"
+      },
       "defaultModel": {
         "label": "Default Model",
         "placeholder": "Select a model",
@@ -295,6 +300,11 @@
         "label": "MCP Configuration",
         "placeholder": "Enter MCP configuration JSON (optional)",
         "description": "Optional MCP (Model Context Protocol) configuration for advanced integrations"
+      },
+      "runtimeType": {
+        "label": "Runtime Type",
+        "placeholder": "Select runtime type",
+        "description": "The runtime environment where the agent will operate"
       },
       "create": "Create Agent",
       "creating": "Creating..."
