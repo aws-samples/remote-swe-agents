@@ -1,19 +1,26 @@
 # Remote SWE Agents
 
-これは完全に自律型のソフトウェア開発AIエージェントの実装例です。エージェントは専用の開発環境で動作するため、ノートパソコンに縛られることなく作業ができます！
+[English](README.md) | 日本語
 
-![コンセプト](./docs/imgs/concept.png)
+これは完全に自律型のソフトウェア開発AIエージェントの実装例です。エージェントはクラウド上の開発環境で独立して動作するため、ノートパソコンに縛られることなく作業ができます！
+
+<div align="center">
+  <img src="docs/imgs/ss-list.png" alt="List sessions" width="45%" style="margin-right: 2%; margin-bottom: 10px;" />
+  <img src="docs/imgs/ss-chat.png" alt="Chat View" width="45%" style="margin-right: 2%;" />
+  <br />
+  <img src="docs/imgs/ss-new.png" alt="New session" width="45%" style="margin-left: 2%; margin-bottom: 10px;" />
+  <img src="docs/imgs/ss-cost.png" alt="Cost View" width="45%" style="margin-left: 2%;" />
+</div>
 
 ## 主な特徴
 
 * **完全自律型のソフトウェア開発エージェント** - AI駆動の開発ワークフロー自動化
 * **Webベースの管理インターフェース** - セッション管理とリアルタイムモニタリング用のモダンなNext.js webapp
-* **包括的なAPI** - プログラマティック統合とセッション制御のためのRESTful エンドポイント
+* **Slack App統合** - エージェントはSlackからも呼び出し可能です
+* **REST APIインターフェース** - REST APIでもエージェントを操作できるため、多様なシステムと統合できます
 * **AWS サーバーレスサービスによる最小限のメンテナンスコスト**
 * **システムを使用しない間は前払いや固定費用なし**
-* **MCP サポート** - MCPサーバーとの統合により
-* **プロンプトキャッシュとミドルアウト戦略による効率的なトークン使用**
-* **お好みの形式から知識を読み込み**（.clinerules、CLAUDE.md など）
+* **MCP サポート**
 * **OSS フォークリポジトリでも動作可能**
 
 ## 例

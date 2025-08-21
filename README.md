@@ -1,23 +1,28 @@
 # Remote SWE Agents
 
+English | [日本語](README_ja.md)
+
 This is an example implementation of a fully autonomous software development AI agent. The agent works in its own dedicated development environment, freeing you from being tied to your laptop!
 
 **TL;DR:** This is a self-hosted, fully open-source solution on AWS that offers a similar experience to cloud-based asynchronous coding agents, such as Devin, OpenAI Codex, or Google Jules.
 
-*日本語版のREADMEは[こちら](README_ja.md)をご覧ください。*
-
-![Concept](./docs/imgs/concept.png)
+<div align="center">
+  <img src="docs/imgs/ss-list.png" alt="List sessions" width="45%" style="margin-right: 2%; margin-bottom: 10px;" />
+  <img src="docs/imgs/ss-chat.png" alt="Chat View" width="45%" style="margin-right: 2%;" />
+  <br />
+  <img src="docs/imgs/ss-new.png" alt="New session" width="45%" style="margin-left: 2%; margin-bottom: 10px;" />
+  <img src="docs/imgs/ss-cost.png" alt="Cost View" width="45%" style="margin-left: 2%;" />
+</div>
 
 ## Key Features
 
 * **Fully autonomous software development agent** - AI-powered development workflow automation
 * **Web-based management interface** - Modern Next.js webapp for session management and real-time monitoring
-* **Comprehensive API** - RESTful endpoints for programmatic integration and session control
+* **Slack App integration** - You can call the agent from Slack.
+* **REST API integration** - RESTful endpoints for programmatic integration
 * **Powered by AWS serverless services** with minimal maintenance costs
 * **No upfront or fixed costs** while you don't use the system
 * **MCP support** through integration with MCP servers
-* **Efficient token usage** with prompt cache and middle-out strategy
-* **Reads knowledge** from your preferred formats (.clinerules, CLAUDE.md, etc.)
 * **Can work on OSS forked repositories**
 
 ## Examples 
