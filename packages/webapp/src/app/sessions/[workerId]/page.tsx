@@ -15,13 +15,7 @@ import { extractUserMessage, formatMessage } from '@/lib/message-formatter';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-interface SessionPageProps {
-  params: Promise<{
-    workerId: string;
-  }>;
-}
-
-export default async function SessionPage({ params }: SessionPageProps) {
+export default async function SessionPage({ params }: PageProps<'/sessions/[workerId]'>) {
   const { workerId } = await params;
   const session = await getSession(workerId);
   if (!session) {
