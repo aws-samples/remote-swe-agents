@@ -6,7 +6,7 @@ import NewSessionForm from './NewSessionForm';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { PromptTemplate } from '@/app/sessions/new/schemas';
-import { getPreferences } from '@remote-swe-agents/agent-core/lib';
+import { getCustomAgents, getPreferences } from '@remote-swe-agents/agent-core/lib';
 
 export default async function NewSessionPage() {
   const t = await getTranslations('new_session');
@@ -25,6 +25,7 @@ export default async function NewSessionPage() {
     })
   );
   const preferences = await getPreferences();
+  const customAgents = await getCustomAgents();
 
   templates = (result.Items ?? []) as PromptTemplate[];
 
@@ -63,7 +64,7 @@ export default async function NewSessionPage() {
                   </ul>
                 </div>
 
-                <NewSessionForm templates={templates} preferences={preferences} />
+                <NewSessionForm templates={templates} preferences={preferences} customAgents={customAgents} />
               </div>
             </div>
           </div>

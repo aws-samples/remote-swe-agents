@@ -16,12 +16,18 @@ export const dynamic = 'force-dynamic';
 export default async function CustomAgentPage() {
   const t = await getTranslations('customAgent');
   const availableTools = await Promise.all(
-    [fileEditTool, readImageTool, cloneRepositoryTool, createPRTool, ciTool, commandExecutionTool].map(
-      async (tool) => ({
-        name: tool.name,
-        description: (await tool.toolSpec()).description?.trim() ?? '',
-      })
-    )
+    [
+      // We do not expose internal tools such as todoList tools.
+      fileEditTool,
+      readImageTool,
+      cloneRepositoryTool,
+      createPRTool,
+      ciTool,
+      commandExecutionTool,
+    ].map(async (tool) => ({
+      name: tool.name,
+      description: (await tool.toolSpec()).description?.trim() ?? '',
+    }))
   );
 
   return (
