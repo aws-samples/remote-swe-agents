@@ -17,52 +17,69 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
-import { createCustomAgentAction } from '../actions';
-import { createCustomAgentSchema } from '../schemas';
+import { upsertCustomAgentAction } from '../actions';
+import { upsertCustomAgentSchema } from '../schemas';
+import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
 import { Form, FormControl, FormField } from '@/components/ui/form';
+import { useRouter } from 'next/navigation';
 
 type CustomAgentFormProps = {
   availableTools: { name: string; description: string }[];
+  editingAgent?: CustomAgent;
+  onSuccess?: () => void;
 };
 
-export default function CustomAgentForm({ availableTools }: CustomAgentFormProps) {
+export default function CustomAgentForm({ availableTools, editingAgent, onSuccess }: CustomAgentFormProps) {
   const t = useTranslations('customAgent');
-  const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const isEditing = Boolean(editingAgent);
+  const router = useRouter();
+  const [selectedTools, setSelectedTools] = useState<string[]>(editingAgent?.tools || []);
 
   const {
     form,
     action: { isPending },
     handleSubmitWithAction,
-  } = useHookFormAction(createCustomAgentAction, zodResolver(createCustomAgentSchema), {
+  } = useHookFormAction(upsertCustomAgentAction, zodResolver(upsertCustomAgentSchema), {
     actionProps: {
       onSuccess: () => {
-        toast.success(t('createSuccess'));
-        // Reset form
-        reset();
-        setSelectedTools([]);
+        toast.success(isEditing ? t('updateSuccess') : t('createSuccess'));
+        router.refresh()
+        if (isEditing && onSuccess) {
+          onSuccess();
+        } else {
+          // Reset form for create mode
+          reset();
+          setSelectedTools([]);
+        }
       },
       onError: ({ error }) => {
-        const errorMessage = typeof error === 'string' ? error : t('createError');
+        const errorMessage = typeof error === 'string' ? error : isEditing ? t('updateError') : t('createError');
         toast.error(errorMessage);
       },
     },
     formProps: {
-      defaultValues: {
-        name: '',
-        description: '',
-        defaultModel: 'sonnet3.7',
-        systemPrompt: '',
-        tools: [],
-        mcpConfig: '',
-        runtimeType: 'agent-core',
-      },
+      defaultValues: editingAgent
+        ? {
+            id: editingAgent.SK,
+            name: editingAgent.name,
+            description: editingAgent.description,
+            defaultModel: editingAgent.defaultModel,
+            systemPrompt: editingAgent.systemPrompt,
+            tools: editingAgent.tools,
+            mcpConfig: editingAgent.mcpConfig,
+            runtimeType: editingAgent.runtimeType,
+          }
+        : {
+            name: '',
+            description: '',
+            defaultModel: 'sonnet3.7',
+            systemPrompt: '',
+            tools: [],
+            mcpConfig: '',
+            runtimeType: 'agent-core',
+          },
     },
   });
   const { register, formState, setValue, reset, control } = form;
@@ -77,7 +94,6 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
     setSelectedTools(newSelectedTools);
     setValue('tools', newSelectedTools);
   };
-
 
   return (
     <Form {...form}>
@@ -177,11 +193,10 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between" disabled={isPending}>
-                <span className={selectedTools.length === 0 ? "font-normal text-muted-foreground" : ""}>
-                  {selectedTools.length > 0 
+                <span className={selectedTools.length === 0 ? 'font-normal text-muted-foreground' : ''}>
+                  {selectedTools.length > 0
                     ? `${selectedTools.length} tool${selectedTools.length > 1 ? 's' : ''} selected`
-                    : t('form.tools.placeholder')
-                  }
+                    : t('form.tools.placeholder')}
                 </span>
                 <ChevronDownIcon className="h-4 w-4 opacity-50" />
               </Button>
@@ -267,7 +282,13 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
             {isPending && (
               <div className="mr-2 animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white"></div>
             )}
-            {isPending ? t('form.creating') : t('form.create')}
+            {isPending
+              ? isEditing
+                ? t('form.updating')
+                : t('form.creating')
+              : isEditing
+                ? t('form.update')
+                : t('form.create')}
           </Button>
         </div>
       </form>

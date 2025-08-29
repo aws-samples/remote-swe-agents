@@ -275,6 +275,10 @@
     },
     "createSuccess": "Custom agent created successfully",
     "createError": "Failed to create custom agent",
+    "updateSuccess": "Custom agent updated successfully",
+    "updateError": "Failed to update custom agent",
+    "saveSuccess": "Custom agent saved successfully",
+    "saveError": "Failed to save custom agent",
     "form": {
       "name": {
         "label": "Agent Name",
@@ -312,7 +316,11 @@
         "description": "The runtime environment where the agent will operate"
       },
       "create": "Create Agent",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "update": "Update Agent",
+      "updating": "Updating...",
+      "save": "Save Agent",
+      "saving": "Saving..."
     }
   }
 }
