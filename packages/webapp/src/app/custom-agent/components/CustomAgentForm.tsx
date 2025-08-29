@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
-import { createCustomAgent } from '../actions';
+import { createCustomAgentAction } from '../actions';
 import { createCustomAgentSchema } from '../schemas';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 
@@ -40,7 +40,7 @@ export default function CustomAgentForm({ availableTools }: CustomAgentFormProps
     form,
     action: { isPending },
     handleSubmitWithAction,
-  } = useHookFormAction(createCustomAgent, zodResolver(createCustomAgentSchema), {
+  } = useHookFormAction(createCustomAgentAction, zodResolver(createCustomAgentSchema), {
     actionProps: {
       onSuccess: () => {
         toast.success(t('createSuccess'));
