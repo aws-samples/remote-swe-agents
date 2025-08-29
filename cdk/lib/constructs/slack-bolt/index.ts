@@ -61,6 +61,7 @@ export class SlackBolt extends Construct {
         platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.seconds(29),
+      memorySize: 256,
       environment: {
         SIGNING_SECRET: signingSecretParameter.stringValue,
         BOT_TOKEN: botTokenParameter.stringValue,
