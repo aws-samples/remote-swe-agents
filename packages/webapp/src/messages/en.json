@@ -265,6 +265,10 @@
   "customAgent": {
     "title": "Custom Agents",
     "description": "Create and manage custom AI agents with specific behaviors and capabilities",
+    "list": {
+      "title": "Created Custom Agents",
+      "description": "List of custom AI agents that have been created"
+    },
     "create": {
       "title": "Create Custom Agent",
       "description": "Define a custom AI agent with specific system prompts, tools, and configurations"
