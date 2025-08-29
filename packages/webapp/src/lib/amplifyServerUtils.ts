@@ -24,7 +24,7 @@ export const { runWithAmplifyServerContext, createAuthRouteHandlers } = createSe
   runtimeOptions: {
     cookies: {
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 30, // 30 days
     },
   },
 });
