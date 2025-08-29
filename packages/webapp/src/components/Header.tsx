@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Languages, LogOut, Check, Key, Settings } from 'lucide-react';
+import { Menu, Languages, LogOut, Check, Key, Settings, Bot } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import {
   DropdownMenu,
@@ -97,6 +97,12 @@ export default function Header() {
                       <path d="M12 18V6" />
                     </svg>
                     <span>{t('costAnalysis')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/custom-agent" className="w-full cursor-default flex items-center" prefetch={false}>
+                    <Bot className="mr-2 h-4 w-4" />
+                    <span>{t('customAgent')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

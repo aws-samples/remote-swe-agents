@@ -9,7 +9,8 @@
     "language": "Language",
     "preferences": "Preferences",
     "apiKeys": "API Keys",
-    "costAnalysis": "Cost Analysis"
+    "costAnalysis": "Cost Analysis",
+    "customAgent": "Custom Agents"
   },
   "sessions": {
     "title": "Sessions",

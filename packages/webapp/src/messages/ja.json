@@ -9,7 +9,8 @@
     "language": "言語",
     "preferences": "設定",
     "apiKeys": "APIキー",
-    "costAnalysis": "コスト分析"
+    "costAnalysis": "コスト分析",
+    "customAgent": "カスタムエージェント"
   },
   "sessions": {
     "title": "セッション一覧",
