@@ -144,6 +144,10 @@ const preProcessInput = (
       ...input.inferenceConfig,
       maxTokens: Math.max(adjustedMaxToken, Math.min(budget * 2, modelConfig.maxOutputTokens)),
     };
+
+    if (modelConfig.interleavedThinkingSupport) {
+      input.additionalModelRequestFields.anthropic_beta = ['interleaved-thinking-2025-05-14'];
+    }
   } else {
     // when we disable reasoning, we have to remove
     // reasoningContent blocks from all the previous message contents

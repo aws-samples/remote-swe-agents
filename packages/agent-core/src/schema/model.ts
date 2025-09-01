@@ -22,6 +22,7 @@ const modelConfigSchema = z.object({
   reasoningSupport: z.boolean(),
   toolChoiceSupport: z.array(z.enum(['any', 'auto', 'tool'])),
   isHidden: z.boolean().optional(),
+  interleavedThinkingSupport: z.boolean().optional(),
   pricing: z.object({
     input: z.number(),
     output: z.number(),
@@ -92,6 +93,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    interleavedThinkingSupport: true,
     pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   'opus4.1': {
@@ -102,6 +104,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    interleavedThinkingSupport: true,
     pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   sonnet4: {
@@ -112,6 +115,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    interleavedThinkingSupport: true,
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
 };
