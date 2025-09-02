@@ -1,4 +1,4 @@
-import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { CustomAgent, mcpConfigSchema } from '../schema';
 import { ddb, TableName } from './aws';
 import { randomBytes } from 'crypto';
@@ -11,6 +11,19 @@ const validateMcpConfig = (mcpConfig: string): void => {
   } catch (error) {
     throw new Error(`Invalid mcpConfig: ${error instanceof Error ? error.message : 'Invalid JSON or schema'}`);
   }
+};
+
+export const getCustomAgent = async (customAgentId: string): Promise<CustomAgent | undefined> => {
+  const res = await ddb.send(
+    new GetCommand({
+      TableName,
+      Key: {
+        PK: 'custom-agent',
+        SK: customAgentId,
+      },
+    })
+  );
+  return res.Item as CustomAgent | undefined;
 };
 
 export const getCustomAgents = async (limit: number = 50): Promise<CustomAgent[]> => {

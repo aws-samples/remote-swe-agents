@@ -4,6 +4,7 @@ import { BedrockAgentCoreClient, InvokeAgentRuntimeCommand } from '@aws-sdk/clie
 import { ec2, ssm } from './aws';
 import { sendWebappEvent } from './events';
 import { updateSession } from './sessions';
+import { InstanceStatus } from '../schema';
 
 const agentCore = new BedrockAgentCoreClient({ region: 'us-east-1' });
 
@@ -14,7 +15,7 @@ const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
 /**
  * Updates the instance status in DynamoDB and sends a webapp event
  */
-export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'stopped') {
+export async function updateInstanceStatus(workerId: string, status: InstanceStatus) {
   try {
     // Update the instanceStatus using the generic updateSession function
     await updateSession(workerId, { instanceStatus: status });
@@ -150,10 +151,9 @@ async function createWorkerInstance(
 
 export async function getOrCreateWorkerInstance(
   workerId: string,
-  workerType: 'agentCore' | 'ec2' = 'ec2'
+  workerType: 'agent-core' | 'ec2' = 'ec2'
 ): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
-  if (workerType == 'agentCore') {
-    console.log(workerId);
+  if (workerType == 'agent-core') {
     const res = await agentCore.send(
       new InvokeAgentRuntimeCommand({
         agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
@@ -162,7 +162,6 @@ export async function getOrCreateWorkerInstance(
         contentType: 'application/json',
       })
     );
-    console.log(res);
     return { instanceId: 'local', oldStatus: 'running' };
   }
 
