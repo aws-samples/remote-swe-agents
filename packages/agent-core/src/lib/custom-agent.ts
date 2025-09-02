@@ -25,8 +25,12 @@ export const getCustomAgents = async (limit: number = 50): Promise<CustomAgent[]
       Limit: limit,
     })
   );
+  const agents = ((res.Items as CustomAgent[]) ?? []).map((agent) => ({
+    ...agent,
+    mcpConfig: JSON.stringify(JSON.parse(agent.mcpConfig), undefined, 2),
+  })) satisfies CustomAgent[];
 
-  return (res.Items ?? []) as CustomAgent[];
+  return agents;
 };
 
 export const createCustomAgent = async (

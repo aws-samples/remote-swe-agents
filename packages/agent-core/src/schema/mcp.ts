@@ -17,3 +17,5 @@ export const mcpConfigSchema = z.object({
     ])
   ),
 });
+
+export type McpConfig = z.infer<typeof mcpConfigSchema>;

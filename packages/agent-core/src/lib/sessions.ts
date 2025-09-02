@@ -1,6 +1,7 @@
 import { GetCommand, QueryCommand, QueryCommandInput, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import { z } from 'zod';
 import { ddb, TableName } from './aws';
-import { AgentStatus, SessionItem } from '../schema';
+import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
 import { bedrockConverse } from './converse';
 
 /**
@@ -81,19 +82,7 @@ export const getSessions = async (
  * @param agentStatus New agent status
  */
 export const updateSessionAgentStatus = async (workerId: string, agentStatus: AgentStatus): Promise<void> => {
-  await ddb.send(
-    new UpdateCommand({
-      TableName,
-      Key: {
-        PK: 'sessions',
-        SK: workerId,
-      },
-      UpdateExpression: 'SET agentStatus = :agentStatus',
-      ExpressionAttributeValues: {
-        ':agentStatus': agentStatus,
-      },
-    })
-  );
+  await updateSession(workerId, { agentStatus });
 };
 
 /**
@@ -102,19 +91,7 @@ export const updateSessionAgentStatus = async (workerId: string, agentStatus: Ag
  * @param isHidden Whether the session should be hidden
  */
 export const updateSessionVisibility = async (workerId: string, isHidden: boolean): Promise<void> => {
-  await ddb.send(
-    new UpdateCommand({
-      TableName,
-      Key: {
-        PK: 'sessions',
-        SK: workerId,
-      },
-      UpdateExpression: 'SET isHidden = :isHidden',
-      ExpressionAttributeValues: {
-        ':isHidden': isHidden,
-      },
-    })
-  );
+  await updateSession(workerId, { isHidden });
 };
 
 /**
@@ -166,17 +143,41 @@ Messages: ${message}
  * @param title The title to set for the session
  */
 export const updateSessionTitle = async (workerId: string, title: string): Promise<void> => {
+  await updateSession(workerId, { title });
+};
+
+const keySchema = sessionItemSchema.pick({ PK: true, SK: true });
+
+type UpdateSessionParams = Partial<Omit<SessionItem, 'PK' | 'SK' | 'createdAt'>>;
+
+/**
+ * Generic function to update session fields
+ * @param workerId Worker ID of the session to update
+ * @param params Object containing the fields to update
+ */
+export const updateSession = async (workerId: string, params: UpdateSessionParams): Promise<void> => {
+  const updateExpression: string[] = ['#updatedAt = :updatedAt'];
+  const expressionAttributeNames: Record<string, string> = { '#updatedAt': 'updatedAt' };
+  const expressionAttributeValues: Record<string, any> = { ':updatedAt': Date.now() };
+
+  Object.keys(params).forEach((key) => {
+    if (params[key as keyof typeof params] !== undefined) {
+      updateExpression.push(`#${key} = :${key}`);
+      expressionAttributeNames[`#${key}`] = key;
+      expressionAttributeValues[`:${key}`] = params[key as keyof typeof params];
+    }
+  });
+
   await ddb.send(
     new UpdateCommand({
       TableName,
       Key: {
         PK: 'sessions',
         SK: workerId,
-      },
-      UpdateExpression: 'SET title = :title',
-      ExpressionAttributeValues: {
-        ':title': title,
-      },
+      } satisfies z.infer<typeof keySchema>,
+      UpdateExpression: `SET ${updateExpression.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
     })
   );
 };

@@ -48,6 +48,7 @@ export const createNewWorker = authActionClient
                 workerId,
                 initialMessage: message,
                 createdAt: now,
+                updatedAt: now,
                 LSI1: String(now).padStart(15, '0'),
                 instanceStatus: 'starting',
                 sessionCost: 0,

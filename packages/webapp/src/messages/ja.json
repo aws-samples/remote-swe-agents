@@ -307,7 +307,10 @@
       "mcpConfig": {
         "label": "MCP設定",
         "placeholder": "MCP設定JSONを入力 (任意)",
-        "description": "高度な統合のためのオプションのMCP (Model Context Protocol) 設定"
+        "description": "高度な統合のためのオプションのMCP (Model Context Protocol) 設定",
+        "formatJson": "JSON整形",
+        "formatSuccess": "JSONを整形しました",
+        "formatError": "不正なJSON形式です"
       },
       "runtimeType": {
         "label": "ランタイムタイプ",

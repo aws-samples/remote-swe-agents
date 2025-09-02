@@ -308,7 +308,10 @@
       "mcpConfig": {
         "label": "MCP Configuration",
         "placeholder": "Enter MCP configuration JSON (optional)",
-        "description": "Optional MCP (Model Context Protocol) configuration for advanced integrations"
+        "description": "Optional MCP (Model Context Protocol) configuration for advanced integrations",
+        "formatJson": "Format JSON",
+        "formatSuccess": "JSON formatted successfully",
+        "formatError": "Invalid JSON format"
       },
       "runtimeType": {
         "label": "Runtime Type",

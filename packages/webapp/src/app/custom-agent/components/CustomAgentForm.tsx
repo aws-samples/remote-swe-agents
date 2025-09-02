@@ -5,7 +5,7 @@ import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hoo
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, WandIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { upsertCustomAgentAction } from '../actions';
 import { upsertCustomAgentSchema } from '../schemas';
-import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
+import type { CustomAgent, McpConfig } from '@remote-swe-agents/agent-core/schema';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 import { useRouter } from 'next/navigation';
 
@@ -45,7 +45,7 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
     actionProps: {
       onSuccess: () => {
         toast.success(isEditing ? t('updateSuccess') : t('createSuccess'));
-        router.refresh()
+        router.refresh();
         if (isEditing && onSuccess) {
           onSuccess();
         } else {
@@ -60,26 +60,16 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
       },
     },
     formProps: {
-      defaultValues: editingAgent
-        ? {
-            id: editingAgent.SK,
-            name: editingAgent.name,
-            description: editingAgent.description,
-            defaultModel: editingAgent.defaultModel,
-            systemPrompt: editingAgent.systemPrompt,
-            tools: editingAgent.tools,
-            mcpConfig: editingAgent.mcpConfig,
-            runtimeType: editingAgent.runtimeType,
-          }
-        : {
-            name: '',
-            description: '',
-            defaultModel: 'sonnet3.7',
-            systemPrompt: '',
-            tools: [],
-            mcpConfig: '',
-            runtimeType: 'agent-core',
-          },
+      defaultValues: {
+        id: editingAgent?.SK,
+        name: editingAgent?.name ?? '',
+        description: editingAgent?.description ?? '',
+        defaultModel: editingAgent?.defaultModel ?? 'sonnet3.7',
+        systemPrompt: editingAgent?.systemPrompt ?? '',
+        tools: editingAgent?.tools ?? [],
+        mcpConfig: editingAgent?.mcpConfig ?? JSON.stringify({ mcpServers: {} } satisfies McpConfig, undefined, 2),
+        runtimeType: editingAgent?.runtimeType ?? 'agent-core',
+      },
     },
   });
   const { register, formState, setValue, reset, control } = form;
@@ -93,6 +83,20 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
     }
     setSelectedTools(newSelectedTools);
     setValue('tools', newSelectedTools);
+  };
+
+  const formatJsonConfig = () => {
+    const currentValue = form.getValues('mcpConfig');
+    if (!currentValue?.trim()) return;
+
+    try {
+      const parsed = JSON.parse(currentValue);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setValue('mcpConfig', formatted);
+      toast.success(t('form.mcpConfig.formatSuccess'));
+    } catch (error) {
+      toast.error(t('form.mcpConfig.formatError'));
+    }
   };
 
   return (
@@ -235,16 +239,32 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
 
         {/* MCP Config */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('form.mcpConfig.label')}
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('form.mcpConfig.label')}
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={formatJsonConfig}
+              disabled={isPending}
+              className="flex items-center gap-1 text-xs"
+            >
+              <WandIcon className="h-3 w-3" />
+              {t('form.mcpConfig.formatJson')}
+            </Button>
+          </div>
           <textarea
             {...register('mcpConfig')}
             placeholder={t('form.mcpConfig.placeholder')}
             disabled={isPending}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical font-mono text-sm"
           />
+          {formState.errors.mcpConfig && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.mcpConfig.message}</p>
+          )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.mcpConfig.description')}</p>
         </div>
 

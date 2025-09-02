@@ -1,9 +1,9 @@
 import { DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
 import { GetParameterCommand, ParameterNotFound } from '@aws-sdk/client-ssm';
 import { BedrockAgentCoreClient, InvokeAgentRuntimeCommand } from '@aws-sdk/client-bedrock-agentcore';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { ddb, ec2, ssm, TableName } from './aws';
+import { ec2, ssm } from './aws';
 import { sendWebappEvent } from './events';
+import { updateSession } from './sessions';
 
 const agentCore = new BedrockAgentCoreClient({ region: 'us-east-1' });
 
@@ -16,20 +16,8 @@ const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
  */
 export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'stopped') {
   try {
-    // Update the instanceStatus in DynamoDB
-    await ddb.send(
-      new UpdateCommand({
-        TableName,
-        Key: {
-          PK: 'sessions',
-          SK: workerId,
-        },
-        UpdateExpression: 'SET instanceStatus = :status',
-        ExpressionAttributeValues: {
-          ':status': status,
-        },
-      })
-    );
+    // Update the instanceStatus using the generic updateSession function
+    await updateSession(workerId, { instanceStatus: status });
 
     // Send event to webapp
     await sendWebappEvent(workerId, {

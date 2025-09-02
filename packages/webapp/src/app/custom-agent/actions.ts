@@ -10,6 +10,7 @@ export const upsertCustomAgentAction = authActionClient
   .action(async ({ parsedInput }) => {
     try {
       const { id, ...agentData } = parsedInput;
+      agentData.mcpConfig = JSON.stringify(JSON.parse(agentData.mcpConfig)); // minify
 
       let agent;
       if (id) {

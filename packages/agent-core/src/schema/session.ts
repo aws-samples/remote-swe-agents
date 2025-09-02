@@ -15,6 +15,7 @@ export const sessionItemSchema = z.object({
   SK: z.string(),
   workerId: z.string(),
   createdAt: z.number(),
+  updatedAt: z.number(),
   LSI1: z.string(),
   initialMessage: z.string(),
   instanceStatus: instanceStatusSchema,
