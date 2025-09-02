@@ -175,6 +175,10 @@
     "waitingForImageUpload": "画像アップロード中...",
     "templates": "テンプレート",
     "modelOverride": "モデル",
+    "customAgent": "カスタムエージェント",
+    "customAgentPlaceholder": "デフォルトのエージェント",
+    "defaultAgentName": "デフォルトエージェント",
+    "defaultAgentDescription": "コーディング用途に適した、汎用エージェントです",
     "templateModal": {
       "title": "プロンプトテンプレート",
       "createNew": "新しいテンプレートを作成",
@@ -296,7 +300,7 @@
       },
       "systemPrompt": {
         "label": "システムプロンプト",
-        "placeholder": "あなたは〜を専門とする有能なアシスタントです...",
+        "placeholder": "あなたは〜を専門とするアシスタントです...",
         "description": "エージェントの動作、専門性、応答スタイルを定義"
       },
       "tools": {

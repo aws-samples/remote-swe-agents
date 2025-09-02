@@ -176,6 +176,10 @@
     "waitingForImageUpload": "Waiting for image upload...",
     "templates": "Templates",
     "modelOverride": "Model",
+    "customAgent": "Custom Agent",
+    "customAgentPlaceholder": "Default Agent",
+    "defaultAgentName": "Default Agent",
+    "defaultAgentDescription": "General-purpose agent suitable for coding tasks",
     "templateModal": {
       "title": "Prompt Templates",
       "createNew": "Create New Template",

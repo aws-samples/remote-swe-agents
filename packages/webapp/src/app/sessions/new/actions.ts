@@ -13,7 +13,7 @@ export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const workerId = `webapp-${Date.now()}`;
-    const { message, imageKeys = [], modelOverride } = parsedInput;
+    const { message, imageKeys = [], modelOverride, customAgentId } = parsedInput;
     const now = Date.now();
     const { userId } = ctx;
 
@@ -54,6 +54,7 @@ export const createNewWorker = authActionClient
                 sessionCost: 0,
                 agentStatus: 'pending',
                 initiator: `webapp#${userId}`,
+                customAgentId: customAgentId == 'DEFAULT' ? undefined : customAgentId,
               } satisfies SessionItem,
             },
           },

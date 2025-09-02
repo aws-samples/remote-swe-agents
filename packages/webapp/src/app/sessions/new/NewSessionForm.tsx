@@ -10,9 +10,11 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField } from '@/components/ui/form';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
-import { CustomAgent, GlobalPreferences, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { CustomAgent, GlobalPreferences, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface NewSessionFormProps {
   templates: PromptTemplate[];
@@ -20,13 +22,13 @@ interface NewSessionFormProps {
   preferences: GlobalPreferences;
 }
 
-export default function NewSessionForm({ templates, preferences }: NewSessionFormProps) {
+export default function NewSessionForm({ templates, customAgents, preferences }: NewSessionFormProps) {
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const {
-    form: { register, formState, reset, setValue, watch },
+    form,
     action: { isPending },
     handleSubmitWithAction,
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
@@ -41,9 +43,11 @@ export default function NewSessionForm({ templates, preferences }: NewSessionFor
         message: '',
         imageKeys: [],
         modelOverride: preferences.modelOverride,
+        customAgentId: 'DEFAULT',
       },
     },
   });
+  const { register, formState, reset, setValue, watch, control } = form;
 
   const { uploadingImages, fileInputRef, handleImageSelect, handleImageChange, handlePaste, ImagePreviewList } =
     ImageUploader({
@@ -60,29 +64,86 @@ export default function NewSessionForm({ templates, preferences }: NewSessionFor
   };
 
   return (
-    <>
+    <Form {...form}>
       <form onSubmit={handleSubmitWithAction} className="space-y-6">
         <div className="text-left">
           <ImagePreviewList />
+
+          {/* Custom Agent Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('customAgent')}
+            </label>
+            <FormField
+              name="customAgentId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    const agent = customAgents.find((a) => a.SK == value);
+                    if (agent) {
+                      setValue('modelOverride', agent.defaultModel);
+                    }
+                  }}
+                  disabled={isPending}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {customAgents.find((a) => a.SK == field.value)?.name ?? t('defaultAgentName')}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="DEFAULT">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{t('defaultAgentName')}</span>
+                        <span className="text-sm text-gray-500">{t('defaultAgentDescription')}</span>
+                      </div>
+                    </SelectItem>
+                    {customAgents.map((agent) => (
+                      <SelectItem key={agent.SK} value={agent.SK}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{agent.name}</span>
+                          <span className="text-sm text-gray-500">{agent.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
 
           {/* Model Override Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('modelOverride')}
             </label>
-            <select
-              {...register('modelOverride')}
-              disabled={isPending}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              {modelTypeList
-                .filter((type) => !modelConfigs[type].isHidden)
-                .map((type) => (
-                  <option key={type} value={type}>
-                    {modelConfigs[type].name}
-                  </option>
-                ))}
-            </select>
+            <FormField
+              name="modelOverride"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={isPending}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {modelTypeList
+                      .filter((type) => !modelConfigs[type].isHidden)
+                      .map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {modelConfigs[type].name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="flex items-center justify-end mb-2">
@@ -167,6 +228,6 @@ export default function NewSessionForm({ templates, preferences }: NewSessionFor
         templates={templates}
         onSelectTemplate={handleTemplateSelect}
       />
-    </>
+    </Form>
   );
 }
