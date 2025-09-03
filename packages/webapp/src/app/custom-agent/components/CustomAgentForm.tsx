@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
+import { useAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { ChevronDownIcon, WandIcon } from 'lucide-react';
+import { ChevronDownIcon, WandIcon, TrashIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,9 +20,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EmptyMcpConfig, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
-import { upsertCustomAgentAction } from '../actions';
+import { upsertCustomAgentAction, deleteCustomAgentAction } from '../actions';
 import { upsertCustomAgentSchema } from '../schemas';
-import type { CustomAgent, McpConfig } from '@remote-swe-agents/agent-core/schema';
+import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 import { useRouter } from 'next/navigation';
 
@@ -74,6 +75,20 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   });
   const { register, formState, setValue, reset, control } = form;
 
+  const { execute: deleteAgent, isPending: isDeleting } = useAction(deleteCustomAgentAction, {
+    onSuccess: () => {
+      toast.success(t('deleteSuccess'));
+      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: ({ error }) => {
+      const errorMessage = typeof error === 'string' ? error : t('deleteError');
+      toast.error(errorMessage);
+    },
+  });
+
   const handleToolToggle = (toolName: string, checked: boolean) => {
     let newSelectedTools: string[];
     if (checked) {
@@ -96,6 +111,14 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
       toast.success(t('form.mcpConfig.formatSuccess'));
     } catch (error) {
       toast.error(t('form.mcpConfig.formatError'));
+    }
+  };
+
+  const handleDelete = () => {
+    if (!editingAgent?.SK) return;
+
+    if (window.confirm(t('form.confirmDelete'))) {
+      deleteAgent({ id: editingAgent.SK });
     }
   };
 
@@ -296,8 +319,24 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.runtimeType.description')}</p>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3">
+          {isEditing && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting || isPending}
+              className="px-6 py-2 flex items-center gap-2"
+            >
+              {isDeleting && (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white"></div>
+              )}
+              {!isDeleting && <TrashIcon className="h-4 w-4" />}
+              {isDeleting ? t('form.deleting') : t('form.delete')}
+            </Button>
+          )}
+
           <Button type="submit" disabled={isPending || !formState.isValid} className="px-6 py-2">
             {isPending && (
               <div className="mr-2 animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white"></div>

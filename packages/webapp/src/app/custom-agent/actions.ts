@@ -1,8 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/lib/safe-action';
-import { upsertCustomAgentSchema } from './schemas';
-import { createCustomAgent, updateCustomAgent } from '@remote-swe-agents/agent-core/lib';
+import { upsertCustomAgentSchema, deleteCustomAgentSchema } from './schemas';
+import { createCustomAgent, updateCustomAgent, deleteCustomAgent } from '@remote-swe-agents/agent-core/lib';
 import { revalidatePath } from 'next/cache';
 
 export const upsertCustomAgentAction = authActionClient
@@ -26,5 +26,20 @@ export const upsertCustomAgentAction = authActionClient
     } catch (error) {
       console.error('Error upserting custom agent:', error);
       throw new Error('Failed to save custom agent');
+    }
+  });
+
+export const deleteCustomAgentAction = authActionClient
+  .inputSchema(deleteCustomAgentSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      const { id } = parsedInput;
+      await deleteCustomAgent(id);
+
+      revalidatePath('/custom-agent');
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting custom agent:', error);
+      throw new Error('Failed to delete custom agent');
     }
   });

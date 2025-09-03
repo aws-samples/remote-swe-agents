@@ -24,3 +24,7 @@ export const upsertCustomAgentSchema = z.object({
     }, 'Invalid mcpConfig schema.'),
   runtimeType: z.union([z.literal('ec2'), z.literal('agent-core')]),
 });
+
+export const deleteCustomAgentSchema = z.object({
+  id: z.string().min(1, 'Agent ID is required'),
+});

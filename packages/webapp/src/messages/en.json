@@ -283,6 +283,8 @@
     "updateError": "Failed to update custom agent",
     "saveSuccess": "Custom agent saved successfully",
     "saveError": "Failed to save custom agent",
+    "deleteSuccess": "Custom agent deleted successfully",
+    "deleteError": "Failed to delete custom agent",
     "form": {
       "name": {
         "label": "Agent Name",
@@ -322,12 +324,15 @@
         "placeholder": "Select runtime type",
         "description": "The runtime environment where the agent will operate"
       },
-      "create": "Create Agent",
+      "create": "Create",
       "creating": "Creating...",
-      "update": "Update Agent",
+      "update": "Update",
       "updating": "Updating...",
-      "save": "Save Agent",
-      "saving": "Saving..."
+      "save": "Save",
+      "saving": "Saving...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "confirmDelete": "Are you sure you want to delete this agent?"
     }
   }
 }

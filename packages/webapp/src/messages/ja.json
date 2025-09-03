@@ -282,6 +282,8 @@
     "updateError": "カスタムエージェントの更新に失敗しました",
     "saveSuccess": "カスタムエージェントが正常に保存されました",
     "saveError": "カスタムエージェントの保存に失敗しました",
+    "deleteSuccess": "カスタムエージェントが正常に削除されました",
+    "deleteError": "カスタムエージェントの削除に失敗しました",
     "form": {
       "name": {
         "label": "エージェント名",
@@ -321,12 +323,15 @@
         "placeholder": "ランタイムタイプを選択",
         "description": "エージェントが動作するランタイム環境"
       },
-      "create": "エージェント作成",
+      "create": "作成",
       "creating": "作成中...",
-      "update": "エージェント更新",
+      "update": "更新",
       "updating": "更新中...",
-      "save": "エージェント保存",
-      "saving": "保存中..."
+      "save": "保存",
+      "saving": "保存中...",
+      "delete": "削除",
+      "deleting": "削除中...",
+      "confirmDelete": "このエージェントを削除してもよろしいですか？"
     }
   }
 }

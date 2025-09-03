@@ -1,4 +1,4 @@
-import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, PutCommand, UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { CustomAgent, EmptyMcpConfig, mcpConfigSchema } from '../schema';
 import { ddb, TableName } from './aws';
 import { randomBytes } from 'crypto';
@@ -116,4 +116,16 @@ export const updateCustomAgent = async (
   );
 
   return result.Attributes as CustomAgent;
+};
+
+export const deleteCustomAgent = async (sk: string): Promise<void> => {
+  await ddb.send(
+    new DeleteCommand({
+      TableName,
+      Key: {
+        PK: 'custom-agent',
+        SK: sk,
+      },
+    })
+  );
 };
