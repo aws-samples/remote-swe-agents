@@ -6,7 +6,7 @@ export const upsertCustomAgentSchema = z.object({
   name: z.string().min(1, 'Agent name is required').max(100, 'Agent name must be less than 100 characters'),
   description: z.string().default(''),
   defaultModel: modelTypeSchema,
-  systemPrompt: z.string().min(1, 'System prompt is required'),
+  systemPrompt: z.string().default(''),
   tools: z.array(z.string()),
   mcpConfig: z
     .string()
