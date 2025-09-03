@@ -36,8 +36,11 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
         }
 
         return (
-          <div key={agent.SK} className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-            <div 
+          <div
+            key={agent.SK}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+          >
+            <div
               className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
               onClick={() => handleCardClick(agent.SK)}
             >
@@ -76,11 +79,7 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
             </div>
             {expandedAgentId === agent.SK && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                <CustomAgentForm 
-                  availableTools={availableTools} 
-                  editingAgent={agent}
-                  onSuccess={handleAgentUpdate}
-                />
+                <CustomAgentForm availableTools={availableTools} editingAgent={agent} onSuccess={handleAgentUpdate} />
               </div>
             )}
           </div>

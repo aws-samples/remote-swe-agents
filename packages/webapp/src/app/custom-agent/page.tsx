@@ -32,7 +32,7 @@ export default async function CustomAgentPage() {
         description: (await tool.toolSpec()).description?.trim() ?? '',
       }))
     ),
-    getCustomAgents()
+    getCustomAgents(),
   ]);
 
   return (
@@ -51,7 +51,7 @@ export default async function CustomAgentPage() {
               <CustomAgentList initialAgents={customAgents} availableTools={availableTools} />
             </PreferenceSection>
           )}
-          
+
           <PreferenceSection title={t('create.title')} description={t('create.description')}>
             <CustomAgentForm availableTools={availableTools} />
           </PreferenceSection>

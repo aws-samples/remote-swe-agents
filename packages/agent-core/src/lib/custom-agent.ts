@@ -1,5 +1,5 @@
 import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { CustomAgent, mcpConfigSchema } from '../schema';
+import { CustomAgent, EmptyMcpConfig, mcpConfigSchema } from '../schema';
 import { ddb, TableName } from './aws';
 import { randomBytes } from 'crypto';
 import z from 'zod';
@@ -13,7 +13,8 @@ const validateMcpConfig = (mcpConfig: string): void => {
   }
 };
 
-export const getCustomAgent = async (customAgentId: string): Promise<CustomAgent | undefined> => {
+export const getCustomAgent = async (customAgentId: string | undefined): Promise<CustomAgent | undefined> => {
+  if (!customAgentId) return undefined;
   const res = await ddb.send(
     new GetCommand({
       TableName,
@@ -50,7 +51,7 @@ export const createCustomAgent = async (
   agent: Omit<CustomAgent, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>
 ): Promise<CustomAgent> => {
   if (!agent.mcpConfig) {
-    agent.mcpConfig = JSON.stringify({ mcpServers: {} } satisfies z.infer<typeof mcpConfigSchema>);
+    agent.mcpConfig = JSON.stringify(EmptyMcpConfig);
   }
   validateMcpConfig(agent.mcpConfig);
 

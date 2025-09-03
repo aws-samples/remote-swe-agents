@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { EmptyMcpConfig, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { upsertCustomAgentAction } from '../actions';
 import { upsertCustomAgentSchema } from '../schemas';
 import type { CustomAgent, McpConfig } from '@remote-swe-agents/agent-core/schema';
@@ -67,7 +67,7 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
         defaultModel: editingAgent?.defaultModel ?? 'sonnet3.7',
         systemPrompt: editingAgent?.systemPrompt ?? '',
         tools: editingAgent?.tools ?? [],
-        mcpConfig: editingAgent?.mcpConfig ?? JSON.stringify({ mcpServers: {} } satisfies McpConfig, undefined, 2),
+        mcpConfig: editingAgent?.mcpConfig ?? JSON.stringify(EmptyMcpConfig, undefined, 2),
         runtimeType: editingAgent?.runtimeType ?? 'agent-core',
       },
     },
