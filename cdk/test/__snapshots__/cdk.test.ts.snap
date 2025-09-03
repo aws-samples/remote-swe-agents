@@ -56,6 +56,14 @@ exports[`Snapshot test: MainStack 1`] = `
         "Ref": "StorageHistory251A3AE8",
       },
     },
+    "WorkerAgentCoreRuntimeArn2889E433": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkerAgentCore6BC3E323",
+          "agentRuntimeArn",
+        ],
+      },
+    },
     "WorkerImageBuilderRemoveCachedAmiCommand8BE1DBE6": {
       "Value": "aws ssm delete-parameter --name /remote-swe/worker/ami-id --region us-east-1",
     },
@@ -1128,6 +1136,98 @@ Remote SWE Agents Team",
         "Roles": [
           {
             "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB28EAD8E4": {
+      "DependsOn": [
+        "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8",
+        "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Description": "Custom resource handler for copying Docker images between docker registries.",
+        "Handler": "bootstrap",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
+            "Arn",
+          ],
+        },
+        "Runtime": "provided.al2023",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:DescribeImageScanFindings",
+                "ecr:DescribeImages",
+                "ecr:DescribeRepositories",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetRepositoryPolicy",
+                "ecr:InitiateLayerUpload",
+                "ecr:ListImages",
+                "ecr:ListTagsForResource",
+                "ecr:PutImage",
+                "ecr:UploadLayerPart",
+                "s3:GetObject",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8",
+        "Roles": [
+          {
+            "Ref": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
           },
         ],
       },
@@ -3346,7 +3446,12 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "AGENT_RUNTIME_ARN": "",
+            "AGENT_RUNTIME_ARN": {
+              "Fn::GetAtt": [
+                "WorkerAgentCore6BC3E323",
+                "agentRuntimeArn",
+              ],
+            },
             "APP_ORIGIN_SOURCE_PARAMETER": {
               "Ref": "WebappOriginNameParameterBBAD7F85",
             },
@@ -3816,6 +3921,394 @@ exports.handler = async function (event, context) {
         "Roles": [
           {
             "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerAgentCore6BC3E323": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkerAgentCoreImageDeployCustomResource00CB62FF",
+      ],
+      "Properties": {
+        "ContainerUri": {
+          "Fn::Join": [
+            "",
+            [
+              "123456789012.dkr.ecr.us-east-1.",
+              {
+                "Ref": "AWS::URLSuffix",
+              },
+              "/testuseast1stackagentcorerepository6851394c:b63c6b7396cb24b54d33f910119e822e5f795be4982551054a3eb233aac82ff7",
+            ],
+          ],
+        },
+        "Env": {
+          "AWS_REGION": "us-east-1",
+          "BUCKET_NAME": {
+            "Ref": "StorageImageBucket99BA9550",
+          },
+          "EVENT_HTTP_ENDPOINT": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WorkerBusApi8460ABC0",
+                    "Dns.Http",
+                  ],
+                },
+              ],
+            ],
+          },
+          "GITHUB_APP_ID": "123456",
+          "GITHUB_APP_INSTALLATION_ID": "9876543",
+          "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
+          "GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME": "",
+          "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
+          "TABLE_NAME": {
+            "Ref": "StorageHistory251A3AE8",
+          },
+          "WEBAPP_ORIGIN_NAME_PARAMETER": {
+            "Ref": "WebappOriginNameParameterBBAD7F85",
+          },
+          "WORKER_RUNTIME": "agent-core",
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkerAgentCoreRoleD7B5DD19",
+            "Arn",
+          ],
+        },
+        "ServerProtocol": "HTTP",
+        "ServiceTimeout": "20",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "WorkerAgentCoreCustomResourceHandler883BB37B",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "Custom::AgentCoreRuntime",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerAgentCoreCustomResourceHandler883BB37B": {
+      "DependsOn": [
+        "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3",
+        "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
+            "Arn",
+          ],
+        },
+        "Runtime": "python3.13",
+        "Timeout": 10,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "bedrock-agentcore:CreateAgentRuntime",
+                "bedrock-agentcore:DeleteAgentRuntime",
+                "bedrock-agentcore:ListAgentRuntimes",
+                "bedrock-agentcore:UpdateAgentRuntime",
+                "iam:PassRole",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3",
+        "Roles": [
+          {
+            "Ref": "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/BedrockAgentCoreFullAccess",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerAgentCoreImageDeployCustomResource00CB62FF": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "DestImage": {
+          "Fn::Join": [
+            "",
+            [
+              "docker://123456789012.dkr.ecr.us-east-1.",
+              {
+                "Ref": "AWS::URLSuffix",
+              },
+              "/testuseast1stackagentcorerepository6851394c:b63c6b7396cb24b54d33f910119e822e5f795be4982551054a3eb233aac82ff7",
+            ],
+          ],
+        },
+        "ImageArch": "arm64",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB28EAD8E4",
+            "Arn",
+          ],
+        },
+        "SrcImage": {
+          "Fn::Join": [
+            "",
+            [
+              "docker://",
+              {
+                "Fn::Sub": "REDACTED",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::CDKECRDeployment",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerAgentCoreRoleD7B5DD19": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerAgentCoreRoleDefaultPolicyD5F17E82": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:ecr:us-east-1:123456789012:repository/testuseast1stackagentcorerepository6851394c",
+            },
+            {
+              "Action": [
+                "bedrock-agentcore:GetWorkloadAccessToken",
+                "bedrock-agentcore:GetWorkloadAccessTokenForJWT",
+                "bedrock-agentcore:GetWorkloadAccessTokenForUserId",
+                "bedrock:InvokeModel",
+                "cloudwatch:PutMetricData",
+                "ecr:GetAuthorizationToken",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+                "xray:PutTelemetryRecords",
+                "xray:PutTraceSegments",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:Abort*",
+                "s3:DeleteObject*",
+                "s3:GetBucket*",
+                "s3:GetObject*",
+                "s3:List*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageImageBucket99BA9550",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/github/app-private-key",
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/slack/bot-token",
+              ],
+            },
+            {
+              "Action": [
+                "appsync:EventPublish",
+                "appsync:EventSubscribe",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
+                    },
+                    "/channelNamespace/*",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "appsync:EventConnect",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerAgentCoreRoleDefaultPolicyD5F17E82",
+        "Roles": [
+          {
+            "Ref": "WorkerAgentCoreRoleD7B5DD19",
           },
         ],
       },
@@ -6310,6 +6803,14 @@ exports[`Snapshot test: UsEast1Stack 1`] = `
     },
   },
   "Resources": {
+    "AgentCoreRepositoryFE4EF3FD": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "RepositoryName": "testuseast1stackagentcorerepository6851394c",
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Retain",
+    },
     "SignPayloadHandlerCFEAA14C": {
       "DependsOn": [
         "SignPayloadHandlerServiceRole29261232",

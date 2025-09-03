@@ -21,7 +21,6 @@ const parseCommaSeparatedList = (envVar: string | undefined): string[] | undefin
 const allowedIpV4AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV4_CIDRS);
 const allowedIpV6AddressRanges = parseCommaSeparatedList(process.env.ALLOWED_IPV6_CIDRS);
 const allowedCountryCodes = parseCommaSeparatedList(process.env.ALLOWED_COUNTRY_CODES);
-const enableAgentCore = process.env.ENABLE_AGENT_CORE == 'true';
 
 const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   env: {
@@ -32,7 +31,6 @@ const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   allowedIpV4AddressRanges,
   allowedIpV6AddressRanges,
   allowedCountryCodes,
-  enableAgentCore,
 });
 
 const additionalPolicies = parseCommaSeparatedList(process.env.WORKER_ADDITIONAL_POLICIES);
