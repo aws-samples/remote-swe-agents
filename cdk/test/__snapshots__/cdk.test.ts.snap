@@ -4696,6 +4696,7 @@ phases:
     steps:
       - name: InstallUpdates
         action: UpdateOS
+        maxAttempts: 3
       - name: InstallDependencies
         action: ExecuteBash
         inputs:
@@ -4703,6 +4704,11 @@ phases:
             - "#!/bin/bash
 
               apt-get -o DPkg::Lock::Timeout=-1 update
+
+              apt-get -o DPkg::Lock::Timeout=-1 upgrade -y
+
+
+              # Install python3
 
               apt-get -o DPkg::Lock::Timeout=-1 install -y python3-pip unzip
 
@@ -5162,34 +5168,34 @@ phases:
               \\      "
   - name: validate
     steps:
-      - name: HelloWorldStep
+      - name: ValidateStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
   - name: test
     steps:
-      - name: HelloWorldStep
+      - name: TestStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
 ",
             ],
           ],
@@ -5412,6 +5418,7 @@ phases:
     steps:
       - name: InstallUpdates
         action: UpdateOS
+        maxAttempts: 3
       - name: InstallDependencies
         action: ExecuteBash
         inputs:
@@ -5419,6 +5426,11 @@ phases:
             - "#!/bin/bash
 
               apt-get -o DPkg::Lock::Timeout=-1 update
+
+              apt-get -o DPkg::Lock::Timeout=-1 upgrade -y
+
+
+              # Install python3
 
               apt-get -o DPkg::Lock::Timeout=-1 install -y python3-pip unzip
 
@@ -5878,34 +5890,34 @@ phases:
               \\      "
   - name: validate
     steps:
-      - name: HelloWorldStep
+      - name: ValidateStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
   - name: test
     steps:
-      - name: HelloWorldStep
+      - name: TestStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
 ",
             ],
           ],
@@ -5982,6 +5994,9 @@ phases:
                 [
                   "#!/bin/bash
 apt-get -o DPkg::Lock::Timeout=-1 update
+apt-get -o DPkg::Lock::Timeout=-1 upgrade -y
+
+# Install python3
 apt-get -o DPkg::Lock::Timeout=-1 install -y python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
 ln -s -f /usr/bin/python3 /usr/bin/python

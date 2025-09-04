@@ -158,6 +158,9 @@ export class Worker extends Construct {
     userData.addCommands(
       `
 apt-get -o DPkg::Lock::Timeout=-1 update
+apt-get -o DPkg::Lock::Timeout=-1 upgrade -y
+
+# Install python3
 apt-get -o DPkg::Lock::Timeout=-1 install -y python3-pip unzip
 ln -s -f /usr/bin/pip3 /usr/bin/pip
 ln -s -f /usr/bin/python3 /usr/bin/python
