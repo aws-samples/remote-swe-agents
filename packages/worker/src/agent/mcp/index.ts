@@ -1,36 +1,11 @@
-import { readFileSync } from 'fs';
-import { z } from 'zod';
 import { MCPClient } from './mcp-client';
 import { Tool } from '@aws-sdk/client-bedrock-runtime';
+import { McpConfig } from '@remote-swe-agents/agent-core/schema';
 
-const configSchema = z.object({
-  mcpServers: z.record(
-    z.string(),
-    z.union([
-      z.object({
-        command: z.string(),
-        args: z.array(z.string()),
-        env: z.record(z.string(), z.string()).optional(),
-        enabled: z.boolean().optional(),
-      }),
-      z.object({
-        url: z.string(),
-        enabled: z.boolean().optional(),
-      }),
-    ])
-  ),
-});
+let clientsMap: { [key: string]: { name: string; client: MCPClient }[] } = {};
 
-let clients: { name: string; client: MCPClient }[] = [];
-
-const initMcp = async () => {
-  const configJson = JSON.parse(readFileSync('./mcp.json').toString());
-  const { success, data: config } = configSchema.safeParse(configJson);
-  if (!success) {
-    // how to handle this?
-    throw new Error('Invalid config');
-  }
-  clients = (
+const initMcp = async (workerId: string, config: McpConfig) => {
+  clientsMap[workerId] = (
     await Promise.all(
       Object.entries(config.mcpServers)
         .filter(([, config]) => config.enabled !== false)
@@ -51,17 +26,20 @@ const initMcp = async () => {
   ).filter((c) => c != null);
 };
 
-export const getMcpToolSpecs = async (): Promise<Tool[]> => {
-  if (clients.length === 0) {
-    await initMcp();
+export const getMcpToolSpecs = async (workerId: string, config: McpConfig): Promise<Tool[]> => {
+  if (Object.keys(config.mcpServers).length == 0) return [];
+  if (!clientsMap[workerId]) {
+    await initMcp(workerId, config);
   }
-  return clients.flatMap(({ client }) => {
+  return clientsMap[workerId].flatMap(({ client }) => {
     return client.tools;
   });
 };
 
-export const tryExecuteMcpTool = async (toolName: string, input: any) => {
-  const client = clients.find(({ client }) => client.tools.find((tool) => tool.toolSpec?.name == toolName));
+export const tryExecuteMcpTool = async (workerId: string, toolName: string, input: any) => {
+  const client = clientsMap[workerId].find(({ client }) =>
+    client.tools.find((tool) => tool.toolSpec?.name == toolName)
+  );
   if (client == null) {
     return { found: false };
   }
@@ -71,8 +49,10 @@ export const tryExecuteMcpTool = async (toolName: string, input: any) => {
 
 export const closeMcpServers = async () => {
   await Promise.all(
-    clients.map(async (client) => {
-      await client.client.cleanup();
-    })
+    Object.values(clientsMap).flatMap(async (clients) =>
+      clients.map(async (client) => {
+        await client.client.cleanup();
+      })
+    )
   );
 };

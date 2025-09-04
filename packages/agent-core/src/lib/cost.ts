@@ -1,6 +1,7 @@
-import { QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws/ddb';
 import { modelConfigs } from '../schema/model';
+import { updateSession } from './sessions';
 
 // Calculate cost in USD based on token usage
 export const calculateCost = (
@@ -70,20 +71,8 @@ export async function updateSessionCost(workerId: string) {
     // Calculate total cost across all models
     const totalCost = await calculateTotalSessionCost(workerId);
 
-    // Update the cost in DynamoDB
-    await ddb.send(
-      new UpdateCommand({
-        TableName,
-        Key: {
-          PK: 'sessions',
-          SK: workerId,
-        },
-        UpdateExpression: 'SET sessionCost = :cost',
-        ExpressionAttributeValues: {
-          ':cost': totalCost,
-        },
-      })
-    );
+    // Update the cost using the generic updateSession function
+    await updateSession(workerId, { sessionCost: totalCost });
   } catch (error) {
     console.error(`Error updating session cost for workerId ${workerId}:`, error);
   }

@@ -5,6 +5,7 @@ export const createNewWorkerSchema = z.object({
   message: z.string().min(1),
   imageKeys: z.array(z.string()).optional(),
   modelOverride: modelTypeSchema.optional(),
+  customAgentId: z.string().optional(),
 });
 
 export const promptTemplateSchema = z.object({

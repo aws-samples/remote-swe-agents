@@ -13,3 +13,4 @@ export * from './api-key';
 export * from './images';
 export * from './webapp-origin';
 export * from './preferences';
+export * from './custom-agent';

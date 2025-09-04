@@ -16,6 +16,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "patch-package": "^8.0.0"
+    "patch-package": "^8.0.0",
+    "zod": "^4.1.1"
   }
 }
