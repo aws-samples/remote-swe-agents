@@ -2,8 +2,10 @@ import { z } from 'zod';
 import { modelTypeSchema } from './model';
 
 export const agentStatusSchema = z.union([z.literal('working'), z.literal('pending'), z.literal('completed')]);
+export const runtimeTypeSchema = z.union([z.literal('ec2'), z.literal('agent-core')]);
 
 export type AgentStatus = z.infer<typeof agentStatusSchema>;
+export type RuntimeType = z.infer<typeof runtimeTypeSchema>;
 
 export const customAgentSchema = z.object({
   PK: z.literal('custom-agent'),
@@ -14,7 +16,7 @@ export const customAgentSchema = z.object({
   systemPrompt: z.string(),
   tools: z.array(z.string()),
   mcpConfig: z.string(),
-  runtimeType: z.union([z.literal('ec2'), z.literal('agent-core')]),
+  runtimeType: runtimeTypeSchema,
   createdAt: z.number(),
   updatedAt: z.number(),
 });

@@ -1,5 +1,4 @@
 import {
-  ContentBlock,
   ConverseCommandInput,
   Message,
   ThrottlingException,
@@ -32,7 +31,6 @@ import {
   cloneRepositoryTool,
   createPRTool,
   commandExecutionTool,
-  DefaultWorkingDirectory,
   fileEditTool,
   getPRCommentsTool,
   readImageTool,
@@ -132,7 +130,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     createPRTool,
     commandExecutionTool,
     reportProgressTool,
-    // thinkTool,
     fileEditTool,
     sendImageTool,
     getPRCommentsTool,
@@ -141,14 +138,27 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     readImageTool,
     todoInitTool,
     todoUpdateTool,
-  ].filter((tool) => customAgent.tools.includes(tool.name));
-  const toolConfig: ConverseCommandInput['toolConfig'] = {
+  ].filter(
+    (tool) =>
+      customAgent.tools.includes(tool.name) ||
+      [
+        // required tools
+        reportProgressTool.name,
+        todoInitTool.name,
+        todoUpdateTool.name,
+        sendImageTool.name,
+      ].includes(tool.name)
+  );
+  let toolConfig: ConverseCommandInput['toolConfig'] = {
     tools: [
       ...(await Promise.all(tools.map(async (tool) => ({ toolSpec: await tool.toolSpec() })))),
       ...(await getMcpToolSpecs(workerId, mcpConfig)),
       { cachePoint: { type: 'default' } },
     ],
   };
+  if (toolConfig.tools!.length == 1) {
+    toolConfig = undefined;
+  }
 
   const { items: initialItems, messages: initialMessages } = await middleOutFiltering(allItems);
   // usually cache was created with the last user message (including toolResult), so try to get at(-3) here.

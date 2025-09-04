@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { agentStatusSchema } from './agent';
+import { agentStatusSchema, runtimeTypeSchema } from './agent';
 
 export const instanceStatusSchema = z.union([
   z.literal('starting'),
@@ -27,6 +27,7 @@ export const sessionItemSchema = z.object({
   slackThreadTs: z.string().optional(),
   title: z.string().optional(),
   customAgentId: z.string().optional(),
+  runtimeType: runtimeTypeSchema.optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

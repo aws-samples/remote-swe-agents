@@ -23,7 +23,8 @@ export const createNewWorker = authActionClient
     const now = Date.now();
     const { userId } = ctx;
     const agent = await getCustomAgent(customAgentId);
-    if (agent?.runtimeType == 'agent-core') {
+    const runtimeType = agent?.runtimeType ?? 'ec2';
+    if (runtimeType == 'agent-core') {
       // AgentCore Runtime sessionId must have length greater than or equal to 33
       const lacking = 33 - workerId.length;
       if (lacking > 0) {
@@ -69,6 +70,7 @@ export const createNewWorker = authActionClient
                 agentStatus: 'pending',
                 initiator: `webapp#${userId}`,
                 customAgentId: agent?.SK,
+                runtimeType,
               } satisfies SessionItem,
             },
           },
@@ -92,7 +94,7 @@ export const createNewWorker = authActionClient
 
     try {
       // Start worker instance for the worker
-      await getOrCreateWorkerInstance(workerId, agent?.runtimeType);
+      await getOrCreateWorkerInstance(workerId, runtimeType);
 
       // Send worker event to notify message received
       await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
