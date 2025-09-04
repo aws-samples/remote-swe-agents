@@ -7,6 +7,7 @@ phases:
     steps:
       - name: InstallUpdates
         action: UpdateOS
+        maxAttempts: 3
       - name: InstallDependencies
         action: ExecuteBash
         inputs:
@@ -15,31 +16,31 @@ phases:
             - dummy
   - name: validate
     steps:
-      - name: HelloWorldStep
+      - name: ValidateStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
   - name: test
     steps:
-      - name: HelloWorldStep
+      - name: TestStep
         action: ExecuteBash
         inputs:
           commands:
-            - aws --version
-            - docker --version
-            - python --version
-            - gh --version
-            - sudo -u ubuntu bash -i -c "uv --version"
-            - sudo -u ubuntu bash -i -c "uvx --version"
-            - sudo -u ubuntu bash -i -c "node --version"
-            - sudo -u ubuntu bash -i -c "npm --version"
-            - sudo -u ubuntu bash -i -c "npx --version"
+            - aws --version || exit 1
+            - docker --version || exit 1
+            - python --version || exit 1
+            - gh --version || exit 1
+            - sudo -u ubuntu bash -i -c "uv --version" || exit 1
+            - sudo -u ubuntu bash -i -c "uvx --version" || exit 1
+            - sudo -u ubuntu bash -i -c "node --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npm --version" || exit 1
+            - sudo -u ubuntu bash -i -c "npx --version" || exit 1
