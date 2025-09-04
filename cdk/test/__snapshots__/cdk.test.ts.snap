@@ -3940,7 +3940,7 @@ exports.handler = async function (event, context) {
               {
                 "Ref": "AWS::URLSuffix",
               },
-              "/testuseast1stackagentcorerepository6851394c:b63c6b7396cb24b54d33f910119e822e5f795be4982551054a3eb233aac82ff7",
+              "/testuseast1stackagentcorerepository6851394c:REDACTED",
             ],
           ],
         },
@@ -4097,7 +4097,7 @@ exports.handler = async function (event, context) {
               {
                 "Ref": "AWS::URLSuffix",
               },
-              "/testuseast1stackagentcorerepository6851394c:b63c6b7396cb24b54d33f910119e822e5f795be4982551054a3eb233aac82ff7",
+              "/testuseast1stackagentcorerepository6851394c:REDACTED",
             ],
           ],
         },
@@ -5244,7 +5244,7 @@ phases:
                   "version",
                 ],
               },
-              "","sourceAssetHash":"REDACTED"}",
+              "","sourceAssetHash":"worker-asset-hash:REDACTED"}",
             ],
           ],
         },
