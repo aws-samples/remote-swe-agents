@@ -381,20 +381,7 @@ As our agent can work as an MCP client, you can easily integrate it with various
 
 All the new agents can now use MCP servers as their tools.
 
-### Foundation Model Override (Environment Variable)
 
-In addition to Web UI configuration, you can also override the default foundation model using an environment variable during deployment:
-
-```bash
-WORKER_MODEL_OVERRIDE=nova-pro npx cdk deploy
-```
-
-Available model values are: `sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-pro, opus4, opus4.1, sonnet4`
-
-After deployment, new workers will use the overridden model.
-
-> [!NOTE]
-> Web UI global configuration is recommended over environment variables as it provides more flexibility and doesn't require redeployment.
 
 ## How it works
 
