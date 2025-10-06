@@ -345,6 +345,24 @@ When you start an agent, your instruction should include at least the below cont
 To simplify the workflow, you can create a GitHub issue in the repository containing the information above, and just give the agent its URL.
 This way the repository is automatically inferred from the URL, and it can also link the new PR to the corresponding issue.
 
+### Global Configuration via Web UI
+
+You can configure global settings for all agents through the deployed web UI. These settings apply to agents started from both the web interface and Slack:
+
+1. **Default Foundation Model**: Set the default foundation model that all new agent sessions will use. Available models include:
+   - `sonnet3.7` (Claude 3.7 Sonnet) - Default model
+   - `sonnet4` (Claude 4 Sonnet)
+   - `opus4.1` (Claude 4.1 Opus) 
+   - `opus4` (Claude 4 Opus)
+   - `sonnet3.5` (Claude 3.5 Sonnet v2)
+   - `sonnet3.5v1` (Claude 3.5 Sonnet v1)
+   - `haiku3.5` (Claude 3.5 Haiku)
+   - `nova-pro` (Amazon Nova Pro)
+
+2. **Common Agent Prompt**: Configure a shared system prompt that will be used by all agents. This is useful for setting organization-wide coding standards, preferred libraries, or specific instructions that should apply to all development tasks.
+
+To access these settings, navigate to the preferences page in your deployed webapp interface.
+
 ### Integrating with MCP Servers
 
 As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`mcp.json`](./packages/worker/mcp.json) and run CDK deploy. For example,
@@ -363,9 +381,9 @@ As our agent can work as an MCP client, you can easily integrate it with various
 
 All the new agents can now use MCP servers as their tools.
 
-### Foundation Model Override
+### Foundation Model Override (Environment Variable)
 
-By default, Remote SWE uses Claude Sonnet 3.7 as the foundation model. You can override this setting using an environment variable:
+In addition to Web UI configuration, you can also override the default foundation model using an environment variable during deployment:
 
 ```bash
 WORKER_MODEL_OVERRIDE=nova-pro npx cdk deploy
@@ -375,7 +393,8 @@ Available model values are: `sonnet3.5v1, sonnet3.5, sonnet3.7, haiku3.5, nova-p
 
 After deployment, new workers will use the overridden model.
 
-This feature is highly experimental, and it's recommended to use the default model for the optimal experience.
+> [!NOTE]
+> Web UI global configuration is recommended over environment variables as it provides more flexibility and doesn't require redeployment.
 
 ## How it works
 
