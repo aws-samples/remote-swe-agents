@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 export const modelTypeList = [
+  'sonnet4.5',
+  'haiku4.5',
   'sonnet4',
   'opus4.1',
   'opus4',
@@ -32,6 +34,28 @@ const modelConfigSchema = z.object({
 });
 
 export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> = {
+  'sonnet4.5': {
+    name: 'Claude 4.5 Sonnet',
+    modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+    maxOutputTokens: 64_000,
+    maxInputTokens: 200_000,
+    cacheSupport: ['system', 'message', 'tool'],
+    reasoningSupport: true,
+    toolChoiceSupport: ['any', 'auto', 'tool'],
+    interleavedThinkingSupport: true,
+    pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
+  },
+  'haiku4.5': {
+    name: 'Claude 4.5 Haiku',
+    modelId: 'anthropic.claude-haiku-4-5-20251001-v1:0',
+    maxOutputTokens: 4096,
+    maxInputTokens: 200_000,
+    cacheSupport: ['system', 'message', 'tool'],
+    reasoningSupport: true,
+    toolChoiceSupport: ['any', 'auto', 'tool'],
+    interleavedThinkingSupport: true,
+    pricing: { input: 0.001, output: 0.005, cacheRead: 0.0001, cacheWrite: 0.00125 },
+  },
   'sonnet3.5v1': {
     name: 'Claude 3.5 Sonnet v1',
     modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
