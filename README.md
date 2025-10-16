@@ -349,15 +349,7 @@ This way the repository is automatically inferred from the URL, and it can also 
 
 You can configure global settings for all agents through the deployed web UI. These settings apply to agents started from both the web interface and Slack:
 
-1. **Default Foundation Model**: Set the default foundation model that all new agent sessions will use. Available models include:
-   - `sonnet3.7` (Claude 3.7 Sonnet) - Default model
-   - `sonnet4` (Claude 4 Sonnet)
-   - `opus4.1` (Claude 4.1 Opus) 
-   - `opus4` (Claude 4 Opus)
-   - `sonnet3.5` (Claude 3.5 Sonnet v2)
-   - `sonnet3.5v1` (Claude 3.5 Sonnet v1)
-   - `haiku3.5` (Claude 3.5 Haiku)
-   - `nova-pro` (Amazon Nova Pro)
+1. **Default Foundation Model**: Set the default foundation model that all new agent sessions will use. See [models.ts](./packages/agent-core/src/schema/model.ts) for the latest supported models.
 
 2. **Common Agent Prompt**: Configure a shared system prompt that will be used by all agents. This is useful for setting organization-wide coding standards, preferred libraries, or specific instructions that should apply to all development tasks.
 
