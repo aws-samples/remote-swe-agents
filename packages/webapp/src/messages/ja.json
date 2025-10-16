@@ -303,7 +303,8 @@
       "systemPrompt": {
         "label": "システムプロンプト",
         "placeholder": "あなたは〜を専門とするアシスタントです...",
-        "description": "エージェントの動作、専門性、応答スタイルを定義"
+        "description": "エージェントの動作、専門性、応答スタイルを定義",
+        "useDefault": "デフォルトのシステムプロンプトを利用"
       },
       "tools": {
         "label": "ツール",

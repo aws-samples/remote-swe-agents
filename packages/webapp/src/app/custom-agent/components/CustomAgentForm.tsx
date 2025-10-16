@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { ChevronDownIcon, WandIcon, TrashIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   const isEditing = Boolean(editingAgent);
   const router = useRouter();
   const [selectedTools, setSelectedTools] = useState<string[]>(editingAgent?.tools || []);
+  const [useDefaultSystemPrompt, setUseDefaultSystemPrompt] = useState<boolean>(!editingAgent?.systemPrompt);
 
   const {
     form,
@@ -122,9 +124,16 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (useDefaultSystemPrompt) {
+      setValue('systemPrompt', '');
+    }
+    handleSubmitWithAction(e);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmitWithAction} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         {/* Agent Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -199,13 +208,26 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('form.systemPrompt.label')}
           </label>
-          <textarea
-            {...register('systemPrompt')}
-            placeholder={t('form.systemPrompt.placeholder')}
-            disabled={isPending}
-            rows={6}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
-          />
+          <div className="flex items-center gap-2 mb-3">
+            <Checkbox
+              id="useDefaultSystemPrompt"
+              checked={useDefaultSystemPrompt}
+              onCheckedChange={(checked) => setUseDefaultSystemPrompt(checked === true)}
+              disabled={isPending}
+            />
+            <label htmlFor="useDefaultSystemPrompt" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              {t('form.systemPrompt.useDefault')}
+            </label>
+          </div>
+          {!useDefaultSystemPrompt && (
+            <textarea
+              {...register('systemPrompt')}
+              placeholder={t('form.systemPrompt.placeholder')}
+              disabled={isPending}
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+            />
+          )}
           {formState.errors.systemPrompt && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.systemPrompt.message}</p>
           )}

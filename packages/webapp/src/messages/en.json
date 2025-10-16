@@ -304,7 +304,8 @@
       "systemPrompt": {
         "label": "System Prompt",
         "placeholder": "You are a helpful assistant specialized in...",
-        "description": "Define the agent's behavior, expertise, and response style"
+        "description": "Define the agent's behavior, expertise, and response style",
+        "useDefault": "Use default system prompt"
       },
       "tools": {
         "label": "Tools",
