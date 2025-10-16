@@ -36,18 +36,28 @@ jobs:
               - 'cdk/**'
             agent_core:
               - 'packages/agent-core/**'
+              - 'package.json'
+              - 'package-lock.json'
             slack_bolt_app:
               - 'packages/slack-bolt-app/**'
               - 'packages/agent-core/**'
+              - 'package.json'
+              - 'package-lock.json'
             worker:
               - 'packages/worker/**'
               - 'packages/agent-core/**'
+              - 'package.json'
+              - 'package-lock.json'
             webapp:
               - 'packages/webapp/**'
               - 'packages/agent-core/**'
+              - 'package.json'
+              - 'package-lock.json'
             github_actions:
               - 'packages/github-actions/**'
               - 'packages/agent-core/**'
+              - 'package.json'
+              - 'package-lock.json'
             dockerfiles:
               - 'docker/**'
   Build-and-Test-CDK:
