@@ -48,7 +48,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
   'haiku4.5': {
     name: 'Claude 4.5 Haiku',
     modelId: 'anthropic.claude-haiku-4-5-20251001-v1:0',
-    maxOutputTokens: 4096,
+    maxOutputTokens: 64_000,
     maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
