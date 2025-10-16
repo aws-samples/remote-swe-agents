@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
               workerId,
               initialMessage: message,
               createdAt: now,
+              updatedAt: now,
               LSI1: String(now).padStart(15, '0'),
               instanceStatus: 'starting',
               agentStatus: 'pending',

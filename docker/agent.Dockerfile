@@ -23,7 +23,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv
   unzip awscliv2.zip && rm -f awscliv2.zip && \
   ./aws/install
 
-  # Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+# Install GitHub CLI https://github.com/cli/cli/blob/trunk/docs/install_linux.md
 RUN (type -p wget >/dev/null || (apt update && apt-get install wget -y)) && \
   mkdir -p -m 755 /etc/apt/keyrings && \
   out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg && \

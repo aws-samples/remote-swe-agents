@@ -20,6 +20,7 @@ export const saveSessionInfo = async (
         SK: workerId,
         workerId,
         createdAt: now,
+        updatedAt: now,
         LSI1: timestamp,
         initialMessage,
         instanceStatus: 'terminated',

@@ -1,11 +1,12 @@
 import { DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand } from '@aws-sdk/client-ec2';
 import { GetParameterCommand, ParameterNotFound } from '@aws-sdk/client-ssm';
 import { BedrockAgentCoreClient, InvokeAgentRuntimeCommand } from '@aws-sdk/client-bedrock-agentcore';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { ddb, ec2, ssm, TableName } from './aws';
+import { ec2, ssm } from './aws';
 import { sendWebappEvent } from './events';
+import { updateSession } from './sessions';
+import { InstanceStatus } from '../schema';
 
-const agentCore = new BedrockAgentCoreClient({ region: 'us-east-1' });
+const agentCore = new BedrockAgentCoreClient();
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';
@@ -14,22 +15,10 @@ const SubnetIdList = process.env.SUBNET_ID_LIST?.split(',') ?? [];
 /**
  * Updates the instance status in DynamoDB and sends a webapp event
  */
-export async function updateInstanceStatus(workerId: string, status: 'starting' | 'running' | 'stopped') {
+export async function updateInstanceStatus(workerId: string, status: InstanceStatus) {
   try {
-    // Update the instanceStatus in DynamoDB
-    await ddb.send(
-      new UpdateCommand({
-        TableName,
-        Key: {
-          PK: 'sessions',
-          SK: workerId,
-        },
-        UpdateExpression: 'SET instanceStatus = :status',
-        ExpressionAttributeValues: {
-          ':status': status,
-        },
-      })
-    );
+    // Update the instanceStatus using the generic updateSession function
+    await updateSession(workerId, { instanceStatus: status });
 
     // Send event to webapp
     await sendWebappEvent(workerId, {
@@ -162,10 +151,9 @@ async function createWorkerInstance(
 
 export async function getOrCreateWorkerInstance(
   workerId: string,
-  workerType: 'agentCore' | 'ec2' = 'ec2'
+  workerType: 'agent-core' | 'ec2' = 'ec2'
 ): Promise<{ instanceId: string; oldStatus: 'stopped' | 'terminated' | 'running'; usedCache?: boolean }> {
-  if (workerType == 'agentCore') {
-    console.log(workerId);
+  if (workerType == 'agent-core') {
     const res = await agentCore.send(
       new InvokeAgentRuntimeCommand({
         agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
@@ -174,7 +162,6 @@ export async function getOrCreateWorkerInstance(
         contentType: 'application/json',
       })
     );
-    console.log(res);
     return { instanceId: 'local', oldStatus: 'running' };
   }
 

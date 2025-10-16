@@ -9,7 +9,8 @@
     "language": "言語",
     "preferences": "設定",
     "apiKeys": "APIキー",
-    "costAnalysis": "コスト分析"
+    "costAnalysis": "コスト分析",
+    "customAgent": "カスタムエージェント"
   },
   "sessions": {
     "title": "セッション一覧",
@@ -174,6 +175,10 @@
     "waitingForImageUpload": "画像アップロード中...",
     "templates": "テンプレート",
     "modelOverride": "モデル",
+    "customAgent": "カスタムエージェント",
+    "customAgentPlaceholder": "デフォルトのエージェント",
+    "defaultAgentName": "デフォルトエージェント",
+    "defaultAgentDescription": "コーディング用途に適した、汎用エージェントです",
     "templateModal": {
       "title": "プロンプトテンプレート",
       "createNew": "新しいテンプレートを作成",
@@ -258,6 +263,76 @@
       "getSessionDesc": "セッションの詳細情報（ステータス、コスト、メッセージ）を取得します：",
       "getSessionReturns": "セッション詳細が返されます：",
       "exampleCurl": "cURLコマンドの例："
+    }
+  },
+  "customAgent": {
+    "title": "カスタムエージェント",
+    "description": "特定の動作と機能を持つカスタムAIエージェントを作成・管理",
+    "list": {
+      "title": "作成済みカスタムエージェント",
+      "description": "これまでに作成されたカスタムAIエージェントの一覧"
+    },
+    "create": {
+      "title": "カスタムエージェントを作成",
+      "description": "特定のシステムプロンプト、ツール、設定でカスタムAIエージェントを定義"
+    },
+    "createSuccess": "カスタムエージェントが正常に作成されました",
+    "createError": "カスタムエージェントの作成に失敗しました",
+    "updateSuccess": "カスタムエージェントが正常に更新されました",
+    "updateError": "カスタムエージェントの更新に失敗しました",
+    "saveSuccess": "カスタムエージェントが正常に保存されました",
+    "saveError": "カスタムエージェントの保存に失敗しました",
+    "deleteSuccess": "カスタムエージェントが正常に削除されました",
+    "deleteError": "カスタムエージェントの削除に失敗しました",
+    "form": {
+      "name": {
+        "label": "エージェント名",
+        "placeholder": "エージェント名を入力 (例: コードレビューアー、バグハンター)",
+        "description": "カスタムエージェントの説明的な名前"
+      },
+      "description": {
+        "label": "説明",
+        "placeholder": "エージェントの説明を入力 (例: コードレビューとバグ発見を専門とするエージェント)",
+        "description": "このエージェントの目的と機能の説明"
+      },
+      "defaultModel": {
+        "label": "デフォルトモデル",
+        "placeholder": "モデルを選択",
+        "description": "このエージェントがデフォルトで使用するAIモデル"
+      },
+      "systemPrompt": {
+        "label": "システムプロンプト",
+        "placeholder": "あなたは〜を専門とするアシスタントです...",
+        "description": "エージェントの動作、専門性、応答スタイルを定義",
+        "useDefault": "デフォルトのシステムプロンプトを利用"
+      },
+      "tools": {
+        "label": "ツール",
+        "placeholder": "ツールが選択されていません",
+        "description": "利用可能なオプションからエージェントが使用できるツールを選択"
+      },
+      "mcpConfig": {
+        "label": "MCP設定",
+        "placeholder": "MCP設定JSONを入力 (任意)",
+        "description": "高度な統合のためのオプションのMCP (Model Context Protocol) 設定",
+        "formatJson": "JSON整形",
+        "formatSuccess": "JSONを整形しました",
+        "formatError": "不正なJSON形式です"
+      },
+      "runtimeType": {
+        "label": "ランタイムタイプ",
+        "placeholder": "ランタイムタイプを選択",
+        "description": "エージェントが動作するランタイム環境"
+      },
+      "create": "作成",
+      "creating": "作成中...",
+      "update": "更新",
+      "updating": "更新中...",
+      "save": "保存",
+      "saving": "保存中...",
+      "delete": "削除",
+      "deleting": "削除中...",
+      "confirmDelete": "このエージェントを削除してもよろしいですか？"
     }
   }
 }

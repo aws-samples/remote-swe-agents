@@ -56,6 +56,14 @@ exports[`Snapshot test: MainStack 1`] = `
         "Ref": "StorageHistory251A3AE8",
       },
     },
+    "WorkerAgentCoreRuntimeArn2889E433": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkerAgentCoreRuntimeCF8BBA58",
+          "AgentRuntimeArn",
+        ],
+      },
+    },
     "WorkerImageBuilderRemoveCachedAmiCommand8BE1DBE6": {
       "Value": "aws ssm delete-parameter --name /remote-swe/worker/ami-id --region us-east-1",
     },
@@ -1032,7 +1040,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "python3.11",
+        "Runtime": "python3.13",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3346,7 +3354,12 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "AGENT_RUNTIME_ARN": "",
+            "AGENT_RUNTIME_ARN": {
+              "Fn::GetAtt": [
+                "WorkerAgentCoreRuntimeCF8BBA58",
+                "AgentRuntimeArn",
+              ],
+            },
             "APP_ORIGIN_SOURCE_PARAMETER": {
               "Ref": "WebappOriginNameParameterBBAD7F85",
             },
@@ -3625,6 +3638,32 @@ exports.handler = async function (event, context) {
               },
             },
             {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerAgentCoreRuntimeCF8BBA58",
+                    "AgentRuntimeArn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerAgentCoreRuntimeCF8BBA58",
+                          "AgentRuntimeArn",
+                        ],
+                      },
+                      "/runtime-endpoint/DEFAULT",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
               "Action": [
                 "ec2:CreateTags",
                 "ec2:DescribeInstances",
@@ -3820,6 +3859,257 @@ exports.handler = async function (event, context) {
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "WorkerAgentCoreRoleD7B5DD19": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerAgentCoreRoleDefaultPolicyD5F17E82": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
+              ],
+              "Effect": "Allow",
+              "Resource": "REDACTED",
+            },
+            {
+              "Action": [
+                "bedrock-agentcore:GetWorkloadAccessToken",
+                "bedrock-agentcore:GetWorkloadAccessTokenForJWT",
+                "bedrock-agentcore:GetWorkloadAccessTokenForUserId",
+                "bedrock:InvokeModel",
+                "cloudwatch:PutMetricData",
+                "ecr:GetAuthorizationToken",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+                "xray:PutTelemetryRecords",
+                "xray:PutTraceSegments",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:Abort*",
+                "s3:DeleteObject*",
+                "s3:GetBucket*",
+                "s3:GetObject*",
+                "s3:List*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageImageBucket99BA9550",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/github/app-private-key",
+                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/slack/bot-token",
+              ],
+            },
+            {
+              "Action": [
+                "appsync:EventPublish",
+                "appsync:EventSubscribe",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
+                    },
+                    "/channelNamespace/*",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "appsync:EventConnect",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerAgentCoreRoleDefaultPolicyD5F17E82",
+        "Roles": [
+          {
+            "Ref": "WorkerAgentCoreRoleD7B5DD19",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerAgentCoreRuntimeCF8BBA58": {
+      "DependsOn": [
+        "WorkerAgentCoreRoleDefaultPolicyD5F17E82",
+        "WorkerAgentCoreRoleD7B5DD19",
+      ],
+      "Properties": {
+        "AgentRuntimeArtifact": {
+          "ContainerConfiguration": {
+            "ContainerUri": {
+              "Fn::Sub": "REDACTED",
+            },
+          },
+        },
+        "AgentRuntimeName": "TestMainStackWorkerAgentCoreD650A7D5",
+        "EnvironmentVariables": {
+          "AWS_REGION": "us-east-1",
+          "BUCKET_NAME": {
+            "Ref": "StorageImageBucket99BA9550",
+          },
+          "EVENT_HTTP_ENDPOINT": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WorkerBusApi8460ABC0",
+                    "Dns.Http",
+                  ],
+                },
+              ],
+            ],
+          },
+          "GITHUB_APP_ID": "123456",
+          "GITHUB_APP_INSTALLATION_ID": "9876543",
+          "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
+          "GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME": "",
+          "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
+          "TABLE_NAME": {
+            "Ref": "StorageHistory251A3AE8",
+          },
+          "WEBAPP_ORIGIN_NAME_PARAMETER": {
+            "Ref": "WebappOriginNameParameterBBAD7F85",
+          },
+          "WORKER_RUNTIME": "agent-core",
+        },
+        "NetworkConfiguration": {
+          "NetworkMode": "PUBLIC",
+        },
+        "ProtocolConfiguration": "HTTP",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkerAgentCoreRoleD7B5DD19",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::BedrockAgentCore::Runtime",
     },
     "WorkerBusApi8460ABC0": {
       "Properties": {
@@ -4751,7 +5041,7 @@ phases:
                   "version",
                 ],
               },
-              "","sourceAssetHash":"REDACTED"}",
+              "","sourceAssetHash":"worker-asset-hash:REDACTED"}",
             ],
           ],
         },
@@ -6259,6 +6549,7 @@ systemctl start myapp",
         "SourceObjectKeys": [
           "REDACTED",
         ],
+        "WaitForDistributionInvalidation": true,
       },
       "Type": "Custom::CDKBucketDeployment",
       "UpdateReplacePolicy": "Delete",

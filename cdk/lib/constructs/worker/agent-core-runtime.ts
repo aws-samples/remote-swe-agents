@@ -1,21 +1,16 @@
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
-import { CfnOutput, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { IRepository, Repository } from 'aws-cdk-lib/aws-ecr';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { IGrantable, IPrincipal, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
-import { ContainerImageBuild } from 'deploy-time-build';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { WorkerBus } from './bus';
-import { DockerImageName, ECRDeployment } from 'cdk-ecr-deployment';
+import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
 
 export interface AgentCoreRuntimeProps {
-  repository: IRepository;
   storageTable: ITableV2;
   imageBucket: IBucket;
   bus: WorkerBus;
@@ -43,27 +38,6 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
 
-    const repository = props.repository;
-
-    const crHandler = new PythonFunction(this, 'CustomResourceHandler', {
-      runtime: Runtime.PYTHON_3_13,
-      timeout: Duration.seconds(10),
-      entry: join(__dirname, 'resources', 'agent-core-runtime-cr'),
-    });
-    crHandler.role!.addToPrincipalPolicy(
-      new PolicyStatement({
-        actions: [
-          'bedrock-agentcore:ListAgentRuntimes',
-          'bedrock-agentcore:CreateAgentRuntime',
-          'bedrock-agentcore:UpdateAgentRuntime',
-          'bedrock-agentcore:DeleteAgentRuntime',
-          'iam:PassRole',
-        ],
-        resources: ['*'],
-      })
-    );
-    crHandler.role?.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('BedrockAgentCoreFullAccess'));
-
     const role = new Role(this, 'Role', {
       assumedBy: ServicePrincipal.fromStaticServicePrincipleName('bedrock-agentcore.amazonaws.com'),
     });
@@ -75,19 +49,8 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       exclude: readFileSync('.dockerignore').toString().split('\n'),
       platform: Platform.LINUX_ARM64,
     });
-    const deployDest = new DockerImageName(`${repository.repositoryUri}:${image.imageTag}`);
-    const deploy = new ECRDeployment(this, 'ImageDeploy', {
-      src: new DockerImageName(image.imageUri),
-      dest: deployDest,
-      imageArch: ['arm64'],
-    });
+    image.repository.grantPull(role);
 
-    role.addToPrincipalPolicy(
-      new PolicyStatement({
-        actions: ['ecr:BatchGetImage', 'ecr:GetDownloadUrlForLayer'],
-        resources: [`${repository.repositoryArn}`],
-      })
-    );
     role.addToPrincipalPolicy(
       new PolicyStatement({
         actions: [
@@ -123,34 +86,46 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
 
-    const resource = new CustomResource(this, 'Resource', {
-      serviceToken: crHandler.functionArn,
-      resourceType: 'Custom::AgentCoreRuntime',
-      properties: {
-        ContainerUri: `${repository.repositoryUri}:${image.imageTag}`,
-        RoleArn: role.roleArn,
-        ServerProtocol: 'HTTP',
-        Env: {
-          AWS_REGION: Stack.of(this).region,
-          WORKER_RUNTIME: 'agent-core',
-          EVENT_HTTP_ENDPOINT: props.bus.httpEndpoint,
-          GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME: props.gitHubAppPrivateKeyParameter?.parameterName ?? '',
-          GITHUB_APP_ID: props.gitHubApp?.appId ?? '',
-          GITHUB_APP_INSTALLATION_ID: props.gitHubApp?.installationId ?? '',
-          TABLE_NAME: props.storageTable.tableName,
-          BUCKET_NAME: props.imageBucket.bucketName,
-          WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
-          // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
-          // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
-          SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
-          GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
+    const runtime = new CfnRuntime(this, 'Runtime', {
+      agentRuntimeName: Names.uniqueResourceName(this, { maxLength: 40 }),
+      agentRuntimeArtifact: {
+        containerConfiguration: {
+          containerUri: image.imageUri,
         },
       },
-      serviceTimeout: Duration.seconds(20),
+      networkConfiguration: {
+        networkMode: 'PUBLIC',
+      },
+      roleArn: role.roleArn,
+      protocolConfiguration: 'HTTP',
+      environmentVariables: {
+        AWS_REGION: Stack.of(this).region,
+        WORKER_RUNTIME: 'agent-core',
+        EVENT_HTTP_ENDPOINT: props.bus.httpEndpoint,
+        GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME: props.gitHubAppPrivateKeyParameter?.parameterName ?? '',
+        GITHUB_APP_ID: props.gitHubApp?.appId ?? '',
+        GITHUB_APP_INSTALLATION_ID: props.gitHubApp?.installationId ?? '',
+        TABLE_NAME: props.storageTable.tableName,
+        BUCKET_NAME: props.imageBucket.bucketName,
+        WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
+        // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
+        // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
+        SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
+        GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
+      },
     });
-    resource.node.addDependency(deploy.node.findChild('CustomResource'));
+    runtime.node.addDependency(role);
 
-    this.runtimeArn = resource.getAttString('agentRuntimeArn');
+    this.runtimeArn = runtime.attrAgentRuntimeArn;
     new CfnOutput(this, 'RuntimeArn', { value: this.runtimeArn });
+  }
+
+  public grantInvoke(grantee: IGrantable) {
+    grantee.grantPrincipal.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [this.runtimeArn, `${this.runtimeArn}/runtime-endpoint/DEFAULT`],
+      })
+    );
   }
 }

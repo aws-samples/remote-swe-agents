@@ -12,7 +12,6 @@ interface UsEast1StackProps extends cdk.StackProps {
   allowedIpV4AddressRanges?: string[];
   allowedIpV6AddressRanges?: string[];
   allowedCountryCodes?: string[];
-  enableAgentCore: boolean;
 }
 
 export class UsEast1Stack extends cdk.Stack {
@@ -30,8 +29,6 @@ export class UsEast1Stack extends cdk.Stack {
    * undefined if no IP restrictions are set.
    */
   public readonly webAclArn: string | undefined = undefined;
-
-  public readonly agentCoreRepository?: IRepository;
 
   constructor(scope: Construct, id: string, props: UsEast1StackProps) {
     super(scope, id, props);
@@ -72,15 +69,6 @@ export class UsEast1Stack extends cdk.Stack {
       });
 
       this.webAclArn = webAcl.webAclArn;
-    }
-
-    if (props.enableAgentCore) {
-      const parent = new Construct(this, 'AgentCoreRepository');
-      const repositoryName = cdk.Names.uniqueResourceName(parent, { maxLength: 64 }).toLowerCase();
-      new Repository(parent, 'Resource', {
-        repositoryName,
-      });
-      this.agentCoreRepository = Repository.fromRepositoryName(this, 'AgentCoreRepositoryReference', repositoryName);
     }
   }
 }

@@ -9,7 +9,8 @@
     "language": "Language",
     "preferences": "Preferences",
     "apiKeys": "API Keys",
-    "costAnalysis": "Cost Analysis"
+    "costAnalysis": "Cost Analysis",
+    "customAgent": "Custom Agents"
   },
   "sessions": {
     "title": "Sessions",
@@ -175,6 +176,10 @@
     "waitingForImageUpload": "Waiting for image upload...",
     "templates": "Templates",
     "modelOverride": "Model",
+    "customAgent": "Custom Agent",
+    "customAgentPlaceholder": "Default Agent",
+    "defaultAgentName": "Default Agent",
+    "defaultAgentDescription": "General-purpose agent suitable for coding tasks",
     "templateModal": {
       "title": "Prompt Templates",
       "createNew": "Create New Template",
@@ -259,6 +264,76 @@
       "getSessionDesc": "Retrieve detailed information about a session including status, cost, and messages:",
       "getSessionReturns": "Returns session details:",
       "exampleCurl": "cURL command example:"
+    }
+  },
+  "customAgent": {
+    "title": "Custom Agents",
+    "description": "Create and manage custom AI agents with specific behaviors and capabilities",
+    "list": {
+      "title": "Created Custom Agents",
+      "description": "List of custom AI agents that have been created"
+    },
+    "create": {
+      "title": "Create Custom Agent",
+      "description": "Define a custom AI agent with specific system prompts, tools, and configurations"
+    },
+    "createSuccess": "Custom agent created successfully",
+    "createError": "Failed to create custom agent",
+    "updateSuccess": "Custom agent updated successfully",
+    "updateError": "Failed to update custom agent",
+    "saveSuccess": "Custom agent saved successfully",
+    "saveError": "Failed to save custom agent",
+    "deleteSuccess": "Custom agent deleted successfully",
+    "deleteError": "Failed to delete custom agent",
+    "form": {
+      "name": {
+        "label": "Agent Name",
+        "placeholder": "Enter agent name (e.g., Code Reviewer, Bug Hunter)",
+        "description": "A descriptive name for your custom agent"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Enter agent description (e.g., Agent specialized in code review and bug detection)",
+        "description": "Description of this agent's purpose and capabilities"
+      },
+      "defaultModel": {
+        "label": "Default Model",
+        "placeholder": "Select a model",
+        "description": "The AI model this agent will use by default"
+      },
+      "systemPrompt": {
+        "label": "System Prompt",
+        "placeholder": "You are a helpful assistant specialized in...",
+        "description": "Define the agent's behavior, expertise, and response style",
+        "useDefault": "Use default system prompt"
+      },
+      "tools": {
+        "label": "Tools",
+        "placeholder": "No tools selected",
+        "description": "Select tools from the available options that the agent can use"
+      },
+      "mcpConfig": {
+        "label": "MCP Configuration",
+        "placeholder": "Enter MCP configuration JSON (optional)",
+        "description": "Optional MCP (Model Context Protocol) configuration for advanced integrations",
+        "formatJson": "Format JSON",
+        "formatSuccess": "JSON formatted successfully",
+        "formatError": "Invalid JSON format"
+      },
+      "runtimeType": {
+        "label": "Runtime Type",
+        "placeholder": "Select runtime type",
+        "description": "The runtime environment where the agent will operate"
+      },
+      "create": "Create",
+      "creating": "Creating...",
+      "update": "Update",
+      "updating": "Updating...",
+      "save": "Save",
+      "saving": "Saving...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "confirmDelete": "Are you sure you want to delete this agent?"
     }
   }
 }

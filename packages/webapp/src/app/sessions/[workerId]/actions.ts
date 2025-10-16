@@ -4,7 +4,12 @@ import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema,
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { getOrCreateWorkerInstance, renderUserMessage, getTodoList } from '@remote-swe-agents/agent-core/lib';
+import {
+  getOrCreateWorkerInstance,
+  renderUserMessage,
+  getTodoList,
+  getSession,
+} from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 
@@ -12,6 +17,11 @@ export const sendMessageToAgent = authActionClient
   .inputSchema(sendMessageToAgentSchema)
   .action(async ({ parsedInput, ctx }) => {
     const { workerId, message, imageKeys = [], modelOverride } = parsedInput;
+    const session = await getSession(workerId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
     const content = [];
     content.push({ text: renderUserMessage({ message }) });
     imageKeys.forEach((key) => {
@@ -44,7 +54,7 @@ export const sendMessageToAgent = authActionClient
 
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
-    await getOrCreateWorkerInstance(workerId);
+    await getOrCreateWorkerInstance(workerId, session.runtimeType ?? 'ec2');
 
     return { success: true, item };
   });
