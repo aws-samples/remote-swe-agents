@@ -345,6 +345,16 @@ When you start an agent, your instruction should include at least the below cont
 To simplify the workflow, you can create a GitHub issue in the repository containing the information above, and just give the agent its URL.
 This way the repository is automatically inferred from the URL, and it can also link the new PR to the corresponding issue.
 
+### Global Configuration via Web UI
+
+You can configure global settings for all agents through the deployed web UI. These settings apply to agents started from both the web interface and Slack:
+
+1. **Default Foundation Model**: Set the default foundation model that all new agent sessions will use. See [models.ts](./packages/agent-core/src/schema/model.ts) for the latest supported models.
+
+2. **Common Agent Prompt**: Configure a shared system prompt that will be used by all agents. This is useful for setting organization-wide coding standards, preferred libraries, or specific instructions that should apply to all development tasks.
+
+To access these settings, navigate to the preferences page in your deployed webapp interface.
+
 ### Integrating with MCP Servers
 
 As our agent can work as an MCP client, you can easily integrate it with various MCP servers. To configure the integration, you can edit [`mcp.json`](./packages/worker/mcp.json) and run CDK deploy. For example,
@@ -362,6 +372,8 @@ As our agent can work as an MCP client, you can easily integrate it with various
 ```
 
 All the new agents can now use MCP servers as their tools.
+
+
 
 ## How it works
 
