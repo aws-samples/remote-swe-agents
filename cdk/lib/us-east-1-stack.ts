@@ -30,8 +30,6 @@ export class UsEast1Stack extends cdk.Stack {
    */
   public readonly webAclArn: string | undefined = undefined;
 
-  public readonly agentCoreRepository?: IRepository;
-
   constructor(scope: Construct, id: string, props: UsEast1StackProps) {
     super(scope, id, props);
 
@@ -72,13 +70,5 @@ export class UsEast1Stack extends cdk.Stack {
 
       this.webAclArn = webAcl.webAclArn;
     }
-
-    // AgentCore is currently available only in some regions. We create
-    const parent = new Construct(this, 'AgentCoreRepository');
-    const repositoryName = cdk.Names.uniqueResourceName(parent, { maxLength: 64 }).toLowerCase();
-    new Repository(parent, 'Resource', {
-      repositoryName,
-    });
-    this.agentCoreRepository = Repository.fromRepositoryName(this, 'AgentCoreRepositoryReference', repositoryName);
   }
 }

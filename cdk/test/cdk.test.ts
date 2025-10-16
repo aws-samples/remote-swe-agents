@@ -53,7 +53,6 @@ test('Snapshot test', () => {
       'arn:aws:iam::123456789012:policy/CustomPolicy',
     ],
     initialWebappUserEmail: 'user@example.com',
-    agentCoreRepository: usEast1Stack.agentCoreRepository,
   });
 
   // Test both stacks

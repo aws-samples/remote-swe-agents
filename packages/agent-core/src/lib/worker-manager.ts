@@ -6,7 +6,7 @@ import { sendWebappEvent } from './events';
 import { updateSession } from './sessions';
 import { InstanceStatus } from '../schema';
 
-const agentCore = new BedrockAgentCoreClient({ region: 'us-east-1' });
+const agentCore = new BedrockAgentCoreClient();
 
 const LaunchTemplateId = process.env.WORKER_LAUNCH_TEMPLATE_ID!;
 const WorkerAmiParameterName = process.env.WORKER_AMI_PARAMETER_NAME ?? '';

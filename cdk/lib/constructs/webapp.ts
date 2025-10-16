@@ -18,6 +18,7 @@ import { Storage } from './storage';
 import { WorkerBus } from './worker/bus';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { LambdaWarmer } from './lambda-warmer';
+import { AgentCoreRuntime } from './worker/agent-core-runtime';
 
 export interface WebappProps {
   storage: Storage;
@@ -30,7 +31,7 @@ export interface WebappProps {
   workerBus: WorkerBus;
   workerAmiIdParameter: IStringParameter;
   originNameParameter: IStringParameter;
-  agentCoreRuntimeArn?: string;
+  agentCoreRuntime: AgentCoreRuntime;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -86,7 +87,7 @@ export class Webapp extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
-        AGENT_RUNTIME_ARN: props.agentCoreRuntimeArn ?? '',
+        AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,
@@ -96,6 +97,7 @@ export class Webapp extends Construct {
     storage.table.grantReadWriteData(handler);
     storage.bucket.grantReadWrite(handler);
     workerBus.api.grantPublish(handler);
+    props.agentCoreRuntime.grantInvoke(handler);
 
     handler.addToRolePolicy(
       new PolicyStatement({

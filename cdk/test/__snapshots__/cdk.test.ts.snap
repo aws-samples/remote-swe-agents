@@ -59,8 +59,8 @@ exports[`Snapshot test: MainStack 1`] = `
     "WorkerAgentCoreRuntimeArn2889E433": {
       "Value": {
         "Fn::GetAtt": [
-          "WorkerAgentCore6BC3E323",
-          "agentRuntimeArn",
+          "WorkerAgentCoreRuntimeCF8BBA58",
+          "AgentRuntimeArn",
         ],
       },
     },
@@ -1040,7 +1040,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "python3.11",
+        "Runtime": "python3.13",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1136,98 +1136,6 @@ Remote SWE Agents Team",
         "Roles": [
           {
             "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB28EAD8E4": {
-      "DependsOn": [
-        "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8",
-        "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
-      ],
-      "Properties": {
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
-          "S3Key": "REDACTED",
-        },
-        "Description": "Custom resource handler for copying Docker images between docker registries.",
-        "Handler": "bootstrap",
-        "MemorySize": 512,
-        "Role": {
-          "Fn::GetAtt": [
-            "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
-            "Arn",
-          ],
-        },
-        "Runtime": "provided.al2023",
-        "Timeout": 900,
-      },
-      "Type": "AWS::Lambda::Function",
-    },
-    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491": {
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-              ],
-            ],
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8": {
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:BatchGetImage",
-                "ecr:CompleteLayerUpload",
-                "ecr:DescribeImageScanFindings",
-                "ecr:DescribeImages",
-                "ecr:DescribeRepositories",
-                "ecr:GetAuthorizationToken",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:GetRepositoryPolicy",
-                "ecr:InitiateLayerUpload",
-                "ecr:ListImages",
-                "ecr:ListTagsForResource",
-                "ecr:PutImage",
-                "ecr:UploadLayerPart",
-                "s3:GetObject",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRoleDefaultPolicy280095F8",
-        "Roles": [
-          {
-            "Ref": "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiBServiceRole8C8B0491",
           },
         ],
       },
@@ -3448,8 +3356,8 @@ exports.handler = async function (event, context) {
           "Variables": {
             "AGENT_RUNTIME_ARN": {
               "Fn::GetAtt": [
-                "WorkerAgentCore6BC3E323",
-                "agentRuntimeArn",
+                "WorkerAgentCoreRuntimeCF8BBA58",
+                "AgentRuntimeArn",
               ],
             },
             "APP_ORIGIN_SOURCE_PARAMETER": {
@@ -3730,6 +3638,32 @@ exports.handler = async function (event, context) {
               },
             },
             {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerAgentCoreRuntimeCF8BBA58",
+                    "AgentRuntimeArn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerAgentCoreRuntimeCF8BBA58",
+                          "AgentRuntimeArn",
+                        ],
+                      },
+                      "/runtime-endpoint/DEFAULT",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
               "Action": [
                 "ec2:CreateTags",
                 "ec2:DescribeInstances",
@@ -3926,203 +3860,6 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::IAM::Policy",
     },
-    "WorkerAgentCore6BC3E323": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "WorkerAgentCoreImageDeployCustomResource00CB62FF",
-      ],
-      "Properties": {
-        "ContainerUri": {
-          "Fn::Join": [
-            "",
-            [
-              "123456789012.dkr.ecr.us-east-1.",
-              {
-                "Ref": "AWS::URLSuffix",
-              },
-              "/testuseast1stackagentcorerepository6851394c:REDACTED",
-            ],
-          ],
-        },
-        "Env": {
-          "AWS_REGION": "us-east-1",
-          "BUCKET_NAME": {
-            "Ref": "StorageImageBucket99BA9550",
-          },
-          "EVENT_HTTP_ENDPOINT": {
-            "Fn::Join": [
-              "",
-              [
-                "https://",
-                {
-                  "Fn::GetAtt": [
-                    "WorkerBusApi8460ABC0",
-                    "Dns.Http",
-                  ],
-                },
-              ],
-            ],
-          },
-          "GITHUB_APP_ID": "123456",
-          "GITHUB_APP_INSTALLATION_ID": "9876543",
-          "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
-          "GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME": "",
-          "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
-          "TABLE_NAME": {
-            "Ref": "StorageHistory251A3AE8",
-          },
-          "WEBAPP_ORIGIN_NAME_PARAMETER": {
-            "Ref": "WebappOriginNameParameterBBAD7F85",
-          },
-          "WORKER_RUNTIME": "agent-core",
-        },
-        "RoleArn": {
-          "Fn::GetAtt": [
-            "WorkerAgentCoreRoleD7B5DD19",
-            "Arn",
-          ],
-        },
-        "ServerProtocol": "HTTP",
-        "ServiceTimeout": "20",
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "WorkerAgentCoreCustomResourceHandler883BB37B",
-            "Arn",
-          ],
-        },
-      },
-      "Type": "Custom::AgentCoreRuntime",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "WorkerAgentCoreCustomResourceHandler883BB37B": {
-      "DependsOn": [
-        "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3",
-        "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
-      ],
-      "Properties": {
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
-          "S3Key": "REDACTED",
-        },
-        "Handler": "index.handler",
-        "Role": {
-          "Fn::GetAtt": [
-            "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
-            "Arn",
-          ],
-        },
-        "Runtime": "python3.13",
-        "Timeout": 10,
-      },
-      "Type": "AWS::Lambda::Function",
-    },
-    "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3": {
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "bedrock-agentcore:CreateAgentRuntime",
-                "bedrock-agentcore:DeleteAgentRuntime",
-                "bedrock-agentcore:ListAgentRuntimes",
-                "bedrock-agentcore:UpdateAgentRuntime",
-                "iam:PassRole",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "WorkerAgentCoreCustomResourceHandlerServiceRoleDefaultPolicyA469ABE3",
-        "Roles": [
-          {
-            "Ref": "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "WorkerAgentCoreCustomResourceHandlerServiceRoleF416549A": {
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-              ],
-            ],
-          },
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/BedrockAgentCoreFullAccess",
-              ],
-            ],
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "WorkerAgentCoreImageDeployCustomResource00CB62FF": {
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "DestImage": {
-          "Fn::Join": [
-            "",
-            [
-              "docker://123456789012.dkr.ecr.us-east-1.",
-              {
-                "Ref": "AWS::URLSuffix",
-              },
-              "/testuseast1stackagentcorerepository6851394c:REDACTED",
-            ],
-          ],
-        },
-        "ImageArch": "arm64",
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomCDKECRDeploymentbd07c930edb94112a20f03f096f53666512MiB28EAD8E4",
-            "Arn",
-          ],
-        },
-        "SrcImage": {
-          "Fn::Join": [
-            "",
-            [
-              "docker://",
-              {
-                "Fn::Sub": "REDACTED",
-              },
-            ],
-          ],
-        },
-      },
-      "Type": "Custom::CDKECRDeployment",
-      "UpdateReplacePolicy": "Delete",
-    },
     "WorkerAgentCoreRoleD7B5DD19": {
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -4146,11 +3883,12 @@ exports.handler = async function (event, context) {
           "Statement": [
             {
               "Action": [
+                "ecr:BatchCheckLayerAvailability",
                 "ecr:BatchGetImage",
                 "ecr:GetDownloadUrlForLayer",
               ],
               "Effect": "Allow",
-              "Resource": "arn:aws:ecr:us-east-1:123456789012:repository/testuseast1stackagentcorerepository6851394c",
+              "Resource": "REDACTED",
             },
             {
               "Action": [
@@ -4313,6 +4051,65 @@ exports.handler = async function (event, context) {
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "WorkerAgentCoreRuntimeCF8BBA58": {
+      "DependsOn": [
+        "WorkerAgentCoreRoleDefaultPolicyD5F17E82",
+        "WorkerAgentCoreRoleD7B5DD19",
+      ],
+      "Properties": {
+        "AgentRuntimeArtifact": {
+          "ContainerConfiguration": {
+            "ContainerUri": {
+              "Fn::Sub": "REDACTED",
+            },
+          },
+        },
+        "AgentRuntimeName": "TestMainStackWorkerAgentCoreD650A7D5",
+        "EnvironmentVariables": {
+          "AWS_REGION": "us-east-1",
+          "BUCKET_NAME": {
+            "Ref": "StorageImageBucket99BA9550",
+          },
+          "EVENT_HTTP_ENDPOINT": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WorkerBusApi8460ABC0",
+                    "Dns.Http",
+                  ],
+                },
+              ],
+            ],
+          },
+          "GITHUB_APP_ID": "123456",
+          "GITHUB_APP_INSTALLATION_ID": "9876543",
+          "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
+          "GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME": "",
+          "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
+          "TABLE_NAME": {
+            "Ref": "StorageHistory251A3AE8",
+          },
+          "WEBAPP_ORIGIN_NAME_PARAMETER": {
+            "Ref": "WebappOriginNameParameterBBAD7F85",
+          },
+          "WORKER_RUNTIME": "agent-core",
+        },
+        "NetworkConfiguration": {
+          "NetworkMode": "PUBLIC",
+        },
+        "ProtocolConfiguration": "HTTP",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkerAgentCoreRoleD7B5DD19",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::BedrockAgentCore::Runtime",
     },
     "WorkerBusApi8460ABC0": {
       "Properties": {
@@ -6752,6 +6549,7 @@ systemctl start myapp",
         "SourceObjectKeys": [
           "REDACTED",
         ],
+        "WaitForDistributionInvalidation": true,
       },
       "Type": "Custom::CDKBucketDeployment",
       "UpdateReplacePolicy": "Delete",
@@ -6818,14 +6616,6 @@ exports[`Snapshot test: UsEast1Stack 1`] = `
     },
   },
   "Resources": {
-    "AgentCoreRepositoryFE4EF3FD": {
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "RepositoryName": "testuseast1stackagentcorerepository6851394c",
-      },
-      "Type": "AWS::ECR::Repository",
-      "UpdateReplacePolicy": "Retain",
-    },
     "SignPayloadHandlerCFEAA14C": {
       "DependsOn": [
         "SignPayloadHandlerServiceRole29261232",

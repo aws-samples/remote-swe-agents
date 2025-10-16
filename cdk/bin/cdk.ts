@@ -75,6 +75,5 @@ const props: MainStackProps = {
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {
   ...props,
-  agentCoreRepository: virginia.agentCoreRepository,
 });
 // cdk.Aspects.of(app).add(new AwsSolutionsChecks());
