@@ -8,7 +8,7 @@ import {
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import { ddb, TableName } from './aws';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { modelConfigs, ModelType } from '../schema';
+import { criRegion, modelConfigs, ModelType } from '../schema';
 
 const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
@@ -212,11 +212,13 @@ const chooseRandom = <T>(choices: T[]) => {
 };
 
 const chooseModelAndRegion = (modelType: ModelType) => {
-  const availableRegions = ['us'];
+  const availableRegions = [criRegion];
   const region = chooseRandom(availableRegions);
   let awsRegion = 'us-west-2';
   if (region == 'eu') awsRegion = 'eu-west-1';
   if (region == 'apac') awsRegion = 'ap-northeast-1';
+  if (region == 'jp') awsRegion = 'ap-northeast-1';
+  if (region == 'au') awsRegion = 'ap-southeast-2';
   let modelId = modelConfigs[modelType].modelId;
   modelId = `${region}.${modelId}`;
   return {

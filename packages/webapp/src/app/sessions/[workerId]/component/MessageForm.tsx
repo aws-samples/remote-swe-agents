@@ -12,7 +12,7 @@ import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { ModelType, getAvailableModelTypes, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
@@ -169,8 +169,7 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
                   disabled={isExecuting}
                   className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white focus:outline-none"
                 >
-                  {modelTypeList
-                    .filter((type) => !modelConfigs[type].isHidden)
+                  {getAvailableModelTypes()
                     .map((type) => (
                       <option key={type} value={type}>
                         {modelConfigs[type].name}

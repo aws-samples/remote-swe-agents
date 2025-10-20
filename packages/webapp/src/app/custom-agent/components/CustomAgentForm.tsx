@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { EmptyMcpConfig, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { EmptyMcpConfig, getAvailableModelTypes, modelConfigs } from '@remote-swe-agents/agent-core/schema';
 import { upsertCustomAgentAction, deleteCustomAgentAction } from '../actions';
 import { upsertCustomAgentSchema } from '../schemas';
 import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
@@ -186,13 +186,11 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {modelTypeList
-                    .filter((type) => !modelConfigs[type].isHidden)
-                    .map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {modelConfigs[type].name}
-                      </SelectItem>
-                    ))}
+                  {getAvailableModelTypes().map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {modelConfigs[type].name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}

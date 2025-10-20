@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField } from '@/components/ui/form';
 import { useState } from 'react';
 import TemplateModal from './TemplateModal';
-import { CustomAgent, GlobalPreferences, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { CustomAgent, getAvailableModelTypes, GlobalPreferences, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface NewSessionFormProps {
   templates: PromptTemplate[];
@@ -133,8 +133,7 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {modelTypeList
-                      .filter((type) => !modelConfigs[type].isHidden)
+                    {getAvailableModelTypes()
                       .map((type) => (
                         <SelectItem key={type} value={type}>
                           {modelConfigs[type].name}

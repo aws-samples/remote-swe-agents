@@ -5,7 +5,7 @@ import { useOptimisticAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { updateGlobalPreferences } from '../actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GlobalPreferences, ModelType, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import { GlobalPreferences, ModelType, getAvailableModelTypes, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 
 interface GlobalPreferencesFormProps {
   preference: GlobalPreferences;
@@ -43,8 +43,7 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
             )}
           </SelectTrigger>
           <SelectContent>
-            {modelTypeList
-              .filter((type) => !modelConfigs[type].isHidden)
+            {getAvailableModelTypes()
               .map((type) => (
                 <SelectItem key={type} value={type}>
                   {modelConfigs[type].name}

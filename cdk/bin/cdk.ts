@@ -33,6 +33,14 @@ const virginia = new UsEast1Stack(app, `RemoteSweUsEast1Stack-${targetEnv}`, {
   allowedCountryCodes,
 });
 
+if (process.env.BEDROCK_CRI_REGION_OVERRIDE) {
+  if (!['global', 'us', 'eu', 'apac', 'jp', 'au'].includes(process.env.BEDROCK_CRI_REGION_OVERRIDE)) {
+    throw new Error(
+      `Invalid BEDROCK_CRI_REGION_OVERRIDE value: ${process.env.BEDROCK_CRI_REGION_OVERRIDE}. Choose from global, us, eu, apac, jp, au.`
+    );
+  }
+}
+
 const additionalPolicies = parseCommaSeparatedList(process.env.WORKER_ADDITIONAL_POLICIES);
 
 const props: MainStackProps = {
@@ -71,6 +79,7 @@ const props: MainStackProps = {
   ...(additionalPolicies ? { additionalManagedPolicies: additionalPolicies } : {}),
   ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
   initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
+  bedrockCriRegionOverride: process.env.BEDROCK_CRI_REGION_OVERRIDE,
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {
