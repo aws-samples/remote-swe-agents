@@ -5,7 +5,12 @@ import { useOptimisticAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { updateGlobalPreferences } from '../actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GlobalPreferences, ModelType, getAvailableModelTypes, modelConfigs, modelTypeList } from '@remote-swe-agents/agent-core/schema';
+import {
+  GlobalPreferences,
+  ModelType,
+  getAvailableModelTypes,
+  modelConfigs,
+} from '@remote-swe-agents/agent-core/schema';
 
 interface GlobalPreferencesFormProps {
   preference: GlobalPreferences;
@@ -43,12 +48,11 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
             )}
           </SelectTrigger>
           <SelectContent>
-            {getAvailableModelTypes()
-              .map((type) => (
-                <SelectItem key={type} value={type}>
-                  {modelConfigs[type].name}
-                </SelectItem>
-              ))}
+            {getAvailableModelTypes().map((type) => (
+              <SelectItem key={type} value={type}>
+                {modelConfigs[type].name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('defaultModelDescription')}</p>
