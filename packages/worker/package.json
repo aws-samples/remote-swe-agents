@@ -32,7 +32,7 @@
     "aws-amplify": "^6.12.3",
     "express": "^5.1.0",
     "p-retry": "^6.2.1",
-    "playwright": "^1.52.0",
+    "playwright": "^1.55.1",
     "sharp": "^0.33.5",
     "ws": "^8.18.0",
     "zod": "^4.0.0"
