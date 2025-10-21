@@ -8,10 +8,6 @@ on:
 env:
   NODE_OPTIONS: --max-old-space-size=4096
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-  
 jobs:
   changes:
     runs-on: ubuntu-latest
