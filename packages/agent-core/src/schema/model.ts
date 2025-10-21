@@ -15,6 +15,11 @@ export const modelTypeList = [
 export const modelTypeSchema = z.enum(modelTypeList);
 export type ModelType = z.infer<typeof modelTypeSchema>;
 
+const criRegionSchema = z.enum(['global', 'us', 'eu', 'apac', 'jp', 'au']);
+export const criRegion = criRegionSchema
+  .catch('us')
+  .parse(process.env.NEXT_PUBLIC_BEDROCK_CRI_REGION_OVERRIDE || process.env.BEDROCK_CRI_REGION_OVERRIDE || 'us');
+
 const modelConfigSchema = z.object({
   name: z.string(),
   modelId: z.string(),
@@ -25,6 +30,7 @@ const modelConfigSchema = z.object({
   toolChoiceSupport: z.array(z.enum(['any', 'auto', 'tool'])),
   isHidden: z.boolean().optional(),
   interleavedThinkingSupport: z.boolean().optional(),
+  supportedCriProfiles: z.array(criRegionSchema),
   pricing: z.object({
     input: z.number(),
     output: z.number(),
@@ -43,6 +49,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
+    supportedCriProfiles: ['global', 'us', 'eu', 'jp', 'au'],
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'haiku4.5': {
@@ -54,6 +61,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
+    supportedCriProfiles: ['global', 'us', 'eu', 'jp', 'au'],
     pricing: { input: 0.001, output: 0.005, cacheRead: 0.0001, cacheWrite: 0.00125 },
   },
   'sonnet3.5v1': {
@@ -65,6 +73,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    supportedCriProfiles: ['us', 'apac'],
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'sonnet3.5': {
@@ -75,6 +84,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: [],
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    supportedCriProfiles: ['us', 'apac'],
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'sonnet3.7': {
@@ -85,6 +95,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     cacheSupport: ['system', 'message', 'tool'],
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
+    supportedCriProfiles: ['us', 'eu', 'apac'],
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'haiku3.5': {
@@ -96,6 +107,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
+    supportedCriProfiles: ['us', 'eu'],
     pricing: { input: 0.0008, output: 0.004, cacheRead: 0.00008, cacheWrite: 0.001 },
   },
   'nova-pro': {
@@ -106,6 +118,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: false,
     cacheSupport: ['system'],
     toolChoiceSupport: ['auto'],
+    supportedCriProfiles: ['us', 'apac'],
     pricing: { input: 0.0008, output: 0.0032, cacheRead: 0.0002, cacheWrite: 0.0008 },
   },
   opus4: {
@@ -118,6 +131,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     toolChoiceSupport: ['any', 'auto', 'tool'],
     isHidden: true,
     interleavedThinkingSupport: true,
+    supportedCriProfiles: ['us'],
     pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   'opus4.1': {
@@ -129,6 +143,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
+    supportedCriProfiles: ['us'],
     pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
   sonnet4: {
@@ -140,6 +155,13 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
+    supportedCriProfiles: ['global', 'us', 'eu', 'apac'],
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
+};
+
+export const getAvailableModelTypes = (): ModelType[] => {
+  return Object.entries(modelConfigs)
+    .filter(([_, config]) => !config.isHidden && config.supportedCriProfiles.includes(criRegion))
+    .map(([type, _]) => type as ModelType);
 };

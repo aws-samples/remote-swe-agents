@@ -29,6 +29,7 @@ export interface AgentCoreRuntimeProps {
   accessLogBucket: IBucket;
   amiIdParameterName: string;
   webappOriginSourceParameter: IStringParameter;
+  bedrockCriRegionOverride?: string;
 }
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
@@ -112,6 +113,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
         SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
         GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
+        BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
       },
     });
     runtime.node.addDependency(role);

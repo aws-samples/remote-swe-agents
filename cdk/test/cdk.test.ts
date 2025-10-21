@@ -53,6 +53,7 @@ test('Snapshot test', () => {
       'arn:aws:iam::123456789012:policy/CustomPolicy',
     ],
     initialWebappUserEmail: 'user@example.com',
+    bedrockCriRegionOverride: 'global',
   });
 
   // Test both stacks

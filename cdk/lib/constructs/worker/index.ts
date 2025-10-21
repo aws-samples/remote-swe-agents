@@ -34,6 +34,7 @@ export interface WorkerProps {
   amiIdParameterName: string;
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
+  bedrockCriRegionOverride?: string;
 }
 
 export class Worker extends Construct {
@@ -360,6 +361,7 @@ Environment=BUCKET_NAME=${props.imageBucket.bucketName}
 Environment=WEBAPP_ORIGIN_NAME_PARAMETER=${props.webappOriginSourceParameter.parameterName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
 Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
+Environment=BEDROCK_CRI_REGION_OVERRIDE=${props.bedrockCriRegionOverride ?? ''}
 
 [Install]
 WantedBy=multi-user.target
@@ -464,6 +466,7 @@ systemctl start myapp
       accessLogBucket: props.accessLogBucket,
       amiIdParameterName: props.amiIdParameterName,
       webappOriginSourceParameter: props.webappOriginSourceParameter,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
     });
     this.agentCoreRuntime = agentCoreRuntime;
 

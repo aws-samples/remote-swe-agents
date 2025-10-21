@@ -52,7 +52,6 @@ Remote SWE エージェントによるセッション例：
 - AWS CLI
 - 適切な権限を持つAWS IAMプロファイル
 - Docker
-- Bedrock Claude Sonnet 3.7モデルが[us-west-2リージョンで有効化](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access)されていること
 - GitHubアカウント
 - Slackワークスペース（パターンBのみ）
 

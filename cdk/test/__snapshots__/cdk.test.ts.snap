@@ -3169,7 +3169,7 @@ exports.handler = async function (event, context) {
                   "Dns.Http",
                 ],
               },
-              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --file docker/webapp.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
+              " --build-arg NEXT_PUBLIC_AWS_REGION=us-east-1 --build-arg NEXT_PUBLIC_BEDROCK_CRI_REGION_OVERRIDE=global --file docker/webapp.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
             ],
           ],
         },
@@ -3369,6 +3369,7 @@ exports.handler = async function (event, context) {
                 "Arn",
               ],
             },
+            "BEDROCK_CRI_REGION_OVERRIDE": "global",
             "BUCKET_NAME": {
               "Ref": "StorageImageBucket99BA9550",
             },
@@ -4068,6 +4069,7 @@ exports.handler = async function (event, context) {
         "AgentRuntimeName": "TestMainStackWorkerAgentCoreD650A7D5",
         "EnvironmentVariables": {
           "AWS_REGION": "us-east-1",
+          "BEDROCK_CRI_REGION_OVERRIDE": "global",
           "BUCKET_NAME": {
             "Ref": "StorageImageBucket99BA9550",
           },
@@ -4836,6 +4838,8 @@ phases:
 
               Environment=BEDROCK_AWS_ROLE_NAME=
 
+              Environment=BEDROCK_CRI_REGION_OVERRIDE=global
+
 
               [Install]
 
@@ -5558,6 +5562,8 @@ phases:
 
               Environment=BEDROCK_AWS_ROLE_NAME=
 
+              Environment=BEDROCK_CRI_REGION_OVERRIDE=global
+
 
               [Install]
 
@@ -5983,6 +5989,7 @@ Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
                   "
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
+Environment=BEDROCK_CRI_REGION_OVERRIDE=global
 
 [Install]
 WantedBy=multi-user.target

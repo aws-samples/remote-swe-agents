@@ -44,6 +44,8 @@ export interface WebappProps {
    * @default no WAF Web ACL
    */
   webAclArn?: string;
+
+  bedrockCriRegionOverride?: string;
 }
 
 export class Webapp extends Construct {
@@ -71,6 +73,7 @@ export class Webapp extends Construct {
         SKIP_TS_BUILD: 'true',
         NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: workerBus.httpEndpoint,
         NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
+        NEXT_PUBLIC_BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
       },
     });
     const handler = new DockerImageFunction(this, 'Handler', {
@@ -88,6 +91,7 @@ export class Webapp extends Construct {
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
         AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
+        BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,

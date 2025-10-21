@@ -43,7 +43,18 @@ export interface MainStackProps extends cdk.StackProps {
   };
   readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
+
+  /**
+   * The email address of the initial webapp user to be created.
+   * @default No users are created.
+   */
   readonly initialWebappUserEmail?: string;
+
+  /**
+   * An AWS region to override the Bedrock cross-region profile region. (Choose from global, us, eu, apac, jp, au)
+   * @default 'us' (Use US CRI profile)
+   */
+  readonly bedrockCriRegionOverride?: string;
 }
 
 export class MainStack extends cdk.Stack {
@@ -129,6 +140,7 @@ export class MainStack extends cdk.Stack {
       amiIdParameterName: workerAmiIdParameter.parameterName,
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
     });
 
     const auth = new Auth(this, 'Auth', {
@@ -156,6 +168,7 @@ export class MainStack extends cdk.Stack {
       workerAmiIdParameter,
       originNameParameter,
       agentCoreRuntime: worker.agentCoreRuntime,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
     });
 
     new SlackBolt(this, 'SlackBolt', {
