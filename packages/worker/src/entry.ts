@@ -92,7 +92,7 @@ class ConverseSessionTracker {
     }
     // remove finished sessions
     for (let i = this.sessions.length - 1; i >= 0; i--) {
-      if (this.sessions[i].isFinished) {
+      if (this.sessions[i]!.isFinished) {
         this.sessions.splice(i, 1);
       }
     }

@@ -31,13 +31,15 @@ export const getMcpToolSpecs = async (workerId: string, config: McpConfig): Prom
   if (!clientsMap[workerId]) {
     await initMcp(workerId, config);
   }
-  return clientsMap[workerId].flatMap(({ client }) => {
-    return client.tools;
-  });
+  return (
+    clientsMap[workerId]?.flatMap(({ client }) => {
+      return client.tools;
+    }) ?? []
+  );
 };
 
 export const tryExecuteMcpTool = async (workerId: string, toolName: string, input: any) => {
-  const client = clientsMap[workerId].find(({ client }) =>
+  const client = clientsMap[workerId]?.find(({ client }) =>
     client.tools.find((tool) => tool.toolSpec?.name == toolName)
   );
   if (client == null) {

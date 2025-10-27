@@ -166,7 +166,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
   let firstCachePoint = initialItems.length > 2 ? initialItems.length - 3 : initialItems.length - 1;
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
-  let conversation = `User: ${initialMessages.findLast((msg) => msg.role == 'user')?.content?.[0].text ?? ''}\n`;
+  let conversation = `User: ${initialMessages.findLast((msg) => msg.role == 'user')?.content?.[0]?.text ?? ''}\n`;
 
   // When we get max_tokens stopReason, we double the number of max output tokens for this turn.
   // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
@@ -290,7 +290,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
         // Extract reasoning content if available
         const reasoningBlocks = toolUseMessage.content?.filter((block) => block.reasoningContent) ?? [];
         let reasoningText: string | undefined;
-        if (reasoningBlocks.length > 0) {
+        if (reasoningBlocks[0]) {
           reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
         }
 
@@ -323,7 +323,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
                     } else if (c.type == 'image') {
                       return {
                         image: {
-                          format: c.mimeType.split('/')[1],
+                          format: c.mimeType.split('/')[1]!,
                           source: { bytes: Buffer.from(c.data, 'base64') },
                         },
                       };
