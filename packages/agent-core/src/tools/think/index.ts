@@ -10,7 +10,7 @@ const name = 'think';
 // https://www.anthropic.com/engineering/claude-think-tool
 export const thinkTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
-  handler: async (input: z.infer<typeof inputSchema>) => {
+  handler: async (input: z.infer<typeof inputSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
     return 'Nice thought.';
   },
   schema: inputSchema,

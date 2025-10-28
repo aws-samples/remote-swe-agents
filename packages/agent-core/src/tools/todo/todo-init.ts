@@ -13,7 +13,7 @@ const todoInitInputSchema = z.object({
 /**
  * Tool to initialize or replace a todo list
  */
-async function todoInit(params: z.infer<typeof todoInitInputSchema>, context: { workerId: string }) {
+async function todoInit(params: z.infer<typeof todoInitInputSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) {
   const { items } = params;
 
   const todoList = await initializeTodoList(items, context.workerId);

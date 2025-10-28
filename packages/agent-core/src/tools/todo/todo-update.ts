@@ -17,7 +17,7 @@ const todoUpdateInputSchema = z.object({
 
 async function todoUpdate(
   params: z.infer<typeof todoUpdateInputSchema>,
-  context: { workerId: string }
+  context: { workerId: string; toolUseId: string; globalPreferences: any }
 ): Promise<string> {
   // Get updates from params
   const updates: TodoItemUpdate[] = params.updates;

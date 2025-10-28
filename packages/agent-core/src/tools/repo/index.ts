@@ -20,7 +20,7 @@ const execute = async (command: string): Promise<any> => {
   return res.stdout;
 };
 
-const cloneRepository = async (input: { owner: string; repo: string }) => {
+const cloneRepository = async (input: { owner: string; repo: string }, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
   const { owner, repo } = input;
   const dir = join(DefaultWorkingDirectory, repo);
   if (existsSync(dir)) {

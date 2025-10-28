@@ -3,9 +3,22 @@ import { fileEditTool } from './';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { globalPreferencesSchema } from '../../schema';
 import { randomBytes } from 'crypto';
 
 const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')}`);
+const mockContext = {
+  workerId: 'dummy', 
+  toolUseId: 'dummy',
+  globalPreferences: globalPreferencesSchema.parse({
+    PK: 'global-config',
+    SK: 'general',
+    modelOverride: 'sonnet3.7',
+    enableLinkInPr: false,
+    updatedAt: 0,
+  })
+};
+
 beforeAll(async () => {
   mkdirSync(tempDirPath);
 });
@@ -48,7 +61,7 @@ function displayVehicleInfo(vehicle: Vehicle) {
     if (vehicle.isElectric) {
         console.log('Electric Vehicle');`,
     },
-    { toolUseId: 'dummy', workerId: 'dummy' }
+    mockContext
   );
   const newFile = readFileSync(filePath, 'utf-8');
 
@@ -96,7 +109,7 @@ function getUserDisplayName(user: User): string {
       oldString: '',
       newString: newContent,
     },
-    { toolUseId: 'dummy', workerId: 'dummy' }
+    mockContext
   );
 
   // THEN
@@ -130,7 +143,7 @@ const config = {
       oldString: '',
       newString: 'new content that should not be written',
     },
-    { toolUseId: 'dummy', workerId: 'dummy' }
+    mockContext
   );
 
   // THEN
