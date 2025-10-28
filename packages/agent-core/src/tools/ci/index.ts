@@ -11,10 +11,7 @@ const inputSchema = z.object({
     .describe('The sequential number of the pull request issued from GitHub, or the branch name.'),
 });
 
-const getLatestRunResult = async (
-  input: { owner: string; repo: string; pullRequestId: string },
-  context: { workerId: string; toolUseId: string }
-) => {
+const getLatestRunResult = async (input: { owner: string; repo: string; pullRequestId: string }) => {
   const { owner, repo, pullRequestId } = input;
   // If it is executed too soon, the workflow might not be queued yet, resulting in an empty success.
   // To avoid it, we wait a bit here.

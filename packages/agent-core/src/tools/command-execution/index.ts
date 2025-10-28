@@ -135,10 +135,7 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
   });
 };
 
-const handler = async (
-  input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number },
-  context: { workerId: string; toolUseId: string }
-) => {
+const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number }) => {
   // Validate that timeoutMs and longRunningProcess are not used together
   if (input.timeoutMs !== undefined && input.longRunningProcess === true) {
     throw new Error(
