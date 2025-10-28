@@ -5,6 +5,7 @@ import { useOptimisticAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { updateGlobalPreferences } from '../actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   GlobalPreferences,
   ModelType,
