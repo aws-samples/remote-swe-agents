@@ -108,7 +108,10 @@ const formatCommentsAsThreads = (
   return formattedText.join('\n---\n');
 };
 
-const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
+const getPRCommentsHandler = async (
+  input: z.infer<typeof getPRCommentsSchema>,
+  context: { workerId: string; toolUseId: string; globalPreferences: any }
+) => {
   const { owner, repo, pullRequestId } = input;
 
   const octokit = await getOctokitClient();
@@ -129,7 +132,10 @@ const getPRCommentsHandler = async (input: z.infer<typeof getPRCommentsSchema>, 
   return formatCommentsAsThreads(data);
 };
 
-const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
+const replyPRCommentHandler = async (
+  input: z.infer<typeof replyPRCommentSchema>,
+  context: { workerId: string; toolUseId: string; globalPreferences: any }
+) => {
   const { owner, repo, pullRequestId, commentId, body } = input;
 
   const octokit = await getOctokitClient();
@@ -149,7 +155,10 @@ const replyPRCommentHandler = async (input: z.infer<typeof replyPRCommentSchema>
   return `Successfully replied to comment ${commentId}`;
 };
 
-const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
+const addIssueCommentHandler = async (
+  input: z.infer<typeof addIssueCommentSchema>,
+  context: { workerId: string; toolUseId: string; globalPreferences: any }
+) => {
   const { owner, repo, issueNumber, body } = input;
 
   const octokit = await getOctokitClient();
@@ -241,7 +250,10 @@ if (false) {
           const [owner, repo, pullRequestId] = args.slice(1);
           console.log(`Getting comments for PR #${pullRequestId} in ${owner}/${repo}...`);
 
-          const getResult = await getPRCommentsHandler({ owner, repo, pullRequestId: parseInt(pullRequestId) }, { workerId: 'test', toolUseId: 'test', globalPreferences: {} });
+          const getResult = await getPRCommentsHandler(
+            { owner, repo, pullRequestId: parseInt(pullRequestId) },
+            { workerId: 'test', toolUseId: 'test', globalPreferences: {} }
+          );
           console.log('Result:');
           console.log(getResult);
           break;

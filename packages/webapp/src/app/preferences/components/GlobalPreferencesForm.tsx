@@ -5,7 +5,6 @@ import { useOptimisticAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
 import { updateGlobalPreferences } from '../actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   GlobalPreferences,
   ModelType,
@@ -21,10 +20,9 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
   const t = useTranslations('preferences');
 
   const { execute, optimisticState, isPending } = useOptimisticAction(updateGlobalPreferences, {
-    currentState: { modelOverride: preference.modelOverride, enableLinkInPr: preference.enableLinkInPr },
+    currentState: { modelOverride: preference.modelOverride },
     updateFn: (state, input) => ({
       modelOverride: input.modelOverride || state.modelOverride,
-      enableLinkInPr: input.enableLinkInPr !== undefined ? input.enableLinkInPr : state.enableLinkInPr,
     }),
     onSuccess: () => {
       toast.success(t('updateSuccess'));
@@ -61,16 +59,18 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
       </div>
 
       <div>
-        <div className=\"flex items-center space-x-3\">
+        <div className="flex items-center space-x-3">
           <Checkbox
-            id=\"enableLinkInPr\"
+            id="enableLinkInPr"
             checked={optimisticState.enableLinkInPr}
             onCheckedChange={(checked) => execute({ enableLinkInPr: !!checked })}
             disabled={isPending}
           />
-          <label htmlFor=\"enableLinkInPr\" className=\"text-sm font-medium text-gray-700 dark:text-gray-300\">{t('enableLinkInPr')}</label>
+          <label htmlFor="enableLinkInPr" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('enableLinkInPr')}
+          </label>
         </div>
-        <p className=\"text-sm text-gray-500 dark:text-gray-400 mt-1\">{t('enableLinkInPrDescription')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('enableLinkInPrDescription')}</p>
       </div>
     </div>
   );

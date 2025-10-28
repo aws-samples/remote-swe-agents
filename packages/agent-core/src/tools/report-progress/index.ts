@@ -10,7 +10,10 @@ const name = 'sendMessageToUser';
 
 export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
-  handler: async (input: z.infer<typeof inputSchema>, context: { workerId: string; toolUseId: string; globalPreferences: any }) => {
+  handler: async (
+    input: z.infer<typeof inputSchema>,
+    context: { workerId: string; toolUseId: string; globalPreferences: any }
+  ) => {
     await sendMessageToSlack(input.message);
     return 'Successfully sent a message.';
   },

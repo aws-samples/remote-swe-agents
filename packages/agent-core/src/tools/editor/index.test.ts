@@ -8,7 +8,7 @@ import { randomBytes } from 'crypto';
 
 const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')}`);
 const mockContext = {
-  workerId: 'dummy', 
+  workerId: 'dummy',
   toolUseId: 'dummy',
   globalPreferences: globalPreferencesSchema.parse({
     PK: 'global-config',
@@ -16,7 +16,7 @@ const mockContext = {
     modelOverride: 'sonnet3.7',
     enableLinkInPr: false,
     updatedAt: 0,
-  })
+  }),
 };
 
 beforeAll(async () => {
