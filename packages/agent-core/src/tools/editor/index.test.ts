@@ -3,20 +3,13 @@ import { fileEditTool } from './';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { globalPreferencesSchema } from '../../schema';
+
 import { randomBytes } from 'crypto';
 
 const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')}`);
 const mockContext = {
   workerId: 'dummy',
-  toolUseId: 'dummy',
-  globalPreferences: globalPreferencesSchema.parse({
-    PK: 'global-config',
-    SK: 'general',
-    modelOverride: 'sonnet3.7',
-    enableLinkInPr: false,
-    updatedAt: 0,
-  }),
+  toolUseId: 'dummy'
 };
 
 beforeAll(async () => {

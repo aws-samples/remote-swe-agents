@@ -21,9 +21,10 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
   const t = useTranslations('preferences');
 
   const { execute, optimisticState, isPending } = useOptimisticAction(updateGlobalPreferences, {
-    currentState: { modelOverride: preference.modelOverride },
+    currentState: { modelOverride: preference.modelOverride, enableLinkInPr: preference.enableLinkInPr },
     updateFn: (state, input) => ({
       modelOverride: input.modelOverride || state.modelOverride,
+      enableLinkInPr: input.enableLinkInPr ?? state.enableLinkInPr,
     }),
     onSuccess: () => {
       toast.success(t('updateSuccess'));

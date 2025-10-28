@@ -22,7 +22,7 @@ const execute = async (command: string): Promise<any> => {
 
 const cloneRepository = async (
   input: { owner: string; repo: string },
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) => {
   const { owner, repo } = input;
   const dir = join(DefaultWorkingDirectory, repo);

@@ -15,7 +15,7 @@ const todoInitInputSchema = z.object({
  */
 async function todoInit(
   params: z.infer<typeof todoInitInputSchema>,
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) {
   const { items } = params;
 

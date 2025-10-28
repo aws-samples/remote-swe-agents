@@ -12,7 +12,7 @@ export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (
     input: z.infer<typeof inputSchema>,
-    context: { workerId: string; toolUseId: string; globalPreferences: any }
+    context: { workerId: string; toolUseId: string }
   ) => {
     await sendMessageToSlack(input.message);
     return 'Successfully sent a message.';

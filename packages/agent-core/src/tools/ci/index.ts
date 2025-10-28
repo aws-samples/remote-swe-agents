@@ -13,7 +13,7 @@ const inputSchema = z.object({
 
 const getLatestRunResult = async (
   input: { owner: string; repo: string; pullRequestId: string },
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) => {
   const { owner, repo, pullRequestId } = input;
   // If it is executed too soon, the workflow might not be queued yet, resulting in an empty success.

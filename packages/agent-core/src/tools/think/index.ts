@@ -12,7 +12,7 @@ export const thinkTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (
     input: z.infer<typeof inputSchema>,
-    context: { workerId: string; toolUseId: string; globalPreferences: any }
+    context: { workerId: string; toolUseId: string }
   ) => {
     return 'Nice thought.';
   },

@@ -13,7 +13,7 @@ export const readImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (
     input: z.infer<typeof inputSchema>,
-    context: { workerId: string; toolUseId: string; globalPreferences: any }
+    context: { workerId: string; toolUseId: string }
   ) => {
     // Check if file exists
     await fs.access(input.imagePath);

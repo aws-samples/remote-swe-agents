@@ -110,7 +110,7 @@ const formatCommentsAsThreads = (
 
 const getPRCommentsHandler = async (
   input: z.infer<typeof getPRCommentsSchema>,
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) => {
   const { owner, repo, pullRequestId } = input;
 
@@ -134,7 +134,7 @@ const getPRCommentsHandler = async (
 
 const replyPRCommentHandler = async (
   input: z.infer<typeof replyPRCommentSchema>,
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) => {
   const { owner, repo, pullRequestId, commentId, body } = input;
 
@@ -157,7 +157,7 @@ const replyPRCommentHandler = async (
 
 const addIssueCommentHandler = async (
   input: z.infer<typeof addIssueCommentSchema>,
-  context: { workerId: string; toolUseId: string; globalPreferences: any }
+  context: { workerId: string; toolUseId: string }
 ) => {
   const { owner, repo, issueNumber, body } = input;
 
@@ -252,7 +252,7 @@ if (false) {
 
           const getResult = await getPRCommentsHandler(
             { owner, repo, pullRequestId: parseInt(pullRequestId) },
-            { workerId: 'test', toolUseId: 'test', globalPreferences: {} }
+            { workerId: 'test', toolUseId: 'test' }
           );
           console.log('Result:');
           console.log(getResult);
@@ -279,7 +279,7 @@ if (false) {
               commentId: parseInt(commentId),
               body,
             },
-            { workerId: 'test', toolUseId: 'test', globalPreferences: {} }
+            { workerId: 'test', toolUseId: 'test' }
           );
 
           console.log('Result:');
@@ -306,7 +306,7 @@ if (false) {
               issueNumber: parseInt(issueNumber),
               body: issueBody,
             },
-            { workerId: 'test', toolUseId: 'test', globalPreferences: {} }
+            { workerId: 'test', toolUseId: 'test' }
           );
 
           console.log('Result:');
