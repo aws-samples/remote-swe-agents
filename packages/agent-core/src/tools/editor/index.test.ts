@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto';
 const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')}`);
 const mockContext = {
   workerId: 'dummy',
-  toolUseId: 'dummy'
+  toolUseId: 'dummy',
 };
 
 beforeAll(async () => {

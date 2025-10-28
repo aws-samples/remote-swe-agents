@@ -14,10 +14,7 @@ const inputSchema = z.object({
 
 const name = 'fileEditor';
 
-const editFile = async (
-  input: z.infer<typeof inputSchema>,
-  context: { workerId: string; toolUseId: string }
-) => {
+const editFile = async (input: z.infer<typeof inputSchema>, context: { workerId: string; toolUseId: string }) => {
   const { filePath, oldString, newString } = input;
   if (existsSync(filePath) === false) {
     if (oldString) {
