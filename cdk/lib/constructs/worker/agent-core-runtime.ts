@@ -84,6 +84,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.gitHubAppPrivateKeyParameter?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter.grantRead(role);
+    props.webappOriginSourceParameter.grantRead(role);
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
 

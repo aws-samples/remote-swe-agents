@@ -133,7 +133,7 @@ const createPullRequest = async (
   finalDescription = appendWorkerIdMetadata(finalDescription, workerId);
 
   // Append webapp session URL if preference is enabled
-  if (context.globalPreferences?.enableLinkInPr) {
+  if (context.globalPreferences.enableLinkInPr) {
     const sessionUrl = await getWebappSessionUrl(workerId);
     if (sessionUrl) {
       finalDescription += `\n\n---\n\n**Open in Web UI**: ${sessionUrl}`;
