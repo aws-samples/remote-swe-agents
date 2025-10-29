@@ -51,6 +51,7 @@ import { EmptyMcpConfig, mcpConfigSchema } from '@remote-swe-agents/agent-core/s
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
   const session = await getSession(workerId);
   const customAgent = (await getCustomAgent(session?.customAgentId)) ?? DefaultAgent;
+  const globalPreferences = await getPreferences();
   let mcpConfig = EmptyMcpConfig;
   {
     const { data, error } = mcpConfigSchema.safeParse(JSON.parse(customAgent.mcpConfig));
@@ -347,7 +348,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
             }
 
             console.log(`using tool: ${name} ${JSON.stringify(input)}`);
-            const result = await tool.handler(input as any, { toolUseId, workerId });
+            const result = await tool.handler(input as any, { toolUseId, workerId, globalPreferences });
             if (typeof result == 'string') {
               toolResult = result;
             } else {

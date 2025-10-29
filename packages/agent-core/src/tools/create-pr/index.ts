@@ -8,6 +8,7 @@ import { ddb, TableName } from '../../lib/aws/ddb';
 import { ciTool } from '../ci';
 import { appendWorkerIdMetadata } from '../../lib/worker-id';
 import { getWebappSessionUrl } from '../../lib/webapp-origin';
+import { GlobalPreferences } from '../../schema';
 
 const inputSchema = z.object({
   title: z.string().describe('Title of the pull request'),
@@ -91,9 +92,12 @@ const addIssueReference = (description: string, issueId: number): string => {
   return description;
 };
 
-const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
+const createPullRequest = async (
+  input: z.infer<typeof inputSchema>,
+  context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences }
+) => {
   const { title, description, issueId, force, gitDirectoryPath, baseBranch } = input;
-  const workerId = process.env.WORKER_ID!;
+  const workerId = context.workerId;
 
   // Check for existing PR unless force is true
   if (!force) {
@@ -128,10 +132,12 @@ const createPullRequest = async (input: z.infer<typeof inputSchema>) => {
   // Regex to search the PR id: /<!-- WORKER_ID:([^-]+) -->/
   finalDescription = appendWorkerIdMetadata(finalDescription, workerId);
 
-  // Append webapp session URL if available
-  const sessionUrl = await getWebappSessionUrl(workerId);
-  if (sessionUrl) {
-    finalDescription += `\n\n---\n\n**Open in Web UI**: ${sessionUrl}`;
+  // Append webapp session URL if preference is enabled
+  if (context.globalPreferences.enableLinkInPr) {
+    const sessionUrl = await getWebappSessionUrl(workerId);
+    if (sessionUrl) {
+      finalDescription += `\n\n---\n\n**Open in Web UI**: ${sessionUrl}`;
+    }
   }
 
   // Create markdown file in /tmp to avoid escape issues

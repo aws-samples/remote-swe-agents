@@ -3999,6 +3999,17 @@ exports.handler = async function (event, context) {
               "Resource": [
                 "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/github/app-private-key",
                 "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/slack/bot-token",
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "WebappOriginNameParameterBBAD7F85",
+                      },
+                    ],
+                  ],
+                },
               ],
             },
             {

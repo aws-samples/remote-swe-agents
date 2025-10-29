@@ -24,5 +24,5 @@ export const updateAdditionalSystemPrompt = authActionClient
 export const updateGlobalPreferences = authActionClient
   .inputSchema(updateGlobalPreferenceSchema)
   .action(async ({ parsedInput }) => {
-    await updatePreferences(parsedInput);
+    return await updatePreferences(parsedInput);
   });

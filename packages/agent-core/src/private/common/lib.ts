@@ -1,5 +1,6 @@
 import { Tool, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
 import z, { ZodType } from 'zod';
+import { GlobalPreferences } from '../../schema';
 
 export type ToolDefinition<Input> = {
   /**
@@ -8,7 +9,7 @@ export type ToolDefinition<Input> = {
   readonly name: string;
   readonly handler: (
     input: Input,
-    context: { workerId: string; toolUseId: string }
+    context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences }
   ) => Promise<string | ToolResultContentBlock[]>;
   readonly schema: ZodType<Input>;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;

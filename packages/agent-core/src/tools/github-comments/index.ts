@@ -241,7 +241,11 @@ if (false) {
           const [owner, repo, pullRequestId] = args.slice(1);
           console.log(`Getting comments for PR #${pullRequestId} in ${owner}/${repo}...`);
 
-          const getResult = await getPRCommentsHandler({ owner, repo, pullRequestId: parseInt(pullRequestId) });
+          const getResult = await getPRCommentsHandler({
+            owner,
+            repo,
+            pullRequestId: parseInt(pullRequestId),
+          });
           console.log('Result:');
           console.log(getResult);
           break;
