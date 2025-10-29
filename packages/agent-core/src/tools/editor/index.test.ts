@@ -11,7 +11,10 @@ const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')
 const mockContext = {
   workerId: 'dummy',
   toolUseId: 'dummy',
-  globalPreferences: globalPreferencesSchema.parse({}),
+  globalPreferences: globalPreferencesSchema.parse({
+    PK: 'global-config',
+    SK: 'general',
+  }),
 };
 
 beforeAll(async () => {
