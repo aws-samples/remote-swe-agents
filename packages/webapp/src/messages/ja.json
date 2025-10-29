@@ -210,6 +210,8 @@
     "updateError": "設定の更新に失敗しました",
     "defaultModel": "デフォルトモデル",
     "defaultModelDescription": "デフォルトのAIモデルを選択してください",
+    "enableLinkInPr": "PRの説明にセッションリンクを含める",
+    "enableLinkInPrDescription": "有効にすると、プルリクエストの説明にWebappセッションへのリンクが含まれます",
     "prompt": {
       "title": "エージェントプロンプト設定",
       "description": "このプロンプトはすべてのエージェントのシステムプロンプトに追加されます。組織全体のガイドラインや指示を設定するために使用してください。",

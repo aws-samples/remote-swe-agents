@@ -12,6 +12,7 @@ import {
   getAvailableModelTypes,
   modelConfigs,
 } from '@remote-swe-agents/agent-core/schema';
+import { useState } from 'react';
 
 interface GlobalPreferencesFormProps {
   preference: GlobalPreferences;
@@ -19,15 +20,17 @@ interface GlobalPreferencesFormProps {
 
 export default function GlobalPreferencesForm({ preference }: GlobalPreferencesFormProps) {
   const t = useTranslations('preferences');
+  const [currentPreference, setCurrentPreference] = useState<GlobalPreferences>(preference);
 
   const { execute, optimisticState, isPending } = useOptimisticAction(updateGlobalPreferences, {
-    currentState: { modelOverride: preference.modelOverride, enableLinkInPr: preference.enableLinkInPr },
+    currentState: { modelOverride: currentPreference.modelOverride, enableLinkInPr: currentPreference.enableLinkInPr },
     updateFn: (state, input) => ({
       modelOverride: input.modelOverride || state.modelOverride,
       enableLinkInPr: input.enableLinkInPr ?? state.enableLinkInPr,
     }),
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
       toast.success(t('updateSuccess'));
+      setCurrentPreference(data);
     },
     onError: () => {
       toast.error(t('updateError'));
@@ -35,7 +38,7 @@ export default function GlobalPreferencesForm({ preference }: GlobalPreferencesF
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('defaultModel')}</label>
         <Select

@@ -18,7 +18,7 @@ export const updatePreferences = async (params: z.infer<typeof updateGlobalPrefe
     }
   });
 
-  await ddb.send(
+  const res = await ddb.send(
     new UpdateCommand({
       TableName,
       Key: {
@@ -28,8 +28,10 @@ export const updatePreferences = async (params: z.infer<typeof updateGlobalPrefe
       UpdateExpression: `SET ${updateExpression.join(', ')}`,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
     })
   );
+  return globalPreferencesSchema.parse(res.Attributes);
 };
 
 export const getPreferences = async (): Promise<GlobalPreferences> => {

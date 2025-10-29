@@ -9,7 +9,7 @@ export type ToolDefinition<Input> = {
   readonly name: string;
   readonly handler: (
     input: Input,
-    context: { workerId: string; toolUseId: string; globalPreferences?: GlobalPreferences }
+    context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences }
   ) => Promise<string | ToolResultContentBlock[]>;
   readonly schema: ZodType<Input>;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;

@@ -94,7 +94,7 @@ const addIssueReference = (description: string, issueId: number): string => {
 
 const createPullRequest = async (
   input: z.infer<typeof inputSchema>,
-  context: { workerId: string; toolUseId: string; globalPreferences?: GlobalPreferences }
+  context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences }
 ) => {
   const { title, description, issueId, force, gitDirectoryPath, baseBranch } = input;
   const workerId = context.workerId;

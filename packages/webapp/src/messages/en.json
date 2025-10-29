@@ -211,6 +211,8 @@
     "updateError": "Failed to update preference",
     "defaultModel": "Default Model",
     "defaultModelDescription": "Choose the default AI model",
+    "enableLinkInPr": "Enable session links in PR descriptions",
+    "enableLinkInPrDescription": "When enabled, Pull Request descriptions will include a link to the webapp session",
     "prompt": {
       "title": "Agent Prompt Configuration",
       "description": "This prompt will be added to all agents' system prompt. Use this to set organization-wide guidelines or instructions.",

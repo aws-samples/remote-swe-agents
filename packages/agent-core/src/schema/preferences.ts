@@ -9,12 +9,9 @@ export const globalPreferencesSchema = z.object({
   updatedAt: z.number().default(0),
 });
 
-export const updateGlobalPreferenceSchema = globalPreferencesSchema
-  .omit({
-    PK: true,
-    SK: true,
-    updatedAt: true,
-  })
-  .partial();
+export const updateGlobalPreferenceSchema = z.object({
+  modelOverride: modelTypeSchema.optional(),
+  enableLinkInPr: z.boolean().optional(),
+});
 
 export type GlobalPreferences = z.infer<typeof globalPreferencesSchema>;

@@ -5,11 +5,13 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import { randomBytes } from 'crypto';
+import { globalPreferencesSchema } from '../../schema';
 
 const tempDirPath = join(tmpdir(), `worker-test-${randomBytes(6).toString('hex')}`);
 const mockContext = {
   workerId: 'dummy',
   toolUseId: 'dummy',
+  globalPreferences: globalPreferencesSchema.parse({}),
 };
 
 beforeAll(async () => {
