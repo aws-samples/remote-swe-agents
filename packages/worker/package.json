@@ -30,7 +30,7 @@
     "@remote-swe-agents/agent-core": "file:../agent-core",
     "@slack/bolt": "^4.2.0",
     "aws-amplify": "^6.12.3",
-    "express": "^5.1.0",
+    "express": "^5.2.0",
     "p-retry": "^6.2.1",
     "playwright": "^1.55.1",
     "sharp": "^0.33.5",
