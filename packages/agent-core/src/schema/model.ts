@@ -42,7 +42,7 @@ const modelConfigSchema = z.object({
 
 export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> = {
   'sonnet4.5': {
-    name: 'Claude 4.5 Sonnet',
+    name: 'Claude Sonnet 4.5',
     modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
     maxOutputTokens: 64_000,
     maxInputTokens: 200_000,
@@ -54,7 +54,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     pricing: { input: 0.003, output: 0.015, cacheRead: 0.0003, cacheWrite: 0.00375 },
   },
   'opus4.5': {
-    name: 'Claude 4.5 Opus',
+    name: 'Claude Opus 4.5',
     modelId: 'anthropic.claude-opus-4-5-20251101-v1:0',
     maxOutputTokens: 64_000,
     maxInputTokens: 200_000,
@@ -63,10 +63,10 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
     supportedCriProfiles: ['global', 'us', 'eu', 'jp', 'au'],
-    pricing: { input: 0.009, output: 0.045, cacheRead: 0.0009, cacheWrite: 0.01125 },
+    pricing: { input: 0.005, output: 0.025, cacheRead: 0.0005, cacheWrite: 0.00625 },
   },
   'haiku4.5': {
-    name: 'Claude 4.5 Haiku',
+    name: 'Claude Haiku 4.5',
     modelId: 'anthropic.claude-haiku-4-5-20251001-v1:0',
     maxOutputTokens: 64_000,
     maxInputTokens: 200_000,
@@ -156,6 +156,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
+    isHidden: true,
     supportedCriProfiles: ['us'],
     pricing: { input: 0.015, output: 0.075, cacheRead: 0.0015, cacheWrite: 0.01875 },
   },
