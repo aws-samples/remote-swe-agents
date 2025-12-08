@@ -62,7 +62,7 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
     reasoningSupport: true,
     toolChoiceSupport: ['any', 'auto', 'tool'],
     interleavedThinkingSupport: true,
-    supportedCriProfiles: ['global', 'us', 'eu', 'jp', 'au'],
+    supportedCriProfiles: ['global'],
     pricing: { input: 0.005, output: 0.025, cacheRead: 0.0005, cacheWrite: 0.00625 },
   },
   'haiku4.5': {
