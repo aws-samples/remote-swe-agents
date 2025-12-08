@@ -37,7 +37,7 @@
     "@aws-sdk/client-sts": "^3.758.0",
     "@aws-sdk/credential-providers": "^3.750.0",
     "@aws-sdk/lib-dynamodb": "^3.744.0",
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "@octokit/rest": "^22.0.0",
     "@slack/bolt": "^4.2.0",
     "p-retry": "^6.2.1",
