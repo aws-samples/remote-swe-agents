@@ -14,6 +14,7 @@ env:
   ROLE_NAME_FOR_LB: ${{ vars.PROD_ROLE_NAME_FOR_LB }}
   WORKER_ADDITIONAL_POLICIES: ${{ secrets.PROD_WORKER_ADDITIONAL_POLICIES }}
   ENABLE_LAMBDA_WARMER: true
+  BEDROCK_CRI_REGION_OVERRIDE: global
 jobs:
   Deploy-cdk:
     runs-on: ubuntu-24.04-arm
