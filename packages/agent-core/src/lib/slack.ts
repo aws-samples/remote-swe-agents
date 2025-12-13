@@ -65,7 +65,7 @@ const processMessageForLinks = (message: string): string => {
 /**
  * Split a message into chunks at newline boundaries to respect character limits
  */
-const splitMessageByNewlines = (message: string, maxLength: number = 12000): string[] => {
+const splitMessageByNewlines = (message: string, maxLength: number = 3000): string[] => {
   if (message.length <= maxLength) {
     return [message];
   }
@@ -107,8 +107,8 @@ export const sendMessageToSlack = async (message: string) => {
     return;
   }
 
-  // Split message into chunks if it exceeds 12000 characters
-  const messageChunks = splitMessageByNewlines(processedMessage, 12000);
+  // Split message into chunks if it exceeds 3000 characters
+  const messageChunks = splitMessageByNewlines(processedMessage, 3000);
 
   const app = await getApp();
 
