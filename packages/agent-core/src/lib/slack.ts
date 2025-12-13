@@ -120,18 +120,11 @@ export const sendMessageToSlack = async (message: string) => {
       text: chunk,
       blocks: [
         {
-          type: 'rich_text',
-          elements: [
-            {
-              type: 'rich_text_section',
-              elements: [
-                {
-                  type: 'text',
-                  text: chunk,
-                },
-              ],
-            },
-          ],
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: chunk,
+          },
         },
       ],
     });
