@@ -62,6 +62,38 @@ const processMessageForLinks = (message: string): string => {
   return result;
 };
 
+/**
+ * Split a message into chunks at newline boundaries to respect character limits
+ */
+const splitMessageByNewlines = (message: string, maxLength: number = 3000): string[] => {
+  if (message.length <= maxLength) {
+    return [message];
+  }
+
+  const chunks: string[] = [];
+  let remainingMessage = message;
+
+  while (remainingMessage.length > maxLength) {
+    let splitIndex = maxLength;
+
+    // Find the last newline within the character limit
+    const lastNewlineIndex = remainingMessage.lastIndexOf('\n', maxLength);
+    if (lastNewlineIndex !== -1) {
+      splitIndex = lastNewlineIndex;
+    }
+
+    chunks.push(remainingMessage.substring(0, splitIndex));
+    // If we split at a newline, skip the newline character
+    remainingMessage = remainingMessage.substring(splitIndex + (splitIndex === lastNewlineIndex ? 1 : 0));
+  }
+
+  if (remainingMessage.length > 0) {
+    chunks.push(remainingMessage);
+  }
+
+  return chunks;
+};
+
 export const sendMessageToSlack = async (message: string) => {
   if (disableSlack) {
     console.log(`[Slack] ${message}`);
@@ -74,24 +106,31 @@ export const sendMessageToSlack = async (message: string) => {
   if (!processedMessage) {
     return;
   }
+
+  // Split message into chunks if it exceeds 3000 characters
+  const messageChunks = splitMessageByNewlines(processedMessage, 3000);
+
   const app = await getApp();
 
-  await app.client.chat.postMessage({
-    channel: SlackChannelId,
-    thread_ts: SlackThreadTs,
-    // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
-    text: processedMessage.slice(0, 40000),
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          // limit to 12000 chars https://api.slack.com/reference/block-kit/blocks#markdown
-          text: processedMessage.slice(0, 12000),
+  // Send each chunk as a separate message
+  for (const chunk of messageChunks) {
+    await app.client.chat.postMessage({
+      channel: SlackChannelId,
+      thread_ts: SlackThreadTs,
+      // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
+      text: chunk.slice(0, 40000),
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            // limit to 12000 chars https://api.slack.com/reference/block-kit/blocks#markdown
+            text: chunk.slice(0, 12000),
+          },
         },
-      },
-    ],
-  });
+      ],
+    });
+  }
 };
 
 export const sendFileToSlack = async (imagePath: string, message: string) => {
