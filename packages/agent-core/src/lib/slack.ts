@@ -65,7 +65,7 @@ const processMessageForLinks = (message: string): string => {
 /**
  * Split a message into chunks at newline boundaries to respect character limits
  */
-const splitMessageByNewlines = (message: string, maxLength: number = 3000): string[] => {
+const splitMessageByNewlines = (message: string, maxLength: number = 12000): string[] => {
   if (message.length <= maxLength) {
     return [message];
   }
@@ -107,8 +107,8 @@ export const sendMessageToSlack = async (message: string) => {
     return;
   }
 
-  // Split message into chunks if it exceeds 3000 characters
-  const messageChunks = splitMessageByNewlines(processedMessage, 3000);
+  // Split message into chunks if it exceeds 12000 characters
+  const messageChunks = splitMessageByNewlines(processedMessage, 12000);
 
   const app = await getApp();
 
@@ -117,16 +117,21 @@ export const sendMessageToSlack = async (message: string) => {
     await app.client.chat.postMessage({
       channel: SlackChannelId,
       thread_ts: SlackThreadTs,
-      // limit to 40000 chars https://api.slack.com/methods/chat.postMessage#truncating
-      text: chunk.slice(0, 40000),
+      text: chunk,
       blocks: [
         {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            // limit to 12000 chars https://api.slack.com/reference/block-kit/blocks#markdown
-            text: chunk.slice(0, 12000),
-          },
+          type: 'rich_text',
+          elements: [
+            {
+              type: 'rich_text_section',
+              elements: [
+                {
+                  type: 'text',
+                  text: chunk,
+                },
+              ],
+            },
+          ],
         },
       ],
     });
