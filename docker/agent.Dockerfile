@@ -47,6 +47,7 @@ COPY packages/worker/package*.json ./packages/worker/
 RUN npm ci
 COPY ./ ./
 RUN cd packages/agent-core && npm run build
+RUN npx playwright install chromium --with-deps
 
 WORKDIR /app/packages/worker
 EXPOSE 8080
