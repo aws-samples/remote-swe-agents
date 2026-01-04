@@ -1,0 +1,43 @@
+{
+    "display_information": {
+        "name": "S0",
+        "description": "They work hard, you chill.",
+        "background_color": "#070708"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "s0",
+            "always_online": true
+        }
+    },
+    "oauth_config": {
+        "redirect_urls": [
+            "https://pc7lm1sp45.execute-api.us-west-2.amazonaws.com"
+        ],
+        "scopes": {
+            "bot": [
+                "app_mentions:read",
+                "chat:write",
+                "files:read",
+                "files:write",
+                "reactions:read",
+                "reactions:write"
+            ]
+        }
+    },
+    "settings": {
+        "event_subscriptions": {
+            "request_url": "https://pc7lm1sp45.execute-api.us-west-2.amazonaws.com",
+            "bot_events": [
+                "app_mention"
+            ]
+        },
+        "interactivity": {
+            "is_enabled": true,
+            "request_url": "https://pc7lm1sp45.execute-api.us-west-2.amazonaws.com"
+        },
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false
+    }
+}
