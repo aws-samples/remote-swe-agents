@@ -53,6 +53,11 @@ GITHUB_INSTALLATION_ID=102511651
 INITIAL_WEBAPP_USER_EMAIL=neil@stably.ai
 TARGET_ENV=Sandbox
 VPC_ID=vpc-04b8a451ecea42e4e
+BEDROCK_CRI_REGION_OVERRIDE=global
+NEXT_PUBLIC_BEDROCK_CRI_REGION_OVERRIDE=global
+# Optional: override Opus 4.5 modelId with an inference profile ARN.
+# BEDROCK_OPUS_4_5_MODEL_ID=arn:aws:bedrock:us-west-2:123456789012:inference-profile/your-profile
+# NEXT_PUBLIC_BEDROCK_OPUS_4_5_MODEL_ID=arn:aws:bedrock:us-west-2:123456789012:inference-profile/your-profile
 ```
 
 3) Deploy:
@@ -151,6 +156,17 @@ for email in user1@stably.ai user2@stably.ai; do
     --region us-west-2 \
     --profile default
 done
+```
+
+## Opus 4.5 inference profile
+
+Opus 4.5 does not support on-demand throughput. Create an inference profile in Bedrock and set
+`BEDROCK_OPUS_4_5_MODEL_ID` (and `NEXT_PUBLIC_BEDROCK_OPUS_4_5_MODEL_ID` for the UI) to the
+inference profile ARN, then redeploy:
+
+```bash
+cd /Users/nwparker/projects/remote-swe-agents/cdk
+AWS_PROFILE=default AWS_REGION=us-west-2 AWS_DEFAULT_REGION=us-west-2 npx cdk deploy --all
 ```
 
 ## Teardown

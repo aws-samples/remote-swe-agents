@@ -55,7 +55,10 @@ export const modelConfigs: Record<ModelType, z.infer<typeof modelConfigSchema>> 
   },
   'opus4.5': {
     name: 'Claude Opus 4.5',
-    modelId: 'anthropic.claude-opus-4-5-20251101-v1:0',
+    modelId:
+      process.env.NEXT_PUBLIC_BEDROCK_OPUS_4_5_MODEL_ID ||
+      process.env.BEDROCK_OPUS_4_5_MODEL_ID ||
+      'anthropic.claude-opus-4-5-20251101-v1:0',
     maxOutputTokens: 64_000,
     maxInputTokens: 200_000,
     cacheSupport: ['system', 'message', 'tool'],
