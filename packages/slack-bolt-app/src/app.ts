@@ -75,7 +75,7 @@ async function processMessage(
         } else if (message.toLowerCase().startsWith('take_over')) {
           await handleTakeOver(event, client);
         } else {
-          await handleMessage(event, client);
+          await handleMessage(event, client, { allowThreadFallback: eventType === 'app_mention' });
         }
       } catch (e: any) {
         console.log(e);
