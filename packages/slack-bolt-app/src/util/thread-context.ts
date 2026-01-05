@@ -60,7 +60,7 @@ const fetchThreadMessages = async (client: WebClient, channel: string, threadTs:
       channel,
       ts: threadTs,
       cursor,
-      limit: 200,
+      limit: 100,
     });
 
     messages.push(...((response.messages ?? []) as SlackThreadMessage[]));
