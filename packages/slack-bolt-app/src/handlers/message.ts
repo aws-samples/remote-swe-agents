@@ -8,6 +8,7 @@ import { sendWorkerEvent } from '../../../agent-core/src/lib';
 import { getWebappSessionUrl, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { saveSessionInfo } from '../util/session';
 import { getSessionIdFromSlack } from '../util/session-map';
+import { fetchThreadContextMessages } from '../util/thread-context';
 
 const BotToken = process.env.BOT_TOKEN!;
 const lambda = new LambdaClient();
@@ -23,45 +24,74 @@ export async function handleMessage(
     blocks?: any[];
     files?: any[];
   },
-  client: WebClient
+  client: WebClient,
+  options: { allowThreadFallback?: boolean } = {}
 ): Promise<void> {
   const message = event.text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
   const userId = event.user ?? '';
   const channel = event.channel;
   const isThreadRoot = event.thread_ts == null;
+  const threadTs = event.thread_ts ?? event.ts;
 
-  const workerId = await getSessionIdFromSlack(channel, event.thread_ts ?? event.ts, isThreadRoot);
+  const { workerId, isNewSession } = await getSessionIdFromSlack(channel, threadTs, isThreadRoot, {
+    allowThreadFallback: options.allowThreadFallback,
+  });
 
-  // Process image attachments if present
-  const imageKeys = (
-    await Promise.all(
-      event.files
-        ?.filter((file: { mimetype?: string }) => file?.mimetype?.startsWith('image/'))
-        .map(async (file: { id: string; mimetype?: string }) => {
-          const image = await client.files.info({
-            file: file.id,
-          });
+  const imageKeysPromise = (async () => {
+    const imageKeys = (
+      await Promise.all(
+        event.files
+          ?.filter((file: { mimetype?: string }) => file?.mimetype?.startsWith('image/'))
+          .map(async (file: { id: string; mimetype?: string }) => {
+            const image = await client.files.info({
+              file: file.id,
+            });
 
-          if (image.file?.url_private_download && image.file.filetype && image.file.mimetype) {
-            const fileContent = await fetch(image.file.url_private_download, {
-              headers: { Authorization: `Bearer ${BotToken}` },
-            }).then((res) => res.arrayBuffer());
+            if (image.file?.url_private_download && image.file.filetype && image.file.mimetype) {
+              const fileContent = await fetch(image.file.url_private_download, {
+                headers: { Authorization: `Bearer ${BotToken}` },
+              }).then((res) => res.arrayBuffer());
 
-            const key = `${workerId}/${file.id}.${image.file.filetype}`;
-            await s3.send(
-              new PutObjectCommand({
-                Bucket: BucketName,
-                Key: key,
-                Body: Buffer.from(fileContent),
-                ContentType: image.file.mimetype,
-              })
-            );
+              const key = `${workerId}/${file.id}.${image.file.filetype}`;
+              await s3.send(
+                new PutObjectCommand({
+                  Bucket: BucketName,
+                  Key: key,
+                  Body: Buffer.from(fileContent),
+                  ContentType: image.file.mimetype,
+                })
+              );
 
-            return key;
-          }
-        }) ?? []
-    )
-  ).filter((key) => key != null);
+              return key;
+            }
+          }) ?? []
+      )
+    ).filter((key) => key != null);
+
+    return imageKeys;
+  })();
+
+  if (isNewSession && event.thread_ts) {
+    try {
+      const threadContextMessages = await fetchThreadContextMessages(client, channel, threadTs, event.ts);
+      if (threadContextMessages.length > 0) {
+        const seedBaseTime = Date.now() - threadContextMessages.length;
+        for (const [index, threadMessage] of threadContextMessages.entries()) {
+          await saveConversationHistory(
+            workerId,
+            threadMessage.text,
+            threadMessage.slackUserId,
+            [],
+            seedBaseTime + index
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load thread context', error);
+    }
+  }
+
+  const imageKeys = await imageKeysPromise;
 
   const region = process.env.AWS_REGION!;
   const logStreamName = `log-${workerId}`;
@@ -81,25 +111,25 @@ export async function handleMessage(
           type: 'ensureInstance',
           workerId,
           slackChannelId: event.channel,
-          slackThreadTs: event.ts,
+          slackThreadTs: threadTs,
         } satisfies AsyncHandlerEvent),
         InvocationType: 'Event',
       })
     ),
   ];
 
-  // Save session info only when starting a new thread
-  if (event.thread_ts === undefined) {
-    promises.push(saveSessionInfo(workerId, message, userId, event.channel, event.ts));
+  // Save session info only when starting a new session
+  if (isNewSession) {
+    promises.push(saveSessionInfo(workerId, message, userId, event.channel, threadTs));
   }
 
   await Promise.all([
     ...promises,
-    // Send initial message only when starting a new thread
-    event.thread_ts === undefined
+    // Send initial message only when starting a new session
+    isNewSession
       ? client.chat.postMessage({
           channel: channel,
-          thread_ts: event.ts,
+          thread_ts: threadTs,
           text: `Hi, please wait for your agent to launch.`,
           blocks: [
             {
