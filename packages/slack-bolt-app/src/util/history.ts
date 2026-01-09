@@ -8,8 +8,10 @@ export const saveConversationHistory = async (
   workerId: string,
   message: string,
   slackUserId: string,
-  imageS3Keys: string[] = []
+  imageS3Keys: string[] = [],
+  timestamp?: number
 ) => {
+  const now = timestamp ?? Date.now();
   const content = [];
   content.push({ text: renderUserMessage({ message }) });
   imageS3Keys.forEach((key) => {
@@ -27,7 +29,7 @@ export const saveConversationHistory = async (
       TableName,
       Item: {
         PK: `message-${workerId}`,
-        SK: `${String(Date.now()).padStart(15, '0')}`, // make sure it can be sorted in dictionary order
+        SK: `${String(now).padStart(15, '0')}`, // make sure it can be sorted in dictionary order
         content: JSON.stringify(content),
         role: 'user',
         tokenCount: 0,
