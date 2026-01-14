@@ -143,13 +143,17 @@ To interact with GitHub, you need to setup GitHub integration. You have two opti
 
 ### Step 4: Environment Variables Setup
 
-Create a `.env.local` file from the example template:
+Before deploying, you must configure environment variables. Create a `.env.local` file from the example template in the `cdk` directory:
 
 ```bash
+cd cdk
 cp .env.local.example .env.local
 ```
 
-Then edit `.env.local` to configure the required environment variables for deployment:
+> [!IMPORTANT]
+> The `.env.local.example` file is located in the `cdk/` directory. Make sure to copy and edit this file before deployment.
+
+Then edit `cdk/.env.local` to configure the required environment variables for deployment:
 
 #### For GitHub App Integration:
 
