@@ -36,19 +36,34 @@ const getSessionMap = async (channelId: string, threadTs: string) => {
   return result.Item as SessionMap;
 };
 
-export const getSessionIdFromSlack = async (channelId: string, threadTs: string, isThreadRoot: boolean) => {
+type SlackSessionOptions = {
+  allowThreadFallback?: boolean;
+};
+
+export const getSessionIdFromSlack = async (
+  channelId: string,
+  threadTs: string,
+  isThreadRoot: boolean,
+  options: SlackSessionOptions = {}
+) => {
   const workerId = threadTs.replace('.', '');
-  if (isThreadRoot) return workerId;
+  if (isThreadRoot) {
+    return { workerId, isNewSession: true };
+  }
 
   const session = await getSession(workerId);
   if (session) {
-    return workerId;
+    return { workerId, isNewSession: false };
   }
 
   const sessionMap = await getSessionMap(channelId, threadTs);
-  if (!sessionMap) {
-    throw new Error('No session was found for the thread!');
+  if (sessionMap) {
+    return { workerId: sessionMap.sessionId, isNewSession: false };
   }
 
-  return sessionMap.sessionId;
+  if (options.allowThreadFallback) {
+    return { workerId, isNewSession: true };
+  }
+
+  throw new Error('No session was found for the thread!');
 };
