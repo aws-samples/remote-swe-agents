@@ -11,9 +11,9 @@
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.0",
-    "@octokit/rest": "^22.0.0",
+    "@actions/core": "^2.0.2",
+    "@actions/github": "^7.0.0",
+    "@octokit/rest": "^22.0.1",
     "@remote-swe-agents/agent-core": "file:../agent-core",
     "tsx": "^4.19.2"
   },
