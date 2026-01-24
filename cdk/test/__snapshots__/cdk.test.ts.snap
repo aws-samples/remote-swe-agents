@@ -3459,6 +3459,20 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::Lambda::Url",
     },
+    "WebappHandlerInvokeFromCloudFrontE8638C47": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "WebappHandler8DD158A3",
+            "Arn",
+          ],
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": "arn:aws:cloudfront::123456789012:distribution/*",
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
     "WebappHandlerServiceRole4F4D1ACD": {
       "Properties": {
         "AssumeRolePolicyDocument": {
