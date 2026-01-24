@@ -1,5 +1,6 @@
 import { Construct } from 'constructs';
-import { Duration } from 'aws-cdk-lib';
+import { Duration, Stack } from 'aws-cdk-lib';
+import { ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { FunctionUrlAuthType, IFunction, InvokeMode } from 'aws-cdk-lib/aws-lambda';
 import {
   AllowedMethods,
@@ -69,6 +70,14 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
     const origin = FunctionUrlOrigin.withOriginAccessControl(furl, {
       connectionTimeout: Duration.seconds(6),
       readTimeout: Duration.seconds(60),
+    });
+
+    // Add lambda:InvokeFunction permission required since October 2025
+    // https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html
+    handler.addPermission('InvokeFromCloudFront', {
+      principal: new ServicePrincipal('cloudfront.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: `arn:aws:cloudfront::${Stack.of(this).account}:distribution/*`,
     });
 
     const defaultCachePolicy = new CachePolicy(this, 'DefaultCachePolicy', {
