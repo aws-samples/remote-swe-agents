@@ -6,7 +6,7 @@ import { runWithAmplifyServerContext } from '@/lib/amplifyServerUtils';
 // This file is critical for webapp authentication mechanism.
 // DO NOT remove any existing logic if you are not sure!
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   const authenticated = await runWithAmplifyServerContext({
@@ -30,7 +30,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  runtime: 'nodejs',
   matcher: [
     /*
      * Match all request paths except for the ones starting with:

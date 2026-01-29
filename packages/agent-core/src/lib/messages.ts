@@ -212,7 +212,7 @@ const preProcessMessageContent = async (content: Message['content'], workerId: s
       for (const cc of c.toolResult.content) {
         if (cc.image?.source?.bytes != null) {
           const bytes = cc.image.source.bytes;
-          const hash = Buffer.from(await crypto.subtle.digest('SHA-256', bytes)).toString('hex');
+          const hash = Buffer.from(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes))).toString('hex');
           const s3Key = `${workerId}/${hash}.${cc.image.format}`;
           await writeBytesToKey(s3Key, bytes);
           const newContent = cc.image.source as any;
