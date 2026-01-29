@@ -5,15 +5,14 @@ import path from 'path';
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
     serverActions: {
-      allowedOrigins: ['localhost:3011', process.env.ALLOWED_ORIGIN_HOST!],
+      allowedOrigins: ['localhost:3011', process.env.ALLOWED_ORIGIN_HOST].filter(
+        (origin): origin is string => !!origin
+      ),
     },
   },
   typescript: {
