@@ -18,8 +18,5 @@
   "dependencies": {
     "patch-package": "^8.0.1",
     "zod": "^4.1.1"
-  },
-  "overrides": {
-    "next": "^16.1.6"
   }
 }
