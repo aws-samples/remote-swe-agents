@@ -1,5 +1,5 @@
 import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
-import { stopMyself } from './ec2';
+import { stopMyself, terminateMyself, getInstanceLifecycle } from './ec2';
 import { randomBytes } from 'crypto';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
@@ -28,10 +28,28 @@ export const setKillTimer = (workerId: string) => {
   }
   killTimer = setTimeout(
     async () => {
-      await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
-      // Update instance status to stopped in DynamoDB before stopping the instance
-      await updateInstanceStatus(workerId, 'stopped');
-      await stopMyself();
+      let isSpot = false;
+      try {
+        await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
+        try {
+          isSpot = (await getInstanceLifecycle()) === 'spot';
+        } catch {
+          isSpot = true;
+        }
+        await updateInstanceStatus(workerId, isSpot ? 'terminated' : 'stopped');
+      } catch (e) {
+        console.error('Kill timer: error before stop:', e);
+      } finally {
+        try {
+          if (isSpot) {
+            await terminateMyself();
+          } else {
+            await stopMyself();
+          }
+        } catch (e) {
+          console.error('Kill timer: stop/terminate failed:', e);
+        }
+      }
     },
     15 * 60 * 1000
   );

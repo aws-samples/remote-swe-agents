@@ -216,16 +216,28 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
   && sudo apt-get -o DPkg::Lock::Timeout=-1 update \
   && sudo apt-get -o DPkg::Lock::Timeout=-1 install gh -y
 
-# Configure Git user for ubuntu
-sudo -u ubuntu bash -c 'git config --global user.name "remote-swe-app[bot]"'
-sudo -u ubuntu bash -c 'git config --global user.email "${
-        props.gitHubApp?.appId ?? '123456'
-      }+remote-swe-app[bot]@users.noreply.github.com"'
-
 # install uv
 sudo -u ubuntu bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
       `.trim()
     );
+
+    if (props.gitHubApp) {
+      userData.addCommands(
+        `
+# Configure Git user for ubuntu (GitHub App)
+sudo -u ubuntu bash -c 'git config --global user.name "remote-swe-app[bot]"'
+sudo -u ubuntu bash -c 'git config --global user.email "${props.gitHubApp.appId}+remote-swe-app[bot]@users.noreply.github.com"'
+        `.trim()
+      );
+    } else {
+      userData.addCommands(
+        `
+# Configure Git user for ubuntu (Personal Access Token)
+sudo -u ubuntu bash -c 'git config --global user.name "Cong Quyen"'
+sudo -u ubuntu bash -c 'git config --global user.email "coolboyhy1607@gmail.com"'
+        `.trim()
+      );
+    }
 
     if (privateKey) {
       // install gh-token to obtain github token using github apps credentials

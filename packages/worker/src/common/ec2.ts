@@ -33,6 +33,22 @@ const getInstanceId = async () => {
   return await res.text();
 };
 
+/**
+ * Returns 'spot' for Spot instances, 'on-demand' otherwise.
+ * Spot one-time instances cannot be stopped; use terminate instead.
+ */
+export const getInstanceLifecycle = async (): Promise<'spot' | 'on-demand'> => {
+  if (workerRuntime !== 'ec2') return 'on-demand';
+  const token = await getImdsV2Token();
+  const res = await fetch('http://169.254.169.254/latest/meta-data/instance-life-cycle', {
+    headers: {
+      'X-aws-ec2-metadata-token': token,
+    },
+  });
+  const value = (await res.text()).trim().toLowerCase();
+  return value === 'spot' ? 'spot' : 'on-demand';
+};
+
 const getImdsV2Token = async () => {
   const res = await fetch('http://169.254.169.254/latest/api/token', {
     method: 'PUT',
