@@ -47,11 +47,11 @@ const modelTypeToAnthropicModel = (modelType: ModelType): string => {
   // Extract the base model ID without CRI prefix
   const baseModelId = modelConfig.modelId.replace(/^(global|us|eu|apac|jp|au)\./, '');
 
-  // Map Bedrock model IDs to Anthropic API model names
+  // Map Bedrock model IDs to Anthropic API model names (use hyphen 4-5, not dot 4.5)
   const modelMapping: Record<string, string> = {
-    'anthropic.claude-sonnet-4-5-20250929-v1:0': 'claude-sonnet-4.5-20250929',
-    'anthropic.claude-opus-4-5-20251101-v1:0': 'claude-opus-4.5-20251101',
-    'anthropic.claude-haiku-4-5-20250929-v1:0': 'claude-haiku-4.5-20250929',
+    'anthropic.claude-sonnet-4-5-20250929-v1:0': 'claude-sonnet-4-5-20250929',
+    'anthropic.claude-opus-4-5-20251101-v1:0': 'claude-opus-4-5-20251101',
+    'anthropic.claude-haiku-4-5-20251001-v1:0': 'claude-haiku-4-5-20251001',
     'anthropic.claude-3-7-sonnet-20250219-v1:0': 'claude-3-7-sonnet-20250219',
     'anthropic.claude-3-5-sonnet-20241022-v2:0': 'claude-3-5-sonnet-20241022',
     'anthropic.claude-3-5-haiku-20241022-v1:0': 'claude-3-5-haiku-20241022',
@@ -62,8 +62,8 @@ const modelTypeToAnthropicModel = (modelType: ModelType): string => {
 
   const anthropicModel = modelMapping[baseModelId];
   if (!anthropicModel) {
-    console.warn(`Unknown model type ${modelType}, using default claude-sonnet-4.5-20250929`);
-    return 'claude-sonnet-4.5-20250929';
+    console.warn(`Unknown model type ${modelType}, using default claude-sonnet-4-5-20250929`);
+    return 'claude-sonnet-4-5-20250929';
   }
 
   return anthropicModel;
@@ -163,11 +163,14 @@ const convertToAnthropicFormat = (
                 : typeof r.reasoningText?.text === 'string'
                   ? r.reasoningText.text
                   : '';
-            content.push({
-              type: 'thinking',
-              signature: '',
-              thinking: thinkingText,
-            });
+            const thinkingSignature = (c as { thinkingSignature?: string }).thinkingSignature;
+            if (thinkingSignature !== undefined && thinkingSignature !== '') {
+              content.push({
+                type: 'thinking',
+                signature: thinkingSignature,
+                thinking: thinkingText,
+              });
+            }
           }
         }
       }
@@ -295,12 +298,15 @@ const convertFromAnthropicResponse = (
         },
       } as ContentBlock);
     } else if (block.type === 'thinking') {
-      const thinking = (block as Anthropic.ThinkingBlock).thinking;
+      const thinkingBlock = block as Anthropic.ThinkingBlock;
+      const thinking = thinkingBlock.thinking;
+      const signature = thinkingBlock.signature ?? '';
       content.push({
         reasoningContent: {
           reasoningText: { text: typeof thinking === 'string' ? thinking : '' },
         },
-      });
+        thinkingSignature: signature,
+      } as ContentBlock & { thinkingSignature?: string });
     }
   }
 
@@ -364,11 +370,8 @@ export const anthropicConverse = async (
     (requestParams as any).thinking = thinking;
   }
 
-  // Add interleaved thinking beta if supported
-  const modelConfig = modelConfigs[modelType];
-  if (modelConfig.interleavedThinkingSupport && thinking) {
-    (requestParams as any).betas = ['interleaved-thinking-2025-05-14'];
-  }
+  // Note: Do not send experimental `betas` field to Anthropic API.
+  // Some models currently reject unknown top-level fields with `Extra inputs are not permitted`.
 
   // Call Anthropic API
   const anthropicResponse = await client.messages.create(requestParams);
