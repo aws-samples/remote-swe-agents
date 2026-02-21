@@ -48,6 +48,18 @@ export interface WebappProps {
   webAclArn?: string;
 
   bedrockCriRegionOverride?: string;
+
+  /**
+   * Use Spot instances for workers. Set WORKER_USE_SPOT in Lambda environment.
+   * @default false
+   */
+  workerUseSpot?: boolean;
+
+  /**
+   * When user ends session, terminate instance (WORKER_TERMINATE_ON_SESSION_END). Reduces EBS cost.
+   * @default false
+   */
+  workerTerminateOnSessionEnd?: boolean;
 }
 
 export class Webapp extends Construct {
@@ -102,6 +114,8 @@ export class Webapp extends Construct {
         BUCKET_NAME: storage.bucket.bucketName,
         AGENT_RUNTIME_ARN: props.agentCoreRuntime?.runtimeArn ?? '',
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
+        ...(props.workerUseSpot ? { WORKER_USE_SPOT: 'true' } : {}),
+        ...(props.workerTerminateOnSessionEnd ? { WORKER_TERMINATE_ON_SESSION_END: 'true' } : {}),
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,
@@ -126,6 +140,17 @@ export class Webapp extends Construct {
         resources: ['*'],
       })
     );
+    if (props.workerUseSpot) {
+      handler.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['iam:CreateServiceLinkedRole'],
+          resources: ['*'],
+          conditions: {
+            StringEquals: { 'iam:AWSServiceName': 'spot.amazonaws.com' },
+          },
+        })
+      );
+    }
 
     const service = new CloudFrontLambdaFunctionUrlService(this, 'Resource', {
       subDomain,

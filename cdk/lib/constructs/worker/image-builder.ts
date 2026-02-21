@@ -70,7 +70,7 @@ export class WorkerImageBuilder extends Construct {
           deviceName: '/dev/sda1',
           ebs: {
             encrypted: true,
-            volumeSize: 30,
+            volumeSize: 20,
             volumeType: 'gp3',
           },
         },

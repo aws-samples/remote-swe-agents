@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff } from 'lucide-react';
+import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff, PowerOff } from 'lucide-react';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useCallback, useState, useEffect } from 'react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
@@ -11,6 +11,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { hideSessionAction } from '../actions';
+import { endSessionAction } from '../../[workerId]/actions';
 import { extractUserMessage } from '@/lib/message-formatter';
 
 interface SessionsListProps {
@@ -27,11 +28,20 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
   const [showHideButton, setShowHideButton] = useState(false);
 
   const { execute: hideSession } = useAction(hideSessionAction, {
-    onSuccess: (data) => {
+    onSuccess: () => {
       router.refresh();
     },
     onError: (error) => {
       console.error('Failed to hide session:', error);
+    },
+  });
+
+  const { execute: endSession, isExecuting: isEndingSession } = useAction(endSessionAction, {
+    onSuccess: () => {
+      router.refresh();
+    },
+    onError: (error) => {
+      console.error('Failed to end session:', error);
     },
   });
 
@@ -120,6 +130,15 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
     [hideSession]
   );
 
+  const handleEndSession = useCallback(
+    (event: React.MouseEvent, workerId: string) => {
+      event.preventDefault();
+      event.stopPropagation();
+      endSession({ workerId });
+    },
+    [endSession]
+  );
+
   return (
     <>
       <div className="flex justify-between items-center mb-8">
@@ -147,17 +166,31 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                   </div>
                 )}
 
-                {showHideButton && (
-                  <div className="absolute top-2 right-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-6 w-6 p-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
-                      onClick={(e) => handleHideSession(e, session.workerId)}
-                      title="Hide session"
-                    >
-                      <EyeOff className="w-3 h-3" />
-                    </Button>
+                {(showHideButton || session.instanceStatus !== 'terminated') && (
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {session.instanceStatus !== 'terminated' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 w-6 p-0 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={(e) => handleEndSession(e, session.workerId)}
+                        disabled={isEndingSession}
+                        title={t('endSession')}
+                      >
+                        <PowerOff className="w-3 h-3" />
+                      </Button>
+                    )}
+                    {showHideButton && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 w-6 p-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
+                        onClick={(e) => handleHideSession(e, session.workerId)}
+                        title="Hide session"
+                      >
+                        <EyeOff className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
                 )}
 

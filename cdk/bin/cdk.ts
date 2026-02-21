@@ -86,6 +86,9 @@ const props: MainStackProps = {
     : {}),
   // Set DEPLOY_BEDROCK_RUNTIME=true to deploy Bedrock Agent Core (subject to account limit). Default: use Claude via Anthropic only.
   deployBedrockRuntime: process.env.DEPLOY_BEDROCK_RUNTIME === 'true',
+  workerInstanceType: process.env.WORKER_INSTANCE_TYPE,
+  workerUseSpot: process.env.WORKER_USE_SPOT === 'true',
+  workerTerminateOnSessionEnd: process.env.WORKER_TERMINATE_ON_SESSION_END === 'true',
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {

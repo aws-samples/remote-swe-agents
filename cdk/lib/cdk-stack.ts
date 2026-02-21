@@ -45,6 +45,24 @@ export interface MainStackProps extends cdk.StackProps {
   readonly additionalManagedPolicies?: string[];
 
   /**
+   * EC2 instance type for workers (e.g. t3.large, t3.medium).
+   * @default 't3.large'
+   */
+  readonly workerInstanceType?: string;
+
+  /**
+   * Use Spot instances for workers to reduce cost. Falls back to On-Demand if Spot capacity is unavailable.
+   * @default false
+   */
+  readonly workerUseSpot?: boolean;
+
+  /**
+   * When user ends a session, terminate the EC2 instance instead of leaving it stopped (reduces EBS cost).
+   * @default false
+   */
+  readonly workerTerminateOnSessionEnd?: boolean;
+
+  /**
    * The email address of the initial webapp user to be created.
    * @default No users are created.
    */
@@ -168,6 +186,7 @@ export class MainStack extends cdk.Stack {
       llmProvider: props.llmProvider,
       anthropicApiKeyParameter,
       deployBedrockRuntime: props.deployBedrockRuntime,
+      workerInstanceType: props.workerInstanceType,
     });
 
     const auth = new Auth(this, 'Auth', {
@@ -196,6 +215,8 @@ export class MainStack extends cdk.Stack {
       originNameParameter,
       agentCoreRuntime: worker.agentCoreRuntime,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      workerUseSpot: props.workerUseSpot,
+      workerTerminateOnSessionEnd: props.workerTerminateOnSessionEnd,
     });
 
     new SlackBolt(this, 'SlackBolt', {
@@ -209,6 +230,7 @@ export class MainStack extends cdk.Stack {
       workerLogGroupName: worker.logGroup.logGroupName,
       workerAmiIdParameter,
       webappOriginNameParameter: originNameParameter,
+      workerUseSpot: props.workerUseSpot,
     });
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {

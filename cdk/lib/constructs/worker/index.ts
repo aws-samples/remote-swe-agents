@@ -42,6 +42,12 @@ export interface WorkerProps {
    * @default false
    */
   deployBedrockRuntime?: boolean;
+
+  /**
+   * EC2 instance type for workers (e.g. t3.large, t3.medium).
+   * @default 't3.large'
+   */
+  workerInstanceType?: string;
 }
 
 export class Worker extends Construct {
@@ -139,15 +145,16 @@ export class Worker extends Construct {
       managedPolicies: managedPolicies,
     });
 
+    const instanceType = props.workerInstanceType ?? 't3.large';
     const launchTemplate = new ec2.LaunchTemplate(this, 'LaunchTemplate', {
       machineImage: ec2.MachineImage.fromSsmParameter(
         '/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id'
       ),
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
+      instanceType: new ec2.InstanceType(instanceType),
       blockDevices: [
         {
           deviceName: '/dev/sda1',
-          volume: ec2.BlockDeviceVolume.ebs(30, {
+          volume: ec2.BlockDeviceVolume.ebs(20, {
             volumeType: ec2.EbsDeviceVolumeType.GP3,
             encrypted: true,
           }),
@@ -269,14 +276,14 @@ download_fresh_files() {
   echo "Downloading fresh source files."
   # Clean up existing files
   rm -rf ./{*,.*} 2>/dev/null || echo "Cleaning up existing files"
-  
+
   # Download source code from S3
   aws s3 cp s3://$S3_BUCKET_NAME/source/$SOURCE_TAR_NAME ./$SOURCE_TAR_NAME
-  
+
   # Extract and clean up
   tar -xvzf $SOURCE_TAR_NAME
   rm -f $SOURCE_TAR_NAME
-  
+
   # Install dependencies and build
   npm ci
   npm run build -w packages/agent-core
@@ -296,7 +303,7 @@ CURRENT_ETAG=$(aws s3api head-object --bucket $S3_BUCKET_NAME --key source/$SOUR
 # Check if we can use cached source code
 if [ -f "$ETAG_FILE" ]; then
   CACHED_ETAG=$(cat $ETAG_FILE)
-  
+
   if [ "$CURRENT_ETAG" == "$CACHED_ETAG" ]; then
     echo "ETag matches. Using existing source files."
     # Files are already in place, no need to do anything

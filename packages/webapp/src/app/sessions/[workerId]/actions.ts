@@ -1,6 +1,7 @@
 'use server';
 
 import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema, sendEventSchema } from './schemas';
+import { z } from 'zod';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
@@ -9,6 +10,7 @@ import {
   renderUserMessage,
   getTodoList,
   getSession,
+  updateInstanceStatus,
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
@@ -76,5 +78,18 @@ export const updateAgentStatus = authActionClient
 export const sendEventToAgent = authActionClient.inputSchema(sendEventSchema).action(async ({ parsedInput }) => {
   const { workerId, event } = parsedInput;
   await sendWorkerEvent(workerId, event);
+  return { success: true };
+});
+
+const endSessionSchema = z.object({
+  workerId: z.string(),
+});
+
+export const endSessionAction = authActionClient.inputSchema(endSessionSchema).action(async ({ parsedInput }) => {
+  const { workerId } = parsedInput;
+  await updateInstanceStatus(workerId, 'terminated');
+  if (process.env.WORKER_TERMINATE_ON_SESSION_END === 'true') {
+    await sendWorkerEvent(workerId, { type: 'requestTerminate' });
+  }
   return { success: true };
 });

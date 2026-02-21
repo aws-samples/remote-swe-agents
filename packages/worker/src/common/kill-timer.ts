@@ -5,9 +5,9 @@ import { randomBytes } from 'crypto';
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
 
-// You can use setKillTimer to kill the process after 30 minutes.
-// If setKillTimer is called before 30 minutes elapsed, the timer count is reset and another
-// 30 minutes is required to kill the process.
+// You can use setKillTimer to kill the process after 15 minutes.
+// If setKillTimer is called before 15 minutes elapsed, the timer count is reset and another
+// 15 minutes is required to kill the process.
 //
 // You can pause the timer to avoid process termination when a long-running process is executed
 // outside of the control loop (e.g. agent's tool use).
@@ -33,7 +33,7 @@ export const setKillTimer = (workerId: string) => {
       await updateInstanceStatus(workerId, 'stopped');
       await stopMyself();
     },
-    30 * 60 * 1000
+    15 * 60 * 1000
   );
 };
 

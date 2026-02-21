@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Plus, Loader2, Share } from 'lucide-react';
+import { ArrowLeft, ListChecks, Check, Plus, Loader2, Share, PowerOff } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus, sendEventToAgent } from '../actions';
+import { updateAgentStatus, sendEventToAgent, endSessionAction } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -92,6 +92,16 @@ export default function SessionPageClient({
       });
     }
   }, [workerId, agentStatus, sendEvent]);
+
+  const { execute: endSession, isExecuting: isEndingSession } = useAction(endSessionAction, {
+    onSuccess: () => {
+      toast.success(t('endSessionSuccess'));
+      router.push('/sessions');
+    },
+    onError: (error) => {
+      toast.error(`${t('endSessionError')}: ${error?.error?.serverError || error}`);
+    },
+  });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -330,6 +340,22 @@ export default function SessionPageClient({
                   <span className="inline sm:hidden truncate">
                     ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
                   </span>
+                </button>
+              )}
+              {instanceStatus !== 'terminated' && (
+                <button
+                  type="button"
+                  onClick={() => endSession({ workerId })}
+                  disabled={isEndingSession}
+                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
+                  title={t('endSession')}
+                >
+                  {isEndingSession ? (
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                  ) : (
+                    <PowerOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  )}
+                  <span className="hidden sm:inline truncate">{t('endSession')}</span>
                 </button>
               )}
               <Link

@@ -61,6 +61,9 @@ export const workerEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('sessionUpdated'),
   }),
+  z.object({
+    type: z.literal('requestTerminate'),
+  }),
 ]);
 
 export async function sendWorkerEvent(workerId: string, event: z.infer<typeof workerEventSchema>) {

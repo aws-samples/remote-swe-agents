@@ -1,5 +1,5 @@
 import { ec2 } from '@remote-swe-agents/agent-core/aws';
-import { StopInstancesCommand } from '@aws-sdk/client-ec2';
+import { StopInstancesCommand, TerminateInstancesCommand } from '@aws-sdk/client-ec2';
 
 const workerRuntime = process.env.WORKER_RUNTIME ?? 'ec2';
 
@@ -8,6 +8,16 @@ export const stopMyself = async () => {
   const instanceId = await getInstanceId();
   await ec2.send(
     new StopInstancesCommand({
+      InstanceIds: [instanceId],
+    })
+  );
+};
+
+export const terminateMyself = async () => {
+  if (workerRuntime !== 'ec2') return;
+  const instanceId = await getInstanceId();
+  await ec2.send(
+    new TerminateInstancesCommand({
       InstanceIds: [instanceId],
     })
   );

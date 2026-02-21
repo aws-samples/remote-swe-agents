@@ -99,15 +99,16 @@ async function fetchWorkerAmiId(workerAmiParameterName: string): Promise<string 
   }
 }
 
-async function createWorkerInstance(
+const useSpotInstances = process.env.WORKER_USE_SPOT === 'true';
+
+function buildRunInstancesInput(
   workerId: string,
   launchTemplateId: string,
-  workerAmiParameterName: string,
-  subnetId: string
-): Promise<{ instanceId: string; usedCache: boolean }> {
-  const imageId = await fetchWorkerAmiId(workerAmiParameterName);
-
-  const runInstancesCommand = new RunInstancesCommand({
+  imageId: string | undefined,
+  subnetId: string,
+  useSpot: boolean
+): RunInstancesCommand['input'] {
+  return {
     LaunchTemplate: {
       LaunchTemplateId: launchTemplateId,
       Version: '$Latest',
@@ -135,15 +136,62 @@ async function createWorkerInstance(
         ],
       },
     ],
-  });
+    ...(useSpot && {
+      InstanceMarketOptions: {
+        MarketType: 'spot',
+        SpotOptions: {
+          SpotInstanceType: 'one-time',
+        },
+      },
+    }),
+  };
+}
 
-  try {
-    const response = await ec2.send(runInstancesCommand);
+async function createWorkerInstance(
+  workerId: string,
+  launchTemplateId: string,
+  workerAmiParameterName: string,
+  subnetId: string
+): Promise<{ instanceId: string; usedCache: boolean }> {
+  const imageId = await fetchWorkerAmiId(workerAmiParameterName);
+
+  const tryLaunch = async (useSpot: boolean) => {
+    const input = buildRunInstancesInput(
+      workerId,
+      launchTemplateId,
+      imageId,
+      subnetId,
+      useSpot
+    );
+    const response = await ec2.send(new RunInstancesCommand(input));
     if (response.Instances && response.Instances.length > 0 && response.Instances[0].InstanceId) {
-      return { instanceId: response.Instances[0].InstanceId, usedCache: !!imageId };
+      return response.Instances[0].InstanceId;
     }
     throw new Error('Failed to create EC2 instance');
-  } catch (error) {
+  };
+
+  try {
+    const instanceId = await tryLaunch(useSpotInstances);
+    return { instanceId, usedCache: !!imageId };
+  } catch (error: unknown) {
+    const err = error as { name?: string } | undefined;
+    const isSpotCapacityError =
+      useSpotInstances &&
+      err &&
+      typeof err === 'object' &&
+      (err.name === 'InsufficientInstanceCapacity' ||
+        err.name === 'InsufficientCapacity' ||
+        err.name === 'CapacityNotAvailable');
+    if (isSpotCapacityError) {
+      console.warn('Spot capacity unavailable, retrying with On-Demand:', error);
+      try {
+        const instanceId = await tryLaunch(false);
+        return { instanceId, usedCache: !!imageId };
+      } catch (fallbackError) {
+        console.error('Error creating worker instance (On-Demand fallback):', fallbackError);
+        throw fallbackError;
+      }
+    }
     console.error('Error creating worker instance:', error);
     throw error;
   }

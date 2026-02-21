@@ -8,6 +8,7 @@ import { CancellationToken } from './common/cancellation-token';
 import { sendSystemMessage, updateInstanceStatus, workerEventSchema } from '@remote-swe-agents/agent-core/lib';
 import { updateAgentStatusWithEvent } from './common/status';
 import { refreshSession } from './common/refresh-session';
+import { terminateMyself } from './common/ec2';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -145,6 +146,9 @@ export const main = async (workerId: string) => {
         });
       } else if (type == 'sessionUpdated') {
         await refreshSession(workerId);
+      } else if (type == 'requestTerminate') {
+        await updateInstanceStatus(workerId, 'terminated');
+        await terminateMyself();
       }
     },
     error: (err) => console.log(err),

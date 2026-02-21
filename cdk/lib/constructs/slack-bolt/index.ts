@@ -23,6 +23,8 @@ export interface SlackBoltProps {
   workerLogGroupName: string;
   workerAmiIdParameter: IStringParameter;
   webappOriginNameParameter: IStringParameter;
+  /** Use Spot instances for workers. Set WORKER_USE_SPOT in Lambda environment. */
+  workerUseSpot?: boolean;
 }
 
 export class SlackBolt extends Construct {
@@ -46,6 +48,7 @@ export class SlackBolt extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
+        ...(props.workerUseSpot ? { WORKER_USE_SPOT: 'true' } : {}),
       },
       architecture: Architecture.ARM_64,
     });
@@ -120,6 +123,17 @@ export class SlackBolt extends Construct {
         resources: ['*'],
       })
     );
+    if (props.workerUseSpot) {
+      asyncHandler.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['iam:CreateServiceLinkedRole'],
+          resources: ['*'],
+          conditions: {
+            StringEquals: { 'iam:AWSServiceName': 'spot.amazonaws.com' },
+          },
+        })
+      );
+    }
 
     new CfnOutput(this, 'EndpointUrl', { value: api.apiEndpoint });
   }

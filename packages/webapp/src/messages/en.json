@@ -49,6 +49,9 @@
 
     "forceStopInProgress": "Stopping Agent work...",
     "forceStopError": "Failed to stop agent work",
+    "endSession": "End session",
+    "endSessionSuccess": "Session ended.",
+    "endSessionError": "Failed to end session",
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
     "aiAgentResponding": "AI Agent is responding...",
     "enterYourMessage": "Enter your message...",
