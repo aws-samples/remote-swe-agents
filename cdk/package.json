@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.983.0",
-    "aws-cdk-lib": "^2.187.0",
+    "aws-cdk-lib": "^2.240.0",
     "cdk-image-pipeline": "^0.5.107",
     "cdk-nag": "^2.35.33",
     "constructs": "^10.0.0",
