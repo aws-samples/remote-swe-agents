@@ -467,6 +467,7 @@ systemctl start myapp
       amiIdParameterName: props.amiIdParameterName,
       webappOriginSourceParameter: props.webappOriginSourceParameter,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      additionalManagedPolicies: props.additionalManagedPolicies,
     });
     this.agentCoreRuntime = agentCoreRuntime;
 

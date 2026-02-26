@@ -182,6 +182,7 @@ export class MainStack extends cdk.Stack {
       workerLogGroupName: worker.logGroup.logGroupName,
       workerAmiIdParameter,
       webappOriginNameParameter: originNameParameter,
+      agentCoreRuntime: worker.agentCoreRuntime,
     });
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {

@@ -214,7 +214,8 @@ const chooseRandom = <T>(choices: T[]) => {
 const chooseModelAndRegion = (modelType: ModelType) => {
   const availableRegions = [criRegion];
   const region = chooseRandom(availableRegions);
-  let awsRegion = 'us-west-2';
+  let awsRegion = process.env.AWS_REGION ?? 'us-west-2';
+  if (region == 'us') awsRegion = 'us-west-2';
   if (region == 'eu') awsRegion = 'eu-west-1';
   if (region == 'apac') awsRegion = 'ap-northeast-1';
   if (region == 'jp') awsRegion = 'ap-northeast-1';

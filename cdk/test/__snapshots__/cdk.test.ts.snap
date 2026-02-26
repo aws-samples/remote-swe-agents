@@ -2105,6 +2105,12 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
+            "AGENT_RUNTIME_ARN": {
+              "Fn::GetAtt": [
+                "WorkerAgentCoreRuntimeCF8BBA58",
+                "AgentRuntimeArn",
+              ],
+            },
             "BOT_TOKEN": "{{resolve:ssm:/remote-swe/slack/bot-token}}",
             "BUCKET_NAME": {
               "Ref": "StorageImageBucket99BA9550",
@@ -2305,6 +2311,32 @@ exports.handler = async function (event, context) {
                   ],
                 ],
               },
+            },
+            {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkerAgentCoreRuntimeCF8BBA58",
+                    "AgentRuntimeArn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerAgentCoreRuntimeCF8BBA58",
+                          "AgentRuntimeArn",
+                        ],
+                      },
+                      "/runtime-endpoint/DEFAULT",
+                    ],
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -3889,6 +3921,34 @@ exports.handler = async function (event, context) {
           ],
           "Version": "2012-10-17",
         },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/AmazonS3ReadOnlyAccess",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/AmazonDynamoDBReadOnlyAccess",
+              ],
+            ],
+          },
+          "arn:aws:iam::aws:policy/AmazonECR-FullAccess",
+          "arn:aws:iam::123456789012:policy/CustomPolicy",
+        ],
       },
       "Type": "AWS::IAM::Role",
     },

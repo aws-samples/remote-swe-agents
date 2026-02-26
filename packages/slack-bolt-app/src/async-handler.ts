@@ -1,7 +1,7 @@
 import { Handler } from 'aws-lambda';
 import { App, AwsLambdaReceiver, LogLevel } from '@slack/bolt';
 import z from 'zod';
-import { getOrCreateWorkerInstance } from '@remote-swe-agents/agent-core/lib';
+import { getOrCreateWorkerInstance, getSession } from '@remote-swe-agents/agent-core/lib';
 import { makeIdempotent } from './util/idempotency';
 import { IdempotencyAlreadyInProgressError, IdempotencyConfig } from '@aws-lambda-powertools/idempotency';
 
@@ -42,7 +42,9 @@ export const handler: Handler<unknown> = async (rawEvent, context) => {
       // the first invocation very soon. To avoid it, we use makeIdempotent here.
       await makeIdempotent(
         async (_: string) => {
-          const res = await getOrCreateWorkerInstance(event.workerId);
+          const session = await getSession(event.workerId);
+          const runtimeType = session?.runtimeType ?? 'ec2';
+          const res = await getOrCreateWorkerInstance(event.workerId, runtimeType);
 
           if (res.oldStatus == 'stopped') {
             await app.client.chat.postMessage({

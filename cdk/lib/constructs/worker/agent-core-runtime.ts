@@ -1,7 +1,7 @@
 import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { IGrantable, IPrincipal, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
@@ -30,6 +30,7 @@ export interface AgentCoreRuntimeProps {
   amiIdParameterName: string;
   webappOriginSourceParameter: IStringParameter;
   bedrockCriRegionOverride?: string;
+  additionalManagedPolicies?: string[];
 }
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
@@ -43,6 +44,16 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       assumedBy: ServicePrincipal.fromStaticServicePrincipleName('bedrock-agentcore.amazonaws.com'),
     });
     this.grantPrincipal = role;
+
+    if (props.additionalManagedPolicies?.length) {
+      props.additionalManagedPolicies.forEach((policy) => {
+        role.addManagedPolicy(
+          policy.startsWith('arn:')
+            ? ManagedPolicy.fromManagedPolicyArn(this, `Policy-${policy.split('/').pop()}`, policy)
+            : ManagedPolicy.fromAwsManagedPolicyName(policy)
+        );
+      });
+    }
 
     const image = new DockerImageAsset(this, 'WorkerImage', {
       directory: '..',
