@@ -18,7 +18,7 @@ export async function handleDumpHistory(
   },
   client: WebClient
 ): Promise<void> {
-  const workerId = await getSessionIdFromSlack(event.channel, event.thread_ts ?? event.ts, false);
+  const { workerId } = await getSessionIdFromSlack(event.channel, event.thread_ts ?? event.ts, false);
   const [history, tokenUsage] = await Promise.all([getConversationHistory(workerId), getTokenUsage(workerId)]);
 
   const tempFile = os.tmpdir() + `/worker_${workerId}_history.txt`;
