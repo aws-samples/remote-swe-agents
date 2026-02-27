@@ -11,6 +11,7 @@ import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Storage } from '../storage';
+import { AgentCoreRuntime } from '../worker/agent-core-runtime';
 
 export interface SlackBoltProps {
   signingSecretParameter: IStringParameter;
@@ -23,6 +24,7 @@ export interface SlackBoltProps {
   workerLogGroupName: string;
   workerAmiIdParameter: IStringParameter;
   webappOriginNameParameter: IStringParameter;
+  agentCoreRuntime: AgentCoreRuntime;
 }
 
 export class SlackBolt extends Construct {
@@ -46,6 +48,7 @@ export class SlackBolt extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
+        AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
       },
       architecture: Architecture.ARM_64,
     });
@@ -53,6 +56,7 @@ export class SlackBolt extends Construct {
     props.storage.table.grantReadWriteData(asyncHandler);
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
+    props.agentCoreRuntime.grantInvoke(asyncHandler);
 
     const handler = new DockerImageFunction(this, 'Handler', {
       code: DockerImageCode.fromImageAsset('..', {

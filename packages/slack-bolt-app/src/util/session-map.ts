@@ -37,13 +37,15 @@ const getSessionMap = async (channelId: string, threadTs: string) => {
 };
 
 export const getSessionIdFromSlack = async (channelId: string, threadTs: string, isThreadRoot: boolean) => {
-  const workerId = threadTs.replace('.', '');
-  if (isThreadRoot) return workerId;
+  const rawWorkerId = threadTs.replace('.', '');
+  // AgentCore runtimeSessionId requires at least 33 characters
+  const paddedWorkerId = rawWorkerId.length < 33 ? rawWorkerId.padEnd(33, '0') : rawWorkerId;
 
-  const session = await getSession(workerId);
-  if (session) {
-    return workerId;
-  }
+  if (isThreadRoot) return paddedWorkerId;
+
+  // Fall back to raw (unpadded) workerId for sessions created before padding was introduced
+  const session = (await getSession(paddedWorkerId)) ?? (await getSession(rawWorkerId));
+  if (session) return session.workerId;
 
   const sessionMap = await getSessionMap(channelId, threadTs);
   if (!sessionMap) {
