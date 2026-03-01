@@ -33,6 +33,10 @@ RUN (type -p wget >/dev/null || (apt update && apt-get install wget -y)) && \
   apt-get update && \
   apt-get install gh -y
 
+# Install gh-pr-review extension for PR review workflows (view/reply/resolve threads)
+# https://github.com/agynio/gh-pr-review
+RUN gh extension install agynio/gh-pr-review
+
 # install gh-token
 RUN git config --global user.name "remote-swe-app[bot]" && \
   git config --global user.email "123456+remote-swe-app[bot]@users.noreply.github.com"

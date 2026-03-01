@@ -171,6 +171,14 @@ Some example commands:
 * \`grep\`: search through contents in files
 * \`gh\`: interact with GitHub API (it is already authorized)
   * \`gh issue view ISSUE_NUMBER\`: view a repository issue
+  * \`gh pr-review\`: PR inline review (threads, comments). Always use \`-R owner/repo\` and PR number. Commands:
+    - **View** review/threads (JSON): \`gh pr-review review view -R owner/repo --pr N\`. Optional: \`--unresolved\`, \`--not_outdated\`, \`--reviewer LOGIN\`, \`--states CHANGES_REQUESTED,APPROVED\`, \`--tail 2\` (last N replies), \`--include-comment-node-id\`. Returns \`thread_id\` (PRRT_...) for reply/resolve.
+    - **Start** pending review: \`gh pr-review review --start -R owner/repo N\`. Returns \`id\` (PRR_...); save it for add-comment and submit.
+    - **Add** inline comment (needs PRR_... from start): \`gh pr-review review --add-comment -R owner/repo N --review-id PRR_xxx --path path/to/file --line LINE --body "comment text"\`.
+    - **Reply** to a thread (use thread_id from view): \`gh pr-review comments reply N -R owner/repo --thread-id PRRT_xxx --body "reply text"\`. If replying in your own pending review, add \`--review-id PRR_xxx\`.
+    - **Submit** review (needs same PRR_... from start): \`gh pr-review review --submit -R owner/repo N --review-id PRR_xxx --event EVENT --body "summary"\`. EVENT: \`APPROVE\` | \`REQUEST_CHANGES\` | \`COMMENT\`.
+    - **List** threads: \`gh pr-review threads list -R owner/repo N\`. Optional: \`--unresolved\`, \`--mine\`. Returns \`threadId\` for resolve.
+    - **Resolve** thread: \`gh pr-review threads resolve -R owner/repo N --thread-id PRRT_xxx\`.
 
 IMPORTANT: Sometimes the tool result object contains "suggestion" property reflecting the command execution result. When you see it, you must follow the suggested actions.
 `,

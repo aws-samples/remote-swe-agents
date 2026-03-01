@@ -267,7 +267,9 @@ sudo -u ubuntu bash -i -c "npx playwright install chromium"
 echo 0 | tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 echo kernel.apparmor_restrict_unprivileged_userns=0 | tee /etc/sysctl.d/60-apparmor-namespace.conf
 
-# Configure GitHub CLI
+# Configure GitHub CLI and install gh-pr-review extension (PR review threads, LLM-friendly JSON)
+# https://github.com/agynio/gh-pr-review
+sudo -u ubuntu bash -c "gh extension install agynio/gh-pr-review"
 sudo -u ubuntu bash -c "gh config set prompt disabled"
 
 # Create setup script
