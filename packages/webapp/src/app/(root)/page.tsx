@@ -26,12 +26,14 @@ export default async function Home() {
                   {sessionsT('title')}
                 </Button>
               </Link>
-              <Link href="/sessions/new">
-                <Button size="lg" className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  <span>{sessionsT('newSession')}</span>
-                </Button>
-              </Link>
+              {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
+                <Link href="/sessions/new">
+                  <Button size="lg" className="flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    <span>{sessionsT('newSession')}</span>
+                  </Button>
+                </Link>
+              )}
               <Link href="/cost">
                 <Button variant="outline" size="lg" className="flex items-center gap-2">
                   <DollarSign className="w-5 h-5" />

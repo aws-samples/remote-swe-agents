@@ -143,12 +143,14 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
     <>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('aiAgentSessions')}</h1>
-        <Link href="/sessions/new">
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('newSession')}</span>
-          </Button>
-        </Link>
+        {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
+          <Link href="/sessions/new">
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('newSession')}</span>
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -243,13 +245,19 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
         <div className="text-center py-12">
           <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('noSessionsFound')}</h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">{t('createSessionToStart')}</p>
-          <Link href="/sessions/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">{t('newSession')}</span>
-            </Button>
-          </Link>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION === 'true'
+              ? t('createSessionFromSlackOnly')
+              : t('createSessionToStart')}
+          </p>
+          {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
+            <Link href="/sessions/new">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">{t('newSession')}</span>
+              </Button>
+            </Link>
+          )}
         </div>
       )}
     </>

@@ -58,6 +58,7 @@
     "waitingForImageUpload": "Waiting for image upload...",
     "noSessionsFound": "No sessions found",
     "createSessionToStart": "Create a new session to start chatting with AI agents",
+    "createSessionFromSlackOnly": "New sessions can only be started from Slack.",
     "usingTool": "Using Tool",
     "executing": "Executing...",
     "showRawJson": "Show raw JSON",

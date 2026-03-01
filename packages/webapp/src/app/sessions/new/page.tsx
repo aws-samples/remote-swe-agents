@@ -2,6 +2,7 @@ import Header from '@/components/Header';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 import NewSessionForm from './NewSessionForm';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
@@ -9,6 +10,10 @@ import { PromptTemplate } from '@/app/sessions/new/schemas';
 import { getCustomAgents, getPreferences } from '@remote-swe-agents/agent-core/lib';
 
 export default async function NewSessionPage() {
+  if (process.env.SLACK_ONLY_SESSION_CREATION === 'true') {
+    redirect('/sessions');
+  }
+
   const t = await getTranslations('new_session');
   const sessionsT = await getTranslations('sessions');
 

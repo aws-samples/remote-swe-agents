@@ -18,6 +18,9 @@ import { redirect } from 'next/navigation';
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
+    if (process.env.SLACK_ONLY_SESSION_CREATION === 'true') {
+      throw new Error('Session creation is only allowed from Slack.');
+    }
     let workerId = `webapp-${Date.now()}`;
     const { message, imageKeys = [], modelOverride, customAgentId = '' } = parsedInput;
     const now = Date.now();

@@ -90,6 +90,12 @@ export interface MainStackProps extends cdk.StackProps {
    * @default false
    */
   readonly deployBedrockRuntime?: boolean;
+
+  /**
+   * Allow new sessions only from Slack (disable WebApp and API session creation).
+   * @default false
+   */
+  readonly slackOnlySessionCreation?: boolean;
 }
 
 export class MainStack extends cdk.Stack {
@@ -217,6 +223,7 @@ export class MainStack extends cdk.Stack {
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
       workerUseSpot: props.workerUseSpot,
       workerTerminateOnSessionEnd: props.workerTerminateOnSessionEnd,
+      slackOnlySessionCreation: props.slackOnlySessionCreation,
     });
 
     new SlackBolt(this, 'SlackBolt', {

@@ -60,6 +60,12 @@ export interface WebappProps {
    * @default false
    */
   workerTerminateOnSessionEnd?: boolean;
+
+  /**
+   * Allow new sessions only from Slack (disable WebApp/API session creation).
+   * @default false
+   */
+  slackOnlySessionCreation?: boolean;
 }
 
 export class Webapp extends Construct {
@@ -96,6 +102,7 @@ export class Webapp extends Construct {
         NEXT_PUBLIC_EVENT_HTTP_ENDPOINT: workerBus.httpEndpoint,
         NEXT_PUBLIC_AWS_REGION: Stack.of(this).region,
         NEXT_PUBLIC_BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
+        ...(props.slackOnlySessionCreation ? { NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION: 'true' } : {}),
       },
     });
     const handler = new DockerImageFunction(this, 'Handler', {
@@ -116,6 +123,12 @@ export class Webapp extends Construct {
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
         ...(props.workerUseSpot ? { WORKER_USE_SPOT: 'true' } : {}),
         ...(props.workerTerminateOnSessionEnd ? { WORKER_TERMINATE_ON_SESSION_END: 'true' } : {}),
+        ...(props.slackOnlySessionCreation
+          ? {
+              SLACK_ONLY_SESSION_CREATION: 'true',
+              NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION: 'true',
+            }
+          : {}),
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,

@@ -58,6 +58,7 @@
     "waitingForImageUpload": "画像アップロード中...",
     "noSessionsFound": "セッションが見つかりません",
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
+    "createSessionFromSlackOnly": "新規セッションはSlackからのみ開始できます。",
     "usingTool": "ツール使用",
     "executing": "実行中...",
     "showRawJson": "JSONを表示",

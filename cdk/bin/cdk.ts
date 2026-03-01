@@ -89,6 +89,7 @@ const props: MainStackProps = {
   workerInstanceType: process.env.WORKER_INSTANCE_TYPE,
   workerUseSpot: process.env.WORKER_USE_SPOT === 'true',
   workerTerminateOnSessionEnd: process.env.WORKER_TERMINATE_ON_SESSION_END === 'true',
+  slackOnlySessionCreation: process.env.SLACK_ONLY_SESSION_CREATION === 'true',
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {

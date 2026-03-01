@@ -358,13 +358,15 @@ export default function SessionPageClient({
                   <span className="hidden sm:inline truncate">{t('endSession')}</span>
                 </button>
               )}
-              <Link
-                href="/sessions/new"
-                className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline truncate">{t('newSession')}</span>
-              </Link>
+              {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
+                <Link
+                  href="/sessions/new"
+                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline truncate">{t('newSession')}</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
