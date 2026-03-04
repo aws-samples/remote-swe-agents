@@ -315,7 +315,7 @@ export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${
       } --query "Parameter.Value" --output text)
 export GITHUB_PERSONAL_ACCESS_TOKEN=${
         props.githubPersonalAccessTokenParameter
-          ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)`
+          ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text 2>/dev/null || echo "")`
           : '""'
       }
 

@@ -7,6 +7,13 @@ const cache = {
   token: '',
 };
 
+export const isGitHubConfigured = () => {
+  return !!(
+    process.env.GITHUB_PERSONAL_ACCESS_TOKEN ||
+    (process.env.GITHUB_APP_PRIVATE_KEY_PATH && process.env.GITHUB_APP_ID && process.env.GITHUB_APP_INSTALLATION_ID)
+  );
+};
+
 export const authorizeGitHubCli = async () => {
   if (cache.updatedAt > Date.now() - 50 * 60 * 1000) {
     return cache.token;
@@ -29,7 +36,7 @@ export const authorizeGitHubCli = async () => {
     }
     cache.token = token;
   } else {
-    throw new Error('No GitHub credentials provided');
+    return undefined;
   }
 
   await execAsync(`gh auth setup-git`, {
