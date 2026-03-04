@@ -14,6 +14,30 @@ const sts = new STSClient();
 const awsAccounts = (process.env.BEDROCK_AWS_ACCOUNTS ?? '').split(',');
 const roleName = process.env.BEDROCK_AWS_ROLE_NAME || 'bedrock-remote-swe-role';
 
+export const deepMerge = (...objects: Record<string, unknown>[]): Record<string, unknown> => {
+  const result: Record<string, unknown> = {};
+  for (const obj of objects) {
+    for (const [key, value] of Object.entries(obj)) {
+      const existing = result[key];
+      if (Array.isArray(existing) && Array.isArray(value)) {
+        result[key] = [...existing, ...value];
+      } else if (
+        existing &&
+        typeof existing === 'object' &&
+        !Array.isArray(existing) &&
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value)
+      ) {
+        result[key] = deepMerge(existing as Record<string, unknown>, value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+};
+
 // State management for persistent account selection and retry
 let currentAccountIndex = 0; // Currently used account index
 
@@ -84,7 +108,7 @@ const shouldUltraThink = (input: ConverseCommandInput): boolean => {
   return messageText.includes(ULTRA_THINKING_KEYWORD);
 };
 
-const preProcessInput = (
+export const preProcessInput = (
   input: ConverseCommandInput,
   modelType: ModelType,
   maxTokensExceededCount: number
@@ -92,6 +116,9 @@ const preProcessInput = (
   const modelConfig = modelConfigs[modelType];
   // we cannot use JSON.parse(JSON.stringify(input)) here because input sometimes contains Buffer object for image.
   input = structuredClone(input);
+
+  // Collect additional request fields from model config (e.g., beta headers for long context)
+  const modelAdditionalFields = modelConfig.additionalRequestFields;
 
   // remove toolChoice if not supported
   if (input.toolConfig?.toolChoice) {
@@ -120,18 +147,19 @@ const preProcessInput = (
   }
 
   let thinkingBudget: number | undefined = undefined;
+  let reasoningFields: Record<string, unknown> = {};
 
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
     const enableUltraThink = shouldUltraThink(input);
     const budget = enableUltraThink ? Math.min(Math.floor(modelConfig.maxOutputTokens / 2), 31999) : 2000;
 
-    // Apply thinking budget settings
-    input.additionalModelRequestFields = {
+    reasoningFields = {
       reasoning_config: {
         type: 'enabled',
         budget_tokens: budget,
       },
+      ...(modelConfig.interleavedThinkingSupport ? { anthropic_beta: ['interleaved-thinking-2025-05-14'] } : {}),
     };
 
     // If we're using ultrathink (non-default budget), store the budget value
@@ -144,10 +172,6 @@ const preProcessInput = (
       ...input.inferenceConfig,
       maxTokens: Math.max(adjustedMaxToken, Math.min(budget * 2, modelConfig.maxOutputTokens)),
     };
-
-    if (modelConfig.interleavedThinkingSupport) {
-      input.additionalModelRequestFields.anthropic_beta = ['interleaved-thinking-2025-05-14'];
-    }
   } else {
     // when we disable reasoning, we have to remove
     // reasoningContent blocks from all the previous message contents
@@ -158,6 +182,11 @@ const preProcessInput = (
       return message;
     });
   }
+
+  input.additionalModelRequestFields = deepMerge(
+    reasoningFields,
+    modelAdditionalFields ?? {}
+  ) as typeof input.additionalModelRequestFields;
   // remove cachePoints if not supported
   if (!modelConfig.cacheSupport.includes('system') && input.system) {
     for (let i = input.system.length - 1; i >= 0; i--) {

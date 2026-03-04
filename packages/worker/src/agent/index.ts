@@ -46,7 +46,7 @@ import { CancellationToken } from '../common/cancellation-token';
 import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 import { DefaultAgent } from './lib/default-agent';
-import { EmptyMcpConfig, mcpConfigSchema } from '@remote-swe-agents/agent-core/schema';
+import { EmptyMcpConfig, mcpConfigSchema, modelConfigs, ModelType } from '@remote-swe-agents/agent-core/schema';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
   const session = await getSession(workerId);
@@ -125,6 +125,10 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     modelOverride = (await getPreferences()).modelOverride;
   }
 
+  const modelType = (modelOverride ?? customAgent.defaultModel) as ModelType;
+  const maxInputTokens = modelConfigs[modelType]?.maxInputTokens ?? 200_000;
+  const tokenThreshold = Math.floor(maxInputTokens * 0.95);
+
   const tools = [
     ciTool,
     cloneRepositoryTool,
@@ -161,7 +165,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     toolConfig = undefined;
   }
 
-  const { items: initialItems, messages: initialMessages } = await middleOutFiltering(allItems);
+  const { items: initialItems, messages: initialMessages } = await middleOutFiltering(allItems, tokenThreshold);
   // usually cache was created with the last user message (including toolResult), so try to get at(-3) here.
   // at(-1) is usually the latest user message received, at(-2) is usually the last assistant output
   let firstCachePoint = initialItems.length > 2 ? initialItems.length - 3 : initialItems.length - 1;
@@ -179,7 +183,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     const items = [...initialItems, ...appendedItems];
 
     // Check if token count exceeds the threshold (95% of maxInputTokens)
-    const tokenThreshold = 190_000; // TODO: use model specific parameters
     const totalBeforeFiltering = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
 
     let result;
@@ -188,7 +191,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       console.log(
         `Applying middle-out during agent turn. Total tokens: ${totalBeforeFiltering}, threshold: ${tokenThreshold}`
       );
-      result = await middleOutFiltering(items);
+      result = await middleOutFiltering(items, tokenThreshold);
       // cache was purged anyway after middle-out
       firstCachePoint = result.messages.length - 1;
       secondCachePoint = firstCachePoint;
