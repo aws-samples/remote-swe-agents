@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { authorizeGitHubCli } from './github';
+export { isGitHubConfigured } from './github';
 import { homedir } from 'os';
 import { join } from 'path';
 import { z } from 'zod';

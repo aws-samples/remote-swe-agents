@@ -33,6 +33,7 @@ import {
   commandExecutionTool,
   fileEditTool,
   getPRCommentsTool,
+  isGitHubConfigured,
   readImageTool,
   replyPRCommentTool,
   reportProgressTool,
@@ -125,17 +126,21 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     modelOverride = (await getPreferences()).modelOverride;
   }
 
-  const tools = [
+  const gitHubTools = [
     ciTool,
     cloneRepositoryTool,
     createPRTool,
+    getPRCommentsTool,
+    replyPRCommentTool,
+    addIssueCommentTool,
+  ];
+
+  const tools = [
+    ...(isGitHubConfigured() ? gitHubTools : []),
     commandExecutionTool,
     reportProgressTool,
     fileEditTool,
     sendImageTool,
-    getPRCommentsTool,
-    replyPRCommentTool,
-    addIssueCommentTool,
     readImageTool,
     todoInitTool,
     todoUpdateTool,
