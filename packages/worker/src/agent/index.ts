@@ -17,8 +17,6 @@ import {
   updateSessionCost,
   readCommonPrompt,
   getSession,
-  generateSessionTitle,
-  updateSessionTitle,
   getPreferences,
   getCustomAgent,
 } from '@remote-swe-agents/agent-core/lib';
@@ -39,6 +37,7 @@ import {
   sendImageTool,
   todoInitTool,
   todoUpdateTool,
+  updateSessionTitleTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -139,6 +138,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     readImageTool,
     todoInitTool,
     todoUpdateTool,
+    updateSessionTitleTool,
   ].filter(
     (tool) =>
       customAgent.tools.includes(tool.name) ||
@@ -148,6 +148,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
         todoInitTool.name,
         todoUpdateTool.name,
         sendImageTool.name,
+        updateSessionTitleTool.name,
       ].includes(tool.name)
   );
   let toolConfig: ConverseCommandInput['toolConfig'] = {
@@ -421,22 +422,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       conversation += `Assistant: ${responseTextWithoutThinking}\n`;
       break;
     }
-  }
-
-  try {
-    const session = await getSession(workerId);
-    // Generate title using the full conversation context
-    if (conversation && !session?.title) {
-      const title = await generateSessionTitle(workerId, conversation);
-      if (title) {
-        await updateSessionTitle(workerId, title);
-        console.log(`Generated title for session ${workerId}: ${title}`);
-        await sendWebappEvent(workerId, { type: 'sessionTitleUpdate', newTitle: title });
-      }
-    }
-  } catch (error) {
-    console.error(`Error generating session title for ${workerId}:`, error);
-    // Continue even if title generation fails
   }
 };
 
