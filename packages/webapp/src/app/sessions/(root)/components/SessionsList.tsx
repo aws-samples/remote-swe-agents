@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff } from 'lucide-react';
+import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff, ArrowUpDown, EyeOff as EyeOffIcon } from 'lucide-react';
 import { useEventBus } from '@/hooks/use-event-bus';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
@@ -12,6 +12,9 @@ import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { hideSessionAction } from '../actions';
 import { extractUserMessage } from '@/lib/message-formatter';
+
+type SortKey = 'createdAt' | 'updatedAt' | 'sessionCost';
+type SortOrder = 'desc' | 'asc';
 
 interface SessionsListProps {
   initialSessions: SessionItem[];
@@ -25,6 +28,9 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
   const [showHideButton, setShowHideButton] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const { execute: hideSession } = useAction(hideSessionAction, {
     onSuccess: (data) => {
@@ -120,6 +126,51 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
     [hideSession]
   );
 
+  // Persist sort/filter preferences in localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sessions-hide-completed');
+    if (saved !== null) {
+      setHideCompleted(saved === 'true');
+    }
+    const savedSortKey = localStorage.getItem('sessions-sort-key') as SortKey | null;
+    const savedSortOrder = localStorage.getItem('sessions-sort-order') as SortOrder | null;
+    if (savedSortKey) setSortKey(savedSortKey);
+    if (savedSortOrder) setSortOrder(savedSortOrder);
+  }, []);
+
+  const handleSortKeyChange = useCallback((newSortKey: SortKey) => {
+    setSortKey(newSortKey);
+    localStorage.setItem('sessions-sort-key', newSortKey);
+  }, []);
+
+  const handleSortOrderToggle = useCallback(() => {
+    setSortOrder((prev) => {
+      const next = prev === 'desc' ? 'asc' : 'desc';
+      localStorage.setItem('sessions-sort-order', next);
+      return next;
+    });
+  }, []);
+
+  const handleHideCompletedToggle = useCallback(() => {
+    setHideCompleted((prev) => {
+      const next = !prev;
+      localStorage.setItem('sessions-hide-completed', String(next));
+      return next;
+    });
+  }, []);
+
+  const sortedSessions = useMemo(() => {
+    let filtered = sessions;
+    if (hideCompleted) {
+      filtered = filtered.filter((s) => s.agentStatus !== 'completed');
+    }
+    return [...filtered].sort((a, b) => {
+      const aVal = a[sortKey] ?? 0;
+      const bVal = b[sortKey] ?? 0;
+      return sortOrder === 'desc' ? Number(bVal) - Number(aVal) : Number(aVal) - Number(bVal);
+    });
+  }, [sessions, sortKey, sortOrder, hideCompleted]);
+
   return (
     <>
       <div className="flex justify-between items-center mb-8">
@@ -132,8 +183,42 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
         </Link>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <select
+            className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={sortKey}
+            onChange={(e) => handleSortKeyChange(e.target.value as SortKey)}
+          >
+            <option value="updatedAt">{t('sortByUpdatedAt')}</option>
+            <option value="createdAt">{t('sortByCreatedAt')}</option>
+            <option value="sessionCost">{t('sortByCost')}</option>
+          </select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={handleSortOrderToggle}
+            title={sortOrder === 'desc' ? t('sortDesc') : t('sortAsc')}
+          >
+            <span className="text-xs">{sortOrder === 'desc' ? '↓' : '↑'}</span>
+          </Button>
+        </div>
+
+        <Button
+          variant={hideCompleted ? 'default' : 'outline'}
+          size="sm"
+          className="h-8 flex items-center gap-1.5"
+          onClick={handleHideCompletedToggle}
+        >
+          <EyeOffIcon className="w-3.5 h-3.5" />
+          <span className="text-xs">{t('hideCompleted')}</span>
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {sessions.map((session) => {
+        {sortedSessions.map((session) => {
           const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
           const isOtherUserSession = session.initiator && session.initiator !== `webapp#${currentUserId}`;
           return (
@@ -192,8 +277,8 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                       <Clock className="w-3 h-3" />
                     </div>
                     <span className="truncate ml-1">
-                      {new Date(session.createdAt).toLocaleDateString(localeForDate)}{' '}
-                      {new Date(session.createdAt).toLocaleTimeString(localeForDate, {
+                      {new Date(session.updatedAt).toLocaleDateString(localeForDate)}{' '}
+                      {new Date(session.updatedAt).toLocaleTimeString(localeForDate, {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -206,7 +291,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
         })}
       </div>
 
-      {sessions.length === 0 && (
+      {sortedSessions.length === 0 && (
         <div className="text-center py-12">
           <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('noSessionsFound')}</h3>

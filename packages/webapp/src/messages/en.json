@@ -46,7 +46,6 @@
       "completed": "Completed",
       "unknown": "Unknown"
     },
-
     "forceStopInProgress": "Stopping Agent work...",
     "forceStopError": "Failed to stop agent work",
     "agentStartingMessage": "The AI agent is starting up. This may take up to 2 minutes. Please wait...",
@@ -92,7 +91,13 @@
     "shareSessionDescription": "Post this text to Slack with an app mention to send messages to the session and receive notifications.",
     "copyToClipboard": "Copy to Clipboard",
     "share": "Share",
-    "copiedToClipboard": "Copied to clipboard"
+    "copiedToClipboard": "Copied to clipboard",
+    "sortByCreatedAt": "Created date",
+    "sortByUpdatedAt": "Updated date",
+    "sortByCost": "Cost",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "hideCompleted": "Hide completed"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
