@@ -28,7 +28,6 @@ export const setKillTimer = (workerId: string) => {
   }
   killTimer = setTimeout(
     async () => {
-      await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
       // Update instance status to stopped in DynamoDB before stopping the instance
       await updateInstanceStatus(workerId, 'stopped');
       await stopMyself();
