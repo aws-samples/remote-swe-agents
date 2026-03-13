@@ -2,7 +2,7 @@ import { CfnOutput, Duration, IgnoreMode, RemovalPolicy, Stack } from 'aws-cdk-l
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, DockerImageCode, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { WorkerBus } from '../worker/bus';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
@@ -12,6 +12,7 @@ import { readFileSync } from 'fs';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Storage } from '../storage';
 import { AgentCoreRuntime } from '../worker/agent-core-runtime';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 
 export interface SlackBoltProps {
   signingSecretParameter: IStringParameter;
@@ -32,13 +33,16 @@ export class SlackBolt extends Construct {
     super(scope, id);
 
     const { botTokenParameter, signingSecretParameter, webappOriginNameParameter } = props;
+
+    const slackImage = new ContainerImageBuild(this, 'Image', {
+      directory: '..',
+      file: join('docker', 'slack-bolt-app.Dockerfile'),
+      exclude: readFileSync('.dockerignore').toString().split('\n'),
+      platform: Platform.LINUX_ARM64,
+    });
+
     const asyncHandler = new DockerImageFunction(this, 'AsyncHandler', {
-      code: DockerImageCode.fromImageAsset('..', {
-        file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync('.dockerignore').toString().split('\n'),
-        cmd: ['async-handler.handler'],
-        platform: Platform.LINUX_ARM64,
-      }),
+      code: slackImage.toLambdaDockerImageCode({ cmd: ['async-handler.handler'] }),
       timeout: Duration.minutes(10),
       environment: {
         WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
@@ -59,11 +63,7 @@ export class SlackBolt extends Construct {
     props.agentCoreRuntime.grantInvoke(asyncHandler);
 
     const handler = new DockerImageFunction(this, 'Handler', {
-      code: DockerImageCode.fromImageAsset('..', {
-        file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync('.dockerignore').toString().split('\n'),
-        platform: Platform.LINUX_ARM64,
-      }),
+      code: slackImage.toLambdaDockerImageCode(),
       timeout: Duration.seconds(29),
       memorySize: 256,
       environment: {

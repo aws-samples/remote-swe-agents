@@ -1,6 +1,7 @@
 import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
@@ -55,7 +56,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       });
     }
 
-    const image = new DockerImageAsset(this, 'WorkerImage', {
+    const image = new ContainerImageBuild(this, 'WorkerImage', {
       directory: '..',
       file: join('docker', 'agent.Dockerfile'),
       exclude: readFileSync('.dockerignore').toString().split('\n'),
