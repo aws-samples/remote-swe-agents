@@ -123,17 +123,17 @@ const searchForLastSlackUserId = (items: MessageItem[]) => {
   }
 };
 
-export const middleOutFiltering = async (items: MessageItem[]) => {
+export const middleOutFiltering = async (items: MessageItem[], maxInputToken = MAX_INPUT_TOKEN) => {
   // Calculate total token count to determine if we need middle-out filtering
   let totalTokenCount = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
   const headRatio = 0.6;
   const tailRatio = 1 - headRatio;
 
   // Apply middle-out strategy if token count exceeds the maximum
-  if (totalTokenCount < MAX_INPUT_TOKEN) {
+  if (totalTokenCount < maxInputToken) {
     return { items, totalTokenCount, messages: await itemsToMessages(items) };
   }
-  console.log(`Applying middle-out strategy. Total tokens: ${totalTokenCount}, max tokens: ${MAX_INPUT_TOKEN}`);
+  console.log(`Applying middle-out strategy. Total tokens: ${totalTokenCount}, max tokens: ${maxInputToken}`);
 
   totalTokenCount = 0;
   // Get front messages until we reach half of max tokens
@@ -144,7 +144,7 @@ export const middleOutFiltering = async (items: MessageItem[]) => {
     frontTokenCount += item.tokenCount;
 
     // always include the first message.
-    if (i == 0 || frontTokenCount <= MAX_INPUT_TOKEN * headRatio) {
+    if (i == 0 || frontTokenCount <= maxInputToken * headRatio) {
       frontMessages.push(item);
       totalTokenCount += item.tokenCount;
     } else {
@@ -159,7 +159,7 @@ export const middleOutFiltering = async (items: MessageItem[]) => {
     const item = items[i];
     endTokenCount += item.tokenCount;
 
-    if (endTokenCount <= MAX_INPUT_TOKEN * tailRatio) {
+    if (endTokenCount <= maxInputToken * tailRatio) {
       endMessages.unshift(item); // Add to start of array to maintain order
       totalTokenCount += item.tokenCount;
     } else {
