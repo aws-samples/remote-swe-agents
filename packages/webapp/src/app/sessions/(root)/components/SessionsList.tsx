@@ -2,7 +2,37 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff, ArrowUpDown, EyeOff as EyeOffIcon } from 'lucide-react';
+import {
+  Plus,
+  MessageSquare,
+  Clock,
+  DollarSign,
+  Users,
+  EyeOff,
+  ArrowUpDown,
+  EyeOff as EyeOffIcon,
+  MoreVertical,
+  Trash2,
+  Check,
+  Circle,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useCallback, useState, useEffect, useMemo } from 'react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
@@ -10,8 +40,9 @@ import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
-import { hideSessionAction } from '../actions';
+import { hideSessionAction, deleteSessionAction, updateAgentStatusFromListAction } from '../actions';
 import { extractUserMessage } from '@/lib/message-formatter';
+import { toast } from 'sonner';
 
 type SortKey = 'createdAt' | 'updatedAt' | 'sessionCost';
 type SortOrder = 'desc' | 'asc';
@@ -31,6 +62,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
   const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const { execute: hideSession } = useAction(hideSessionAction, {
     onSuccess: (data) => {
@@ -38,6 +70,26 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
     },
     onError: (error) => {
       console.error('Failed to hide session:', error);
+    },
+  });
+
+  const { execute: executeDeleteSession } = useAction(deleteSessionAction, {
+    onSuccess: () => {
+      toast.success(t('deleteSessionSuccess'));
+      router.refresh();
+    },
+    onError: (error) => {
+      console.error('Failed to delete session:', error);
+      toast.error(t('deleteSessionError'));
+    },
+  });
+
+  const { execute: executeUpdateStatus } = useAction(updateAgentStatusFromListAction, {
+    onSuccess: () => {
+      router.refresh();
+    },
+    onError: (error) => {
+      console.error('Failed to update status:', error);
     },
   });
 
@@ -222,74 +274,132 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
           const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
           const isOtherUserSession = session.initiator && session.initiator !== `webapp#${currentUserId}`;
           return (
-            <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
-              <div
-                className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40 relative`}
-              >
-                {isOtherUserSession && (
-                  <div className="absolute bottom-2 right-2" title={t('initiatedByOtherUsers')}>
-                    <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                  </div>
-                )}
+            <div key={session.workerId} className="relative">
+              <Link href={`/sessions/${session.workerId}`} className="block">
+                <div
+                  className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40 relative`}
+                >
+                  {isOtherUserSession && (
+                    <div className="absolute bottom-2 right-2" title={t('initiatedByOtherUsers')}>
+                      <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    </div>
+                  )}
 
-                {showHideButton && (
-                  <div className="absolute top-2 right-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-6 w-6 p-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
-                      onClick={(e) => handleHideSession(e, session.workerId)}
-                      title="Hide session"
+                  <div className="flex items-center gap-2 mb-3">
+                    <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate flex-1">
+                      {session.title || session.SK}
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
+                    {extractUserMessage(session.initialMessage)}
+                  </p>
+
+                  <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center">
+                      <div className="w-4 flex justify-center">
+                        <span className={`inline-block w-2 h-2 rounded-full ${status.color}`} />
+                      </div>
+                      <span className="truncate ml-1">{t(status.i18nKey)}</span>
+                    </div>
+
+                    <div className="flex items-center">
+                      <div className="w-4 flex justify-center">
+                        <DollarSign className="w-3 h-3" />
+                      </div>
+                      <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex items-center">
+                      <div className="w-4 flex justify-center">
+                        <Clock className="w-3 h-3" />
+                      </div>
+                      <span className="truncate ml-1">
+                        {new Date(session.updatedAt).toLocaleDateString(localeForDate)}{' '}
+                        {new Date(session.updatedAt).toLocaleTimeString(localeForDate, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* 3-dot menu */}
+              <div className="absolute top-2 right-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                      onClick={(e) => e.preventDefault()}
                     >
-                      <EyeOff className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 mb-3">
-                  <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {session.title || session.SK}
-                  </h3>
-                </div>
-
-                <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                  {extractUserMessage(session.initialMessage)}
-                </p>
-
-                <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center">
-                    <div className="w-4 flex justify-center">
-                      <span className={`inline-block w-2 h-2 rounded-full ${status.color}`} />
-                    </div>
-                    <span className="truncate ml-1">{t(status.i18nKey)}</span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <div className="w-4 flex justify-center">
-                      <DollarSign className="w-3 h-3" />
-                    </div>
-                    <span className="ml-1">{(session.sessionCost ?? 0).toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <div className="w-4 flex justify-center">
-                      <Clock className="w-3 h-3" />
-                    </div>
-                    <span className="truncate ml-1">
-                      {new Date(session.updatedAt).toLocaleDateString(localeForDate)}{' '}
-                      {new Date(session.updatedAt).toLocaleTimeString(localeForDate, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                </div>
+                      <MoreVertical className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        executeUpdateStatus({
+                          workerId: session.workerId,
+                          status: session.agentStatus === 'completed' ? 'pending' : 'completed',
+                        })
+                      }
+                      className="cursor-pointer"
+                    >
+                      {session.agentStatus === 'completed' ? (
+                        <>
+                          <Circle className="w-4 h-4 mr-2" />
+                          {t('markAsIncomplete')}
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          {t('markAsCompleted')}
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setDeleteTargetId(session.workerId)}
+                      className="cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {t('deleteSession')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteSession')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteSessionConfirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (deleteTargetId) {
+                  executeDeleteSession({ workerId: deleteTargetId });
+                  setDeleteTargetId(null);
+                }
+              }}
+            >
+              {t('deleteSession')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {sortedSessions.length === 0 && (
         <div className="text-center py-12">

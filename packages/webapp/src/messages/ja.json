@@ -97,7 +97,17 @@
     "sortByCost": "コスト順",
     "sortAsc": "昇順",
     "sortDesc": "降順",
-    "hideCompleted": "完了済みを非表示"
+    "hideCompleted": "完了済みを非表示",
+    "deleteSession": "セッションを削除",
+    "deleteSessionConfirm": "このセッションを削除しますか？この操作は元に戻せません。",
+    "deleteSessionSuccess": "セッションを削除しました",
+    "deleteSessionError": "セッションの削除に失敗しました",
+    "cancel": "キャンセル",
+    "goToSessionList": "セッション一覧を表示",
+    "toggleSidebar": "サイドバーの表示切替",
+    "stopSession": "セッションを停止",
+    "stopSessionSuccess": "セッションを停止しました",
+    "stopSessionError": "セッションの停止に失敗しました"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

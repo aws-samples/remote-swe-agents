@@ -3,6 +3,7 @@ import {
   getConversationHistory,
   getPreferences,
   getSession,
+  getSessions,
   getTodoList,
   noOpFiltering,
 } from '@remote-swe-agents/agent-core/lib';
@@ -181,6 +182,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
 
   // Get todo list for this session
   const todoList = await getTodoList(workerId);
+  const allSessions = await getSessions(100);
 
   return (
     <>
@@ -192,6 +194,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         initialInstanceStatus={session.instanceStatus}
         initialAgentStatus={session.agentStatus}
         initialTodoList={todoList}
+        allSessions={allSessions}
       />
       <RefreshOnFocus />
     </>

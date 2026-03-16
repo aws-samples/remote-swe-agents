@@ -23,3 +23,7 @@ export const sendEventSchema = z.object({
     type: z.literal('forceStop'),
   }),
 });
+
+export const stopSessionSchema = z.object({
+  workerId: z.string(),
+});

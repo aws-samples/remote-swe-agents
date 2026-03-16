@@ -3,7 +3,7 @@
 import React from 'react';
 import { Bot, Loader2, Pause } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import { MessageGroupComponent } from './MessageGroup';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -61,6 +61,16 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
   useEffect(() => {
     if (isBottom) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const initialScrollDone = useRef(false);
+  useEffect(() => {
+    if (!initialScrollDone.current && messages.length > 0) {
+      initialScrollDone.current = true;
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
+      });
     }
   }, [messages]);
 

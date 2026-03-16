@@ -1,6 +1,12 @@
 'use server';
 
-import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema, sendEventSchema } from './schemas';
+import {
+  fetchTodoListSchema,
+  sendMessageToAgentSchema,
+  updateAgentStatusSchema,
+  sendEventSchema,
+  stopSessionSchema,
+} from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
@@ -9,6 +15,7 @@ import {
   renderUserMessage,
   getTodoList,
   getSession,
+  stopWorkerInstance,
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
@@ -70,11 +77,27 @@ export const updateAgentStatus = authActionClient
   .action(async ({ parsedInput }) => {
     const { workerId, status } = parsedInput;
     await updateSessionAgentStatus(workerId, status);
+    if (status === 'completed') {
+      const session = await getSession(workerId);
+      if (session) {
+        await stopWorkerInstance(workerId, session.runtimeType ?? 'ec2');
+      }
+    }
     return { success: true };
   });
 
 export const sendEventToAgent = authActionClient.inputSchema(sendEventSchema).action(async ({ parsedInput }) => {
   const { workerId, event } = parsedInput;
   await sendWorkerEvent(workerId, event);
+  return { success: true };
+});
+
+export const stopSession = authActionClient.inputSchema(stopSessionSchema).action(async ({ parsedInput }) => {
+  const { workerId } = parsedInput;
+  const session = await getSession(workerId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+  await stopWorkerInstance(workerId, session.runtimeType ?? 'ec2');
   return { success: true };
 });
