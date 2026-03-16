@@ -7,14 +7,12 @@ import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/sc
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations } from 'next-intl';
 import { useEventBus } from '@/hooks/use-event-bus';
-import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 
 interface SessionSidebarProps {
   currentWorkerId: string;
   sessions: SessionItem[];
   isOpen: boolean;
   onClose: () => void;
-  unreadMap?: UnreadMap;
 }
 
 export default function SessionSidebar({
@@ -22,7 +20,6 @@ export default function SessionSidebar({
   sessions: initialSessions,
   isOpen,
   onClose,
-  unreadMap = {},
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
@@ -123,11 +120,6 @@ export default function SessionSidebar({
               >
                 <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
                 <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
-                {unreadMap[session.workerId]?.unreadCount > 0 && (
-                  <span className="flex-shrink-0 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
-                    {unreadMap[session.workerId].unreadCount}
-                  </span>
-                )}
               </Link>
             );
           })}
