@@ -3,7 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { WorkerBus } from './bus';
 import { BlockPublicAccess, Bucket, IBucket } from 'aws-cdk-lib/aws-s3';
-import { AssetHashType, DockerImage, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { AssetHashType, DockerImage, RemovalPolicy, Stack, ILocalBundling, BundlingOptions } from 'aws-cdk-lib';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { join } from 'path';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
@@ -11,6 +11,7 @@ import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { WorkerImageBuilder } from './image-builder';
 import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { Asset, AssetProps } from 'aws-cdk-lib/aws-s3-assets';
 import { AgentCoreRuntime } from './agent-core-runtime';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
@@ -98,7 +99,35 @@ export class Worker extends Construct {
             'mv source.tar.gz /asset-output/source',
           ].join('&&'),
         ],
-        image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
+        image: DockerImage.fromRegistry('public.ecr.aws/docker/library/alpine'),
+        local: {
+          tryBundle(outputDir: string, _options: BundlingOptions): boolean {
+            try {
+              const sourceDir = join(__dirname, '..', '..', '..', '..');
+              const outSourceDir = join(outputDir, 'source');
+              execSync(`mkdir -p "${outSourceDir}"`, { stdio: 'inherit' });
+              execSync(
+                [
+                  `tar -zcf "${join(outSourceDir, 'source.tar.gz')}"`,
+                  '--exclude=./.git',
+                  '--exclude=./.github',
+                  '--exclude=./cdk',
+                  '--exclude=./docs',
+                  '--exclude=./resources',
+                  '--exclude=./node_modules',
+                  '--exclude=*/node_modules',
+                  '--exclude=*/dist',
+                  '--exclude=*/.next',
+                  `-C "${sourceDir}" .`,
+                ].join(' '),
+                { stdio: 'inherit' }
+              );
+              return true;
+            } catch {
+              return false;
+            }
+          },
+        } satisfies ILocalBundling,
       },
       assetHashType: AssetHashType.OUTPUT,
     };

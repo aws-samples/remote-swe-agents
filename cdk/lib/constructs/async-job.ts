@@ -1,6 +1,6 @@
 import { Construct } from 'constructs';
-import { CfnOutput, Duration, IgnoreMode, TimeZone } from 'aws-cdk-lib';
-import { Architecture, DockerImageCode, DockerImageFunction, IFunction } from 'aws-cdk-lib/aws-lambda';
+import { CfnOutput, Duration, TimeZone } from 'aws-cdk-lib';
+import { Architecture, DockerImageFunction, IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { join } from 'path';
@@ -8,6 +8,7 @@ import { Schedule, ScheduleExpression, ScheduleTargetInput } from 'aws-cdk-lib/a
 import { LambdaInvoke } from 'aws-cdk-lib/aws-scheduler-targets';
 import { Storage } from './storage';
 import { readFileSync } from 'fs';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 
 export interface AsyncJobProps {
   readonly storage: Storage;
@@ -20,13 +21,15 @@ export class AsyncJob extends Construct {
     super(scope, id);
     const { storage } = props;
 
+    const image = new ContainerImageBuild(this, 'Image', {
+      directory: '..',
+      file: join('docker', 'job.Dockerfile'),
+      exclude: readFileSync('.dockerignore').toString().split('\n'),
+      platform: Platform.LINUX_ARM64,
+    });
+
     const handler = new DockerImageFunction(this, 'Handler', {
-      code: DockerImageCode.fromImageAsset('..', {
-        file: join('docker', 'job.Dockerfile'),
-        exclude: readFileSync('.dockerignore').toString().split('\n'),
-        cmd: ['async-handler.handler'],
-        platform: Platform.LINUX_ARM64,
-      }),
+      code: image.toLambdaDockerImageCode({ cmd: ['async-handler.handler'] }),
       memorySize: 256,
       timeout: Duration.minutes(10),
       architecture: Architecture.ARM_64,

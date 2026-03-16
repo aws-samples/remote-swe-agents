@@ -342,7 +342,59 @@ exports[`Snapshot test: MainStack 1`] = `
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "REDACTED",
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Fn::Select": [
+                    4,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "AsyncJobImageRepository44F2D214",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".dkr.ecr.",
+                {
+                  "Fn::Select": [
+                    3,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "AsyncJobImageRepository44F2D214",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/",
+                {
+                  "Ref": "AsyncJobImageRepository44F2D214",
+                },
+                ":",
+                {
+                  "Fn::GetAtt": [
+                    "AsyncJobImage2B0B33DB",
+                    "ImageTag",
+                  ],
+                },
+              ],
+            ],
           },
         },
         "Environment": {
@@ -463,6 +515,105 @@ exports[`Snapshot test: MainStack 1`] = `
         ],
       },
       "Type": "AWS::IAM::Role",
+    },
+    "AsyncJobImage2B0B33DB": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleDefaultPolicy2316728F",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleC5F7BBFE",
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "DeployTimeBuildCustomResourceHandlerdb740fd554364a848a09e6dfcd01f4f306AEFF37",
+            "Arn",
+          ],
+        },
+        "buildCommand": "docker buildx build --file docker/job.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
+        "codeBuildProjectName": {
+          "Ref": "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        },
+        "repositoryUri": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Fn::Select": [
+                  4,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AsyncJobImageRepository44F2D214",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".dkr.ecr.",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AsyncJobImageRepository44F2D214",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".",
+              {
+                "Ref": "AWS::URLSuffix",
+              },
+              "/",
+              {
+                "Ref": "AsyncJobImageRepository44F2D214",
+              },
+            ],
+          ],
+        },
+        "sourceS3Url": "s3://cdk-hnb659fds-assets-123456789012-us-east-1/REDACTED",
+        "type": "ContainerImageBuild",
+      },
+      "Type": "Custom::CDKContainerImageBuild",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "AsyncJobImageRepository44F2D214": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true,
+        },
+        "RepositoryPolicyText": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Delete",
     },
     "AsyncJobSampleJob3C1EBA2C": {
       "Properties": {
@@ -865,7 +1016,7 @@ Remote SWE Agents Team",
     "post_build": {
       "commands": [
         "echo Build completed on \`date\`",
-        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"ContainerImageBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$imageTag\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"ImageTag\\": \\"$imageTag\\"\\n  }\\n}\\nEOF\\ncurl -v -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
+        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"ContainerImageBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$imageTag\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"ImageTag\\": \\"$imageTag\\"\\n  }\\n}\\nEOF\\ncurl -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
       ]
     }
   }
@@ -977,12 +1128,32 @@ Remote SWE Agents Team",
                 "ecr:UploadLayerPart",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "WebappBuildRepository4C93D48D",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "AsyncJobImageRepository44F2D214",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::GetAtt": [
+                    "SlackBoltImageRepository1FE90320",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::GetAtt": [
+                    "WebappBuildRepository4C93D48D",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::GetAtt": [
+                    "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                    "Arn",
+                  ],
+                },
+              ],
             },
             {
               "Action": "ecr:GetAuthorizationToken",
@@ -2100,7 +2271,59 @@ exports.handler = async function (event, context) {
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "REDACTED",
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Fn::Select": [
+                    4,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "SlackBoltImageRepository1FE90320",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".dkr.ecr.",
+                {
+                  "Fn::Select": [
+                    3,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "SlackBoltImageRepository1FE90320",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/",
+                {
+                  "Ref": "SlackBoltImageRepository1FE90320",
+                },
+                ":",
+                {
+                  "Fn::GetAtt": [
+                    "SlackBoltImageFDBCBABD",
+                    "ImageTag",
+                  ],
+                },
+              ],
+            ],
           },
         },
         "Environment": {
@@ -2373,7 +2596,59 @@ exports.handler = async function (event, context) {
         ],
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "REDACTED",
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Fn::Select": [
+                    4,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "SlackBoltImageRepository1FE90320",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".dkr.ecr.",
+                {
+                  "Fn::Select": [
+                    3,
+                    {
+                      "Fn::Split": [
+                        ":",
+                        {
+                          "Fn::GetAtt": [
+                            "SlackBoltImageRepository1FE90320",
+                            "Arn",
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/",
+                {
+                  "Ref": "SlackBoltImageRepository1FE90320",
+                },
+                ":",
+                {
+                  "Fn::GetAtt": [
+                    "SlackBoltImageFDBCBABD",
+                    "ImageTag",
+                  ],
+                },
+              ],
+            ],
           },
         },
         "Environment": {
@@ -2610,6 +2885,105 @@ exports.handler = async function (event, context) {
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "SlackBoltImageFDBCBABD": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleDefaultPolicy2316728F",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleC5F7BBFE",
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "DeployTimeBuildCustomResourceHandlerdb740fd554364a848a09e6dfcd01f4f306AEFF37",
+            "Arn",
+          ],
+        },
+        "buildCommand": "docker buildx build --file docker/slack-bolt-app.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
+        "codeBuildProjectName": {
+          "Ref": "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        },
+        "repositoryUri": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Fn::Select": [
+                  4,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "SlackBoltImageRepository1FE90320",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".dkr.ecr.",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "SlackBoltImageRepository1FE90320",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".",
+              {
+                "Ref": "AWS::URLSuffix",
+              },
+              "/",
+              {
+                "Ref": "SlackBoltImageRepository1FE90320",
+              },
+            ],
+          ],
+        },
+        "sourceS3Url": "s3://cdk-hnb659fds-assets-123456789012-us-east-1/REDACTED",
+        "type": "ContainerImageBuild",
+      },
+      "Type": "Custom::CDKContainerImageBuild",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "SlackBoltImageRepository1FE90320": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true,
+        },
+        "RepositoryPolicyText": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Delete",
     },
     "StorageHistory251A3AE8": {
       "DeletionPolicy": "Delete",
@@ -3267,6 +3641,9 @@ exports.handler = async function (event, context) {
       "DeletionPolicy": "Delete",
       "Properties": {
         "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true,
+        },
         "RepositoryPolicyText": {
           "Statement": [
             {
@@ -3963,7 +4340,12 @@ exports.handler = async function (event, context) {
                 "ecr:GetDownloadUrlForLayer",
               ],
               "Effect": "Allow",
-              "Resource": "REDACTED",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                  "Arn",
+                ],
+              },
             },
             {
               "Action": [
@@ -4147,7 +4529,59 @@ exports.handler = async function (event, context) {
         "AgentRuntimeArtifact": {
           "ContainerConfiguration": {
             "ContainerUri": {
-              "Fn::Sub": "REDACTED",
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Fn::Select": [
+                      4,
+                      {
+                        "Fn::Split": [
+                          ":",
+                          {
+                            "Fn::GetAtt": [
+                              "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                              "Arn",
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  ".dkr.ecr.",
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::Split": [
+                          ":",
+                          {
+                            "Fn::GetAtt": [
+                              "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                              "Arn",
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix",
+                  },
+                  "/",
+                  {
+                    "Ref": "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                  },
+                  ":",
+                  {
+                    "Fn::GetAtt": [
+                      "WorkerAgentCoreWorkerImage51DBAE8F",
+                      "ImageTag",
+                    ],
+                  },
+                ],
+              ],
             },
           },
         },
@@ -4197,6 +4631,89 @@ exports.handler = async function (event, context) {
         },
       },
       "Type": "AWS::BedrockAgentCore::Runtime",
+    },
+    "WorkerAgentCoreWorkerImage51DBAE8F": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleDefaultPolicy2316728F",
+        "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64RoleC5F7BBFE",
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "DeployTimeBuildCustomResourceHandlerdb740fd554364a848a09e6dfcd01f4f306AEFF37",
+            "Arn",
+          ],
+        },
+        "buildCommand": "docker buildx build --file docker/agent.Dockerfile --platform linux/arm64 --output type=docker,name=artifact:$imageTag --provenance=false .",
+        "codeBuildProjectName": {
+          "Ref": "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549",
+        },
+        "repositoryUri": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Fn::Select": [
+                  4,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".dkr.ecr.",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+                          "Arn",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              ".",
+              {
+                "Ref": "AWS::URLSuffix",
+              },
+              "/",
+              {
+                "Ref": "WorkerAgentCoreWorkerImageRepositoryB9D11AC9",
+              },
+            ],
+          ],
+        },
+        "sourceS3Url": "s3://cdk-hnb659fds-assets-123456789012-us-east-1/REDACTED",
+        "type": "ContainerImageBuild",
+      },
+      "Type": "Custom::CDKContainerImageBuild",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerAgentCoreWorkerImageRepositoryB9D11AC9": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true,
+        },
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Delete",
     },
     "WorkerBusApi8460ABC0": {
       "Properties": {

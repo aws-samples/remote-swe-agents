@@ -9,7 +9,7 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { EdgeFunction } from './cf-lambda-furl-service/edge-function';
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Auth } from './auth/';
-import { ContainerImageBuild } from 'deploy-time-build';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 import { join } from 'path';
 import { AsyncJob } from './async-job';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
