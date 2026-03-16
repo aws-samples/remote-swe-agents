@@ -2,7 +2,20 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff, ArrowUpDown, EyeOff as EyeOffIcon, MoreVertical, Trash2, Check, Circle } from 'lucide-react';
+import {
+  Plus,
+  MessageSquare,
+  Clock,
+  DollarSign,
+  Users,
+  EyeOff,
+  ArrowUpDown,
+  EyeOff as EyeOffIcon,
+  MoreVertical,
+  Trash2,
+  Check,
+  Circle,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

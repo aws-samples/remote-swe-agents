@@ -94,9 +94,7 @@ export default function MessageList({
     lastReadAt && lastReadAt > 0
       ? messageGroups.findIndex((group) => {
           const firstMsg = group.messages[0];
-          return (
-            group.role === 'assistant' && firstMsg && new Date(firstMsg.timestamp).getTime() > lastReadAt
-          );
+          return group.role === 'assistant' && firstMsg && new Date(firstMsg.timestamp).getTime() > lastReadAt;
         })
       : -1;
 
