@@ -7,7 +7,9 @@ const inputSchema = z.object({
   title: z
     .string()
     .max(50)
-    .describe('A concise title for the current session. Should be descriptive of the conversation topic. Use the same language as the user.'),
+    .describe(
+      'A concise title for the current session. Should be descriptive of the conversation topic. Use the same language as the user.'
+    ),
 });
 
 const name = 'updateSessionTitle';
