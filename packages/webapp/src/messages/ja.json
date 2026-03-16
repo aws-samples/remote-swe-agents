@@ -46,7 +46,6 @@
       "completed": "完了",
       "unknown": "不明"
     },
-
     "forceStopInProgress": "エージェントの作業を停止中...",
     "forceStopError": "エージェントの作業停止に失敗しました",
     "agentStartingMessage": "AIエージェントが起動中です。最大で2分ほどかかる場合があります。しばらくお待ちください...",
@@ -92,7 +91,13 @@
     "shareSessionDescription": "このテキストをアプリへのメンション付きでSlackに投稿すると、セッションにSlackからメッセージを送ったり通知を受信したりできます。",
     "copyToClipboard": "クリップボードにコピー",
     "share": "共有",
-    "copiedToClipboard": "クリップボードにコピーしました"
+    "copiedToClipboard": "クリップボードにコピーしました",
+    "sortByCreatedAt": "作成日順",
+    "sortByUpdatedAt": "更新日順",
+    "sortByCost": "コスト順",
+    "sortAsc": "昇順",
+    "sortDesc": "降順",
+    "hideCompleted": "完了済みを非表示"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
