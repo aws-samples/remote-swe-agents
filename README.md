@@ -54,7 +54,7 @@ This project also supports two detailed installation patterns depending on your 
 - AWS CLI
 - AWS IAM profile with appropriate permissions
 - Docker
-- GitHub Account
+- GitHub Account (optional, required for GitHub integration)
 - Slack Workspace (only for Pattern B)
 
 ---
@@ -72,7 +72,7 @@ cd remote-swe-agents
 
 ### Step 2: Create SSM Parameters
 
-Before setting up GitHub integration, create placeholder SSM parameters that will be referenced by CDK:
+Before deploying, create placeholder SSM parameters that will be referenced by CDK:
 
 ```bash
 aws ssm put-parameter \
@@ -84,14 +84,21 @@ aws ssm put-parameter \
     --name /remote-swe/slack/signing-secret \
     --value "placeholder" \
     --type String
+```
 
+If you plan to use GitHub integration (see Step 3), also create the GitHub parameter:
+
+```bash
 aws ssm put-parameter \
     --name /remote-swe/github/personal-access-token \
     --value "placeholder" \
     --type String
 ```
 
-### Step 3: GitHub Integration Setup
+> [!NOTE]
+> GitHub integration is optional. If you skip it, the agent will still work for general-purpose tasks but won't have access to GitHub-specific tools (clone repository, create PR, etc.). To skip GitHub integration, simply skip creating the GitHub SSM parameter above and skip Step 3.
+
+### Step 3: GitHub Integration Setup (Optional)
 
 To interact with GitHub, you need to setup GitHub integration. You have two options for GitHub integration:
 
