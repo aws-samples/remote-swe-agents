@@ -9,3 +9,4 @@ export * from './send-image';
 export * from './think';
 export * from './read-image';
 export * from './todo';
+export * from './session-title';
