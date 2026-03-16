@@ -81,6 +81,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
           'bedrock-agentcore:GetWorkloadAccessToken',
           'bedrock-agentcore:GetWorkloadAccessTokenForJWT',
           'bedrock-agentcore:GetWorkloadAccessTokenForUserId',
+          'bedrock-agentcore:StopRuntimeSession',
         ],
         resources: ['*'],
       })
