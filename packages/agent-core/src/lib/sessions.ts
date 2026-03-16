@@ -112,9 +112,9 @@ Use the same language that was used in the conversation.
 Messages: ${message}
     `.trim();
 
-    const { response } = await bedrockConverse(workerId, ['haiku4.5'], {
+    const { response } = await bedrockConverse(workerId, ['haiku3.5'], {
       inferenceConfig: {
-        maxTokens: 256,
+        maxTokens: 50,
         temperature: 0.8,
       },
       messages: [
