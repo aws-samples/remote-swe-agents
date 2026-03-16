@@ -1,4 +1,12 @@
-import { GetCommand, QueryCommand, QueryCommandInput, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import {
+  GetCommand,
+  QueryCommand,
+  QueryCommandInput,
+  UpdateCommand,
+  DeleteCommand,
+  BatchWriteCommand,
+  paginateQuery,
+} from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
 import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
@@ -100,6 +108,50 @@ export const updateSessionVisibility = async (workerId: string, isHidden: boolea
  */
 export const updateSessionTitle = async (workerId: string, title: string): Promise<void> => {
   await updateSession(workerId, { title });
+};
+
+/**
+ * Delete a session and all related data (messages, metadata) from DynamoDB
+ * @param workerId Worker ID of the session to delete
+ */
+export const deleteSession = async (workerId: string): Promise<void> => {
+  await ddb.send(
+    new DeleteCommand({
+      TableName,
+      Key: { PK: 'sessions', SK: workerId },
+    })
+  );
+
+  const prefixes = [`message-${workerId}`, `metadata-${workerId}`];
+  for (const prefix of prefixes) {
+    const paginator = paginateQuery(
+      { client: ddb },
+      {
+        TableName,
+        KeyConditionExpression: 'PK = :pk',
+        ExpressionAttributeValues: { ':pk': prefix },
+        ProjectionExpression: 'PK, SK',
+      }
+    );
+
+    const keysToDelete: { PK: string; SK: string }[] = [];
+    for await (const page of paginator) {
+      if (page.Items) {
+        keysToDelete.push(...(page.Items as { PK: string; SK: string }[]));
+      }
+    }
+
+    for (let i = 0; i < keysToDelete.length; i += 25) {
+      const batch = keysToDelete.slice(i, i + 25);
+      await ddb.send(
+        new BatchWriteCommand({
+          RequestItems: {
+            [TableName]: batch.map((key) => ({ DeleteRequest: { Key: key } })),
+          },
+        })
+      );
+    }
+  }
 };
 
 const keySchema = sessionItemSchema.pick({ PK: true, SK: true });

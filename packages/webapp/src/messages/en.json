@@ -97,7 +97,17 @@
     "sortByCost": "Cost",
     "sortAsc": "Ascending",
     "sortDesc": "Descending",
-    "hideCompleted": "Hide completed"
+    "hideCompleted": "Hide completed",
+    "deleteSession": "Delete Session",
+    "deleteSessionConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
+    "deleteSessionSuccess": "Session deleted successfully",
+    "deleteSessionError": "Failed to delete session",
+    "cancel": "Cancel",
+    "goToSessionList": "View All Sessions",
+    "toggleSidebar": "Toggle sidebar",
+    "stopSession": "Stop Session",
+    "stopSessionSuccess": "Session stopped",
+    "stopSessionError": "Failed to stop session"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
