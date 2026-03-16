@@ -6,7 +6,6 @@ import {
   updateAgentStatusSchema,
   sendEventSchema,
   stopSessionSchema,
-  markSessionReadSchema,
 } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
@@ -17,8 +16,6 @@ import {
   getTodoList,
   getSession,
   stopWorkerInstance,
-  markSessionRead as markSessionReadLib,
-  getUnreadSummary,
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
@@ -80,15 +77,12 @@ export const updateAgentStatus = authActionClient
   .action(async ({ parsedInput }) => {
     const { workerId, status } = parsedInput;
     await updateSessionAgentStatus(workerId, status);
-
-    // Auto-stop the worker when marking as completed
     if (status === 'completed') {
       const session = await getSession(workerId);
       if (session) {
         await stopWorkerInstance(workerId, session.runtimeType ?? 'ec2');
       }
     }
-
     return { success: true };
   });
 
@@ -107,12 +101,3 @@ export const stopSession = authActionClient.inputSchema(stopSessionSchema).actio
   await stopWorkerInstance(workerId, session.runtimeType ?? 'ec2');
   return { success: true };
 });
-
-export const markSessionReadAction = authActionClient
-  .inputSchema(markSessionReadSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { workerId } = parsedInput;
-    await markSessionReadLib(ctx.userId, workerId);
-    const summary = await getUnreadSummary(ctx.userId);
-    return { success: true, badge: summary };
-  });

@@ -33,20 +33,9 @@ type MessageListProps = {
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   agentStatus?: 'pending' | 'working' | 'completed';
   onInterrupt: () => void;
-  agentIconUrl?: string;
-  agentName?: string;
-  lastReadAt?: number;
 };
 
-export default function MessageList({
-  messages,
-  instanceStatus,
-  agentStatus,
-  onInterrupt,
-  agentIconUrl,
-  agentName,
-  lastReadAt,
-}: MessageListProps) {
+export default function MessageList({ messages, instanceStatus, agentStatus, onInterrupt }: MessageListProps) {
   const t = useTranslations('sessions');
   const { isBottom } = useScrollPosition();
 
@@ -75,12 +64,10 @@ export default function MessageList({
     }
   }, [messages]);
 
-  // Scroll to bottom on initial page load
   const initialScrollDone = useRef(false);
   useEffect(() => {
     if (!initialScrollDone.current && messages.length > 0) {
       initialScrollDone.current = true;
-      // Use requestAnimationFrame to ensure DOM is rendered
       requestAnimationFrame(() => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
       });
@@ -89,48 +76,23 @@ export default function MessageList({
 
   const messageGroups = groupMessages(messages);
 
-  // Find the index of the first assistant group after lastReadAt for the "new messages" divider
-  const newMessageGroupIndex =
-    lastReadAt && lastReadAt > 0
-      ? messageGroups.findIndex((group) => {
-          const firstMsg = group.messages[0];
-          return group.role === 'assistant' && firstMsg && new Date(firstMsg.timestamp).getTime() > lastReadAt;
-        })
-      : -1;
-
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-2">
         <div>
           {messageGroups.map((group, index) => (
-            <div key={`group-${index}`}>
-              {index === newMessageGroupIndex && (
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-red-400 dark:bg-red-500" />
-                  <span className="text-xs font-semibold text-red-500 dark:text-red-400 whitespace-nowrap">
-                    {t('newMessages')}
-                  </span>
-                  <div className="flex-1 h-px bg-red-400 dark:bg-red-500" />
-                </div>
-              )}
-              <MessageGroupComponent group={group} agentIconUrl={agentIconUrl} agentName={agentName} />
-            </div>
+            <MessageGroupComponent key={`group-${index}`} group={group} />
           ))}
 
           {(agentStatus === 'working' || instanceStatus === 'starting') && (
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-shrink-0">
-                  {agentIconUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={agentIconUrl} alt="Agent" className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-white" />
+                  </div>
                 </div>
-                <div className="font-semibold text-gray-900 dark:text-white">{agentName || 'Assistant'}</div>
+                <div className="font-semibold text-gray-900 dark:text-white">Assistant</div>
               </div>
               <div className="md:ml-11">
                 <div className="flex items-center gap-2 py-1">
