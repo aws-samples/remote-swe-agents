@@ -4352,6 +4352,7 @@ exports.handler = async function (event, context) {
                 "bedrock-agentcore:GetWorkloadAccessToken",
                 "bedrock-agentcore:GetWorkloadAccessTokenForJWT",
                 "bedrock-agentcore:GetWorkloadAccessTokenForUserId",
+                "bedrock-agentcore:StopRuntimeSession",
                 "bedrock:InvokeModel",
                 "cloudwatch:PutMetricData",
                 "ecr:GetAuthorizationToken",
