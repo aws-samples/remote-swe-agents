@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { MessageSquare, Plus, X, List } from 'lucide-react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
@@ -23,10 +23,48 @@ export default function SessionSidebar({
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
+  const navRef = useRef<HTMLElement>(null);
+  const [navHeight, setNavHeight] = useState(0);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      setNavHeight(entries[0].contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setSessions(initialSessions);
   }, [initialSessions]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEventBus({
     channelName: 'webapp/worker/*',
@@ -103,7 +141,8 @@ export default function SessionSidebar({
         </div>
 
         {/* Session list (exclude completed, sorted by updatedAt desc) */}
-        <nav className="flex-1 overflow-y-auto py-1">
+        <nav ref={navRef} className="flex-1 overflow-y-scroll overscroll-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="py-1" style={{ minHeight: navHeight > 0 ? navHeight + 1 : undefined }}>
           {sortedSessions.map((session) => {
             const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
             const isCurrent = session.workerId === currentWorkerId;
@@ -123,6 +162,7 @@ export default function SessionSidebar({
               </Link>
             );
           })}
+          </div>
         </nav>
 
         {/* Bottom link to full sessions list */}

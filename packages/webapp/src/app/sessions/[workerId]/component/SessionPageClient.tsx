@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
 import TakeOverModal from './TakeOverModal';
+import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 import SessionSidebar from './SessionSidebar';
 
 interface SessionPageClientProps {
@@ -84,6 +85,11 @@ export default function SessionPageClient({
   const [showShareModal, setShowShareModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isBottom, isHeaderVisible } = useScrollPosition();
+
+  useSwipeGesture({
+    onSwipeRight: useCallback(() => setSidebarOpen(true), []),
+    onSwipeLeft: useCallback(() => setSidebarOpen(false), []),
+  });
 
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
