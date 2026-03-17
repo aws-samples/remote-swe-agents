@@ -44,6 +44,11 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
         reset();
         setValue('modelOverride', args.input.modelOverride);
         clearImages();
+        // Reset textarea height after form reset
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.overflowY = 'hidden';
+        }
       },
       onError: ({ error }) => {
         toast.error(typeof error === 'string' ? error : 'Failed to send the message');
