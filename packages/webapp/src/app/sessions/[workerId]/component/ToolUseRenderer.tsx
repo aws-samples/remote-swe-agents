@@ -24,25 +24,25 @@ export const ToolUseRenderer = ({ content, input, output, messageId }: ToolUseRe
   };
 
   return (
-    <div className="rounded-md">
+    <div className="rounded-md min-w-0">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer hover:underline p-2 -m-2"
+        className="w-full flex items-start justify-between text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer hover:underline p-2 -m-2 min-w-0"
       >
-        <div className="flex items-baseline gap-2">
-          {getToolIcon(toolName)}
-          <span className="flex items-baseline gap-2">
+        <div className="flex items-start gap-2 min-w-0">
+          <span className="mt-0.5 flex-shrink-0">{getToolIcon(toolName)}</span>
+          <span className="min-w-0 text-left">
             <span className="hidden md:inline">{t('usingTool')}: </span>
-            <span className="truncate">{toolName}</span>
+            <span className="break-words">{toolName}</span>
             {isExecuting && (
-              <div className="flex items-baseline gap-1 ml-2">
+              <span className="inline-flex items-baseline gap-1 ml-2">
                 <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">{t('executing')}</span>
-              </div>
+              </span>
             )}
           </span>
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 mt-0.5">
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
           ) : (
