@@ -30,7 +30,7 @@ export const setKillTimer = (workerId: string) => {
     async () => {
       let isSpot = false;
       try {
-        await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
+        // await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
         try {
           isSpot = (await getInstanceLifecycle()) === 'spot';
         } catch {
