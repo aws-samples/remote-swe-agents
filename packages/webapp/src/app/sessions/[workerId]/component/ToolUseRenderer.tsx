@@ -31,7 +31,7 @@ export const ToolUseRenderer = ({ content, input, output, messageId }: ToolUseRe
       >
         <div className="flex items-start gap-2 min-w-0">
           <span className="mt-0.5 flex-shrink-0">{getToolIcon(toolName)}</span>
-          <span className="min-w-0">
+          <span className="min-w-0 text-left">
             <span className="hidden md:inline">{t('usingTool')}: </span>
             <span className="break-words">{toolName}</span>
             {isExecuting && (
