@@ -25,6 +25,7 @@ export default function SessionSidebar({
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState(0);
+  const scrollYRef = useRef(0);
 
   useEffect(() => {
     const el = navRef.current;
@@ -42,20 +43,19 @@ export default function SessionSidebar({
 
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY;
+      scrollYRef.current = window.scrollY;
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = `-${scrollYRef.current}px`;
       document.body.style.left = '0';
       document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
     } else {
-      const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
       document.body.style.right = '';
       document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      window.scrollTo(0, scrollYRef.current);
     }
     return () => {
       document.body.style.position = '';
