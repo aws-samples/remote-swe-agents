@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { MessageSquare, Plus, X, List } from 'lucide-react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
@@ -23,10 +23,48 @@ export default function SessionSidebar({
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
+  const navRef = useRef<HTMLElement>(null);
+  const [navHeight, setNavHeight] = useState(0);
+  const scrollYRef = useRef(0);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      setNavHeight(entries[0].contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setSessions(initialSessions);
   }, [initialSessions]);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollYRef.current);
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEventBus({
     channelName: 'webapp/worker/*',
@@ -103,26 +141,32 @@ export default function SessionSidebar({
         </div>
 
         {/* Session list (exclude completed, sorted by updatedAt desc) */}
-        <nav className="flex-1 overflow-y-auto py-1">
-          {sortedSessions.map((session) => {
-            const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
-            const isCurrent = session.workerId === currentWorkerId;
-            return (
-              <Link
-                key={session.workerId}
-                href={`/sessions/${session.workerId}`}
-                onClick={onClose}
-                className={`flex items-center gap-2.5 px-3 py-2.5 mx-1 rounded-md transition-colors text-left ${
-                  isCurrent
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
-                <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
-              </Link>
-            );
-          })}
+        <nav
+          ref={navRef}
+          className="flex-1 overflow-y-scroll overscroll-auto"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="py-1" style={{ minHeight: navHeight > 0 ? navHeight + 1 : undefined }}>
+            {sortedSessions.map((session) => {
+              const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
+              const isCurrent = session.workerId === currentWorkerId;
+              return (
+                <Link
+                  key={session.workerId}
+                  href={`/sessions/${session.workerId}`}
+                  onClick={onClose}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 mx-1 rounded-md transition-colors text-left ${
+                    isCurrent
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
+                  <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Bottom link to full sessions list */}
