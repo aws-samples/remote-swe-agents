@@ -141,27 +141,31 @@ export default function SessionSidebar({
         </div>
 
         {/* Session list (exclude completed, sorted by updatedAt desc) */}
-        <nav ref={navRef} className="flex-1 overflow-y-scroll overscroll-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <nav
+          ref={navRef}
+          className="flex-1 overflow-y-scroll overscroll-auto"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="py-1" style={{ minHeight: navHeight > 0 ? navHeight + 1 : undefined }}>
-          {sortedSessions.map((session) => {
-            const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
-            const isCurrent = session.workerId === currentWorkerId;
-            return (
-              <Link
-                key={session.workerId}
-                href={`/sessions/${session.workerId}`}
-                onClick={onClose}
-                className={`flex items-center gap-2.5 px-3 py-2.5 mx-1 rounded-md transition-colors text-left ${
-                  isCurrent
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
-                <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
-              </Link>
-            );
-          })}
+            {sortedSessions.map((session) => {
+              const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
+              const isCurrent = session.workerId === currentWorkerId;
+              return (
+                <Link
+                  key={session.workerId}
+                  href={`/sessions/${session.workerId}`}
+                  onClick={onClose}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 mx-1 rounded-md transition-colors text-left ${
+                    isCurrent
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
+                  <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
+                </Link>
+              );
+            })}
           </div>
         </nav>
 
