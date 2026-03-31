@@ -93,20 +93,16 @@ export async function sendPushNotificationToUser(
   userId: string,
   payload: { title: string; body: string; url?: string; workerId?: string }
 ): Promise<void> {
-  console.log(`[push-debug] sendPushNotificationToUser called for userId: ${userId}`);
   const vapidPublicKey = await getVapidPublicKey();
   const vapidPrivateKey = await getVapidPrivateKey();
 
   if (!vapidPublicKey || !vapidPrivateKey) {
-    console.log('[push-debug] VAPID keys not configured, skipping push notification');
     return;
   }
-  console.log(`[push-debug] VAPID keys loaded. publicKey: ${vapidPublicKey.slice(0, 10)}...`);
 
   webpush.setVapidDetails('mailto:noreply@example.com', vapidPublicKey, vapidPrivateKey);
 
   const subscriptions = await getSubscriptionsForUser(userId);
-  console.log(`[push-debug] Found ${subscriptions.length} subscriptions for user ${userId}`);
 
   // Get unread summary for badge info
   const unreadSummary = await getUnreadSummary(userId);
@@ -120,7 +116,6 @@ export async function sendPushNotificationToUser(
 
   for (const sub of subscriptions) {
     try {
-      console.log(`[push-debug] Sending to endpoint: ${sub.endpoint.slice(0, 60)}...`);
       await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -128,17 +123,12 @@ export async function sendPushNotificationToUser(
         },
         JSON.stringify(enrichedPayload)
       );
-      console.log(`[push-debug] Sent successfully to ${sub.endpoint.slice(0, 60)}...`);
     } catch (error: any) {
       if (error?.statusCode === 410 || error?.statusCode === 404) {
         await deletePushSubscription(userId, sub.endpoint);
-        console.log(`[push-debug] Removed expired push subscription for user ${userId}, status: ${error?.statusCode}`);
+        console.warn(`Removed expired push subscription for user ${userId}, status: ${error?.statusCode}`);
       } else {
-        console.error(
-          `[push-debug] Failed to send push notification to user ${userId}:`,
-          error?.statusCode,
-          error?.message
-        );
+        console.error(`Failed to send push notification to user ${userId}:`, error?.statusCode, error?.message);
       }
     }
   }
