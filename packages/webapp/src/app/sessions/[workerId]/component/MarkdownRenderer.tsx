@@ -9,7 +9,7 @@ type MarkdownRendererProps = {
   content: string;
 };
 
-export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
 
   return (
@@ -79,9 +79,33 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
         ),
         strong: ({ children }) => <strong className="font-bold">{children}</strong>,
         em: ({ children }) => <em className="italic">{children}</em>,
+        table: ({ children }) => (
+          <div className="overflow-x-auto mb-2" data-scrollable="true">
+            <table className="border-collapse border border-gray-300 dark:border-gray-600">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>
+        ),
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => (
+          <tr className="border-b border-gray-300 dark:border-gray-600">{children}</tr>
+        ),
+        th: ({ children }) => (
+          <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold text-sm whitespace-nowrap">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm whitespace-nowrap">
+            {children}
+          </td>
+        ),
       }}
     >
       {content}
     </ReactMarkdown>
   );
-};
+});
