@@ -5460,7 +5460,7 @@ phases:
 
               export WORKER_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 
-              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
+              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
 
               export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
 
@@ -6220,7 +6220,7 @@ phases:
 
               export WORKER_ID=$(curl -s -H \\"X-aws-ec2-metadata-token: $TOKEN\\" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
 
-              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text)
+              export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
 
               export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
 
@@ -6686,7 +6686,7 @@ fi
 # Set up dynamic environment variables
 TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query "Parameter.Value" --output text)
+export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query "Parameter.Value" --output text 2>/dev/null || echo "")
 export GITHUB_PERSONAL_ACCESS_TOKEN=""
 
 # Start app
