@@ -89,7 +89,7 @@ export const updateCustomAgent = async (
 
   const updateExpression = [];
   const expressionAttributeNames: Record<string, string> = {};
-  const expressionAttributeValues: Record<string, string | number | string[]> = {};
+  const expressionAttributeValues: Record<string, string | number | boolean | string[]> = {};
 
   for (const [key, value] of Object.entries(updates)) {
     updateExpression.push(`#${key} = :${key}`);

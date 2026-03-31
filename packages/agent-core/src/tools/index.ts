@@ -4,6 +4,7 @@ export * from './create-pr';
 export * from './create-session';
 export * from './editor';
 export * from './github-comments';
+export * from './manage-agent';
 export * from './repo';
 export * from './report-progress';
 export * from './send-image';
