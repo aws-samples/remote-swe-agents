@@ -111,6 +111,15 @@ export const updateSessionTitle = async (workerId: string, title: string): Promi
 };
 
 /**
+ * Update lastMessage for a session
+ * @param workerId Worker ID of the session to update
+ * @param lastMessage The latest message preview to set for the session
+ */
+export const updateSessionLastMessage = async (workerId: string, lastMessage: string): Promise<void> => {
+  await updateSession(workerId, { lastMessage, lastMessageAt: Date.now() });
+};
+
+/**
  * Delete a session and all related data (messages, metadata) from DynamoDB
  * @param workerId Worker ID of the session to delete
  */
