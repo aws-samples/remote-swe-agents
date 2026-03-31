@@ -3065,6 +3065,24 @@ exports.handler = async function (event, context) {
           },
         ],
         "BillingMode": "PAY_PER_REQUEST",
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "GSI1",
+            "KeySchema": [
+              {
+                "AttributeName": "SK",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "PK",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "KEYS_ONLY",
+            },
+          },
+        ],
         "KeySchema": [
           {
             "AttributeName": "PK",
@@ -3095,6 +3113,11 @@ exports.handler = async function (event, context) {
         ],
         "Replicas": [
           {
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "GSI1",
+              },
+            ],
             "Region": "us-east-1",
           },
         ],

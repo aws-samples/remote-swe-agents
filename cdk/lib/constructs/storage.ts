@@ -27,6 +27,14 @@ export class Storage extends Construct {
           projectionType: ProjectionType.ALL,
         },
       ],
+      globalSecondaryIndexes: [
+        {
+          indexName: 'GSI1',
+          partitionKey: { name: 'SK', type: AttributeType.STRING },
+          sortKey: { name: 'PK', type: AttributeType.STRING },
+          projectionType: ProjectionType.KEYS_ONLY,
+        },
+      ],
     });
 
     const bucket = new Bucket(this, 'ImageBucket', {
