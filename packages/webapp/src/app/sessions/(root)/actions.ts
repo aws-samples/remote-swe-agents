@@ -27,6 +27,18 @@ export const deleteSessionAction = authActionClient.inputSchema(deleteSessionSch
   return { success: true };
 });
 
+const batchDeleteSessionsSchema = z.object({
+  workerIds: z.array(z.string()).min(1),
+});
+
+export const batchDeleteSessionsAction = authActionClient
+  .inputSchema(batchDeleteSessionsSchema)
+  .action(async ({ parsedInput }) => {
+    const { workerIds } = parsedInput;
+    await Promise.all(workerIds.map((workerId) => deleteSession(workerId)));
+    return { success: true, count: workerIds.length };
+  });
+
 const updateStatusSchema = z.object({
   workerId: z.string(),
   status: agentStatusSchema,

@@ -108,7 +108,15 @@
     "stopSession": "セッションを停止",
     "stopSessionSuccess": "セッションを停止しました",
     "stopSessionError": "セッションの停止に失敗しました",
-    "sortByLastMessageAt": "最終メッセージ順"
+    "sortByLastMessageAt": "最終メッセージ順",
+    "selectMode": "選択",
+    "selectAll": "すべて選択",
+    "deselectAll": "選択解除",
+    "deleteSelected": "{count}件を削除",
+    "batchDeleteTitle": "選択したセッションを削除",
+    "batchDeleteConfirm": "{count}件のセッションを削除しますか？この操作は元に戻せません。",
+    "batchDeleteSuccess": "{count}件のセッションを削除しました",
+    "batchDeleteError": "セッションの削除に失敗しました"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
