@@ -3526,6 +3526,21 @@ exports.handler = async function (event, context) {
               "TargetOriginId": "TestMainStackWebappOrigin144EF7B3C",
               "ViewerProtocolPolicy": "allow-all",
             },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+              ],
+              "CachePolicyId": {
+                "Ref": "WebappStaticCachePolicy6F41ACA1",
+              },
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "api/agent-icon*",
+              "TargetOriginId": "TestMainStackWebappOrigin144EF7B3C",
+              "ViewerProtocolPolicy": "allow-all",
+            },
           ],
           "Comment": "CloudFront for RemoteSweAgentsWebapp",
           "DefaultCacheBehavior": {
