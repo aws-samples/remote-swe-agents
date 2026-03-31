@@ -72,8 +72,7 @@ const props: MainStackProps = {
               }
             : {
                 personalAccessTokenParameterName:
-                  process.env.GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME ??
-                  '/remote-swe/github/personal-access-token',
+                  process.env.GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME ?? '/remote-swe/github/personal-access-token',
               }),
         },
       }
