@@ -7,6 +7,7 @@ import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/sc
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations } from 'next-intl';
 import { useEventBus } from '@/hooks/use-event-bus';
+import { useRouter } from 'next/navigation';
 
 interface SessionSidebarProps {
   currentWorkerId: string;
@@ -22,6 +23,7 @@ export default function SessionSidebar({
   onClose,
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState(0);
@@ -72,8 +74,12 @@ export default function SessionSidebar({
       try {
         const event = webappEventSchema.parse(payload);
         if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
-          setSessions((prev) =>
-            prev.map((session) => {
+          setSessions((prev) => {
+            if (!prev.some((s) => s.workerId === event.workerId)) {
+              router.refresh();
+              return prev;
+            }
+            return prev.map((session) => {
               if (session.workerId === event.workerId) {
                 return {
                   ...session,
@@ -83,23 +89,45 @@ export default function SessionSidebar({
                 };
               }
               return session;
-            })
-          );
+            });
+          });
         }
         if (event.type === 'sessionTitleUpdate') {
-          setSessions((prev) =>
-            prev.map((session) => {
+          setSessions((prev) => {
+            if (!prev.some((s) => s.workerId === event.workerId)) {
+              router.refresh();
+              return prev;
+            }
+            return prev.map((session) => {
               if (session.workerId === event.workerId) {
                 return { ...session, title: event.newTitle };
               }
               return session;
-            })
-          );
+            });
+          });
+        }
+        if (event.type === 'lastMessageUpdate') {
+          setSessions((prev) => {
+            if (!prev.some((s) => s.workerId === event.workerId)) {
+              router.refresh();
+              return prev;
+            }
+            return prev.map((session) => {
+              if (session.workerId === event.workerId) {
+                return {
+                  ...session,
+                  lastMessage: event.lastMessage,
+                  lastMessageAt: event.lastMessageAt ?? event.timestamp,
+                };
+              }
+              return session;
+            });
+          });
         }
       } catch (error) {
         console.error('Failed to parse webapp event:', error);
       }
-    }, []),
+    }, [router]),
   });
 
   const sortedSessions = useMemo(() => {
