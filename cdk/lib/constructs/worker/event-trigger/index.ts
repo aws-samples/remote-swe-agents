@@ -75,8 +75,20 @@ export class EventTrigger extends Construct {
 
       role.addToPrincipalPolicy(
         new iam.PolicyStatement({
-          actions: ['ec2:DescribeInstances', 'ec2:StartInstances'],
+          actions: ['ec2:DescribeInstances'],
           resources: ['*'],
+        })
+      );
+
+      role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['ec2:StartInstances'],
+          resources: [`arn:aws:ec2:${region}:${account}:instance/*`],
+          conditions: {
+            StringEquals: {
+              'ec2:ResourceTag/aws:cloudformation:stack-name': cdk.Stack.of(this).stackName,
+            },
+          },
         })
       );
 
