@@ -38,7 +38,11 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   const isEditing = Boolean(editingAgent);
   const router = useRouter();
   const [selectedTools, setSelectedTools] = useState<string[]>(editingAgent?.tools || []);
+  const [useAllTools, setUseAllTools] = useState<boolean>(editingAgent?.useAllTools ?? false);
   const [useDefaultSystemPrompt, setUseDefaultSystemPrompt] = useState<boolean>(!editingAgent?.systemPrompt);
+  const [includeDefaultKnowledge, setIncludeDefaultKnowledge] = useState<boolean>(
+    editingAgent?.includeDefaultKnowledge !== false
+  );
 
   const {
     form,
@@ -70,8 +74,10 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
         defaultModel: editingAgent?.defaultModel ?? 'sonnet3.7',
         systemPrompt: editingAgent?.systemPrompt ?? '',
         tools: editingAgent?.tools ?? [],
+        useAllTools: editingAgent?.useAllTools ?? false,
         mcpConfig: editingAgent?.mcpConfig ?? JSON.stringify(EmptyMcpConfig, undefined, 2),
         runtimeType: editingAgent?.runtimeType ?? 'agent-core',
+        includeDefaultKnowledge: editingAgent?.includeDefaultKnowledge !== false,
       },
     },
   });
@@ -127,6 +133,7 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     if (useDefaultSystemPrompt) {
       setValue('systemPrompt', '');
+      setValue('includeDefaultKnowledge', true);
     }
     handleSubmitWithAction(e);
   };
@@ -218,13 +225,33 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
             </label>
           </div>
           {!useDefaultSystemPrompt && (
-            <textarea
-              {...register('systemPrompt')}
-              placeholder={t('form.systemPrompt.placeholder')}
-              disabled={isPending}
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
-            />
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox
+                  id="includeDefaultKnowledge"
+                  checked={includeDefaultKnowledge}
+                  onCheckedChange={(checked) => {
+                    const val = checked === true;
+                    setIncludeDefaultKnowledge(val);
+                    setValue('includeDefaultKnowledge', val);
+                  }}
+                  disabled={isPending}
+                />
+                <label
+                  htmlFor="includeDefaultKnowledge"
+                  className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                >
+                  {t('form.systemPrompt.includeDefaultKnowledge')}
+                </label>
+              </div>
+              <textarea
+                {...register('systemPrompt')}
+                placeholder={t('form.systemPrompt.placeholder')}
+                disabled={isPending}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+              />
+            </>
           )}
           {formState.errors.systemPrompt && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.systemPrompt.message}</p>
@@ -237,46 +264,63 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('form.tools.label')}
           </label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" disabled={isPending}>
-                <span className={selectedTools.length === 0 ? 'font-normal text-muted-foreground' : ''}>
-                  {selectedTools.length > 0
-                    ? `${selectedTools.length} tool${selectedTools.length > 1 ? 's' : ''} selected`
-                    : t('form.tools.placeholder')}
-                </span>
-                <ChevronDownIcon className="h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full min-w-[400px]" align="start">
-              <DropdownMenuLabel>Available Tools</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <TooltipProvider>
-                {availableTools.map((tool) => (
-                  <DropdownMenuCheckboxItem
-                    key={tool.name}
-                    checked={selectedTools.includes(tool.name)}
-                    onCheckedChange={(checked) => handleToolToggle(tool.name, checked)}
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{tool.name}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-sm text-gray-500 cursor-help max-w-lg overflow-hidden text-ellipsis whitespace-nowrap block">
-                            {tool.description}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-md">
-                          <p className="whitespace-pre-wrap break-words">{tool.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </TooltipProvider>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2 mb-3">
+            <Checkbox
+              id="useAllTools"
+              checked={useAllTools}
+              onCheckedChange={(checked) => {
+                const val = checked === true;
+                setUseAllTools(val);
+                setValue('useAllTools', val);
+              }}
+              disabled={isPending}
+            />
+            <label htmlFor="useAllTools" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              {t('form.tools.useAllTools')}
+            </label>
+          </div>
+          {!useAllTools && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between" disabled={isPending}>
+                  <span className={selectedTools.length === 0 ? 'font-normal text-muted-foreground' : ''}>
+                    {selectedTools.length > 0
+                      ? `${selectedTools.length} tool${selectedTools.length > 1 ? 's' : ''} selected`
+                      : t('form.tools.placeholder')}
+                  </span>
+                  <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-full min-w-[400px]" align="start">
+                <DropdownMenuLabel>Available Tools</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <TooltipProvider>
+                  {availableTools.map((tool) => (
+                    <DropdownMenuCheckboxItem
+                      key={tool.name}
+                      checked={selectedTools.includes(tool.name)}
+                      onCheckedChange={(checked) => handleToolToggle(tool.name, checked)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{tool.name}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-sm text-gray-500 cursor-help max-w-lg overflow-hidden text-ellipsis whitespace-nowrap block">
+                              {tool.description}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-md">
+                            <p className="whitespace-pre-wrap break-words">{tool.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </TooltipProvider>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.tools.description')}</p>
         </div>
 

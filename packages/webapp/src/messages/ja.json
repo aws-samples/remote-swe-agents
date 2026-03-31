@@ -321,12 +321,14 @@
         "label": "システムプロンプト",
         "placeholder": "あなたは〜を専門とするアシスタントです...",
         "description": "エージェントの動作、専門性、応答スタイルを定義",
-        "useDefault": "デフォルトのシステムプロンプトを利用"
+        "useDefault": "デフォルトのシステムプロンプトを利用",
+        "includeDefaultKnowledge": "デフォルトのSWEナレッジを含める（コミュニケーションスタイル、Gitワークフロー、コーディング規約など）"
       },
       "tools": {
         "label": "ツール",
         "placeholder": "ツールが選択されていません",
-        "description": "利用可能なオプションからエージェントが使用できるツールを選択"
+        "description": "利用可能なオプションからエージェントが使用できるツールを選択",
+        "useAllTools": "全てのツールを使用する"
       },
       "mcpConfig": {
         "label": "MCP設定",
