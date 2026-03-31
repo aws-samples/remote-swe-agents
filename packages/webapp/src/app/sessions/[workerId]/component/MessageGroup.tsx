@@ -12,10 +12,12 @@ type MessageGroup = {
 
 type MessageGroupProps = {
   group: MessageGroup;
+  agentIconUrl?: string;
+  agentName?: string;
   onInterrupt?: () => void;
 };
 
-export const MessageGroupComponent = ({ group, onInterrupt }: MessageGroupProps) => {
+export const MessageGroupComponent = ({ group, agentIconUrl, agentName, onInterrupt }: MessageGroupProps) => {
   const locale = useLocale();
   const t = useTranslations('sessions');
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -43,20 +45,25 @@ export const MessageGroupComponent = ({ group, onInterrupt }: MessageGroupProps)
     <div className="mb-3">
       <div className="flex items-center gap-3 mb-2">
         <div className="flex-shrink-0">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
-            }`}
-          >
-            {group.role === 'assistant' ? (
-              <Bot className="w-4 h-4 text-white" />
-            ) : (
-              <User className="w-4 h-4 text-white" />
-            )}
-          </div>
+          {group.role === 'assistant' && agentIconUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={agentIconUrl} alt="Agent" className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                group.role === 'assistant' ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
+            >
+              {group.role === 'assistant' ? (
+                <Bot className="w-4 h-4 text-white" />
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
+            </div>
+          )}
         </div>
         <div className="font-semibold text-gray-900 dark:text-white">
-          {group.role === 'assistant' ? 'Assistant' : 'User'}
+          {group.role === 'assistant' ? agentName || 'Assistant' : 'User'}
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
           {firstMessageDate.toLocaleDateString(localeForDate)}{' '}

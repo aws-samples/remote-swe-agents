@@ -44,6 +44,8 @@ interface SessionPageClientProps {
   initialAgentStatus?: AgentStatus;
   initialTodoList: TodoListType | null;
   allSessions: SessionItem[];
+  agentIconUrl?: string;
+  agentName?: string;
 }
 
 export default function SessionPageClient({
@@ -55,6 +57,8 @@ export default function SessionPageClient({
   initialAgentStatus,
   initialTodoList,
   allSessions,
+  agentIconUrl,
+  agentName,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -441,6 +445,8 @@ export default function SessionPageClient({
             instanceStatus={instanceStatus}
             agentStatus={agentStatus}
             onInterrupt={handleInterrupt}
+            agentIconUrl={agentIconUrl}
+            agentName={agentName}
           />
 
           <MessageForm

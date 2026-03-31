@@ -6,12 +6,16 @@ export const globalPreferencesSchema = z.object({
   SK: z.literal('general'),
   modelOverride: modelTypeSchema.default('sonnet3.7'),
   enableLinkInPr: z.boolean().default(false),
+  defaultAgentName: z.string().default(''),
+  defaultAgentIconKey: z.string().default(''),
   updatedAt: z.number().default(0),
 });
 
 export const updateGlobalPreferenceSchema = z.object({
   modelOverride: modelTypeSchema.optional(),
   enableLinkInPr: z.boolean().optional(),
+  defaultAgentName: z.string().optional(),
+  defaultAgentIconKey: z.string().optional(),
 });
 
 export type GlobalPreferences = z.infer<typeof globalPreferencesSchema>;

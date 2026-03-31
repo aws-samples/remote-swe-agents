@@ -33,9 +33,18 @@ type MessageListProps = {
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   agentStatus?: 'pending' | 'working' | 'completed';
   onInterrupt: () => void;
+  agentIconUrl?: string;
+  agentName?: string;
 };
 
-export default function MessageList({ messages, instanceStatus, agentStatus, onInterrupt }: MessageListProps) {
+export default function MessageList({
+  messages,
+  instanceStatus,
+  agentStatus,
+  onInterrupt,
+  agentIconUrl,
+  agentName,
+}: MessageListProps) {
   const t = useTranslations('sessions');
   const { userScrolledUp } = useScrollPosition();
 
@@ -94,6 +103,8 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
             <MessageGroupComponent
               key={`group-${index}`}
               group={group}
+              agentIconUrl={agentIconUrl}
+              agentName={agentName}
               onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
             />
           ))}

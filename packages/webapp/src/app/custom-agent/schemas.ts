@@ -24,6 +24,7 @@ export const upsertCustomAgentSchema = z.object({
       }
     }, 'Invalid mcpConfig schema.'),
   runtimeType: z.union([z.literal('ec2'), z.literal('agent-core')]),
+  iconKey: z.string().optional().default(''),
   includeDefaultKnowledge: z.boolean().optional().default(true),
 });
 

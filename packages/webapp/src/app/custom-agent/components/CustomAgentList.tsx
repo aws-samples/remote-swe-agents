@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
 import { mcpConfigSchema } from '@remote-swe-agents/agent-core/schema';
 import CustomAgentForm from './CustomAgentForm';
+import AgentIconPreview from './AgentIconPreview';
 
 type CustomAgentListProps = {
   initialAgents: CustomAgent[];
@@ -46,6 +47,7 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3 flex-wrap">
+                  <AgentIconPreview iconKey={agent.iconKey} size={32} />
                   <h3 className="text-lg font-semibold">{agent.name}</h3>
                   <div className="flex gap-2 flex-wrap">
                     <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">

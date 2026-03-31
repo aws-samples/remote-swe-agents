@@ -244,7 +244,13 @@
       "saveButton": "Save Prompt",
       "saveSuccess": "Common prompt has been successfully saved",
       "saveError": "Failed to save common prompt"
-    }
+    },
+    "defaultAgentName": "Default Agent Name",
+    "defaultAgentNamePlaceholder": "e.g., My AI Assistant",
+    "defaultAgentNameDescription": "Custom name for the default agent. Used in the header, browser tab, and PWA app name.",
+    "defaultAgentIcon": "Default Agent Icon",
+    "defaultAgentIconDescription": "Custom icon for the default agent. Used as favicon, PWA app icon, and chat avatar.",
+    "save": "Save"
   },
   "api_settings": {
     "title": "API Keys",
@@ -361,7 +367,11 @@
       "saving": "Saving...",
       "delete": "Delete",
       "deleting": "Deleting...",
-      "confirmDelete": "Are you sure you want to delete this agent?"
+      "confirmDelete": "Are you sure you want to delete this agent?",
+      "icon": {
+        "label": "Agent Icon",
+        "description": "Upload a custom icon for this agent. Used as chat avatar."
+      }
     }
   }
 }

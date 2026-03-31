@@ -1,12 +1,16 @@
 import {
   getAttachedImageKey,
   getConversationHistory,
+  getCustomAgent,
   getPreferences,
   getSession,
   getSessions,
   getTodoList,
   noOpFiltering,
 } from '@remote-swe-agents/agent-core/lib';
+import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
@@ -184,6 +188,20 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const todoList = await getTodoList(workerId);
   const allSessions = await getSessions(100);
 
+  // Resolve agent icon URL
+  let agentIconUrl: string | undefined;
+  const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
+  const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
+  if (iconKey) {
+    try {
+      agentIconUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BucketName, Key: iconKey }), {
+        expiresIn: 3600,
+      });
+    } catch {
+      // Ignore errors, fall back to default icon
+    }
+  }
+
   return (
     <>
       <SessionPageClient
@@ -195,6 +213,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         initialAgentStatus={session.agentStatus}
         initialTodoList={todoList}
         allSessions={allSessions}
+        agentIconUrl={agentIconUrl}
+        agentName={customAgent?.name || preferences.defaultAgentName || undefined}
       />
       <RefreshOnFocus />
     </>
