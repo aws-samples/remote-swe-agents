@@ -107,7 +107,8 @@
     "toggleSidebar": "サイドバーの表示切替",
     "stopSession": "セッションを停止",
     "stopSessionSuccess": "セッションを停止しました",
-    "stopSessionError": "セッションの停止に失敗しました"
+    "stopSessionError": "セッションの停止に失敗しました",
+    "sortByLastMessageAt": "最終メッセージ順"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

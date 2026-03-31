@@ -107,7 +107,8 @@
     "toggleSidebar": "Toggle sidebar",
     "stopSession": "Stop Session",
     "stopSessionSuccess": "Session stopped",
-    "stopSessionError": "Failed to stop session"
+    "stopSessionError": "Failed to stop session",
+    "sortByLastMessageAt": "Last message date"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

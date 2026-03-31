@@ -42,9 +42,10 @@ import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { hideSessionAction, deleteSessionAction, updateAgentStatusFromListAction } from '../actions';
 import { extractUserMessage } from '@/lib/message-formatter';
+import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type SortKey = 'createdAt' | 'updatedAt' | 'sessionCost';
+type SortKey = 'createdAt' | 'updatedAt' | 'lastMessageAt' | 'sessionCost';
 type SortOrder = 'desc' | 'asc';
 
 interface SessionsListProps {
@@ -59,7 +60,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
   const [showHideButton, setShowHideButton] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
+  const [sortKey, setSortKey] = useState<SortKey>('lastMessageAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [hideCompleted, setHideCompleted] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -128,6 +129,22 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                     return {
                       ...session,
                       title: event.newTitle,
+                    };
+                  }
+                  return session;
+                })
+              );
+            }
+          }
+          if (event.type == 'lastMessageUpdate') {
+            if (sessions.some((s) => s.workerId == event.workerId)) {
+              setSessions((prevSessions) =>
+                prevSessions.map((session) => {
+                  if (session.workerId === event.workerId) {
+                    return {
+                      ...session,
+                      lastMessage: event.lastMessage,
+                      lastMessageAt: event.lastMessageAt ?? event.timestamp,
                     };
                   }
                   return session;
@@ -217,9 +234,16 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
       filtered = filtered.filter((s) => s.agentStatus !== 'completed');
     }
     return [...filtered].sort((a, b) => {
-      const aVal = a[sortKey] ?? 0;
-      const bVal = b[sortKey] ?? 0;
-      return sortOrder === 'desc' ? Number(bVal) - Number(aVal) : Number(aVal) - Number(bVal);
+      let aVal: number;
+      let bVal: number;
+      if (sortKey === 'lastMessageAt') {
+        aVal = a.lastMessageAt ?? a.updatedAt ?? 0;
+        bVal = b.lastMessageAt ?? b.updatedAt ?? 0;
+      } else {
+        aVal = Number(a[sortKey] ?? 0);
+        bVal = Number(b[sortKey] ?? 0);
+      }
+      return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
     });
   }, [sessions, sortKey, sortOrder, hideCompleted]);
 
@@ -243,6 +267,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
             value={sortKey}
             onChange={(e) => handleSortKeyChange(e.target.value as SortKey)}
           >
+            <option value="lastMessageAt">{t('sortByLastMessageAt')}</option>
             <option value="updatedAt">{t('sortByUpdatedAt')}</option>
             <option value="createdAt">{t('sortByCreatedAt')}</option>
             <option value="sessionCost">{t('sortByCost')}</option>
@@ -293,7 +318,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                   </div>
 
                   <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                    {extractUserMessage(session.initialMessage)}
+                    {session.lastMessage || extractUserMessage(session.initialMessage)}
                   </p>
 
                   <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
@@ -316,11 +341,7 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                         <Clock className="w-3 h-3" />
                       </div>
                       <span className="truncate ml-1">
-                        {new Date(session.updatedAt).toLocaleDateString(localeForDate)}{' '}
-                        {new Date(session.updatedAt).toLocaleTimeString(localeForDate, {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatDateTime(new Date(session.updatedAt), localeForDate)}
                       </span>
                     </div>
                   </div>

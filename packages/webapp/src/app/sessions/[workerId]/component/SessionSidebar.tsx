@@ -107,6 +107,24 @@ export default function SessionSidebar({
               });
             });
           }
+          if (event.type === 'lastMessageUpdate') {
+            setSessions((prev) => {
+              if (!prev.some((s) => s.workerId === event.workerId)) {
+                router.refresh();
+                return prev;
+              }
+              return prev.map((session) => {
+                if (session.workerId === event.workerId) {
+                  return {
+                    ...session,
+                    lastMessage: event.lastMessage,
+                    lastMessageAt: event.lastMessageAt ?? event.timestamp,
+                  };
+                }
+                return session;
+              });
+            });
+          }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
