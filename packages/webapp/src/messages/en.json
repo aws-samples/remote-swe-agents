@@ -108,7 +108,15 @@
     "stopSession": "Stop Session",
     "stopSessionSuccess": "Session stopped",
     "stopSessionError": "Failed to stop session",
-    "sortByLastMessageAt": "Last message date"
+    "sortByLastMessageAt": "Last message date",
+    "selectMode": "Select",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "deleteSelected": "Delete {count} selected",
+    "batchDeleteTitle": "Delete Selected Sessions",
+    "batchDeleteConfirm": "Are you sure you want to delete {count} sessions? This action cannot be undone.",
+    "batchDeleteSuccess": "{count} sessions deleted successfully",
+    "batchDeleteError": "Failed to delete sessions"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
