@@ -243,7 +243,13 @@
       "saveButton": "プロンプトを保存",
       "saveSuccess": "共通プロンプトが正常に保存されました",
       "saveError": "共通プロンプトの保存に失敗しました"
-    }
+    },
+    "defaultAgentName": "デフォルトエージェント名",
+    "defaultAgentNamePlaceholder": "例: My AI Assistant",
+    "defaultAgentNameDescription": "デフォルトエージェントのカスタム名。ヘッダー、ブラウザタブ、PWAアプリ名に使用されます。",
+    "defaultAgentIcon": "デフォルトエージェントアイコン",
+    "defaultAgentIconDescription": "デフォルトエージェントのカスタムアイコン。ファビコン、PWAアプリアイコン、チャットアバターとして使用されます。",
+    "save": "保存"
   },
   "api_settings": {
     "title": "APIキー",
@@ -360,7 +366,11 @@
       "saving": "保存中...",
       "delete": "削除",
       "deleting": "削除中...",
-      "confirmDelete": "このエージェントを削除してもよろしいですか？"
+      "confirmDelete": "このエージェントを削除してもよろしいですか？",
+      "icon": {
+        "label": "エージェントアイコン",
+        "description": "カスタムアイコンをアップロードします。チャットアバターとして使用されます。"
+      }
     }
   }
 }

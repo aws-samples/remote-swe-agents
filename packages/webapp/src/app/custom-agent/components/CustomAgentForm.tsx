@@ -26,6 +26,7 @@ import { upsertCustomAgentSchema } from '../schemas';
 import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 import { useRouter } from 'next/navigation';
+import AgentIconUploader from '@/components/AgentIconUploader';
 
 type CustomAgentFormProps = {
   availableTools: { name: string; description: string }[];
@@ -77,6 +78,7 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
         useAllTools: editingAgent?.useAllTools ?? false,
         mcpConfig: editingAgent?.mcpConfig ?? JSON.stringify(EmptyMcpConfig, undefined, 2),
         runtimeType: editingAgent?.runtimeType ?? 'agent-core',
+        iconKey: editingAgent?.iconKey ?? '',
         includeDefaultKnowledge: editingAgent?.includeDefaultKnowledge !== false,
       },
     },
@@ -157,6 +159,19 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.name.message}</p>
           )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.name.description')}</p>
+        </div>
+
+        {/* Agent Icon */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('form.icon.label')}
+          </label>
+          <AgentIconUploader
+            currentIconKey={editingAgent?.iconKey}
+            onIconKeyChange={(key) => setValue('iconKey', key)}
+            disabled={isPending}
+          />
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('form.icon.description')}</p>
         </div>
 
         {/* Agent Description */}

@@ -1,6 +1,7 @@
 import {
   getAttachedImageKey,
   getConversationHistory,
+  getCustomAgent,
   getPreferences,
   getSession,
   getSessions,
@@ -184,6 +185,11 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const todoList = await getTodoList(workerId);
   const allSessions = await getSessions(100);
 
+  // Resolve agent icon URL
+  const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
+  const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
+  const agentIconUrl = iconKey ? '/api/agent-icon?size=48' : undefined;
+
   return (
     <>
       <SessionPageClient
@@ -195,6 +201,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         initialAgentStatus={session.agentStatus}
         initialTodoList={todoList}
         allSessions={allSessions}
+        agentIconUrl={agentIconUrl}
+        agentName={customAgent?.name || preferences.defaultAgentName || undefined}
       />
       <RefreshOnFocus />
     </>
