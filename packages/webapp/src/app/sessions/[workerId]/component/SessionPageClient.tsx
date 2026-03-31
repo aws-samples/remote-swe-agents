@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import Header from '@/components/Header';import { ArrowLeft, ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
+import Header from '@/components/Header';
+import { ArrowLeft, ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
@@ -267,9 +268,7 @@ export default function SessionPageClient({
 
   const onConfirmMessage = useCallback((pendingId: string, confirmedId: string) => {
     setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === pendingId ? { ...msg, id: confirmedId, pending: false } : msg
-      )
+      prev.map((msg) => (msg.id === pendingId ? { ...msg, id: confirmedId, pending: false } : msg))
     );
   }, []);
 

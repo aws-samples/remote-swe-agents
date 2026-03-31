@@ -23,7 +23,14 @@ type MessageFormProps = {
   defaultModelOverride: ModelType;
 };
 
-export default function MessageForm({ onSubmit, onConfirm, onRollback, workerId, onShareSession, defaultModelOverride }: MessageFormProps) {
+export default function MessageForm({
+  onSubmit,
+  onConfirm,
+  onRollback,
+  workerId,
+  onShareSession,
+  defaultModelOverride,
+}: MessageFormProps) {
   const t = useTranslations('sessions');
   const draftStorageKey = `draft-message-${workerId}`;
 
