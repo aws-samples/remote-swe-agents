@@ -13,6 +13,17 @@ export const EventTriggerRenderer = ({ name, content }: EventTriggerRendererProp
 
   const displayName = name || content.split('\n')[0];
 
+  // Try to parse event details from the content
+  let eventDetails: string | undefined;
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === 'object') {
+      eventDetails = JSON.stringify(parsed, null, 2);
+    }
+  } catch {
+    // Not JSON, use raw content
+  }
+
   return (
     <div className="rounded-md min-w-0">
       <div className="flex items-start gap-2 min-w-0">
@@ -31,7 +42,7 @@ export const EventTriggerRenderer = ({ name, content }: EventTriggerRendererProp
             <Bell className="w-4 h-4" />
           </span>
           <span className="min-w-0 truncate block">
-            <span>{t('eventTriggerFired') || 'Event Trigger'}: </span>
+            <span>{t('eventTriggerFired')}: </span>
             {displayName}
           </span>
         </button>
@@ -40,7 +51,9 @@ export const EventTriggerRenderer = ({ name, content }: EventTriggerRendererProp
       {isExpanded && (
         <div className="mt-2 ml-6 space-y-2">
           <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
-            <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">{content}</pre>
+            <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">
+              {eventDetails || content}
+            </pre>
           </div>
         </div>
       )}
