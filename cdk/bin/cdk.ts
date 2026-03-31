@@ -51,32 +51,28 @@ const props: MainStackProps = {
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
   cloudFrontWebAclArn: virginia.webAclArn,
-  ...(process.env.SLACK_BOT_TOKEN_PARAMETER_NAME
-    ? {
-        slack: {
-          botTokenParameterName: process.env.SLACK_BOT_TOKEN_PARAMETER_NAME,
-          signingSecretParameterName: process.env.SLACK_SIGNING_SECRET_PARAMETER_NAME!,
-          adminUserIdList: process.env.SLACK_ADMIN_USER_ID_LIST,
-        },
-      }
-    : {}),
-  ...(process.env.GITHUB_APP_ID || process.env.GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME
-    ? {
-        github: {
-          ...(process.env.GITHUB_APP_ID
-            ? {
-                privateKeyParameterName:
-                  process.env.GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME ?? '/remote-swe/github/app-private-key',
-                appId: process.env.GITHUB_APP_ID!,
-                installationId: process.env.GITHUB_INSTALLATION_ID!,
-              }
-            : {
-                personalAccessTokenParameterName:
-                  process.env.GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME ?? '/remote-swe/github/personal-access-token',
-              }),
-        },
-      }
-    : {}),
+
+  // === Slack Integration (optional) ===
+  // Uncomment and configure to enable Slack bot integration.
+  // You need to create SSM parameters first. See README for details.
+  // slack: {
+  //   botTokenParameterName: '/remote-swe/slack/bot-token',
+  //   signingSecretParameterName: '/remote-swe/slack/signing-secret',
+  // },
+
+  // === GitHub Integration (optional) ===
+  // Uncomment ONE of the following blocks to enable GitHub integration.
+  // Option A: GitHub App
+  // github: {
+  //   privateKeyParameterName: '/remote-swe/github/app-private-key',
+  //   appId: process.env.GITHUB_APP_ID!,
+  //   installationId: process.env.GITHUB_INSTALLATION_ID!,
+  // },
+  // Option B: Personal Access Token
+  // github: {
+  //   personalAccessTokenParameterName: '/remote-swe/github/personal-access-token',
+  // },
+
   ...(process.env.AWS_ACCOUNT_ID_LIST_FOR_LB
     ? {
         loadBalancing: {
