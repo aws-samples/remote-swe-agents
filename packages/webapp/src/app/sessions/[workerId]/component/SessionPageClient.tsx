@@ -266,6 +266,16 @@ export default function SessionPageClient({
     setMessages((prev) => [...prev, message]);
   };
 
+  const onConfirmMessage = useCallback((pendingId: string, confirmedId: string) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === pendingId ? { ...msg, id: confirmedId, pending: false } : msg))
+    );
+  }, []);
+
+  const onRollbackMessage = useCallback((pendingId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== pendingId));
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -435,6 +445,8 @@ export default function SessionPageClient({
 
           <MessageForm
             onSubmit={onSendMessage}
+            onConfirm={onConfirmMessage}
+            onRollback={onRollbackMessage}
             workerId={workerId}
             onShareSession={() => setShowShareModal(true)}
             defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
