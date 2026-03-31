@@ -24,21 +24,12 @@ import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
 import {
-  addIssueCommentTool,
-  ciTool,
-  cloneRepositoryTool,
-  createPRTool,
-  commandExecutionTool,
-  fileEditTool,
-  getPRCommentsTool,
+  allTools,
   isGitHubConfigured,
-  readImageTool,
-  replyPRCommentTool,
+  requiredToolNames,
+  gitHubTools,
   reportProgressTool,
-  sendImageTool,
-  todoInitTool,
-  todoUpdateTool,
-  updateSessionTitleTool,
+  cloneRepositoryTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -129,36 +120,12 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
   const maxInputTokens = modelConfigs[modelType]?.maxInputTokens ?? 200_000;
   const tokenThreshold = Math.floor(maxInputTokens * 0.95);
 
-  const gitHubTools = [
-    ciTool,
-    cloneRepositoryTool,
-    createPRTool,
-    getPRCommentsTool,
-    replyPRCommentTool,
-    addIssueCommentTool,
-  ];
+  const gitHubToolNames = gitHubTools.map((t) => t.name);
 
-  const tools = [
-    ...(isGitHubConfigured() ? gitHubTools : []),
-    commandExecutionTool,
-    reportProgressTool,
-    fileEditTool,
-    sendImageTool,
-    readImageTool,
-    todoInitTool,
-    todoUpdateTool,
-    updateSessionTitleTool,
-  ].filter(
+  const tools = allTools.filter(
     (tool) =>
-      customAgent.tools.includes(tool.name) ||
-      [
-        // required tools
-        reportProgressTool.name,
-        todoInitTool.name,
-        todoUpdateTool.name,
-        sendImageTool.name,
-        updateSessionTitleTool.name,
-      ].includes(tool.name)
+      (isGitHubConfigured() || !gitHubToolNames.includes(tool.name)) &&
+      (customAgent.tools.includes(tool.name) || requiredToolNames.includes(tool.name))
   );
   let toolConfig: ConverseCommandInput['toolConfig'] = {
     tools: [
@@ -177,7 +144,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
   let firstCachePoint = initialItems.length > 2 ? initialItems.length - 3 : initialItems.length - 1;
   let secondCachePoint = 0;
   const appendedItems: typeof allItems = [];
-  let conversation = `User: ${initialMessages.findLast((msg) => msg.role == 'user')?.content?.[0]?.text ?? ''}\n`;
 
   // When we get max_tokens stopReason, we double the number of max output tokens for this turn.
   // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
@@ -367,10 +333,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
 
           if (name == reportProgressTool.name) {
             lastReportedTime = Date.now();
-            const { data: input, success } = reportProgressTool.schema.safeParse(toolInput);
-            if (success) {
-              conversation += `Assistant: ${input.message}\n`;
-            }
           }
           if (name == cloneRepositoryTool.name) {
             // now that repository is determined, we try to update the system prompt
@@ -427,7 +389,6 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
-      conversation += `Assistant: ${responseTextWithoutThinking}\n`;
       break;
     }
   }
