@@ -5,7 +5,6 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import * as fs from 'fs';
 import * as path from 'path';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { WorkerBus } from '../bus';
@@ -129,7 +128,7 @@ export class EventTrigger extends Construct {
 
     const handlerAslPath = path.join(__dirname, 'event-trigger-handler.asl.json');
     this.handlerStateMachine = new sfn.StateMachine(this, 'HandlerStateMachine', {
-      definitionBody: sfn.DefinitionBody.fromString(fs.readFileSync(handlerAslPath, 'utf8')),
+      definitionBody: sfn.DefinitionBody.fromFile(handlerAslPath),
       definitionSubstitutions: {
         tableName: props.storageTable.tableName,
         eventHttpEndpoint,
@@ -141,7 +140,7 @@ export class EventTrigger extends Construct {
 
     const ttlAslPath = path.join(__dirname, 'event-trigger-ttl.asl.json');
     this.ttlStateMachine = new sfn.StateMachine(this, 'TtlStateMachine', {
-      definitionBody: sfn.DefinitionBody.fromString(fs.readFileSync(ttlAslPath, 'utf8')),
+      definitionBody: sfn.DefinitionBody.fromFile(ttlAslPath),
       definitionSubstitutions: {
         tableName: props.storageTable.tableName,
         eventHttpEndpoint,
