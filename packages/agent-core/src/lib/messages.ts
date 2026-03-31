@@ -1,7 +1,7 @@
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-import { PutCommand, UpdateCommand, paginateQuery, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import sharp from 'sharp';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { ddb, TableName } from './aws/ddb';
@@ -14,10 +14,11 @@ import { MessageItem } from '../schema';
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;
 
-export const saveConversationHistoryAtomic = async (
+const PID_DIR = path.join(tmpdir(), '.remote-swe-pids');
+
+export const saveToolUseMessage = async (
   workerId: string,
   toolUseMessage: Message,
-  toolResultMessage: Message,
   outputTokenCount: number,
   thinkingBudget?: number
 ) => {
@@ -32,21 +33,120 @@ export const saveConversationHistoryAtomic = async (
     thinkingBudget,
   };
 
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: toolUseItem,
+    })
+  );
+  return toolUseItem;
+};
+
+export const saveToolResultMessage = async (workerId: string, toolResultMessage: Message, toolUseSK: string) => {
+  const toolUseSKNum = Number(toolUseSK);
   const toolResultItem: MessageItem = {
     PK: `message-${workerId}`,
-    SK: `${String(now + 1).padStart(15, '0')}`, // just add 1 to minimize the possibility of SK conflict
+    SK: `${String(toolUseSKNum + 1).padStart(15, '0')}`,
     content: await preProcessMessageContent(toolResultMessage.content, workerId),
     role: toolResultMessage.role ?? 'unknown',
-    tokenCount: 0, // Will be updated later when we get token information
+    tokenCount: 0,
     messageType: 'toolResult',
   };
 
   await ddb.send(
-    new TransactWriteCommand({
-      TransactItems: [{ Put: { TableName, Item: toolUseItem } }, { Put: { TableName, Item: toolResultItem } }],
+    new PutCommand({
+      TableName,
+      Item: toolResultItem,
     })
   );
-  return [toolUseItem, toolResultItem];
+  return toolResultItem;
+};
+
+interface DanglingToolUse {
+  item: MessageItem;
+  toolUses: { toolUseId: string; name?: string }[];
+}
+
+const findDanglingToolUses = (items: MessageItem[]): DanglingToolUse[] => {
+  const dangling: DanglingToolUse[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.messageType === 'toolUse') {
+      const next = items[i + 1];
+      if (!next || next.messageType !== 'toolResult') {
+        const content = JSON.parse(item.content);
+        const toolUses: { toolUseId: string; name?: string }[] = content
+          .filter((c: any) => c.toolUse?.toolUseId)
+          .map((c: any) => ({ toolUseId: c.toolUse.toolUseId, name: c.toolUse.name }));
+        dangling.push({ item, toolUses });
+      }
+    }
+  }
+  return dangling;
+};
+
+const buildRepairMessage = (toolUseId: string, name?: string): string => {
+  let message = 'This tool execution was interrupted and no result is available.';
+
+  if (name === 'executeCommand') {
+    try {
+      const pidFilePath = path.join(PID_DIR, toolUseId);
+      if (existsSync(pidFilePath)) {
+        const pidData = JSON.parse(readFileSync(pidFilePath, 'utf-8'));
+        message = `This tool execution was interrupted and no result is available. The process may still be running (PID: ${pidData.pid}, command: ${pidData.command}). You can check with \`ps -p ${pidData.pid}\`.`;
+        try {
+          unlinkSync(pidFilePath);
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    } catch {
+      // ignore read errors
+    }
+  }
+
+  return message;
+};
+
+const createDummyToolResult = async (
+  workerId: string,
+  toolUseItem: MessageItem,
+  toolUses: { toolUseId: string; name?: string }[]
+): Promise<MessageItem> => {
+  const toolResultContent = toolUses.map(({ toolUseId, name }) => ({
+    toolResult: {
+      toolUseId,
+      content: [{ text: buildRepairMessage(toolUseId, name) }],
+    },
+  }));
+
+  const toolResultItem: MessageItem = {
+    PK: `message-${workerId}`,
+    SK: `${String(Number(toolUseItem.SK) + 1).padStart(15, '0')}`,
+    content: JSON.stringify(toolResultContent),
+    role: 'user',
+    tokenCount: 0,
+    messageType: 'toolResult',
+  };
+
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: toolResultItem,
+    })
+  );
+  console.log(`Repaired dangling toolUse at SK=${toolUseItem.SK} with dummy toolResult at SK=${toolResultItem.SK}`);
+  return toolResultItem;
+};
+
+export const repairDanglingToolUse = async (workerId: string, items: MessageItem[]): Promise<MessageItem[]> => {
+  const danglingItems = findDanglingToolUses(items);
+  const repaired: MessageItem[] = [];
+  for (const { item, toolUses } of danglingItems) {
+    const toolResultItem = await createDummyToolResult(workerId, item, toolUses);
+    repaired.push(toolResultItem);
+  }
+  return repaired;
 };
 
 export const saveConversationHistory = async (
