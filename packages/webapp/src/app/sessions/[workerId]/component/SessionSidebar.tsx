@@ -70,64 +70,67 @@ export default function SessionSidebar({
 
   useEventBus({
     channelName: 'webapp/worker/*',
-    onReceived: useCallback((payload: unknown) => {
-      try {
-        const event = webappEventSchema.parse(payload);
-        if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
-          setSessions((prev) => {
-            if (!prev.some((s) => s.workerId === event.workerId)) {
-              router.refresh();
-              return prev;
-            }
-            return prev.map((session) => {
-              if (session.workerId === event.workerId) {
-                return {
-                  ...session,
-                  agentStatus: event.type === 'agentStatusUpdate' ? event.status : session.agentStatus,
-                  instanceStatus: event.type === 'instanceStatusChanged' ? event.status : session.instanceStatus,
-                  updatedAt: Date.now(),
-                };
+    onReceived: useCallback(
+      (payload: unknown) => {
+        try {
+          const event = webappEventSchema.parse(payload);
+          if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
+            setSessions((prev) => {
+              if (!prev.some((s) => s.workerId === event.workerId)) {
+                router.refresh();
+                return prev;
               }
-              return session;
+              return prev.map((session) => {
+                if (session.workerId === event.workerId) {
+                  return {
+                    ...session,
+                    agentStatus: event.type === 'agentStatusUpdate' ? event.status : session.agentStatus,
+                    instanceStatus: event.type === 'instanceStatusChanged' ? event.status : session.instanceStatus,
+                    updatedAt: Date.now(),
+                  };
+                }
+                return session;
+              });
             });
-          });
-        }
-        if (event.type === 'sessionTitleUpdate') {
-          setSessions((prev) => {
-            if (!prev.some((s) => s.workerId === event.workerId)) {
-              router.refresh();
-              return prev;
-            }
-            return prev.map((session) => {
-              if (session.workerId === event.workerId) {
-                return { ...session, title: event.newTitle };
+          }
+          if (event.type === 'sessionTitleUpdate') {
+            setSessions((prev) => {
+              if (!prev.some((s) => s.workerId === event.workerId)) {
+                router.refresh();
+                return prev;
               }
-              return session;
+              return prev.map((session) => {
+                if (session.workerId === event.workerId) {
+                  return { ...session, title: event.newTitle };
+                }
+                return session;
+              });
             });
-          });
-        }
-        if (event.type === 'lastMessageUpdate') {
-          setSessions((prev) => {
-            if (!prev.some((s) => s.workerId === event.workerId)) {
-              router.refresh();
-              return prev;
-            }
-            return prev.map((session) => {
-              if (session.workerId === event.workerId) {
-                return {
-                  ...session,
-                  lastMessage: event.lastMessage,
-                  lastMessageAt: event.lastMessageAt ?? event.timestamp,
-                };
+          }
+          if (event.type === 'lastMessageUpdate') {
+            setSessions((prev) => {
+              if (!prev.some((s) => s.workerId === event.workerId)) {
+                router.refresh();
+                return prev;
               }
-              return session;
+              return prev.map((session) => {
+                if (session.workerId === event.workerId) {
+                  return {
+                    ...session,
+                    lastMessage: event.lastMessage,
+                    lastMessageAt: event.lastMessageAt ?? event.timestamp,
+                  };
+                }
+                return session;
+              });
             });
-          });
+          }
+        } catch (error) {
+          console.error('Failed to parse webapp event:', error);
         }
-      } catch (error) {
-        console.error('Failed to parse webapp event:', error);
-      }
-    }, [router]),
+      },
+      [router]
+    ),
   });
 
   const sortedSessions = useMemo(() => {
