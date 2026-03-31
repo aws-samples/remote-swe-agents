@@ -1,4 +1,4 @@
-import { CfnOutput, CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { ArnFormat, CfnOutput, CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { IVpc, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ImagePipeline, ImagePipelineProps } from 'cdk-image-pipeline';
@@ -11,11 +11,13 @@ import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 
 export interface WorkerImageBuilderProps {
   vpc: IVpc;
   installDependenciesCommand: string;
   amiIdParameterName: string;
+  amiIdParameter: IStringParameter;
   sourceBucket: IBucket;
   sourceAssetHash: string;
 }
@@ -107,6 +109,9 @@ export class WorkerImageBuilder extends Construct {
       additionalPolicies: [additionalInstancePolicy],
     });
 
+    // Ensure the SSM parameter exists before the Image Builder pipeline resources
+    pipeline.node.addDependency(props.amiIdParameter);
+
     // avoid duplicated SSM state association
     const cfnPipeline = pipeline.node.findChild('ImagePipeline') as CfnResource;
     cfnPipeline.addPropertyOverride('EnhancedImageMetadataEnabled', false);
@@ -133,25 +138,29 @@ export class WorkerImageBuilder extends Construct {
     new AwsCustomResource(this, 'PurgeAmiCache', {
       onUpdate: {
         service: '@aws-sdk/client-ssm',
-        action: 'DeleteParameter',
+        action: 'PutParameter',
         parameters: {
           Name: props.amiIdParameterName,
+          Value: 'pending-initial-build',
+          Type: 'String',
+          Overwrite: true,
         },
-        ignoreErrorCodesMatching: 'ParameterNotFound',
         physicalResourceId: PhysicalResourceId.of(`${amiVersion}`),
       },
       policy: AwsCustomResourcePolicy.fromSdkCalls({
         resources: [
-          StringParameter.fromStringParameterAttributes(this, 'AmiIdParameter', {
-            parameterName: props.amiIdParameterName,
-            forceDynamicReference: true,
-          }).parameterArn,
+          Stack.of(this).formatArn({
+            service: 'ssm',
+            resource: 'parameter',
+            resourceName: props.amiIdParameterName.replace(/^\//, ''),
+            arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+          }),
         ],
       }),
     });
 
     new CfnOutput(this, 'RemoveCachedAmiCommand', {
-      value: `aws ssm delete-parameter --name ${props.amiIdParameterName} --region ${Stack.of(this).region}`,
+      value: `aws ssm put-parameter --name ${props.amiIdParameterName} --value pending-initial-build --type String --overwrite --region ${Stack.of(this).region}`,
     });
   }
 }

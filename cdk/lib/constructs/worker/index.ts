@@ -33,6 +33,7 @@ export interface WorkerProps {
   };
   accessLogBucket: IBucket;
   amiIdParameterName: string;
+  amiIdParameter: IStringParameter;
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
   bedrockCriRegionOverride?: string;
@@ -479,6 +480,7 @@ systemctl start myapp
       vpc,
       installDependenciesCommand,
       amiIdParameterName: props.amiIdParameterName,
+      amiIdParameter: props.amiIdParameter,
       sourceBucket,
       sourceAssetHash,
     });

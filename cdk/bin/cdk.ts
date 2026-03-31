@@ -51,7 +51,6 @@ const props: MainStackProps = {
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
   cloudFrontWebAclArn: virginia.webAclArn,
-  workerAmiIdParameterName: '/remote-swe/worker/ami-id',
   slack: {
     botTokenParameterName: '/remote-swe/slack/bot-token',
     signingSecretParameterName: '/remote-swe/slack/signing-secret',

@@ -41,7 +41,6 @@ export interface MainStackProps extends cdk.StackProps {
     awsAccounts: string[];
     roleName: string;
   };
-  readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
 
   /**
@@ -71,9 +70,8 @@ export class MainStack extends cdk.Stack {
       forceDynamicReference: true,
     });
 
-    const workerAmiIdParameter = StringParameter.fromStringParameterAttributes(this, 'WorkerAmiId', {
-      parameterName: props.workerAmiIdParameterName,
-      forceDynamicReference: true,
+    const workerAmiIdParameter = new StringParameter(this, 'WorkerAmiId', {
+      stringValue: 'pending-initial-build',
     });
 
     const hostedZone = props.domainName
@@ -138,6 +136,7 @@ export class MainStack extends cdk.Stack {
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
+      amiIdParameter: workerAmiIdParameter,
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
@@ -188,6 +187,7 @@ export class MainStack extends cdk.Stack {
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {
       expirationInDays: 1,
       imageRecipeName: worker.imageBuilder.imageRecipeName,
+      workerAmiIdParameter: workerAmiIdParameter,
     });
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {
