@@ -15,7 +15,7 @@ export type MessageView = {
   detail?: string;
   output?: string;
   timestamp: Date;
-  type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger';
+  type: 'message' | 'toolResult' | 'toolUse';
   imageKeys?: string[];
   thinkingBudget?: number;
   reasoningText?: string;
