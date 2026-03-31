@@ -121,7 +121,7 @@
   }
 }
 
-@keyframes gaming-led {
+@keyframes shimmer-text {
   0% {
     background-position: 200% center;
   }
@@ -130,7 +130,7 @@
   }
 }
 
-.animate-gaming-led {
+.animate-shimmer-text {
   background-image: linear-gradient(
     90deg,
     #9ca3af,
@@ -141,10 +141,10 @@
     #d1d5db,
     #9ca3af
   );
-  animation: gaming-led 3s linear infinite;
+  animation: shimmer-text 3s linear infinite;
 }
 
-.dark .animate-gaming-led {
+.dark .animate-shimmer-text {
   background-image: linear-gradient(
     90deg,
     #6b7280,

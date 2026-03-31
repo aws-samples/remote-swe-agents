@@ -49,7 +49,7 @@ export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt
             <span className="break-words">{toolName}</span>
             {isExecuting && (
               <span className="inline-flex items-baseline gap-1 ml-2">
-                <span className="text-xs animate-gaming-led bg-clip-text text-transparent bg-[length:200%_auto]">{t('executing')}</span>
+                <span className="text-xs animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">{t('executing')}</span>
               </span>
             )}
           </span>

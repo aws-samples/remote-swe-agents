@@ -106,7 +106,7 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
                 <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#3B82F6' }}>
                   <Bot className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-sm animate-gaming-led bg-clip-text text-transparent bg-[length:200%_auto]">
+                <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">
                   {instanceStatus === 'starting' ? t('agentStartingMessage') : t('aiAgentResponding')}
                 </span>
               </div>
