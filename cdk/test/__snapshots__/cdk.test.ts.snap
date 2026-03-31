@@ -65,7 +65,18 @@ exports[`Snapshot test: MainStack 1`] = `
       },
     },
     "WorkerImageBuilderRemoveCachedAmiCommand8BE1DBE6": {
-      "Value": "aws ssm delete-parameter --name /remote-swe/worker/ami-id --region us-east-1",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "aws ssm put-parameter --name ",
+            {
+              "Ref": "WorkerAmiId428C377C",
+            },
+            " --value pending-initial-build --type String --overwrite --region us-east-1",
+          ],
+        ],
+      },
     },
   },
   "Parameters": {
@@ -1601,15 +1612,36 @@ Remote SWE Agents Team",
       ]
     },
     "GetCurrentAmiId": {
-      "Next": "DescribeAMIs",
+      "Next": "CheckAmiIdReady",
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
       "Arguments": {
-        "Name": "/remote-swe/worker/ami-id"
+        "Name": "\${workerAmiIdParameterName}"
       },
       "Assign": {
         "workerAmiId": "{% $states.result.Parameter.Value %}"
-      }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "SkipAmiCleanup"
+        }
+      ]
+    },
+    "CheckAmiIdReady": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $contains($workerAmiId, 'ami-') %}",
+          "Next": "DescribeAMIs"
+        }
+      ],
+      "Default": "SkipAmiCleanup"
+    },
+    "SkipAmiCleanup": {
+      "Type": "Succeed"
     },
     "DescribeAMIs": {
       "Next": "ProcessAMIs",
@@ -1761,6 +1793,9 @@ Remote SWE Agents Team",
               ],
             ],
           },
+          "workerAmiIdParameterName": {
+            "Ref": "WorkerAmiId428C377C",
+          },
         },
         "RoleArn": {
           "Fn::GetAtt": [
@@ -1846,9 +1881,24 @@ Remote SWE Agents Team",
               "Resource": "*",
             },
             {
-              "Action": "ssm:GetParameter",
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+              ],
               "Effect": "Allow",
-              "Resource": "arn:aws:ssm:*:*:parameter/remote-swe/worker/ami-id",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    {
+                      "Ref": "WorkerAmiId428C377C",
+                    },
+                  ],
+                ],
+              },
             },
           ],
           "Version": "2012-10-17",
@@ -2373,7 +2423,9 @@ exports.handler = async function (event, context) {
             "TABLE_NAME": {
               "Ref": "StorageHistory251A3AE8",
             },
-            "WORKER_AMI_PARAMETER_NAME": "/remote-swe/worker/ami-id",
+            "WORKER_AMI_PARAMETER_NAME": {
+              "Ref": "WorkerAmiId428C377C",
+            },
             "WORKER_LAUNCH_TEMPLATE_ID": {
               "Ref": "WorkerLaunchTemplateCB68F8E3",
             },
@@ -2438,7 +2490,17 @@ exports.handler = async function (event, context) {
                 "ssm:GetParameters",
               ],
               "Effect": "Allow",
-              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    {
+                      "Ref": "WorkerAmiId428C377C",
+                    },
+                  ],
+                ],
+              },
             },
             {
               "Action": [
@@ -3837,7 +3899,9 @@ exports.handler = async function (event, context) {
             "USER_POOL_ID": {
               "Ref": "AuthUserPool8115E87F",
             },
-            "WORKER_AMI_PARAMETER_NAME": "/remote-swe/worker/ami-id",
+            "WORKER_AMI_PARAMETER_NAME": {
+              "Ref": "WorkerAmiId428C377C",
+            },
             "WORKER_LAUNCH_TEMPLATE_ID": {
               "Ref": "WorkerLaunchTemplateCB68F8E3",
             },
@@ -3926,7 +3990,6 @@ exports.handler = async function (event, context) {
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
                 {
                   "Fn::Join": [
                     "",
@@ -3934,6 +3997,17 @@ exports.handler = async function (event, context) {
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
                         "Ref": "WebappOriginNameParameterBBAD7F85",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "WorkerAmiId428C377C",
                       },
                     ],
                   ],
@@ -4716,6 +4790,13 @@ exports.handler = async function (event, context) {
       "Type": "AWS::ECR::Repository",
       "UpdateReplacePolicy": "Delete",
     },
+    "WorkerAmiId428C377C": {
+      "Properties": {
+        "Type": "String",
+        "Value": "pending-initial-build",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
     "WorkerBusApi8460ABC0": {
       "Properties": {
         "EventConfig": {
@@ -4816,12 +4897,18 @@ exports.handler = async function (event, context) {
       "Type": "AWS::IAM::ManagedPolicy",
     },
     "WorkerImageBuilderImagePipelineV2ImageBuilderTopic1FBB0EDA": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "DisplayName": "Image Builder Notify",
       },
       "Type": "AWS::SNS::Topic",
     },
     "WorkerImageBuilderImagePipelineV2ImagePipelineF6B46161": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "Description": "A sample image pipeline",
         "EnhancedImageMetadataEnabled": false,
@@ -4842,6 +4929,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::ImageBuilder::ImagePipeline",
     },
     "WorkerImageBuilderImagePipelineV2ImageRecipe351515D4": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "BlockDeviceMappings": [
           {
@@ -4877,6 +4967,7 @@ exports.handler = async function (event, context) {
     "WorkerImageBuilderImagePipelineV2InfrastructureConfigurationDA9D33AE": {
       "DependsOn": [
         "WorkerImageBuilderImagePipelineV2InstanceProfileA6F88A4C",
+        "WorkerAmiId428C377C",
       ],
       "Properties": {
         "Description": "Example Infrastructure Configuration for Image Builder",
@@ -4907,6 +4998,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::ImageBuilder::InfrastructureConfiguration",
     },
     "WorkerImageBuilderImagePipelineV2InstanceProfileA6F88A4C": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "Roles": [
           {
@@ -4917,6 +5011,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::IAM::InstanceProfile",
     },
     "WorkerImageBuilderImagePipelineV2Role3BCE675E": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -4978,6 +5075,7 @@ exports.handler = async function (event, context) {
     "WorkerImageBuilderImagePipelineV2UpdateLambdaA19D3FE4": {
       "DependsOn": [
         "WorkerImageBuilderImagePipelineV2UpdateLambdaRole648C1C2C",
+        "WorkerAmiId428C377C",
       ],
       "Properties": {
         "Code": {
@@ -4986,7 +5084,9 @@ exports.handler = async function (event, context) {
         },
         "Environment": {
           "Variables": {
-            "SSM_PATH": "/remote-swe/worker/ami-id",
+            "SSM_PATH": {
+              "Ref": "WorkerAmiId428C377C",
+            },
           },
         },
         "Handler": "image-builder-lambda-update-ssm.lambda_handler",
@@ -5002,6 +5102,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::Lambda::Function",
     },
     "WorkerImageBuilderImagePipelineV2UpdateLambdaAllowInvokeTestMainStackWorkerImageBuilderImagePipelineV2ImageBuilderTopic99176B1DE13D9CE4": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -5018,6 +5121,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::Lambda::Permission",
     },
     "WorkerImageBuilderImagePipelineV2UpdateLambdaImageBuilderTopicD5FE83C9": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "Endpoint": {
           "Fn::GetAtt": [
@@ -5033,6 +5139,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::SNS::Subscription",
     },
     "WorkerImageBuilderImagePipelineV2UpdateLambdaRole648C1C2C": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -5073,7 +5182,17 @@ exports.handler = async function (event, context) {
                     "ssm:PutParameter",
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:ssm:us-east-1:123456789012:parameter",
+                        {
+                          "Ref": "WorkerAmiId428C377C",
+                        },
+                      ],
+                    ],
+                  },
                 },
               ],
               "Version": "2012-10-17",
@@ -5085,6 +5204,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::IAM::Role",
     },
     "WorkerImageBuilderImagePipelineV2WorkerDependencies6FAC8E07": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "Data": {
           "Fn::Join": [
@@ -5641,7 +5763,11 @@ phases:
                   "GroupId",
                 ],
               },
-              ""],"amiIdSsmPath":"/remote-swe/worker/ami-id","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":30,"volumeType":"gp3"}}],"componentsVersion":"",
+              ""],"amiIdSsmPath":"",
+              {
+                "Ref": "WorkerAmiId428C377C",
+              },
+              "","amiIdSsmAccountId":"123456789012","amiIdSsmRegion":"us-east-1","ebsVolumeConfigurations":[{"deviceName":"/dev/sda1","ebs":{"encrypted":true,"volumeSize":30,"volumeType":"gp3"}}],"componentsVersion":"",
               {
                 "Fn::GetAtt": [
                   "WorkerImageBuilderWorkerDependenciesVersion4BF2F39E",
@@ -5662,7 +5788,18 @@ phases:
         "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
       ],
       "Properties": {
-        "Create": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v4"}}",
+        "Create": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-ssm","action":"PutParameter","parameters":{"Name":"",
+              {
+                "Ref": "WorkerAmiId428C377C",
+              },
+              "","Value":"pending-initial-build","Type":"String","Overwrite":true},"physicalResourceId":{"id":"v4"}}",
+            ],
+          ],
+        },
         "InstallLatestAwsSdk": false,
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -5670,7 +5807,18 @@ phases:
             "Arn",
           ],
         },
-        "Update": "{"service":"@aws-sdk/client-ssm","action":"DeleteParameter","parameters":{"Name":"/remote-swe/worker/ami-id"},"ignoreErrorCodesMatching":"ParameterNotFound","physicalResourceId":{"id":"v4"}}",
+        "Update": {
+          "Fn::Join": [
+            "",
+            [
+              "{"service":"@aws-sdk/client-ssm","action":"PutParameter","parameters":{"Name":"",
+              {
+                "Ref": "WorkerAmiId428C377C",
+              },
+              "","Value":"pending-initial-build","Type":"String","Overwrite":true},"physicalResourceId":{"id":"v4"}}",
+            ],
+          ],
+        },
       },
       "Type": "Custom::AWS",
       "UpdateReplacePolicy": "Delete",
@@ -5680,9 +5828,19 @@ phases:
         "PolicyDocument": {
           "Statement": [
             {
-              "Action": "ssm:DeleteParameter",
+              "Action": "ssm:PutParameter",
               "Effect": "Allow",
-              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/remote-swe/worker/ami-id",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    {
+                      "Ref": "WorkerAmiId428C377C",
+                    },
+                  ],
+                ],
+              },
             },
           ],
           "Version": "2012-10-17",

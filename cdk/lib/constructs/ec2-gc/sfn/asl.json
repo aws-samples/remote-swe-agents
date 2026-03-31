@@ -44,15 +44,36 @@
       ]
     },
     "GetCurrentAmiId": {
-      "Next": "DescribeAMIs",
+      "Next": "CheckAmiIdReady",
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
       "Arguments": {
-        "Name": "/remote-swe/worker/ami-id"
+        "Name": "${workerAmiIdParameterName}"
       },
       "Assign": {
         "workerAmiId": "{% $states.result.Parameter.Value %}"
-      }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "SkipAmiCleanup"
+        }
+      ]
+    },
+    "CheckAmiIdReady": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $contains($workerAmiId, 'ami-') %}",
+          "Next": "DescribeAMIs"
+        }
+      ],
+      "Default": "SkipAmiCleanup"
+    },
+    "SkipAmiCleanup": {
+      "Type": "Succeed"
     },
     "DescribeAMIs": {
       "Next": "ProcessAMIs",
