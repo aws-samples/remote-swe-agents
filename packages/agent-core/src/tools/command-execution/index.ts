@@ -1,8 +1,9 @@
 import { spawn } from 'child_process';
 import { authorizeGitHubCli } from './github';
 export { isGitHubConfigured } from './github';
-import { homedir } from 'os';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
+import { mkdirSync, writeFileSync, unlinkSync } from 'fs';
 import { z } from 'zod';
 import { ToolDefinition, truncate, zodToJsonSchemaBody } from '../../private/common/lib';
 import { generateSuggestion } from './suggestion';
@@ -25,7 +26,32 @@ const inputSchema = z.object({
 export const DefaultWorkingDirectory = join(homedir(), `.remote-swe-workspace`);
 spawn('mkdir', ['-p', DefaultWorkingDirectory]);
 
-export const executeCommand = async (command: string, cwd?: string, timeoutMs = 60000, longRunningProcess = false) => {
+export const PID_DIR = join(tmpdir(), '.remote-swe-pids');
+mkdirSync(PID_DIR, { recursive: true });
+
+const savePidFile = (toolUseId: string, pid: number, command: string) => {
+  try {
+    writeFileSync(join(PID_DIR, toolUseId), JSON.stringify({ pid, command }));
+  } catch (e) {
+    console.log(`Failed to write PID file for ${toolUseId}: ${e}`);
+  }
+};
+
+const removePidFile = (toolUseId: string) => {
+  try {
+    unlinkSync(join(PID_DIR, toolUseId));
+  } catch {
+    // file may already be deleted
+  }
+};
+
+export const executeCommand = async (
+  command: string,
+  cwd?: string,
+  timeoutMs = 60000,
+  longRunningProcess = false,
+  toolUseId?: string
+) => {
   // Ignore error when github token is not available
   const token = await authorizeGitHubCli().catch((e) => console.log(e));
 
@@ -48,6 +74,10 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
         GITHUB_TOKEN: token ?? '',
       },
     });
+
+    if (toolUseId && childProcess.pid) {
+      savePidFile(toolUseId, childProcess.pid, command);
+    }
 
     let stdout = '';
     let stderr = '';
@@ -92,6 +122,7 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
       clearTimeout(timer);
       if (longRunningTimer) clearTimeout(longRunningTimer);
       hasExited = true;
+      if (toolUseId) removePidFile(toolUseId);
       resolve({
         error: `Failed to interact with the process: ${error.message}`,
         stdout: truncate(stdout, 40e3),
@@ -114,6 +145,7 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
       clearTimeout(timer);
       if (longRunningTimer) clearTimeout(longRunningTimer);
       hasExited = true;
+      if (toolUseId) removePidFile(toolUseId);
 
       // If the process exits within the 10 seconds window for long-running processes,
       // we should report that instead of leaving it running
@@ -136,7 +168,10 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
   });
 };
 
-const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number }) => {
+const handler = async (
+  input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number },
+  context: { toolUseId: string }
+) => {
   // Validate that timeoutMs and longRunningProcess are not used together
   if (input.timeoutMs !== undefined && input.longRunningProcess === true) {
     throw new Error(
@@ -144,7 +179,13 @@ const handler = async (input: { command: string; cwd?: string; longRunningProces
     );
   }
 
-  const res = await executeCommand(input.command, input.cwd, input.timeoutMs ?? 60000, input.longRunningProcess);
+  const res = await executeCommand(
+    input.command,
+    input.cwd,
+    input.timeoutMs ?? 60000,
+    input.longRunningProcess,
+    context.toolUseId
+  );
   return JSON.stringify(res, undefined, 1);
 };
 
