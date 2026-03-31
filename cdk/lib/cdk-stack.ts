@@ -114,31 +114,36 @@ export class MainStack extends cdk.Stack {
 
     const storage = new Storage(this, 'Storage', { accessLogBucket });
 
+    const gitHubProps = (() => {
+      if (props.github && 'appId' in props.github) {
+        return {
+          gitHubApp: {
+            appId: props.github.appId,
+            installationId: props.github.installationId,
+            privateKeyParameterName: props.github.privateKeyParameterName,
+          },
+        };
+      } else if (props.github) {
+        return {
+          githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
+            this,
+            'GitHubPersonalAccessToken',
+            {
+              parameterName: props.github.personalAccessTokenParameterName,
+              forceDynamicReference: true,
+            }
+          ),
+        };
+      }
+      return {};
+    })();
+
     const worker = new Worker(this, 'Worker', {
       vpc,
       storageTable: storage.table,
       imageBucket: storage.bucket,
       slackBotTokenParameter: botToken,
-      ...(props.github && 'appId' in props.github
-        ? {
-            gitHubApp: {
-              appId: props.github.appId,
-              installationId: props.github.installationId,
-              privateKeyParameterName: props.github.privateKeyParameterName,
-            },
-          }
-        : props.github && 'personalAccessTokenParameterName' in props.github
-          ? {
-              githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
-                this,
-                'GitHubPersonalAccessToken',
-                {
-                  parameterName: props.github.personalAccessTokenParameterName,
-                  forceDynamicReference: true,
-                }
-              ),
-            }
-          : {}),
+      ...gitHubProps,
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
