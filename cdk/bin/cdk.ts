@@ -51,22 +51,26 @@ const props: MainStackProps = {
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
   cloudFrontWebAclArn: virginia.webAclArn,
-  slack: {
-    botTokenParameterName: '/remote-swe/slack/bot-token',
-    signingSecretParameterName: '/remote-swe/slack/signing-secret',
-    adminUserIdList: process.env.SLACK_ADMIN_USER_ID_LIST,
-  },
-  github: {
-    ...(process.env.GITHUB_APP_ID
-      ? {
-          privateKeyParameterName: '/remote-swe/github/app-private-key',
-          appId: process.env.GITHUB_APP_ID!,
-          installationId: process.env.GITHUB_INSTALLATION_ID!,
-        }
-      : {
-          personalAccessTokenParameterName: '/remote-swe/github/personal-access-token',
-        }),
-  },
+
+  // === Slack Integration (optional) ===
+  // To enable, create SSM parameters and uncomment. See README for details.
+  // slack: {
+  //   botTokenParameterName: `/remote-swe/${targetEnv}/slack/bot-token`,
+  //   signingSecretParameterName: `/remote-swe/${targetEnv}/slack/signing-secret`,
+  // },
+
+  // === GitHub Integration (optional) ===
+  // Option A: GitHub App
+  // github: {
+  //   privateKeyParameterName: `/remote-swe/${targetEnv}/github/app-private-key`,
+  //   appId: process.env.GITHUB_APP_ID!,
+  //   installationId: process.env.GITHUB_INSTALLATION_ID!,
+  // },
+  // Option B: Personal Access Token
+  // github: {
+  //   personalAccessTokenParameterName: `/remote-swe/${targetEnv}/github/personal-access-token`,
+  // },
+
   ...(process.env.AWS_ACCOUNT_ID_LIST_FOR_LB
     ? {
         loadBalancing: {

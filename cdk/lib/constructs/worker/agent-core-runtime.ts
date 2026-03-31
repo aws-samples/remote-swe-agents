@@ -15,7 +15,7 @@ export interface AgentCoreRuntimeProps {
   storageTable: ITableV2;
   imageBucket: IBucket;
   bus: WorkerBus;
-  slackBotTokenParameter: IStringParameter;
+  slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
     appId: string;
@@ -96,7 +96,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.imageBucket.grantReadWrite(role);
     props.gitHubAppPrivateKeyParameter?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
-    props.slackBotTokenParameter.grantRead(role);
+    props.slackBotTokenParameter?.grantRead(role);
     props.webappOriginSourceParameter.grantRead(role);
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
@@ -125,7 +125,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
         // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
         // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
-        SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
+        SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter?.parameterName ?? '',
         GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
       },

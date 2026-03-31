@@ -20,7 +20,7 @@ export interface WorkerProps {
   vpc: ec2.IVpc;
   storageTable: ITableV2;
   imageBucket: IBucket;
-  slackBotTokenParameter: IStringParameter;
+  slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
     appId: string;
@@ -340,9 +340,11 @@ fi
 # Set up dynamic environment variables
 TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${
-        props.slackBotTokenParameter.parameterName
-      } --query "Parameter.Value" --output text)
+export SLACK_BOT_TOKEN=${
+        props.slackBotTokenParameter
+          ? `$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text 2>/dev/null || echo "")`
+          : '""'
+      }
 export GITHUB_PERSONAL_ACCESS_TOKEN=${
         props.githubPersonalAccessTokenParameter
           ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text 2>/dev/null || echo "")`
@@ -534,7 +536,7 @@ systemctl start myapp
     props.imageBucket.grantReadWrite(role);
     privateKey?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
-    props.slackBotTokenParameter.grantRead(role);
+    props.slackBotTokenParameter?.grantRead(role);
     bus.api.grantPublishAndSubscribe(role);
     bus.api.grantConnect(role);
 
