@@ -1,6 +1,7 @@
 export * from './ci';
 export * from './command-execution';
 export * from './create-pr';
+export * from './create-session';
 export * from './editor';
 export * from './github-comments';
 export * from './repo';
