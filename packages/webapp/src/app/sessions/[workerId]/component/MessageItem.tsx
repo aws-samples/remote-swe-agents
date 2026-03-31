@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
-import { UrlRenderer } from './UrlRenderer';
 import { ImageViewer } from './ImageViewer';
+import { formatTime } from '@/lib/utils';
 
 type MessageItemProps = {
   message: MessageView;
@@ -14,7 +14,7 @@ type MessageItemProps = {
   onInterrupt?: () => void;
 };
 
-export const MessageItem = ({ message, showTimestamp, onInterrupt }: MessageItemProps) => {
+export const MessageItem = React.memo(function MessageItem({ message, showTimestamp, onInterrupt }: MessageItemProps) {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -38,8 +38,7 @@ export const MessageItem = ({ message, showTimestamp, onInterrupt }: MessageItem
         className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
         style={{ minWidth: '55px' }}
       >
-        {showTimestamp &&
-          new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+        {showTimestamp && formatTime(new Date(message.timestamp))}
       </div>
       <div className="flex-1 min-w-0">
         {message.type === 'toolUse' ? (
@@ -50,10 +49,16 @@ export const MessageItem = ({ message, showTimestamp, onInterrupt }: MessageItem
             messageId={message.id}
             onInterrupt={onInterrupt}
           />
+        ) : message.pending ? (
+          <div className="pb-2 break-all">
+            <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">
+              {message.content}
+            </span>
+          </div>
         ) : (
           <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {message.reasoningText && (
                   <div className="mb-3">
                     <button
@@ -74,11 +79,7 @@ export const MessageItem = ({ message, showTimestamp, onInterrupt }: MessageItem
                     )}
                   </div>
                 )}
-                {message.role === 'user' ? (
-                  <UrlRenderer content={message.content} />
-                ) : (
-                  <MarkdownRenderer content={message.content} />
-                )}
+                <MarkdownRenderer content={message.content} />
                 {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
@@ -96,4 +97,4 @@ export const MessageItem = ({ message, showTimestamp, onInterrupt }: MessageItem
       </div>
     </div>
   );
-};
+});

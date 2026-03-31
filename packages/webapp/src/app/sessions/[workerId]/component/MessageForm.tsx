@@ -7,7 +7,7 @@ import { Loader2, Send, Image as ImageIcon, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
-import { KeyboardEventHandler, useCallback, useRef } from 'react';
+import { KeyboardEventHandler, useCallback, useEffect, useRef } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
@@ -16,41 +16,60 @@ import { ModelType, getAvailableModelTypes, modelConfigs } from '@remote-swe-age
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
+  onConfirm: (pendingId: string, confirmedId: string) => void;
+  onRollback: (pendingId: string) => void;
   workerId: string;
   onShareSession: () => void;
   defaultModelOverride: ModelType;
 };
 
-export default function MessageForm({ onSubmit, workerId, onShareSession, defaultModelOverride }: MessageFormProps) {
+export default function MessageForm({ onSubmit, onConfirm, onRollback, workerId, onShareSession, defaultModelOverride }: MessageFormProps) {
   const t = useTranslations('sessions');
+  const draftStorageKey = `draft-message-${workerId}`;
+
+  const pendingRef = useRef<{ id: string; message: string; modelOverride?: ModelType } | null>(null);
 
   const {
-    form: { register, formState, reset, watch, setValue },
+    form: { register, formState, reset, watch, setValue, getValues },
     action: { isExecuting },
     handleSubmitWithAction,
   } = useHookFormAction(sendMessageToAgent, zodResolver(sendMessageToAgentSchema), {
     actionProps: {
       onSuccess: (args) => {
-        if (args.data) {
-          onSubmit({
-            id: args.data.item.SK,
-            role: 'user',
-            content: args.input.message,
-            timestamp: new Date(parseInt(args.data.item.SK)),
-            type: 'message',
-            modelOverride: args.input.modelOverride,
-          });
+        if (args.data && pendingRef.current) {
+          onConfirm(pendingRef.current.id, args.data.item.SK);
         }
+        pendingRef.current = null;
         reset();
         setValue('modelOverride', args.input.modelOverride);
-        clearImages();
-        // Reset textarea height after form reset
+        clearImagesRef.current();
+        try {
+          localStorage.removeItem(draftStorageKey);
+        } catch {}
         if (textareaRef.current) {
           textareaRef.current.style.height = 'auto';
           textareaRef.current.style.overflowY = 'hidden';
         }
       },
       onError: ({ error }) => {
+        if (pendingRef.current) {
+          onRollback(pendingRef.current.id);
+          setValue('message', pendingRef.current.message);
+          if (pendingRef.current.modelOverride) {
+            setValue('modelOverride', pendingRef.current.modelOverride);
+          }
+          pendingRef.current = null;
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+              const maxHeight = 600;
+              const scrollHeight = textareaRef.current.scrollHeight;
+              const newHeight = Math.min(scrollHeight, maxHeight);
+              textareaRef.current.style.height = `${newHeight}px`;
+              textareaRef.current.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+            }
+          });
+        }
         toast.error(typeof error === 'string' ? error : 'Failed to send the message');
       },
     },
@@ -63,6 +82,55 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
       },
     },
   });
+
+  const clearImagesRef = useRef<() => void>(() => {});
+
+  // Restore draft message from localStorage on mount
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    try {
+      const savedDraft = localStorage.getItem(draftStorageKey);
+      if (savedDraft) {
+        setValue('message', savedDraft);
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            const maxHeight = 600;
+            const scrollHeight = textareaRef.current.scrollHeight;
+            const newHeight = Math.min(scrollHeight, maxHeight);
+            textareaRef.current.style.height = `${newHeight}px`;
+            textareaRef.current.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+          }
+        });
+      }
+    } catch {}
+  }, [draftStorageKey, setValue]);
+
+  // Save draft message to localStorage on change
+  const messageValue = watch('message');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!draftRestoredRef.current) return;
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        if (messageValue) {
+          localStorage.setItem(draftStorageKey, messageValue);
+        } else {
+          localStorage.removeItem(draftStorageKey);
+        }
+      } catch {}
+    }, 300);
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [messageValue, draftStorageKey]);
 
   const { ref: messageRef, ...messageRegister } = register('message');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -84,14 +152,24 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
       return;
     }
 
+    // Save current scroll position and calculate height difference
+    const scrollBefore = window.scrollY;
+    const oldHeight = parseFloat(currentHeight) || textarea.offsetHeight;
+    const heightDiff = newHeight - oldHeight;
+
     textarea.style.height = newHeightPx;
     textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+
+    // Compensate for the height change to prevent page from scrolling down
+    if (heightDiff !== 0) {
+      window.scrollTo({ top: scrollBefore + heightDiff, behavior: 'instant' });
+    }
   }, []);
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
     if (isExecuting || isUploading) return;
     if (keyEvent.key === 'Enter' && (keyEvent.ctrlKey || keyEvent.altKey || keyEvent.metaKey)) {
-      handleSubmitWithAction();
+      handleOptimisticSubmit();
     }
   };
 
@@ -102,12 +180,41 @@ export default function MessageForm({ onSubmit, workerId, onShareSession, defaul
     },
   });
 
+  clearImagesRef.current = clearImages;
+
   const isUploading = uploadingImages.some((img) => !img.key);
+
+  const handleOptimisticSubmit = useCallback(
+    (e?: React.BaseSyntheticEvent) => {
+      const message = getValues('message');
+      const modelOverride = getValues('modelOverride');
+      if (message?.trim()) {
+        const pendingId = `pending-${Date.now()}`;
+        pendingRef.current = { id: pendingId, message, modelOverride };
+        onSubmit({
+          id: pendingId,
+          role: 'user',
+          content: message,
+          timestamp: new Date(),
+          type: 'message',
+          modelOverride,
+          pending: true,
+        });
+      }
+      handleSubmitWithAction(e);
+      setValue('message', '');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.overflowY = 'hidden';
+      }
+    },
+    [getValues, onSubmit, handleSubmitWithAction, setValue]
+  );
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div className="max-w-4xl mx-auto px-4 py-4">
-        <form onSubmit={handleSubmitWithAction} className="flex flex-col gap-4">
+        <form onSubmit={handleOptimisticSubmit} className="flex flex-col gap-4">
           <ImagePreviewList />
 
           <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus-within:border-gray-400 dark:focus-within:border-gray-500">
