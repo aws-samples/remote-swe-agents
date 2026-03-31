@@ -36,7 +36,7 @@ import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { CancellationToken } from '../common/cancellation-token';
 import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
-import { DefaultAgent } from './lib/default-agent';
+import { DefaultAgent, getEssentialSystemPrompt, getDefaultKnowledgePrompt } from './lib/default-agent';
 import { EmptyMcpConfig, mcpConfigSchema, modelConfigs, ModelType } from '@remote-swe-agents/agent-core/schema';
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
@@ -70,16 +70,24 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
   );
   if (!allItems) return;
 
-  const baseSystemPrompt = customAgent.systemPrompt || DefaultAgent.systemPrompt;
+  // Build system prompt from layers:
+  // 1. Essential prompt (always included - tool usage, security, session title)
+  // 2. Default knowledge prompt (included when no custom prompt, or when includeDefaultKnowledge is true)
+  // 3. Custom prompt (agent-specific instructions)
+  const essentialPrompt = getEssentialSystemPrompt();
+  const hasCustomPrompt = Boolean(customAgent.systemPrompt);
+  const includeKnowledge = !hasCustomPrompt || customAgent.includeDefaultKnowledge !== false;
+  const knowledgePrompt = includeKnowledge ? getDefaultKnowledgePrompt() : '';
+  const customPrompt = hasCustomPrompt ? customAgent.systemPrompt : '';
 
-  let systemPrompt = baseSystemPrompt;
+  let systemPrompt = [essentialPrompt, knowledgePrompt, customPrompt].filter(Boolean).join('\n\n');
 
   // Try to append common prompt from DynamoDB
   const tryAppendCommonPrompt = async () => {
     try {
       const commonPromptData = await readCommonPrompt();
       if (commonPromptData && commonPromptData.additionalSystemPrompt) {
-        systemPrompt = `${baseSystemPrompt}\n\n## Common Prompt\n${commonPromptData.additionalSystemPrompt}`;
+        systemPrompt = `${systemPrompt}\n\n## Common Prompt\n${commonPromptData.additionalSystemPrompt}`;
       }
     } catch (error) {
       console.error('Error retrieving common prompt:', error);
@@ -124,8 +132,10 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
 
   const tools = allTools.filter(
     (tool) =>
+      // Exclude GitHub tools if GitHub is not configured
       (isGitHubConfigured() || !gitHubToolNames.includes(tool.name)) &&
-      (customAgent.tools.includes(tool.name) || requiredToolNames.includes(tool.name))
+      // Include tool if useAllTools is enabled, or it's in the agent's selected tools, or is a required tool
+      (customAgent.useAllTools || customAgent.tools.includes(tool.name) || requiredToolNames.includes(tool.name))
   );
   let toolConfig: ConverseCommandInput['toolConfig'] = {
     tools: [

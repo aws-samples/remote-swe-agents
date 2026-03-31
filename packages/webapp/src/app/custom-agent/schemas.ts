@@ -8,6 +8,7 @@ export const upsertCustomAgentSchema = z.object({
   defaultModel: modelTypeSchema,
   systemPrompt: z.string().default(''),
   tools: z.array(z.string()),
+  useAllTools: z.boolean().optional().default(false),
   mcpConfig: z
     .string()
     .optional()
@@ -23,6 +24,7 @@ export const upsertCustomAgentSchema = z.object({
       }
     }, 'Invalid mcpConfig schema.'),
   runtimeType: z.union([z.literal('ec2'), z.literal('agent-core')]),
+  includeDefaultKnowledge: z.boolean().optional().default(true),
 });
 
 export const deleteCustomAgentSchema = z.object({

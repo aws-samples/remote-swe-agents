@@ -322,12 +322,14 @@
         "label": "System Prompt",
         "placeholder": "You are a helpful assistant specialized in...",
         "description": "Define the agent's behavior, expertise, and response style",
-        "useDefault": "Use default system prompt"
+        "useDefault": "Use default system prompt",
+        "includeDefaultKnowledge": "Include default SWE knowledge (communication style, Git workflow, coding conventions, etc.)"
       },
       "tools": {
         "label": "Tools",
         "placeholder": "No tools selected",
-        "description": "Select tools from the available options that the agent can use"
+        "description": "Select tools from the available options that the agent can use",
+        "useAllTools": "Use all available tools"
       },
       "mcpConfig": {
         "label": "MCP Configuration",

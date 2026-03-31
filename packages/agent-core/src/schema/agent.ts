@@ -16,8 +16,10 @@ export const customAgentSchema = z.object({
   defaultModel: modelTypeSchema,
   systemPrompt: z.string(),
   tools: z.array(z.string()),
+  useAllTools: z.boolean().optional(),
   mcpConfig: z.string(),
   runtimeType: runtimeTypeSchema,
+  includeDefaultKnowledge: z.boolean().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
