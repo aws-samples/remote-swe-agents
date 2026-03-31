@@ -60,6 +60,13 @@ export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MainStackProps) {
     super(scope, id, { ...props, description: `${props.description ?? 'Remote SWE Agents stack'} (uksb-lv52f92xel)` });
 
+    if (!props.slack) {
+      console.log('ℹ️  Slack integration is not configured. To enable, set slack props in cdk.ts.');
+    }
+    if (!props.github) {
+      console.log('ℹ️  GitHub integration is not configured. To enable, set github props in cdk.ts.');
+    }
+
     const botToken = props.slack
       ? StringParameter.fromStringParameterAttributes(this, 'SlackBotToken', {
           parameterName: props.slack.botTokenParameterName,

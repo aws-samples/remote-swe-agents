@@ -53,24 +53,22 @@ const props: MainStackProps = {
   cloudFrontWebAclArn: virginia.webAclArn,
 
   // === Slack Integration (optional) ===
-  // Uncomment and configure to enable Slack bot integration.
-  // You need to create SSM parameters first. See README for details.
+  // To enable, create SSM parameters and uncomment. See README for details.
   // slack: {
-  //   botTokenParameterName: '/remote-swe/slack/bot-token',
-  //   signingSecretParameterName: '/remote-swe/slack/signing-secret',
+  //   botTokenParameterName: `/remote-swe/${targetEnv}/slack/bot-token`,
+  //   signingSecretParameterName: `/remote-swe/${targetEnv}/slack/signing-secret`,
   // },
 
   // === GitHub Integration (optional) ===
-  // Uncomment ONE of the following blocks to enable GitHub integration.
   // Option A: GitHub App
   // github: {
-  //   privateKeyParameterName: '/remote-swe/github/app-private-key',
+  //   privateKeyParameterName: `/remote-swe/${targetEnv}/github/app-private-key`,
   //   appId: process.env.GITHUB_APP_ID!,
   //   installationId: process.env.GITHUB_INSTALLATION_ID!,
   // },
   // Option B: Personal Access Token
   // github: {
-  //   personalAccessTokenParameterName: '/remote-swe/github/personal-access-token',
+  //   personalAccessTokenParameterName: `/remote-swe/${targetEnv}/github/personal-access-token`,
   // },
 
   ...(process.env.AWS_ACCOUNT_ID_LIST_FOR_LB
