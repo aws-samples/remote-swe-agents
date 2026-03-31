@@ -116,7 +116,8 @@
     "batchDeleteTitle": "Delete Selected Sessions",
     "batchDeleteConfirm": "Are you sure you want to delete {count} sessions? This action cannot be undone.",
     "batchDeleteSuccess": "{count} sessions deleted successfully",
-    "batchDeleteError": "Failed to delete sessions"
+    "batchDeleteError": "Failed to delete sessions",
+    "eventTriggerFired": "Event"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

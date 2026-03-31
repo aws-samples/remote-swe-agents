@@ -116,7 +116,8 @@
     "batchDeleteTitle": "選択したセッションを削除",
     "batchDeleteConfirm": "{count}件のセッションを削除しますか？この操作は元に戻せません。",
     "batchDeleteSuccess": "{count}件のセッションを削除しました",
-    "batchDeleteError": "セッションの削除に失敗しました"
+    "batchDeleteError": "セッションの削除に失敗しました",
+    "eventTriggerFired": "イベント"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

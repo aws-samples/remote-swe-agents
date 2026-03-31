@@ -17,3 +17,4 @@ export * from './custom-agent';
 export * from './create-session';
 export * from './push-notification';
 export * from './unread';
+export * from './event-triggers';

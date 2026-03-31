@@ -3,6 +3,7 @@ export * from './command-execution';
 export * from './create-pr';
 export * from './create-session';
 export * from './editor';
+export * from './event-trigger';
 export * from './github-comments';
 export * from './manage-agent';
 export * from './repo';

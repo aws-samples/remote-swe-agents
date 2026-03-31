@@ -1,0 +1,267 @@
+{
+  "QueryLanguage": "JSONata",
+  "Comment": "Handles TTL expiration for event-pattern triggers: cleans up resources, notifies the agent",
+  "StartAt": "GetTriggerConfig",
+  "States": {
+    "GetTriggerConfig": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:getItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Key": {
+          "PK": { "S": "{% 'event-trigger-' & $states.input.workerId %}" },
+          "SK": { "S": "{% $states.input.triggerName %}" }
+        }
+      },
+      "Assign": {
+        "workerId": "{% $states.input.workerId %}",
+        "triggerName": "{% $states.input.triggerName %}",
+        "agentRuntimeArn": "{% $states.input.agentRuntimeArn %}",
+        "triggerExists": "{% $exists($states.result.Item) %}",
+        "triggerType": "{% $states.result.Item.type.S %}",
+        "resourceName": "{% $states.result.Item.resourceName.S %}",
+        "triggerMessage": "{% $states.result.Item.message.S %}",
+        "triggerDisplayName": "{% $states.result.Item.name.S %}"
+      },
+      "Next": "CheckTriggerExists"
+    },
+    "CheckTriggerExists": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $triggerExists = false %}",
+          "Next": "AlreadyDeleted"
+        }
+      ],
+      "Default": "RemoveEventBridgeTargets"
+    },
+    "AlreadyDeleted": {
+      "Type": "Succeed",
+      "Comment": "Trigger already deleted"
+    },
+    "RemoveEventBridgeTargets": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:eventbridge:removeTargets",
+      "Arguments": {
+        "Rule": "{% $resourceName %}",
+        "Ids": ["sfn-target"]
+      },
+      "Next": "DeleteEventBridgeRule",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "DeleteEventBridgeRule"
+        }
+      ]
+    },
+    "DeleteEventBridgeRule": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:eventbridge:deleteRule",
+      "Arguments": {
+        "Name": "{% $resourceName %}"
+      },
+      "Next": "DeleteTriggerFromDDB",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "DeleteTriggerFromDDB"
+        }
+      ]
+    },
+    "DeleteTriggerFromDDB": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:deleteItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Key": {
+          "PK": { "S": "{% 'event-trigger-' & $workerId %}" },
+          "SK": { "S": "{% $triggerName %}" }
+        }
+      },
+      "Next": "WriteExpirationMessage"
+    },
+    "WriteExpirationMessage": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Item": {
+          "PK": { "S": "{% 'message-' & $workerId %}" },
+          "SK": { "S": "{% $pad($string($millis()), -15, '0') %}" },
+          "content": { "S": "{% $string([{\"text\": '<user_message>\\nEvent trigger \"' & $triggerName & '\" has expired and been automatically deleted. Original message was: \"' & $triggerMessage & '\"\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>'}]) %}" },
+          "role": { "S": "user" },
+          "tokenCount": { "N": "0" },
+          "messageType": { "S": "eventTrigger" },
+          "name": { "S": "{% $triggerDisplayName %}" }
+        }
+      },
+      "Next": "GetSession"
+    },
+    "GetSession": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:getItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Key": {
+          "PK": { "S": "sessions" },
+          "SK": { "S": "{% $workerId %}" }
+        }
+      },
+      "Assign": {
+        "runtimeType": "{% $lookup($states.result.Item, 'runtimeType') ? $states.result.Item.runtimeType.S : 'ec2' %}",
+        "sessionExists": "{% $exists($states.result.Item) %}"
+      },
+      "Next": "CheckSessionExists"
+    },
+    "CheckSessionExists": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $sessionExists = false %}",
+          "Next": "SessionNotFound"
+        }
+      ],
+      "Default": "ChooseRuntime"
+    },
+    "SessionNotFound": {
+      "Type": "Succeed"
+    },
+    "ChooseRuntime": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $runtimeType = 'agent-core' %}",
+          "Next": "InvokeAgentCore"
+        }
+      ],
+      "Default": "FindEC2Instance"
+    },
+    "InvokeAgentCore": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:bedrockagentcore:invokeAgentRuntime",
+      "Arguments": {
+        "AgentRuntimeArn": "{% $agentRuntimeArn %}",
+        "RuntimeSessionId": "{% $workerId %}",
+        "Payload": "{% $string({\"sessionId\": $workerId, \"agentRuntimeArn\": $agentRuntimeArn}) %}",
+        "ContentType": "application/json"
+      },
+      "Next": "UpdateInstanceStatusRunning",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "UpdateInstanceStatusRunning"
+        }
+      ]
+    },
+    "FindEC2Instance": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:describeInstances",
+      "Arguments": {
+        "Filters": [
+          {
+            "Name": "tag:RemoteSweWorkerId",
+            "Values": ["{% $workerId %}"]
+          },
+          {
+            "Name": "instance-state-name",
+            "Values": ["running", "stopped", "pending"]
+          }
+        ]
+      },
+      "Assign": {
+        "ec2Instances": "{% $states.result.Reservations[].Instances %}"
+      },
+      "Next": "CheckEC2Instance"
+    },
+    "CheckEC2Instance": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $count($ec2Instances) = 0 %}",
+          "Next": "SendWorkerEvent"
+        },
+        {
+          "Condition": "{% $ec2Instances[0].State.Name = 'stopped' %}",
+          "Next": "StartEC2Instance"
+        }
+      ],
+      "Default": "SendWorkerEvent"
+    },
+    "StartEC2Instance": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:ec2:startInstances",
+      "Arguments": {
+        "InstanceIds": ["{% $ec2Instances[0].InstanceId %}"]
+      },
+      "Next": "UpdateInstanceStatusStarting",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "SendWorkerEvent"
+        }
+      ]
+    },
+    "UpdateInstanceStatusStarting": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Key": {
+          "PK": { "S": "sessions" },
+          "SK": { "S": "{% $workerId %}" }
+        },
+        "UpdateExpression": "SET instanceStatus = :status, updatedAt = :now",
+        "ExpressionAttributeValues": {
+          ":status": { "S": "starting" },
+          ":now": { "N": "{% $string($millis()) %}" }
+        }
+      },
+      "Next": "SendWorkerEvent"
+    },
+    "UpdateInstanceStatusRunning": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:updateItem",
+      "Arguments": {
+        "TableName": "${tableName}",
+        "Key": {
+          "PK": { "S": "sessions" },
+          "SK": { "S": "{% $workerId %}" }
+        },
+        "UpdateExpression": "SET instanceStatus = :status, updatedAt = :now",
+        "ExpressionAttributeValues": {
+          ":status": { "S": "running" },
+          ":now": { "N": "{% $string($millis()) %}" }
+        }
+      },
+      "Next": "SendWorkerEvent"
+    },
+    "SendWorkerEvent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::http:invoke",
+      "Arguments": {
+        "ApiEndpoint": "${eventHttpEndpoint}/event",
+        "Method": "POST",
+        "Authentication": {
+          "ConnectionArn": "${connectionArn}"
+        },
+        "Headers": {
+          "Content-Type": "application/json"
+        },
+        "RequestBody": {
+          "channel": "{% 'event-bus/worker/' & $workerId %}",
+          "events": ["{% $string({\"type\": \"onMessageReceived\"}) %}"]
+        }
+      },
+      "End": true,
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "MaxAttempts": 3,
+          "IntervalSeconds": 2,
+          "BackoffRate": 2
+        }
+      ]
+    }
+  },
+  "TimeoutSeconds": 300
+}
