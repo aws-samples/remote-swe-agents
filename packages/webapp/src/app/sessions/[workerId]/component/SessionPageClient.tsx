@@ -441,9 +441,11 @@ export default function SessionPageClient({
           />
 
           {/* Scroll buttons - hidden when scrolled to bottom */}
-          <div className={`fixed bottom-24 right-6 flex flex-col gap-2 z-10 transition-opacity duration-300 ${
-            isBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}>
+          <div
+            className={`fixed bottom-24 right-6 flex flex-col gap-2 z-10 transition-opacity duration-300 ${
+              isBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+          >
             <button
               onClick={scrollToTop}
               className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"

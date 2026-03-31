@@ -21,18 +21,14 @@ export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt
       return <Terminal className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     if (name.includes('file') || name.includes('edit'))
       return <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
-    if (name.includes('EventTrigger'))
-      return <Bell className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+    if (name.includes('EventTrigger')) return <Bell className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     return <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
   };
 
   return (
     <div className="rounded-md min-w-0">
       <div className="flex items-start gap-2 min-w-0">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-shrink-0 mt-0.5"
-        >
+        <button onClick={() => setIsExpanded(!isExpanded)} className="flex-shrink-0 mt-0.5">
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
           ) : (
@@ -49,14 +45,19 @@ export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt
             <span className="break-words">{toolName}</span>
             {isExecuting && (
               <span className="inline-flex items-baseline gap-1 ml-2">
-                <span className="text-xs animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">{t('executing')}</span>
+                <span className="text-xs animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">
+                  {t('executing')}
+                </span>
               </span>
             )}
           </span>
         </button>
         {isExecuting && onInterrupt && (
           <button
-            onClick={(e) => { e.stopPropagation(); onInterrupt(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onInterrupt();
+            }}
             className="flex-shrink-0 flex items-center px-4 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             <Pause className="w-4 h-4 mr-2" />

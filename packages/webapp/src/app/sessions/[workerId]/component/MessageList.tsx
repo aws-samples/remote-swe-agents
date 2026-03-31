@@ -84,15 +84,18 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
 
   // Show the loading indicator when agent is working or instance is starting,
   // but NOT when a tool is currently executing (ToolUseRenderer already shows "Executing..." spinner)
-  const showLoadingIndicator =
-    (agentStatus === 'working' && !isToolExecuting) || instanceStatus === 'starting';
+  const showLoadingIndicator = (agentStatus === 'working' && !isToolExecuting) || instanceStatus === 'starting';
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-2">
         <div>
           {messageGroups.map((group, index) => (
-            <MessageGroupComponent key={`group-${index}`} group={group} onInterrupt={agentStatus === 'working' ? onInterrupt : undefined} />
+            <MessageGroupComponent
+              key={`group-${index}`}
+              group={group}
+              onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
+            />
           ))}
         </div>
       </div>
@@ -103,7 +106,10 @@ export default function MessageList({ messages, instanceStatus, agentStatus, onI
           <div className="max-w-4xl mx-auto px-4 py-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#3B82F6' }}>
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: '#3B82F6' }}
+                >
                   <Bot className="w-3 h-3 text-white" />
                 </div>
                 <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">

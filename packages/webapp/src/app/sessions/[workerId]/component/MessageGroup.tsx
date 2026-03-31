@@ -87,7 +87,9 @@ export const MessageGroupComponent = ({ group, onInterrupt }: MessageGroupProps)
         {group.messages.map((message, index) => {
           const showTimestamp =
             index !== 0 && !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
-          return <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} onInterrupt={onInterrupt} />;
+          return (
+            <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} onInterrupt={onInterrupt} />
+          );
         })}
       </div>
     </div>
