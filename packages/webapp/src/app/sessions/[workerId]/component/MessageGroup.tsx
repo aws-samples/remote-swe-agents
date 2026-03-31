@@ -12,9 +12,10 @@ type MessageGroup = {
 
 type MessageGroupProps = {
   group: MessageGroup;
+  onInterrupt?: () => void;
 };
 
-export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
+export const MessageGroupComponent = ({ group, onInterrupt }: MessageGroupProps) => {
   const locale = useLocale();
   const t = useTranslations('sessions');
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -86,7 +87,7 @@ export const MessageGroupComponent = ({ group }: MessageGroupProps) => {
         {group.messages.map((message, index) => {
           const showTimestamp =
             index !== 0 && !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
-          return <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} />;
+          return <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} onInterrupt={onInterrupt} />;
         })}
       </div>
     </div>

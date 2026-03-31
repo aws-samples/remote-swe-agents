@@ -309,7 +309,7 @@ export default function SessionPageClient({
 
       <div className="flex-1 min-h-screen flex flex-col min-w-0">
         <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
-          <Header />
+          <Header hasSidebar />
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
             <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
@@ -440,8 +440,10 @@ export default function SessionPageClient({
             defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
           />
 
-          {/* Scroll buttons */}
-          <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
+          {/* Scroll buttons - hidden when scrolled to bottom */}
+          <div className={`fixed bottom-24 right-6 flex flex-col gap-2 z-10 transition-opacity duration-300 ${
+            isBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}>
             <button
               onClick={scrollToTop}
               className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
@@ -452,12 +454,9 @@ export default function SessionPageClient({
             </button>
             <button
               onClick={scrollToBottom}
-              className={`p-2 rounded-full shadow-md focus:outline-none transition-colors ${
-                isBottom ? 'bg-gray-400 text-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-              }`}
+              className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
               title={t('scrollToBottom')}
               aria-label={t('scrollToBottom')}
-              disabled={isBottom}
             >
               <ArrowLeft className="w-5 h-5 -rotate-90" />
             </button>
