@@ -25,11 +25,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
   }
 
-  const { message } = parsedBody.data;
+  const { message, modelOverride } = parsedBody.data;
 
   const workerId = await createSession({
     message,
     initiator: `rest#`,
+    modelOverride,
   });
 
   return NextResponse.json({ sessionId: workerId }, { status: 201 });
