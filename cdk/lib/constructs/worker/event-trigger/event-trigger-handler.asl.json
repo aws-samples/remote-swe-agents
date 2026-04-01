@@ -9,8 +9,12 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Key": {
-          "PK": { "S": "{% 'event-trigger-' & $states.input.workerId %}" },
-          "SK": { "S": "{% $states.input.triggerName %}" }
+          "PK": {
+            "S": "{% 'event-trigger-' & $states.input.workerId %}"
+          },
+          "SK": {
+            "S": "{% $states.input.triggerName %}"
+          }
         }
       },
       "Assign": {
@@ -21,7 +25,11 @@
         "triggerMessage": "{% $states.result.Item.message.S %}",
         "triggerDisplayName": "{% $states.result.Item.name.S %}",
         "triggerExists": "{% $exists($states.result.Item) %}",
-        "isOneTime": "{% $exists($states.result.Item.scheduleExpression) and $contains($states.result.Item.scheduleExpression.S, 'at(') %}"
+        "isOneTime": "{% $exists($states.result.Item.scheduleExpression) and $contains($states.result.Item.scheduleExpression.S, 'at(') %}",
+        "idleNotifyMs": "{% $exists($states.result.Item.idleNotifyMs) ? $number($states.result.Item.idleNotifyMs.N) : 0 %}",
+        "ttlScheduleName": "{% $exists($states.result.Item.ttlScheduleName) ? $states.result.Item.ttlScheduleName.S : '' %}",
+        "ttlSfnArn": "{% $exists($states.result.Item.ttlSfnArn) ? $states.result.Item.ttlSfnArn.S : '' %}",
+        "ttlSfnRoleArn": "{% $exists($states.result.Item.ttlSfnRoleArn) ? $states.result.Item.ttlSfnRoleArn.S : '' %}"
       },
       "Next": "CheckTriggerExists"
     },
@@ -48,13 +56,27 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Item": {
-          "PK": { "S": "{% 'message-' & $workerId %}" },
-          "SK": { "S": "{% $pad($string($millis()), -15, '0') %}" },
-          "content": { "S": "{% $string([{\"text\": '<user_message>\\n' & $triggerMessage & ( $type($eventDetails) = 'object' and $count($keys($eventDetails)) > 0 ? '\\n\\nEvent details:\\n' & $string($eventDetails) : '' ) & '\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>'}]) %}" },
-          "role": { "S": "user" },
-          "tokenCount": { "N": "0" },
-          "messageType": { "S": "eventTrigger" },
-          "name": { "S": "{% $triggerDisplayName %}" }
+          "PK": {
+            "S": "{% 'message-' & $workerId %}"
+          },
+          "SK": {
+            "S": "{% $pad($string($millis()), -15, '0') %}"
+          },
+          "content": {
+            "S": "{% $string([{\"text\": '<user_message>\\n' & $triggerMessage & ( $type($eventDetails) = 'object' and $count($keys($eventDetails)) > 0 ? '\\n\\nEvent details:\\n' & $string($eventDetails) : '' ) & '\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>'}]) %}"
+          },
+          "role": {
+            "S": "user"
+          },
+          "tokenCount": {
+            "N": "0"
+          },
+          "messageType": {
+            "S": "eventTrigger"
+          },
+          "name": {
+            "S": "{% $triggerDisplayName %}"
+          }
         }
       },
       "Next": "CheckOneTimeTrigger"
@@ -67,7 +89,7 @@
           "Next": "DeleteOneTimeTriggerRecord"
         }
       ],
-      "Default": "GetSession"
+      "Default": "ResetIdleTimer"
     },
     "DeleteOneTimeTriggerRecord": {
       "Type": "Task",
@@ -75,8 +97,12 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Key": {
-          "PK": { "S": "{% 'event-trigger-' & $workerId %}" },
-          "SK": { "S": "{% $triggerName %}" }
+          "PK": {
+            "S": "{% 'event-trigger-' & $workerId %}"
+          },
+          "SK": {
+            "S": "{% $triggerName %}"
+          }
         }
       },
       "Next": "GetSession"
@@ -87,8 +113,12 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Key": {
-          "PK": { "S": "sessions" },
-          "SK": { "S": "{% $workerId %}" }
+          "PK": {
+            "S": "sessions"
+          },
+          "SK": {
+            "S": "{% $workerId %}"
+          }
         }
       },
       "Assign": {
@@ -133,7 +163,9 @@
       "Next": "UpdateInstanceStatusRunning",
       "Catch": [
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "Next": "UpdateInstanceStatusRunning",
           "Comment": "Session may already be running"
         }
@@ -146,11 +178,17 @@
         "Filters": [
           {
             "Name": "tag:RemoteSweWorkerId",
-            "Values": ["{% $workerId %}"]
+            "Values": [
+              "{% $workerId %}"
+            ]
           },
           {
             "Name": "instance-state-name",
-            "Values": ["running", "stopped", "pending"]
+            "Values": [
+              "running",
+              "stopped",
+              "pending"
+            ]
           }
         ]
       },
@@ -178,12 +216,16 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:ec2:startInstances",
       "Arguments": {
-        "InstanceIds": ["{% $ec2Instances[0].InstanceId %}"]
+        "InstanceIds": [
+          "{% $ec2Instances[0].InstanceId %}"
+        ]
       },
       "Next": "UpdateInstanceStatusStarting",
       "Catch": [
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "Next": "SendWorkerEvent"
         }
       ]
@@ -194,13 +236,21 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Key": {
-          "PK": { "S": "sessions" },
-          "SK": { "S": "{% $workerId %}" }
+          "PK": {
+            "S": "sessions"
+          },
+          "SK": {
+            "S": "{% $workerId %}"
+          }
         },
         "UpdateExpression": "SET instanceStatus = :status, updatedAt = :now",
         "ExpressionAttributeValues": {
-          ":status": { "S": "starting" },
-          ":now": { "N": "{% $string($millis()) %}" }
+          ":status": {
+            "S": "starting"
+          },
+          ":now": {
+            "N": "{% $string($millis()) %}"
+          }
         }
       },
       "Next": "SendWorkerEvent"
@@ -211,13 +261,21 @@
       "Arguments": {
         "TableName": "${tableName}",
         "Key": {
-          "PK": { "S": "sessions" },
-          "SK": { "S": "{% $workerId %}" }
+          "PK": {
+            "S": "sessions"
+          },
+          "SK": {
+            "S": "{% $workerId %}"
+          }
         },
         "UpdateExpression": "SET instanceStatus = :status, updatedAt = :now",
         "ExpressionAttributeValues": {
-          ":status": { "S": "running" },
-          ":now": { "N": "{% $string($millis()) %}" }
+          ":status": {
+            "S": "running"
+          },
+          ":now": {
+            "N": "{% $string($millis()) %}"
+          }
         }
       },
       "Next": "SendWorkerEvent"
@@ -236,13 +294,17 @@
         },
         "RequestBody": {
           "channel": "{% 'event-bus/worker/' & $workerId %}",
-          "events": ["{% $string({\"type\": \"onMessageReceived\"}) %}"]
+          "events": [
+            "{% $string({\"type\": \"onMessageReceived\"}) %}"
+          ]
         }
       },
       "Next": "SendWebappEvent",
       "Retry": [
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "MaxAttempts": 3,
           "IntervalSeconds": 2,
           "BackoffRate": 2
@@ -263,16 +325,73 @@
         },
         "RequestBody": {
           "channel": "{% 'event-bus/webapp/worker/' & $workerId %}",
-          "events": ["{% $string({\"type\": \"eventTriggerFired\", \"message\": $triggerMessage, \"name\": $triggerDisplayName, \"id\": $messageSK, \"timestamp\": $millis(), \"workerId\": $workerId}) %}"]
+          "events": [
+            "{% $string({\"type\": \"eventTriggerFired\", \"message\": $triggerMessage, \"name\": $triggerDisplayName, \"id\": $messageSK, \"timestamp\": $millis(), \"workerId\": $workerId}) %}"
+          ]
         }
       },
       "End": true,
       "Retry": [
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "MaxAttempts": 3,
           "IntervalSeconds": 2,
           "BackoffRate": 2
+        }
+      ]
+    },
+    "ResetIdleTimer": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $idleNotifyMs > 0 and $ttlScheduleName != '' %}",
+          "Next": "DeleteOldIdleSchedule"
+        }
+      ],
+      "Default": "GetSession"
+    },
+    "DeleteOldIdleSchedule": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:scheduler:deleteSchedule",
+      "Arguments": {
+        "Name": "{% $ttlScheduleName %}"
+      },
+      "Next": "CreateNewIdleSchedule",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "CreateNewIdleSchedule"
+        }
+      ]
+    },
+    "CreateNewIdleSchedule": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:scheduler:createSchedule",
+      "Arguments": {
+        "Name": "{% $ttlScheduleName %}",
+        "ScheduleExpression": "{% 'at(' & $substring($toMillis($fromMillis($millis() + $idleNotifyMs)), 0, 19) & ')' %}",
+        "ScheduleExpressionTimezone": "UTC",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "ActionAfterCompletion": "DELETE",
+        "Target": {
+          "Arn": "{% $ttlSfnArn %}",
+          "RoleArn": "{% $ttlSfnRoleArn %}",
+          "Input": "{% $string({\"workerId\": $workerId, \"triggerName\": $triggerName, \"agentRuntimeArn\": $agentRuntimeArn}) %}"
+        }
+      },
+      "Next": "GetSession",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "GetSession"
         }
       ]
     }

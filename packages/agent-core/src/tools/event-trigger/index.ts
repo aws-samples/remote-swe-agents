@@ -34,9 +34,8 @@ const createInputSchema = z.object({
   message: z.string().describe('Message sent to you when this trigger fires. Include context about what to do.'),
   idleNotifyAfter: z
     .string()
-    .optional()
     .describe(
-      'Relative time duration for idle notification on event pattern triggers. If the event has not fired within this duration, you will be notified (the trigger remains active). e.g. 30s, 5min, 2h, 1d'
+      'Relative time duration for idle notification on event pattern triggers. If the event has not fired within this duration, you will be notified. The timer resets each time the event fires. The trigger remains active. e.g. 30s, 5min, 2h, 1d'
     ),
 });
 

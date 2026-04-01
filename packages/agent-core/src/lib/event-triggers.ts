@@ -23,16 +23,20 @@ const RESOURCE_PREFIX = process.env.EVENT_TRIGGER_RESOURCE_PREFIX ?? 'remote-swe
 const MAX_TRIGGERS_PER_SESSION = 10;
 
 function parseRelativeTimeToIso(expr: string): string {
+  const ms = parseRelativeTimeToMs(expr);
+  return new Date(Date.now() + ms).toISOString().replace(/\.\d{3}Z$/, '');
+}
+
+function parseRelativeTimeToMs(expr: string): number {
   const match = expr.match(/^(\d+)\s*(s|sec|min|m|h|hr|d)$/i);
   if (!match) throw new Error(`Invalid relative time expression: ${expr}`);
   const value = parseInt(match[1], 10);
   const unit = match[2].toLowerCase();
-  let ms = 0;
-  if (unit === 's' || unit === 'sec') ms = value * 1000;
-  else if (unit === 'min' || unit === 'm') ms = value * 60 * 1000;
-  else if (unit === 'h' || unit === 'hr') ms = value * 60 * 60 * 1000;
-  else if (unit === 'd') ms = value * 24 * 60 * 60 * 1000;
-  return new Date(Date.now() + ms).toISOString().replace(/\.\d{3}Z$/, '');
+  if (unit === 's' || unit === 'sec') return value * 1000;
+  if (unit === 'min' || unit === 'm') return value * 60 * 1000;
+  if (unit === 'h' || unit === 'hr') return value * 60 * 60 * 1000;
+  if (unit === 'd') return value * 24 * 60 * 60 * 1000;
+  return 0;
 }
 
 function generateTriggerId(): string {
@@ -51,6 +55,9 @@ export interface EventTriggerItem {
   resourceName: string;
   ttlScheduleName?: string;
   idleNotifyAfter?: string;
+  idleNotifyMs?: number;
+  ttlSfnArn?: string;
+  ttlSfnRoleArn?: string;
   createdAt: number;
 }
 
@@ -252,6 +259,9 @@ export async function createEventPatternTrigger(params: CreateEventPatternTrigge
     resourceName,
     ttlScheduleName,
     idleNotifyAfter,
+    idleNotifyMs: idleNotifyAfter ? parseRelativeTimeToMs(idleNotifyAfter) : undefined,
+    ttlSfnArn: ttlSfnArn || undefined,
+    ttlSfnRoleArn: ttlSfnRoleArn || undefined,
     createdAt: Date.now(),
   };
 

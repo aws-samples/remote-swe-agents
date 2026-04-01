@@ -129,6 +129,26 @@ export class EventTrigger extends Construct {
     commonPolicies(handlerRole);
     commonPolicies(ttlRole);
 
+    // Handler needs scheduler permissions to reset idle timers on event fire
+    handlerRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['scheduler:CreateSchedule', 'scheduler:DeleteSchedule'],
+        resources: [`arn:aws:scheduler:${region}:${account}:schedule/default/${this.resourcePrefix}-*`],
+      })
+    );
+
+    handlerRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['iam:PassRole'],
+        resources: [this.schedulerRole.roleArn],
+        conditions: {
+          StringEquals: {
+            'iam:PassedToService': 'scheduler.amazonaws.com',
+          },
+        },
+      })
+    );
+
     ttlRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['events:RemoveTargets', 'events:DeleteRule'],
