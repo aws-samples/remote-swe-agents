@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { getTranslations } from 'next-intl/server';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { calculateCost, getSessions, readMetadata } from '@remote-swe-agents/agent-core/lib';
@@ -157,7 +157,7 @@ export default async function CostAnalysisPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
       <RefreshOnFocus />
 
       <main className="flex-grow container max-w-6xl mx-auto px-4 py-6 pt-20">

@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, BarChart } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatDate } from '@/lib/utils';
 
 interface SessionCost {
   workerId: string;
@@ -32,6 +33,8 @@ interface CostBreakdownProps {
 
 export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdownProps) {
   const t = useTranslations('cost');
+  const locale = useLocale();
+  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   // State for active tab
   const [activeTab, setActiveTab] = useState<'sessions' | 'models'>('sessions');
 
@@ -107,7 +110,7 @@ export default function CostBreakdown({ sessionCosts, modelCosts }: CostBreakdow
                         )}
                       </td>
                       <td className="px-4 py-3 max-w-[300px] truncate">{session.initialMessage || t('noMessage')}</td>
-                      <td className="px-4 py-3">{new Date(session.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">{formatDate(new Date(session.createdAt), localeForDate)}</td>
                       <td className="px-4 py-3 text-right font-medium">${session.sessionCost.toFixed(2)}</td>
                     </tr>
                   ))

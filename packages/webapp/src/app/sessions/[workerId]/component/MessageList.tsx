@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Bot, Pause } from 'lucide-react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Bot, Pause, ChevronUp } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
@@ -13,9 +13,9 @@ export type MessageView = {
   role: 'user' | 'assistant';
   content: string;
   detail?: string;
-  output?: string;
+  output?: string; // Added for toolResult output JSON
   timestamp: Date;
-  type: 'message' | 'toolResult' | 'toolUse';
+  type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger';
   imageKeys?: string[];
   thinkingBudget?: number;
   reasoningText?: string;
@@ -23,10 +23,12 @@ export type MessageView = {
   pending?: boolean;
 };
 
-type MessageGroup = {
+export type MessageGroup = {
   role: 'user' | 'assistant';
   messages: MessageView[];
 };
+
+const INITIAL_VISIBLE_GROUPS = 50;
 
 type MessageListProps = {
   messages: MessageView[];
@@ -35,6 +37,7 @@ type MessageListProps = {
   onInterrupt: () => void;
   agentIconUrl?: string;
   agentName?: string;
+  lastReadAt?: number;
 };
 
 export default function MessageList({
@@ -44,9 +47,11 @@ export default function MessageList({
   onInterrupt,
   agentIconUrl,
   agentName,
+  lastReadAt,
 }: MessageListProps) {
   const t = useTranslations('sessions');
   const { userScrolledUp } = useScrollPosition();
+  const [showAll, setShowAll] = useState(false);
 
   const messageGroups = useMemo(() => {
     const groups: MessageGroup[] = [];
@@ -66,6 +71,19 @@ export default function MessageList({
 
     return groups;
   }, [messages]);
+
+  const hiddenCount = showAll ? 0 : Math.max(0, messageGroups.length - INITIAL_VISIBLE_GROUPS);
+  const visibleGroups = hiddenCount > 0 ? messageGroups.slice(hiddenCount) : messageGroups;
+
+  const handleShowAll = useCallback(() => {
+    setShowAll(true);
+  }, []);
+
+  // Count hidden messages (not groups) for display
+  const hiddenMessageCount = useMemo(() => {
+    if (hiddenCount === 0) return 0;
+    return messageGroups.slice(0, hiddenCount).reduce((acc, g) => acc + g.messages.length, 0);
+  }, [messageGroups, hiddenCount]);
 
   // Auto-scroll when new messages arrive
   // Only skip auto-scroll if user has intentionally scrolled up (reading history)
@@ -95,18 +113,58 @@ export default function MessageList({
   // but NOT when a tool is currently executing (ToolUseRenderer already shows "Executing..." spinner)
   const showLoadingIndicator = (agentStatus === 'working' && !isToolExecuting) || instanceStatus === 'starting';
 
+  // Find the index of the first assistant group after lastReadAt for the "new messages" divider
+  // Use the original full messageGroups index, then adjust for visible offset
+  const newMessageGroupIndex = useMemo(
+    () =>
+      lastReadAt && lastReadAt > 0
+        ? messageGroups.findIndex((group) => {
+            const firstMsg = group.messages[0];
+            return group.role === 'assistant' && firstMsg && new Date(firstMsg.timestamp).getTime() > lastReadAt;
+          })
+        : -1,
+    [lastReadAt, messageGroups]
+  );
+
+  // Adjust the new message divider index for truncation offset
+  const adjustedNewMessageIndex = newMessageGroupIndex >= 0 ? newMessageGroupIndex - hiddenCount : -1;
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-2">
         <div>
-          {messageGroups.map((group, index) => (
-            <MessageGroupComponent
-              key={`group-${index}`}
-              group={group}
-              agentIconUrl={agentIconUrl}
-              agentName={agentName}
-              onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
-            />
+          {/* "Show older messages" button - Twitter-style inline */}
+          {hiddenCount > 0 && (
+            <button onClick={handleShowAll} className="w-full group cursor-pointer">
+              <div className="flex items-center gap-3 py-3 px-4 my-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
+                  <ChevronUp className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {t('showOlderMessages', { count: hiddenMessageCount })}
+                </span>
+              </div>
+            </button>
+          )}
+
+          {visibleGroups.map((group, index) => (
+            <div key={`group-${hiddenCount + index}`}>
+              {index === adjustedNewMessageIndex && adjustedNewMessageIndex >= 0 && (
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-red-400 dark:bg-red-500" />
+                  <span className="text-xs font-semibold text-red-500 dark:text-red-400 whitespace-nowrap">
+                    {t('newMessages')}
+                  </span>
+                  <div className="flex-1 h-px bg-red-400 dark:bg-red-500" />
+                </div>
+              )}
+              <MessageGroupComponent
+                group={group}
+                agentIconUrl={agentIconUrl}
+                agentName={agentName}
+                onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -118,13 +176,20 @@ export default function MessageList({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: '#3B82F6' }}
+                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ backgroundColor: agentIconUrl ? 'transparent' : '#3B82F6' }}
                 >
-                  <Bot className="w-3 h-3 text-white" />
+                  {agentIconUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={agentIconUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <Bot className="w-3 h-3 text-white" />
+                  )}
                 </div>
                 <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">
-                  {instanceStatus === 'starting' ? t('agentStartingMessage') : t('aiAgentResponding')}
+                  {instanceStatus === 'starting'
+                    ? t('agentStartingMessage')
+                    : t('aiAgentResponding', { agentName: agentName || 'Assistant' })}
                 </span>
               </div>
               {agentStatus === 'working' && (

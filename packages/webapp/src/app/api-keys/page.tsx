@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { getApiKeys } from '@remote-swe-agents/agent-core/lib';
 import { ApiKeyItem, modelTypeList } from '@remote-swe-agents/agent-core/schema';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,7 +13,7 @@ export default async function ApiKeysPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
       <main className="flex-grow pt-20">
         <div className="max-w-6xl mx-auto px-4 pb-8">
           <div className="flex justify-between items-center mb-6">

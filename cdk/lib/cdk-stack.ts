@@ -15,6 +15,7 @@ import { Auth } from './constructs/auth';
 import { AsyncJob } from './constructs/async-job';
 import { Webapp } from './constructs/webapp';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { VapidKeys } from './constructs/vapid-keys';
 
 export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
@@ -114,36 +115,39 @@ export class MainStack extends cdk.Stack {
 
     const storage = new Storage(this, 'Storage', { accessLogBucket });
 
-    const gitHubProps = (() => {
-      if (props.github && 'appId' in props.github) {
-        return {
-          gitHubApp: {
-            appId: props.github.appId,
-            installationId: props.github.installationId,
-            privateKeyParameterName: props.github.privateKeyParameterName,
-          },
-        };
-      } else if (props.github) {
-        return {
-          githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
-            this,
-            'GitHubPersonalAccessToken',
-            {
-              parameterName: props.github.personalAccessTokenParameterName,
-              forceDynamicReference: true,
-            }
-          ),
-        };
-      }
-      return {};
-    })();
+    const auth = new Auth(this, 'Auth', {
+      hostedZone,
+      sharedCertificate: props.sharedCertificate,
+      initialUserEmail: props.initialWebappUserEmail,
+    });
+
+    const vapidKeys = new VapidKeys(this, 'VapidKeys');
 
     const worker = new Worker(this, 'Worker', {
       vpc,
       storageTable: storage.table,
       imageBucket: storage.bucket,
       slackBotTokenParameter: botToken,
-      ...gitHubProps,
+      ...(props.github && 'appId' in props.github
+        ? {
+            gitHubApp: {
+              appId: props.github.appId,
+              installationId: props.github.installationId,
+              privateKeyParameterName: props.github.privateKeyParameterName,
+            },
+          }
+        : props.github && 'personalAccessTokenParameterName' in props.github
+          ? {
+              githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
+                this,
+                'GitHubPersonalAccessToken',
+                {
+                  parameterName: props.github.personalAccessTokenParameterName,
+                  forceDynamicReference: true,
+                }
+              ),
+            }
+          : {}),
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
@@ -151,12 +155,9 @@ export class MainStack extends cdk.Stack {
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
-    });
-
-    const auth = new Auth(this, 'Auth', {
-      hostedZone,
-      sharedCertificate: props.sharedCertificate,
-      initialUserEmail: props.initialWebappUserEmail,
+      userPool: auth.userPool,
+      cognitoDomainName: auth.domainName,
+      vapidKeys,
     });
 
     worker.bus.addUserPoolProvider(auth.userPool);
@@ -179,6 +180,7 @@ export class MainStack extends cdk.Stack {
       originNameParameter,
       agentCoreRuntime: worker.agentCoreRuntime,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      vapidKeys,
     });
 
     if (props.slack && botToken && signingSecret) {

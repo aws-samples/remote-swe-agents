@@ -2,10 +2,12 @@ import {
   getAttachedImageKey,
   getConversationHistory,
   getCustomAgent,
+  getLastReadAt,
   getPreferences,
   getSession,
   getSessions,
   getTodoList,
+  getUnreadMap,
   noOpFiltering,
 } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
@@ -13,6 +15,10 @@ import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import { extractUserMessage, formatMessage } from '@/lib/message-formatter';
+import { getSession as getAuthSession } from '@/lib/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -154,6 +160,20 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         });
         break;
       }
+      case 'eventTrigger': {
+        const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
+        const extracted = extractUserMessage(text);
+
+        messages.push({
+          id: `${item.SK}-${i}`,
+          role: 'assistant',
+          content: extracted,
+          detail: (item as any).name,
+          timestamp: new Date(parseInt(item.SK)),
+          type: 'eventTrigger',
+        });
+        break;
+      }
       case 'assistant': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const formatted = formatMessage(text);
@@ -183,12 +203,27 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
 
   // Get todo list for this session
   const todoList = await getTodoList(workerId);
+
+  // Get sessions list for sidebar
   const allSessions = await getSessions(100);
 
+  // Get unread data
+  const { userId } = await getAuthSession();
+  const [unreadMap, lastReadAt] = await Promise.all([getUnreadMap(userId), getLastReadAt(userId, workerId)]);
+
   // Resolve agent icon URL
+  let agentIconUrl: string | undefined;
   const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
   const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
-  const agentIconUrl = iconKey ? '/api/agent-icon?size=48' : undefined;
+  if (iconKey) {
+    try {
+      agentIconUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BucketName, Key: iconKey }), {
+        expiresIn: 3600,
+      });
+    } catch {
+      // Ignore errors, fall back to default icon
+    }
+  }
 
   return (
     <>
@@ -203,6 +238,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         allSessions={allSessions}
         agentIconUrl={agentIconUrl}
         agentName={customAgent?.name || preferences.defaultAgentName || undefined}
+        unreadMap={unreadMap}
+        lastReadAt={lastReadAt}
       />
       <RefreshOnFocus />
     </>

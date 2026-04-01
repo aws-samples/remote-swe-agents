@@ -59,6 +59,24 @@ const tableParams = {
       },
     },
   ],
+  GlobalSecondaryIndexes: [
+    {
+      IndexName: 'GSI1',
+      KeySchema: [
+        {
+          AttributeName: 'SK',
+          KeyType: KeyType.HASH,
+        },
+        {
+          AttributeName: 'PK',
+          KeyType: KeyType.RANGE,
+        },
+      ],
+      Projection: {
+        ProjectionType: ProjectionType.KEYS_ONLY,
+      },
+    },
+  ],
   BillingMode: BillingMode.PAY_PER_REQUEST,
 };
 

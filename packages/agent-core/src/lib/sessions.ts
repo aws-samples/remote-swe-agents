@@ -10,6 +10,7 @@ import {
 import { z } from 'zod';
 import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
+import { deleteAllEventTriggers } from './event-triggers';
 import { deleteUnreadByWorkerId } from './unread';
 
 /**
@@ -125,14 +126,27 @@ export const updateSessionLastMessage = async (workerId: string, lastMessage: st
  * @param workerId Worker ID of the session to delete
  */
 export const deleteSession = async (workerId: string): Promise<void> => {
+  // Clean up all EventBridge triggers associated with this session
+  try {
+    await deleteAllEventTriggers(workerId);
+  } catch (error) {
+    console.error(`Error cleaning up event triggers for session ${workerId}:`, error);
+  }
+
+  // Delete the session record
   await ddb.send(
     new DeleteCommand({
       TableName,
-      Key: { PK: 'sessions', SK: workerId },
+      Key: {
+        PK: 'sessions',
+        SK: workerId,
+      },
     })
   );
 
+  // Delete all related items (messages, metadata) in batches
   const prefixes = [`message-${workerId}`, `metadata-${workerId}`];
+
   for (const prefix of prefixes) {
     const paginator = paginateQuery(
       { client: ddb },
@@ -151,12 +165,15 @@ export const deleteSession = async (workerId: string): Promise<void> => {
       }
     }
 
+    // BatchWrite supports max 25 items per request
     for (let i = 0; i < keysToDelete.length; i += 25) {
       const batch = keysToDelete.slice(i, i + 25);
       await ddb.send(
         new BatchWriteCommand({
           RequestItems: {
-            [TableName]: batch.map((key) => ({ DeleteRequest: { Key: key } })),
+            [TableName]: batch.map((key) => ({
+              DeleteRequest: { Key: key },
+            })),
           },
         })
       );

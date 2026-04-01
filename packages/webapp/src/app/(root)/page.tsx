@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bot, Plus, DollarSign } from 'lucide-react';
@@ -10,7 +10,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
 
       <main className="flex-grow pt-20">
         <div className="max-w-4xl mx-auto px-4 py-8">

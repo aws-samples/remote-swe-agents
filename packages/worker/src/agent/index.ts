@@ -21,6 +21,7 @@ import {
   getSession,
   getPreferences,
   getCustomAgent,
+  updateSessionLastMessage,
 } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
@@ -63,7 +64,12 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     async (attemptCount) => {
       const res = await getConversationHistory(workerId);
       const lastItem = res.items.at(-1);
-      if (lastItem == null || lastItem.messageType === 'userMessage' || attemptCount > 4) {
+      if (
+        lastItem == null ||
+        lastItem.messageType === 'userMessage' ||
+        lastItem.messageType === 'eventTrigger' ||
+        attemptCount > 4
+      ) {
         return res;
       }
       throw new Error('Last message is from assistant. Possibly DynamoDB replication delay.');
@@ -411,11 +417,22 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
+
+      const lastMessagePreview = responseTextWithoutThinking.slice(0, 500);
+      if (lastMessagePreview) {
+        await updateSessionLastMessage(workerId, lastMessagePreview);
+        await sendWebappEvent(workerId, {
+          type: 'lastMessageUpdate',
+          lastMessage: lastMessagePreview,
+        });
+      }
+
       // Pass true to appendWebappUrl parameter to add the webapp URL to the Slack message at the end of agent loop
       await sendSystemMessage(workerId, `${mention}${responseTextWithoutThinking}`, true);
       break;
     }
   }
+  return;
 };
 
 export const onMessageReceived = async (workerId: string, cancellationToken: CancellationToken) => {
@@ -441,6 +458,7 @@ export const resume = async (workerId: string, cancellationToken: CancellationTo
   const lastItem = items.at(-1);
   if (
     lastItem?.messageType == 'userMessage' ||
+    lastItem?.messageType == 'eventTrigger' ||
     lastItem?.messageType == 'toolResult' ||
     lastItem?.messageType == 'toolUse'
   ) {

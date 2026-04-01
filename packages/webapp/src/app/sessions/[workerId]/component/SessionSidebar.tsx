@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { MessageSquare, Plus, X, List } from 'lucide-react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
-import { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations } from 'next-intl';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useRouter } from 'next/navigation';
+import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 
 interface SessionSidebarProps {
   currentWorkerId: string;

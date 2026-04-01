@@ -1,16 +1,9 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { getTranslations } from 'next-intl/server';
 import CustomAgentForm from './components/CustomAgentForm';
 import CustomAgentList from './components/CustomAgentList';
 import PreferenceSection from '../preferences/components/PreferenceSection';
-import {
-  cloneRepositoryTool,
-  fileEditTool,
-  readImageTool,
-  ciTool,
-  commandExecutionTool,
-  createPRTool,
-} from '@remote-swe-agents/agent-core/tools';
+import { optionalTools } from '@remote-swe-agents/agent-core/tools';
 import { getCustomAgents } from '@remote-swe-agents/agent-core/lib';
 
 export const dynamic = 'force-dynamic';
@@ -19,15 +12,7 @@ export default async function CustomAgentPage() {
   const t = await getTranslations('customAgent');
   const [availableTools, customAgents] = await Promise.all([
     Promise.all(
-      [
-        // We do not expose internal tools such as todoList tools.
-        fileEditTool,
-        readImageTool,
-        cloneRepositoryTool,
-        createPRTool,
-        ciTool,
-        commandExecutionTool,
-      ].map(async (tool) => ({
+      optionalTools.map(async (tool) => ({
         name: tool.name,
         description: (await tool.toolSpec()).description?.trim() ?? '',
       }))
@@ -37,7 +22,7 @@ export default async function CustomAgentPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
 
       <main className="flex-grow container max-w-6xl mx-auto px-4 py-6 pt-20">
         <div className="mb-6">

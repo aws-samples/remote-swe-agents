@@ -979,6 +979,131 @@ Remote SWE Agents Team",
       },
       "Type": "AWS::Cognito::UserPoolDomain",
     },
+    "AuthUserPoolEventTriggerM2MClientC3135AD6": {
+      "DependsOn": [
+        "AuthUserPoolEventTriggerResourceServer0E3E50CA",
+      ],
+      "Properties": {
+        "AllowedOAuthFlows": [
+          "client_credentials",
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          "appsync-events/publish",
+        ],
+        "GenerateSecret": true,
+        "SupportedIdentityProviders": [
+          "COGNITO",
+        ],
+        "UserPoolId": {
+          "Ref": "AuthUserPool8115E87F",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolClient",
+    },
+    "AuthUserPoolEventTriggerM2MClientDescribeCognitoUserPoolClientB34DCDA3": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "AuthUserPoolEventTriggerM2MClientDescribeCognitoUserPoolClientCustomResourcePolicyCE729159",
+        "AuthUserPoolEventTriggerResourceServer0E3E50CA",
+      ],
+      "Properties": {
+        "Create": {
+          "Fn::Join": [
+            "",
+            [
+              "{"region":"us-east-1","service":"CognitoIdentityServiceProvider","action":"describeUserPoolClient","parameters":{"UserPoolId":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "","ClientId":"",
+              {
+                "Ref": "AuthUserPoolEventTriggerM2MClientC3135AD6",
+              },
+              ""},"physicalResourceId":{"id":"",
+              {
+                "Ref": "AuthUserPoolEventTriggerM2MClientC3135AD6",
+              },
+              ""},"logApiResponseData":false}",
+            ],
+          ],
+        },
+        "InstallLatestAwsSdk": false,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "Arn",
+          ],
+        },
+        "Update": {
+          "Fn::Join": [
+            "",
+            [
+              "{"region":"us-east-1","service":"CognitoIdentityServiceProvider","action":"describeUserPoolClient","parameters":{"UserPoolId":"",
+              {
+                "Ref": "AuthUserPool8115E87F",
+              },
+              "","ClientId":"",
+              {
+                "Ref": "AuthUserPoolEventTriggerM2MClientC3135AD6",
+              },
+              ""},"physicalResourceId":{"id":"",
+              {
+                "Ref": "AuthUserPoolEventTriggerM2MClientC3135AD6",
+              },
+              ""},"logApiResponseData":false}",
+            ],
+          ],
+        },
+      },
+      "Type": "Custom::DescribeCognitoUserPoolClient",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "AuthUserPoolEventTriggerM2MClientDescribeCognitoUserPoolClientCustomResourcePolicyCE729159": {
+      "DependsOn": [
+        "AuthUserPoolEventTriggerResourceServer0E3E50CA",
+      ],
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "cognito-idp:DescribeUserPoolClient",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "AuthUserPool8115E87F",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AuthUserPoolEventTriggerM2MClientDescribeCognitoUserPoolClientCustomResourcePolicyCE729159",
+        "Roles": [
+          {
+            "Ref": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "AuthUserPoolEventTriggerResourceServer0E3E50CA": {
+      "Properties": {
+        "Identifier": "appsync-events",
+        "Name": "appsync-events",
+        "Scopes": [
+          {
+            "ScopeDescription": "Publish events to AppSync Event API",
+            "ScopeName": "publish",
+          },
+        ],
+        "UserPoolId": {
+          "Ref": "AuthUserPool8115E87F",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolResourceServer",
+    },
     "ContainerImageBuildArm64e83729feb1564e709bec452b15847a30amd64C13E3549": {
       "Properties": {
         "Artifacts": {
@@ -2213,6 +2338,164 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "SingletonLambdavapidkeygeneratorsingleton2607D629": {
+      "DependsOn": [
+        "SingletonLambdavapidkeygeneratorsingletonServiceRoleDefaultPolicy61E91644",
+        "SingletonLambdavapidkeygeneratorsingletonServiceRole60F22DEA",
+      ],
+      "Properties": {
+        "Code": {
+          "ZipFile": "
+const { SSMClient, GetParameterCommand, PutParameterCommand } = require('@aws-sdk/client-ssm');
+const crypto = require('crypto');
+
+exports.handler = async (event) => {
+  const ssm = new SSMClient({});
+  const publicKeyParamName = event.ResourceProperties.PublicKeyParameterName;
+  const privateKeyParamName = event.ResourceProperties.PrivateKeyParameterName;
+
+  if (event.RequestType === 'Delete') {
+    return { PhysicalResourceId: event.PhysicalResourceId || 'vapid-keys' };
+  }
+
+  // Check if keys already exist (value other than the initial placeholder)
+  try {
+    const existing = await ssm.send(new GetParameterCommand({ Name: publicKeyParamName }));
+    if (existing.Parameter.Value !== 'pending-generation') {
+      console.log('VAPID keys already exist, skipping generation');
+      return { PhysicalResourceId: 'vapid-keys' };
+    }
+  } catch (e) {
+    // Parameter doesn't exist or error, proceed to generate
+  }
+
+  // Generate VAPID keys using Web Crypto
+  const keyPair = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify']
+  );
+
+  const privateKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+
+  // Convert to URL-safe base64 format expected by web-push
+  const rawPublicKey = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+  const publicKeyUrlSafe = Buffer.from(rawPublicKey).toString('base64url');
+
+  const privateKeyUrlSafe = privateKeyJwk.d;
+
+  await ssm.send(new PutParameterCommand({
+    Name: publicKeyParamName,
+    Value: publicKeyUrlSafe,
+    Type: 'String',
+    Overwrite: true,
+  }));
+
+  await ssm.send(new PutParameterCommand({
+    Name: privateKeyParamName,
+    Value: privateKeyUrlSafe,
+    Type: 'String',
+    Overwrite: true,
+  }));
+
+  console.log('VAPID keys generated and stored');
+  return { PhysicalResourceId: 'vapid-keys' };
+};
+      ",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "SingletonLambdavapidkeygeneratorsingletonServiceRole60F22DEA",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 60,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "SingletonLambdavapidkeygeneratorsingletonServiceRole60F22DEA": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "SingletonLambdavapidkeygeneratorsingletonServiceRoleDefaultPolicy61E91644": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameter",
+                "ssm:GetParameterHistory",
+                "ssm:GetParameters",
+                "ssm:PutParameter",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPrivateKeyBA530D10",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPublicKeyCCE9E4A7",
+                      },
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "SingletonLambdavapidkeygeneratorsingletonServiceRoleDefaultPolicy61E91644",
+        "Roles": [
+          {
+            "Ref": "SingletonLambdavapidkeygeneratorsingletonServiceRole60F22DEA",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "SlackBoltAccessLog187F540C": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -3278,6 +3561,160 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::S3::BucketPolicy",
     },
+    "VapidKeysD8C7EC6E": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ForceRegenerate": "v2",
+        "PrivateKeyParameterName": {
+          "Ref": "VapidKeysPrivateKeyBA530D10",
+        },
+        "PublicKeyParameterName": {
+          "Ref": "VapidKeysPublicKeyCCE9E4A7",
+        },
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "VapidKeysProviderframeworkonEvent202C2A1D",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::CloudFormation::CustomResource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "VapidKeysPrivateKeyBA530D10": {
+      "Properties": {
+        "Type": "String",
+        "Value": "pending-generation",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "VapidKeysProviderframeworkonEvent202C2A1D": {
+      "DependsOn": [
+        "VapidKeysProviderframeworkonEventServiceRoleDefaultPolicy22909DFE",
+        "VapidKeysProviderframeworkonEventServiceRoleFA9F8AC1",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Description": "AWS CDK resource provider framework - onEvent (TestMainStack/VapidKeys/Provider)",
+        "Environment": {
+          "Variables": {
+            "USER_ON_EVENT_FUNCTION_ARN": {
+              "Fn::GetAtt": [
+                "SingletonLambdavapidkeygeneratorsingleton2607D629",
+                "Arn",
+              ],
+            },
+          },
+        },
+        "Handler": "framework.onEvent",
+        "LoggingConfig": {
+          "ApplicationLogLevel": "FATAL",
+          "LogFormat": "JSON",
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "VapidKeysProviderframeworkonEventServiceRoleFA9F8AC1",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "VapidKeysProviderframeworkonEventServiceRoleDefaultPolicy22909DFE": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "SingletonLambdavapidkeygeneratorsingleton2607D629",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "SingletonLambdavapidkeygeneratorsingleton2607D629",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "lambda:GetFunction",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "SingletonLambdavapidkeygeneratorsingleton2607D629",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "VapidKeysProviderframeworkonEventServiceRoleDefaultPolicy22909DFE",
+        "Roles": [
+          {
+            "Ref": "VapidKeysProviderframeworkonEventServiceRoleFA9F8AC1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "VapidKeysProviderframeworkonEventServiceRoleFA9F8AC1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "VapidKeysPublicKeyCCE9E4A7": {
+      "Properties": {
+        "Type": "String",
+        "Value": "pending-generation",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
     "VpcV257066EE3": {
       "Properties": {
         "CidrBlock": "10.0.0.0/16",
@@ -3797,6 +4234,7 @@ exports.handler = async function (event, context) {
     },
     "WebappHandler8DD158A3": {
       "DependsOn": [
+        "VapidKeysD8C7EC6E",
         "WebappHandlerServiceRoleDefaultPolicy7D06F4EA",
         "WebappHandlerServiceRole4F4D1ACD",
       ],
@@ -3937,6 +4375,12 @@ exports.handler = async function (event, context) {
             "USER_POOL_ID": {
               "Ref": "AuthUserPool8115E87F",
             },
+            "VAPID_PRIVATE_KEY_PARAMETER_NAME": {
+              "Ref": "VapidKeysPrivateKeyBA530D10",
+            },
+            "VAPID_PUBLIC_KEY_PARAMETER_NAME": {
+              "Ref": "VapidKeysPublicKeyCCE9E4A7",
+            },
             "WORKER_AMI_PARAMETER_NAME": {
               "Ref": "WorkerAmiId428C377C",
             },
@@ -3958,6 +4402,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::Lambda::Function",
     },
     "WebappHandlerFunctionUrl7AEF8DEE": {
+      "DependsOn": [
+        "VapidKeysD8C7EC6E",
+      ],
       "Properties": {
         "AuthType": "AWS_IAM",
         "InvokeMode": "RESPONSE_STREAM",
@@ -3971,6 +4418,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::Lambda::Url",
     },
     "WebappHandlerInvokeFromCloudFrontE8638C47": {
+      "DependsOn": [
+        "VapidKeysD8C7EC6E",
+      ],
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -3985,6 +4435,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::Lambda::Permission",
     },
     "WebappHandlerServiceRole4F4D1ACD": {
+      "DependsOn": [
+        "VapidKeysD8C7EC6E",
+      ],
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -4016,6 +4469,9 @@ exports.handler = async function (event, context) {
       "Type": "AWS::IAM::Role",
     },
     "WebappHandlerServiceRoleDefaultPolicy7D06F4EA": {
+      "DependsOn": [
+        "VapidKeysD8C7EC6E",
+      ],
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -4028,6 +4484,28 @@ exports.handler = async function (event, context) {
               ],
               "Effect": "Allow",
               "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPrivateKeyBA530D10",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPublicKeyCCE9E4A7",
+                      },
+                    ],
+                  ],
+                },
                 {
                   "Fn::Join": [
                     "",
@@ -4574,6 +5052,28 @@ exports.handler = async function (event, context) {
                     [
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
+                        "Ref": "VapidKeysPrivateKeyBA530D10",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPublicKeyCCE9E4A7",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
                         "Ref": "WebappOriginNameParameterBBAD7F85",
                       },
                     ],
@@ -4618,6 +5118,45 @@ exports.handler = async function (event, context) {
                       ],
                     },
                   ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "scheduler:CreateSchedule",
+                "scheduler:DeleteSchedule",
+                "scheduler:GetSchedule",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:scheduler:us-east-1:123456789012:schedule/default/tesger3a47e907-*",
+            },
+            {
+              "Action": [
+                "events:DeleteRule",
+                "events:DescribeRule",
+                "events:ListRules",
+                "events:PutRule",
+                "events:PutTargets",
+                "events:RemoveTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:events:us-east-1:123456789012:rule/tesger3a47e907-*",
+            },
+            {
+              "Action": "iam:PassRole",
+              "Condition": {
+                "StringLike": {
+                  "iam:PassedToService": [
+                    "scheduler.amazonaws.com",
+                    "events.amazonaws.com",
+                  ],
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
                 ],
               },
             },
@@ -4719,6 +5258,25 @@ exports.handler = async function (event, context) {
               ],
             ],
           },
+          "EVENT_TRIGGER_RESOURCE_PREFIX": "tesger3a47e907",
+          "EVENT_TRIGGER_SFN_ARN": {
+            "Ref": "WorkerEventTriggerHandlerStateMachineA5E6B715",
+          },
+          "EVENT_TRIGGER_SFN_ROLE_ARN": {
+            "Fn::GetAtt": [
+              "WorkerEventTriggerSchedulerRoleBA58E2C1",
+              "Arn",
+            ],
+          },
+          "EVENT_TRIGGER_TTL_SFN_ARN": {
+            "Ref": "WorkerEventTriggerTtlStateMachine26E82361",
+          },
+          "EVENT_TRIGGER_TTL_SFN_ROLE_ARN": {
+            "Fn::GetAtt": [
+              "WorkerEventTriggerSchedulerRoleBA58E2C1",
+              "Arn",
+            ],
+          },
           "GITHUB_APP_ID": "123456",
           "GITHUB_APP_INSTALLATION_ID": "9876543",
           "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
@@ -4726,6 +5284,12 @@ exports.handler = async function (event, context) {
           "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
           "TABLE_NAME": {
             "Ref": "StorageHistory251A3AE8",
+          },
+          "VAPID_PRIVATE_KEY_PARAMETER_NAME": {
+            "Ref": "VapidKeysPrivateKeyBA530D10",
+          },
+          "VAPID_PUBLIC_KEY_PARAMETER_NAME": {
+            "Ref": "VapidKeysPublicKeyCCE9E4A7",
           },
           "WEBAPP_ORIGIN_NAME_PARAMETER": {
             "Ref": "WebappOriginNameParameterBBAD7F85",
@@ -4864,6 +5428,9 @@ exports.handler = async function (event, context) {
             {
               "AuthType": "AWS_IAM",
             },
+            {
+              "AuthType": "AMAZON_COGNITO_USER_POOLS",
+            },
           ],
           "DefaultSubscribeAuthModes": [
             {
@@ -4891,6 +5458,478 @@ exports.handler = async function (event, context) {
         "Name": "event-bus",
       },
       "Type": "AWS::AppSync::ChannelNamespace",
+    },
+    "WorkerEventTriggerAppSyncConnection98B8863E": {
+      "Properties": {
+        "AuthParameters": {
+          "OAuthParameters": {
+            "AuthorizationEndpoint": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "AuthDomainPrefixE1742B23",
+                      "generated",
+                    ],
+                  },
+                  ".auth.us-east-1.amazoncognito.com/oauth2/token",
+                ],
+              ],
+            },
+            "ClientParameters": {
+              "ClientID": {
+                "Ref": "AuthUserPoolEventTriggerM2MClientC3135AD6",
+              },
+              "ClientSecret": {
+                "Fn::GetAtt": [
+                  "AuthUserPoolEventTriggerM2MClientDescribeCognitoUserPoolClientB34DCDA3",
+                  "UserPoolClient.ClientSecret",
+                ],
+              },
+            },
+            "HttpMethod": "POST",
+            "OAuthHttpParameters": {
+              "BodyParameters": [
+                {
+                  "IsValueSecret": false,
+                  "Key": "grant_type",
+                  "Value": "client_credentials",
+                },
+                {
+                  "IsValueSecret": false,
+                  "Key": "scope",
+                  "Value": "appsync-events/publish",
+                },
+              ],
+            },
+          },
+        },
+        "AuthorizationType": "OAUTH_CLIENT_CREDENTIALS",
+      },
+      "Type": "AWS::Events::Connection",
+    },
+    "WorkerEventTriggerHandlerStateMachineA5E6B715": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkerEventTriggerHandlerStateMachineRoleDefaultPolicy93ADBC84",
+        "WorkerEventTriggerHandlerStateMachineRole818B9EA7",
+      ],
+      "Properties": {
+        "DefinitionS3Location": {
+          "Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "Key": "fa0e8048119c4ad1441c9dd4c0c397946cfb8a92d68ea9bdf163fe6a6190b8e4.json",
+        },
+        "DefinitionSubstitutions": {
+          "connectionArn": {
+            "Fn::GetAtt": [
+              "WorkerEventTriggerAppSyncConnection98B8863E",
+              "Arn",
+            ],
+          },
+          "eventHttpEndpoint": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WorkerBusApi8460ABC0",
+                    "Dns.Http",
+                  ],
+                },
+              ],
+            ],
+          },
+          "tableName": {
+            "Ref": "StorageHistory251A3AE8",
+          },
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkerEventTriggerHandlerStateMachineRole818B9EA7",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerEventTriggerHandlerStateMachineRole818B9EA7": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerEventTriggerHandlerStateMachineRoleDefaultPolicy93ADBC84": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "ec2:DescribeInstances",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "ec2:StartInstances",
+              "Condition": {
+                "StringEquals": {
+                  "ec2:ResourceTag/aws:cloudformation:stack-name": "TestMainStack",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "arn:aws:ec2:us-east-1:123456789012:instance/*",
+            },
+            {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/*",
+            },
+            {
+              "Action": "events:RetrieveConnectionCredentials",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerAppSyncConnection98B8863E",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:GetSecretValue",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerAppSyncConnection98B8863E",
+                  "SecretArn",
+                ],
+              },
+            },
+            {
+              "Action": "states:InvokeHTTPEndpoint",
+              "Condition": {
+                "StringEquals": {
+                  "states:HTTPMethod": "POST",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "scheduler:CreateSchedule",
+                "scheduler:DeleteSchedule",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:scheduler:us-east-1:123456789012:schedule/default/tesger3a47e907-*",
+            },
+            {
+              "Action": "iam:PassRole",
+              "Condition": {
+                "StringEquals": {
+                  "iam:PassedToService": "scheduler.amazonaws.com",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerEventTriggerHandlerStateMachineRoleDefaultPolicy93ADBC84",
+        "Roles": [
+          {
+            "Ref": "WorkerEventTriggerHandlerStateMachineRole818B9EA7",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerEventTriggerSchedulerRoleBA58E2C1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "events.amazonaws.com",
+                  "scheduler.amazonaws.com",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerEventTriggerSchedulerRoleDefaultPolicyDCBFC202": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Ref": "WorkerEventTriggerHandlerStateMachineA5E6B715",
+                },
+                {
+                  "Ref": "WorkerEventTriggerTtlStateMachine26E82361",
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerEventTriggerSchedulerRoleDefaultPolicyDCBFC202",
+        "Roles": [
+          {
+            "Ref": "WorkerEventTriggerSchedulerRoleBA58E2C1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerEventTriggerTtlStateMachine26E82361": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkerEventTriggerTtlStateMachineRoleDefaultPolicy45E212AA",
+        "WorkerEventTriggerTtlStateMachineRoleB31B3B06",
+      ],
+      "Properties": {
+        "DefinitionS3Location": {
+          "Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "Key": "f46f76fd1dbac5f74ef8bae6752276a1ceccdc79f0ca290884caae6b6c9a6444.json",
+        },
+        "DefinitionSubstitutions": {
+          "connectionArn": {
+            "Fn::GetAtt": [
+              "WorkerEventTriggerAppSyncConnection98B8863E",
+              "Arn",
+            ],
+          },
+          "eventHttpEndpoint": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Fn::GetAtt": [
+                    "WorkerBusApi8460ABC0",
+                    "Dns.Http",
+                  ],
+                },
+              ],
+            ],
+          },
+          "tableName": {
+            "Ref": "StorageHistory251A3AE8",
+          },
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkerEventTriggerTtlStateMachineRoleB31B3B06",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerEventTriggerTtlStateMachineRoleB31B3B06": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerEventTriggerTtlStateMachineRoleDefaultPolicy45E212AA": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageHistory251A3AE8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageHistory251A3AE8",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "ec2:DescribeInstances",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "ec2:StartInstances",
+              "Condition": {
+                "StringEquals": {
+                  "ec2:ResourceTag/aws:cloudformation:stack-name": "TestMainStack",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "arn:aws:ec2:us-east-1:123456789012:instance/*",
+            },
+            {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/*",
+            },
+            {
+              "Action": "events:RetrieveConnectionCredentials",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerAppSyncConnection98B8863E",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:GetSecretValue",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerAppSyncConnection98B8863E",
+                  "SecretArn",
+                ],
+              },
+            },
+            {
+              "Action": "states:InvokeHTTPEndpoint",
+              "Condition": {
+                "StringEquals": {
+                  "states:HTTPMethod": "POST",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "events:DeleteRule",
+                "events:RemoveTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:events:us-east-1:123456789012:rule/tesger3a47e907-*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerEventTriggerTtlStateMachineRoleDefaultPolicy45E212AA",
+        "Roles": [
+          {
+            "Ref": "WorkerEventTriggerTtlStateMachineRoleB31B3B06",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "WorkerImageBuilderAdditionalInstancePolicy4F8E90CE": {
       "Properties": {
@@ -5503,6 +6542,21 @@ phases:
               export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
 
 
+              # Fetch VAPID keys from SSM if configured
+
+              if [ -n \\"$VAPID_PUBLIC_KEY_PARAMETER_NAME\\" ]; then
+
+              \\  export VAPID_PUBLIC_KEY=$(aws ssm get-parameter --name \\"$VAPID_PUBLIC_KEY_PARAMETER_NAME\\" --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
+
+              fi
+
+              if [ -n \\"$VAPID_PRIVATE_KEY_PARAMETER_NAME\\" ]; then
+
+              \\  export VAPID_PRIVATE_KEY=$(aws ssm get-parameter --name \\"$VAPID_PRIVATE_KEY_PARAMETER_NAME\\" --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
+
+              fi
+
+
               # Start app
 
               cd packages/worker
@@ -5602,6 +6656,50 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
               Environment=BEDROCK_CRI_REGION_OVERRIDE=global
+
+              Environment=VAPID_PUBLIC_KEY_PARAMETER_NAME=",
+              {
+                "Ref": "VapidKeysPublicKeyCCE9E4A7",
+              },
+              "
+
+              Environment=VAPID_PRIVATE_KEY_PARAMETER_NAME=",
+              {
+                "Ref": "VapidKeysPrivateKeyBA530D10",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_SFN_ARN=",
+              {
+                "Ref": "WorkerEventTriggerHandlerStateMachineA5E6B715",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_SFN_ROLE_ARN=",
+              {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
+                ],
+              },
+              "
+
+              Environment=EVENT_TRIGGER_TTL_SFN_ARN=",
+              {
+                "Ref": "WorkerEventTriggerTtlStateMachine26E82361",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=",
+              {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
+                ],
+              },
+              "
+
+              Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
 
 
               [Install]
@@ -6263,6 +7361,21 @@ phases:
               export GITHUB_PERSONAL_ACCESS_TOKEN=\\"\\"
 
 
+              # Fetch VAPID keys from SSM if configured
+
+              if [ -n \\"$VAPID_PUBLIC_KEY_PARAMETER_NAME\\" ]; then
+
+              \\  export VAPID_PUBLIC_KEY=$(aws ssm get-parameter --name \\"$VAPID_PUBLIC_KEY_PARAMETER_NAME\\" --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
+
+              fi
+
+              if [ -n \\"$VAPID_PRIVATE_KEY_PARAMETER_NAME\\" ]; then
+
+              \\  export VAPID_PRIVATE_KEY=$(aws ssm get-parameter --name \\"$VAPID_PRIVATE_KEY_PARAMETER_NAME\\" --query \\"Parameter.Value\\" --output text 2>/dev/null || echo \\"\\")
+
+              fi
+
+
               # Start app
 
               cd packages/worker
@@ -6362,6 +7475,50 @@ phases:
               Environment=BEDROCK_AWS_ROLE_NAME=
 
               Environment=BEDROCK_CRI_REGION_OVERRIDE=global
+
+              Environment=VAPID_PUBLIC_KEY_PARAMETER_NAME=",
+              {
+                "Ref": "VapidKeysPublicKeyCCE9E4A7",
+              },
+              "
+
+              Environment=VAPID_PRIVATE_KEY_PARAMETER_NAME=",
+              {
+                "Ref": "VapidKeysPrivateKeyBA530D10",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_SFN_ARN=",
+              {
+                "Ref": "WorkerEventTriggerHandlerStateMachineA5E6B715",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_SFN_ROLE_ARN=",
+              {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
+                ],
+              },
+              "
+
+              Environment=EVENT_TRIGGER_TTL_SFN_ARN=",
+              {
+                "Ref": "WorkerEventTriggerTtlStateMachine26E82361",
+              },
+              "
+
+              Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=",
+              {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
+                ],
+              },
+              "
+
+              Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
 
 
               [Install]
@@ -6727,6 +7884,14 @@ export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.
 export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name /remote-swe/slack/bot-token --query "Parameter.Value" --output text 2>/dev/null || echo "")
 export GITHUB_PERSONAL_ACCESS_TOKEN=""
 
+# Fetch VAPID keys from SSM if configured
+if [ -n "$VAPID_PUBLIC_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PUBLIC_KEY=$(aws ssm get-parameter --name "$VAPID_PUBLIC_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
+if [ -n "$VAPID_PRIVATE_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PRIVATE_KEY=$(aws ssm get-parameter --name "$VAPID_PRIVATE_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
+
 # Start app
 cd packages/worker
 npx tsx src/main.ts
@@ -6789,6 +7954,43 @@ Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
 Environment=BEDROCK_AWS_ACCOUNTS=
 Environment=BEDROCK_AWS_ROLE_NAME=
 Environment=BEDROCK_CRI_REGION_OVERRIDE=global
+Environment=VAPID_PUBLIC_KEY_PARAMETER_NAME=",
+                  {
+                    "Ref": "VapidKeysPublicKeyCCE9E4A7",
+                  },
+                  "
+Environment=VAPID_PRIVATE_KEY_PARAMETER_NAME=",
+                  {
+                    "Ref": "VapidKeysPrivateKeyBA530D10",
+                  },
+                  "
+Environment=EVENT_TRIGGER_SFN_ARN=",
+                  {
+                    "Ref": "WorkerEventTriggerHandlerStateMachineA5E6B715",
+                  },
+                  "
+Environment=EVENT_TRIGGER_SFN_ROLE_ARN=",
+                  {
+                    "Fn::GetAtt": [
+                      "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                      "Arn",
+                    ],
+                  },
+                  "
+Environment=EVENT_TRIGGER_TTL_SFN_ARN=",
+                  {
+                    "Ref": "WorkerEventTriggerTtlStateMachine26E82361",
+                  },
+                  "
+Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=",
+                  {
+                    "Fn::GetAtt": [
+                      "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                      "Arn",
+                    ],
+                  },
+                  "
+Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
 
 [Install]
 WantedBy=multi-user.target
@@ -6979,6 +8181,28 @@ systemctl start myapp",
                     [
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
+                        "Ref": "VapidKeysPrivateKeyBA530D10",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
+                        "Ref": "VapidKeysPublicKeyCCE9E4A7",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                      {
                         "Ref": "WebappOriginNameParameterBBAD7F85",
                       },
                     ],
@@ -7147,6 +8371,45 @@ systemctl start myapp",
                       ],
                     },
                   ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "scheduler:CreateSchedule",
+                "scheduler:DeleteSchedule",
+                "scheduler:GetSchedule",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:scheduler:us-east-1:123456789012:schedule/default/tesger3a47e907-*",
+            },
+            {
+              "Action": [
+                "events:DeleteRule",
+                "events:DescribeRule",
+                "events:ListRules",
+                "events:PutRule",
+                "events:PutTargets",
+                "events:RemoveTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:events:us-east-1:123456789012:rule/tesger3a47e907-*",
+            },
+            {
+              "Action": "iam:PassRole",
+              "Condition": {
+                "StringLike": {
+                  "iam:PassedToService": [
+                    "scheduler.amazonaws.com",
+                    "events.amazonaws.com",
+                  ],
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerEventTriggerSchedulerRoleBA58E2C1",
+                  "Arn",
                 ],
               },
             },

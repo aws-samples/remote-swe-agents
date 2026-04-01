@@ -46,6 +46,7 @@ import { deleteSessionAction, batchDeleteSessionsAction, updateAgentStatusFromLi
 import { extractUserMessage } from '@/lib/message-formatter';
 import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
+import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 
 type SortKey = 'createdAt' | 'updatedAt' | 'lastMessageAt' | 'sessionCost';
 type SortOrder = 'desc' | 'asc';
@@ -53,9 +54,10 @@ type SortOrder = 'desc' | 'asc';
 interface SessionsListProps {
   initialSessions: SessionItem[];
   currentUserId: string;
+  unreadMap?: UnreadMap;
 }
 
-export default function SessionsList({ initialSessions, currentUserId }: SessionsListProps) {
+export default function SessionsList({ initialSessions, currentUserId, unreadMap = {} }: SessionsListProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
   const locale = useLocale();
@@ -399,6 +401,11 @@ export default function SessionsList({ initialSessions, currentUserId }: Session
                     <div className="flex items-center gap-2 mb-3">
                       <div className="relative flex-shrink-0">
                         <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        {unreadMap[session.workerId]?.unreadCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-3.5 h-3.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                            {unreadMap[session.workerId].unreadCount}
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate flex-1">
                         {session.title || session.SK}

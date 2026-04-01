@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
+import { EventTriggerRenderer } from './EventTriggerRenderer';
 import { ImageViewer } from './ImageViewer';
 import { formatTime } from '@/lib/utils';
 
@@ -49,6 +50,8 @@ export const MessageItem = React.memo(function MessageItem({ message, showTimest
             messageId={message.id}
             onInterrupt={onInterrupt}
           />
+        ) : message.type === 'eventTrigger' ? (
+          <EventTriggerRenderer name={message.detail} content={message.content} />
         ) : message.pending ? (
           <div className="pb-2 break-all">
             <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">

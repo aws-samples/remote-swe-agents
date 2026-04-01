@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
+import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus, sendEventToAgent, stopSession } from '../actions';
+import { updateAgentStatus, sendEventToAgent, stopSession, markSessionReadAction } from '../actions';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -32,8 +32,9 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
 import TakeOverModal from './TakeOverModal';
-import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 import SessionSidebar from './SessionSidebar';
+import { ArrowLeft } from 'lucide-react';
+import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 
 interface SessionPageClientProps {
   workerId: string;
@@ -46,6 +47,8 @@ interface SessionPageClientProps {
   allSessions: SessionItem[];
   agentIconUrl?: string;
   agentName?: string;
+  unreadMap?: Record<string, { unreadCount: number; hasPending: boolean }>;
+  lastReadAt?: number;
 }
 
 export default function SessionPageClient({
@@ -59,6 +62,8 @@ export default function SessionPageClient({
   allSessions,
   agentIconUrl,
   agentName,
+  unreadMap,
+  lastReadAt,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -88,12 +93,37 @@ export default function SessionPageClient({
   const [showTodoModal, setShowTodoModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUnreadMap, setCurrentUnreadMap] = useState(unreadMap ?? {});
   const { isBottom, isHeaderVisible } = useScrollPosition();
 
   useSwipeGesture({
     onSwipeRight: useCallback(() => setSidebarOpen(true), []),
     onSwipeLeft: useCallback(() => setSidebarOpen(false), []),
   });
+
+  // Mark session as read and update badge
+  const { execute: executeMarkRead } = useAction(markSessionReadAction, {
+    onSuccess: ({ data }) => {
+      // Clear current session from unread map
+      setCurrentUnreadMap((prev) => {
+        const next = { ...prev };
+        delete next[workerId];
+        return next;
+      });
+
+      if (data?.badge && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'UPDATE_BADGE',
+          badge: data.badge,
+        });
+      }
+    },
+  });
+
+  // Mark as read on mount
+  useEffect(() => {
+    executeMarkRead({ workerId });
+  }, [workerId]);
 
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
@@ -156,6 +186,11 @@ export default function SessionPageClient({
         console.log('Received event:', payload);
         const event = webappEventSchema.parse(payload);
 
+        // Mark session as read since user is viewing it
+        if (event.type === 'message' || event.type === 'toolUse') {
+          executeMarkRead({ workerId });
+        }
+
         switch (event.type) {
           case 'message':
             if (event.message) {
@@ -182,6 +217,23 @@ export default function SessionPageClient({
             break;
           case 'agentStatusUpdate':
             setAgentStatus(event.status);
+            break;
+          case 'eventTriggerFired':
+            setMessages((prev) => {
+              const msgId = event.id ? `${event.id}-0` : Date.now().toString();
+              if (prev.some((m) => m.id === msgId)) return prev;
+              return [
+                ...prev,
+                {
+                  id: msgId,
+                  role: 'assistant',
+                  content: event.message,
+                  detail: event.name,
+                  timestamp: new Date(event.timestamp),
+                  type: 'eventTrigger',
+                },
+              ];
+            });
             break;
           case 'sessionTitleUpdate':
             setSessionTitle(event.newTitle);
@@ -307,26 +359,30 @@ export default function SessionPageClient({
       toast.success(t('stopSessionSuccess'));
       router.refresh();
     },
-    onError: () => {
+    onError: (error) => {
       toast.error(t('stopSessionError'));
     },
   });
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar */}
       <SessionSidebar
         currentWorkerId={workerId}
         sessions={allSessions}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        unreadMap={currentUnreadMap}
       />
 
+      {/* Main content */}
       <div className="flex-1 min-h-screen flex flex-col min-w-0">
         <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
-          <Header hasSidebar />
+          <Header hasCustomIcon={!!preferences.defaultAgentIconKey} hasSidebar />
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
             <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
+                {/* Sidebar toggle (hamburger on mobile, hidden on lg) */}
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className="inline-flex items-center p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer lg:hidden"
@@ -447,6 +503,7 @@ export default function SessionPageClient({
             onInterrupt={handleInterrupt}
             agentIconUrl={agentIconUrl}
             agentName={agentName}
+            lastReadAt={lastReadAt}
           />
 
           <MessageForm

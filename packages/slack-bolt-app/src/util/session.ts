@@ -8,7 +8,7 @@ export const saveSessionInfo = async (
   initiatorSlackUserId: string,
   slackChannelId: string,
   slackThreadTs: string,
-  runtimeType?: RuntimeType
+  runtimeType: RuntimeType = 'ec2'
 ) => {
   const now = Date.now();
   const timestamp = String(now).padStart(15, '0');
@@ -30,7 +30,7 @@ export const saveSessionInfo = async (
         initiator: `slack#${initiatorSlackUserId}`,
         slackChannelId,
         slackThreadTs,
-        ...(runtimeType ? { runtimeType } : {}),
+        runtimeType,
       } satisfies SessionItem,
     })
   );

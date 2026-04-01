@@ -1,10 +1,8 @@
 import { validateApiKeyMiddleware } from '../auth/api-key';
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateWorkerInstance, sendWorkerEvent } from '@remote-swe-agents/agent-core/lib';
-import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
-import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { createSession } from '@remote-swe-agents/agent-core/lib';
 import { z } from 'zod';
-import { MessageItem, modelTypeSchema, SessionItem } from '@remote-swe-agents/agent-core/schema';
+import { modelTypeSchema } from '@remote-swe-agents/agent-core/schema';
 
 // Schema for request validation
 const createSessionSchema = z.object({
@@ -27,59 +25,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request data', details: parsedBody.error.format() }, { status: 400 });
   }
 
-  const { message, modelOverride } = parsedBody.data;
-  const workerId = `api-${Date.now()}`;
-  const now = Date.now();
+  const { message } = parsedBody.data;
 
-  // Create content for the message
-  const content = [{ text: message }];
-
-  // Create session and initial message in a transaction
-  await ddb.send(
-    new TransactWriteCommand({
-      TransactItems: [
-        {
-          Put: {
-            TableName,
-            Item: {
-              // Session record
-              PK: 'sessions',
-              SK: workerId,
-              workerId,
-              initialMessage: message,
-              createdAt: now,
-              updatedAt: now,
-              LSI1: String(now).padStart(15, '0'),
-              instanceStatus: 'starting',
-              agentStatus: 'pending',
-              sessionCost: 0,
-              initiator: `rest#`,
-            } satisfies SessionItem,
-          },
-        },
-        {
-          Put: {
-            TableName,
-            Item: {
-              PK: `message-${workerId}`,
-              SK: `${String(Date.now()).padStart(15, '0')}`,
-              content: JSON.stringify(content),
-              role: 'user',
-              tokenCount: 0,
-              messageType: 'userMessage',
-              modelOverride,
-            } satisfies MessageItem,
-          },
-        },
-      ],
-    })
-  );
-
-  // Start EC2 instance for the worker
-  await getOrCreateWorkerInstance(workerId);
-
-  // Send worker event to notify message received
-  await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
+  const workerId = await createSession({
+    message,
+    initiator: `rest#`,
+  });
 
   return NextResponse.json({ sessionId: workerId }, { status: 201 });
 }

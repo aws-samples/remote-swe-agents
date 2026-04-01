@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -131,28 +131,10 @@
 }
 
 .animate-shimmer-text {
-  background-image: linear-gradient(
-    90deg,
-    #9ca3af,
-    #d1d5db,
-    #6b7280,
-    #e5e7eb,
-    #4b5563,
-    #d1d5db,
-    #9ca3af
-  );
+  background-image: linear-gradient(90deg, #9ca3af, #d1d5db, #6b7280, #e5e7eb, #4b5563, #d1d5db, #9ca3af);
   animation: shimmer-text 3s linear infinite;
 }
 
 .dark .animate-shimmer-text {
-  background-image: linear-gradient(
-    90deg,
-    #6b7280,
-    #9ca3af,
-    #4b5563,
-    #d1d5db,
-    #374151,
-    #9ca3af,
-    #6b7280
-  );
+  background-image: linear-gradient(90deg, #6b7280, #9ca3af, #4b5563, #d1d5db, #374151, #9ca3af, #6b7280);
 }

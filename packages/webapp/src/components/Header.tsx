@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, Languages, LogOut, Check, Key, Settings, Bot } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import {
@@ -21,10 +22,13 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { setUserLocale } from '@/i18n/db';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import PushNotificationToggle from './PushNotificationToggle';
 
 export default function Header({
+  hasCustomIcon,
   hasSidebar,
 }: {
+  hasCustomIcon?: boolean;
   hasSidebar?: boolean;
 } = {}) {
   const t = useTranslations('header');
@@ -40,11 +44,21 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between h-16 items-center w-full">
           <div className="flex-shrink-0 min-w-0">
-            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white truncate">
+            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white truncate flex items-center gap-2">
+              {hasCustomIcon && (
+                <Image
+                  src="/api/agent-icon"
+                  alt="Agent icon"
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover flex-shrink-0"
+                />
+              )}
               {t('title')}
             </Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <PushNotificationToggle />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

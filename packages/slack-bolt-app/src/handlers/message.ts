@@ -5,7 +5,7 @@ import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { AsyncHandlerEvent } from '../async-handler';
 import { sendWorkerEvent } from '../../../agent-core/src/lib';
-import { getWebappSessionUrl, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
+import { getWebappSessionUrl, sendWebappEvent, updateSessionLastMessage } from '@remote-swe-agents/agent-core/lib';
 import { saveSessionInfo } from '../util/session';
 import { getSessionIdFromSlack } from '../util/session-map';
 
@@ -74,6 +74,8 @@ export async function handleMessage(
     saveConversationHistory(workerId, message, userId, imageKeys),
     sendWorkerEvent(workerId, { type: 'onMessageReceived' }),
     sendWebappEvent(workerId, { type: 'message', role: 'user', message }),
+    updateSessionLastMessage(workerId, message.slice(0, 500)),
+    sendWebappEvent(workerId, { type: 'lastMessageUpdate', lastMessage: message.slice(0, 500) }),
     lambda.send(
       new InvokeCommand({
         FunctionName: AsyncLambdaName,
