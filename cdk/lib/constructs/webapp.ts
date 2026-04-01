@@ -19,6 +19,7 @@ import { WorkerBus } from './worker/bus';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { LambdaWarmer } from './lambda-warmer';
 import { AgentCoreRuntime } from './worker/agent-core-runtime';
+import { VapidKeys } from './vapid-keys';
 
 export interface WebappProps {
   storage: Storage;
@@ -46,6 +47,7 @@ export interface WebappProps {
   webAclArn?: string;
 
   bedrockCriRegionOverride?: string;
+  vapidKeys?: VapidKeys;
 }
 
 export class Webapp extends Construct {
@@ -92,6 +94,12 @@ export class Webapp extends Construct {
         BUCKET_NAME: storage.bucket.bucketName,
         AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
+        ...(props.vapidKeys
+          ? {
+              VAPID_PUBLIC_KEY_PARAMETER_NAME: props.vapidKeys.publicKeyParameter.parameterName,
+              VAPID_PRIVATE_KEY_PARAMETER_NAME: props.vapidKeys.privateKeyParameter.parameterName,
+            }
+          : {}),
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,
@@ -102,6 +110,10 @@ export class Webapp extends Construct {
     storage.bucket.grantReadWrite(handler);
     workerBus.api.grantPublish(handler);
     props.agentCoreRuntime.grantInvoke(handler);
+    if (props.vapidKeys) {
+      props.vapidKeys.grantRead(handler);
+      handler.node.addDependency(props.vapidKeys.customResource);
+    }
 
     handler.addToRolePolicy(
       new PolicyStatement({

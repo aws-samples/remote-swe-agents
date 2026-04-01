@@ -15,6 +15,9 @@ import { execSync } from 'child_process';
 import { Asset, AssetProps } from 'aws-cdk-lib/aws-s3-assets';
 import { AgentCoreRuntime } from './agent-core-runtime';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { EventTrigger } from './event-trigger';
+import { VapidKeys } from '../vapid-keys';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 
 export interface WorkerProps {
   vpc: ec2.IVpc;
@@ -37,6 +40,9 @@ export interface WorkerProps {
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
   bedrockCriRegionOverride?: string;
+  userPool: UserPool;
+  cognitoDomainName: string;
+  vapidKeys: VapidKeys;
 }
 
 export class Worker extends Construct {
@@ -45,6 +51,8 @@ export class Worker extends Construct {
   public readonly logGroup: logs.LogGroup;
   public readonly imageBuilder: WorkerImageBuilder;
   public readonly agentCoreRuntime: AgentCoreRuntime;
+  public readonly eventTrigger: EventTrigger;
+  public readonly ec2Role: iam.Role;
 
   constructor(scope: Construct, id: string, props: WorkerProps) {
     super(scope, id);
@@ -84,6 +92,36 @@ export class Worker extends Construct {
 
     const bus = new WorkerBus(this, 'Bus', {});
     this.bus = bus;
+
+    const eventTrigger = new EventTrigger(this, 'EventTrigger', {
+      storageTable: props.storageTable,
+      bus: bus,
+      userPool: props.userPool,
+      cognitoDomainName: props.cognitoDomainName,
+    });
+    this.eventTrigger = eventTrigger;
+
+    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
+      storageTable: props.storageTable,
+      imageBucket: props.imageBucket,
+      bus: bus,
+      slackBotTokenParameter: props.slackBotTokenParameter,
+      gitHubApp: props.gitHubApp,
+      gitHubAppPrivateKeyParameter: privateKey,
+      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
+      loadBalancing: props.loadBalancing,
+      accessLogBucket: props.accessLogBucket,
+      amiIdParameterName: props.amiIdParameterName,
+      webappOriginSourceParameter: props.webappOriginSourceParameter,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      additionalManagedPolicies: props.additionalManagedPolicies,
+      vapidKeys: props.vapidKeys,
+      eventTrigger,
+    });
+    this.agentCoreRuntime = agentCoreRuntime;
+
+    // Grant event trigger management to AgentCore role
+    eventTrigger.grantManage(agentCoreRuntime);
 
     const assetProps: AssetProps = {
       // we set dummy directory here because all the files are included in the build image.
@@ -351,6 +389,14 @@ export GITHUB_PERSONAL_ACCESS_TOKEN=${
           : '""'
       }
 
+# Fetch VAPID keys from SSM if configured
+if [ -n "$VAPID_PUBLIC_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PUBLIC_KEY=$(aws ssm get-parameter --name "$VAPID_PUBLIC_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
+if [ -n "$VAPID_PRIVATE_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PRIVATE_KEY=$(aws ssm get-parameter --name "$VAPID_PRIVATE_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
+
 # Start app
 cd packages/worker
 npx tsx src/main.ts
@@ -394,6 +440,13 @@ Environment=WEBAPP_ORIGIN_NAME_PARAMETER=${props.webappOriginSourceParameter.par
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
 Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
 Environment=BEDROCK_CRI_REGION_OVERRIDE=${props.bedrockCriRegionOverride ?? ''}
+Environment=VAPID_PUBLIC_KEY_PARAMETER_NAME=${props.vapidKeys.publicKeyParameter.parameterName}
+Environment=VAPID_PRIVATE_KEY_PARAMETER_NAME=${props.vapidKeys.privateKeyParameter.parameterName}
+Environment=EVENT_TRIGGER_SFN_ARN=${eventTrigger.handlerStateMachine.stateMachineArn}
+Environment=EVENT_TRIGGER_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
+Environment=EVENT_TRIGGER_TTL_SFN_ARN=${eventTrigger.ttlStateMachine.stateMachineArn}
+Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
+Environment=EVENT_TRIGGER_RESOURCE_PREFIX=${eventTrigger.resourcePrefix}
 
 [Install]
 WantedBy=multi-user.target
@@ -487,23 +540,6 @@ systemctl start myapp
       sourceAssetHash,
     });
 
-    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
-      storageTable: props.storageTable,
-      imageBucket: props.imageBucket,
-      bus: bus,
-      slackBotTokenParameter: props.slackBotTokenParameter,
-      gitHubApp: props.gitHubApp,
-      gitHubAppPrivateKeyParameter: privateKey,
-      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
-      loadBalancing: props.loadBalancing,
-      accessLogBucket: props.accessLogBucket,
-      amiIdParameterName: props.amiIdParameterName,
-      webappOriginSourceParameter: props.webappOriginSourceParameter,
-      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
-      additionalManagedPolicies: props.additionalManagedPolicies,
-    });
-    this.agentCoreRuntime = agentCoreRuntime;
-
     props.webappOriginSourceParameter.grantRead(role);
     role.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -537,8 +573,14 @@ systemctl start myapp
     privateKey?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter?.grantRead(role);
+    props.vapidKeys.grantRead(role);
+
+    this.ec2Role = role;
     bus.api.grantPublishAndSubscribe(role);
     bus.api.grantConnect(role);
+
+    // Grant event trigger management permissions to EC2 worker role
+    eventTrigger.grantManage(role);
 
     // Grant permissions to write logs to CloudWatch
     this.logGroup.grantWrite(role);

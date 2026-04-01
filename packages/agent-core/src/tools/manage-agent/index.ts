@@ -19,11 +19,21 @@ const agentFieldsSchema = z.object({
     .describe(
       'List of tool names the agent can use. Use the "listAgents" tool first to see available tool names from existing agents.'
     ),
+  useAllTools: z
+    .boolean()
+    .default(false)
+    .describe('Whether to use all available tools. When true, the tools array is ignored.'),
   mcpConfig: z
     .string()
     .default('{"mcpServers":{}}')
     .describe('MCP server configuration as JSON string. Default: {"mcpServers":{}}'),
   runtimeType: runtimeTypeSchema.describe('The runtime type for the agent: "ec2" or "agent-core".'),
+  includeDefaultKnowledge: z
+    .boolean()
+    .default(true)
+    .describe(
+      'Whether to include default SWE knowledge (communication style, Git workflow, coding conventions) in the system prompt. Only relevant when a custom systemPrompt is provided. Default: true.'
+    ),
 });
 
 const listAgentsSchema = z.object({});
@@ -98,6 +108,7 @@ export const getAgentTool: ToolDefinition<z.infer<typeof getAgentSchema>> = {
         tools: agent.tools,
         mcpConfig: agent.mcpConfig,
         runtimeType: agent.runtimeType,
+        includeDefaultKnowledge: agent.includeDefaultKnowledge !== false,
         createdAt: new Date(agent.createdAt).toISOString(),
         updatedAt: new Date(agent.updatedAt).toISOString(),
       },
@@ -122,8 +133,10 @@ export const createAgentTool: ToolDefinition<z.infer<typeof createAgentSchema>> 
       defaultModel: input.defaultModel,
       systemPrompt: input.systemPrompt,
       tools: input.tools,
+      useAllTools: input.useAllTools ?? false,
       mcpConfig: input.mcpConfig ?? '{"mcpServers":{}}',
       runtimeType: input.runtimeType,
+      includeDefaultKnowledge: input.includeDefaultKnowledge ?? true,
     };
     const agent = await createCustomAgent(agentData);
     return `Agent created successfully.\n- ID: ${agent.SK}\n- Name: ${agent.name}`;
@@ -149,8 +162,10 @@ export const updateAgentTool: ToolDefinition<z.infer<typeof updateAgentSchema>> 
       defaultModel: input.defaultModel,
       systemPrompt: input.systemPrompt,
       tools: input.tools,
+      useAllTools: input.useAllTools ?? false,
       mcpConfig: input.mcpConfig ?? '{"mcpServers":{}}',
       runtimeType: input.runtimeType,
+      includeDefaultKnowledge: input.includeDefaultKnowledge ?? true,
     };
     const agent = await updateCustomAgent(input.agentId, agentData);
     return `Agent updated successfully.\n- ID: ${agent.SK}\n- Name: ${agent.name}`;

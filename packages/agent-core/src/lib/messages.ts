@@ -62,13 +62,8 @@ export const saveToolResultMessage = async (workerId: string, toolResultMessage:
   return toolResultItem;
 };
 
-interface DanglingToolUse {
-  item: MessageItem;
-  toolUses: { toolUseId: string; name?: string }[];
-}
-
-const findDanglingToolUses = (items: MessageItem[]): DanglingToolUse[] => {
-  const dangling: DanglingToolUse[] = [];
+export const repairDanglingToolUse = async (workerId: string, items: MessageItem[]): Promise<MessageItem[]> => {
+  const repaired: MessageItem[] = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (item.messageType === 'toolUse') {
@@ -78,73 +73,55 @@ const findDanglingToolUses = (items: MessageItem[]): DanglingToolUse[] => {
         const toolUses: { toolUseId: string; name?: string }[] = content
           .filter((c: any) => c.toolUse?.toolUseId)
           .map((c: any) => ({ toolUseId: c.toolUse.toolUseId, name: c.toolUse.name }));
-        dangling.push({ item, toolUses });
+
+        const toolResultContent = toolUses.map(({ toolUseId, name }) => {
+          let message = 'This tool execution was interrupted and no result is available.';
+
+          // Try to read PID info from file if it was an executeCommand
+          if (name === 'executeCommand') {
+            try {
+              const pidFilePath = path.join(PID_DIR, toolUseId);
+              if (existsSync(pidFilePath)) {
+                const pidData = JSON.parse(readFileSync(pidFilePath, 'utf-8'));
+                message = `This tool execution was interrupted and no result is available. The process may still be running (PID: ${pidData.pid}, command: ${pidData.command}). You can check with \`ps -p ${pidData.pid}\`.`;
+                try {
+                  unlinkSync(pidFilePath);
+                } catch {
+                  // ignore cleanup errors
+                }
+              }
+            } catch (e) {
+              // ignore read errors
+            }
+          }
+
+          return {
+            toolResult: {
+              toolUseId,
+              content: [{ text: message }],
+            },
+          };
+        });
+
+        const toolResultItem: MessageItem = {
+          PK: `message-${workerId}`,
+          SK: `${String(Number(item.SK) + 1).padStart(15, '0')}`,
+          content: JSON.stringify(toolResultContent),
+          role: 'user',
+          tokenCount: 0,
+          messageType: 'toolResult',
+        };
+
+        await ddb.send(
+          new PutCommand({
+            TableName,
+            Item: toolResultItem,
+          })
+        );
+        console.log(`Repaired dangling toolUse at SK=${item.SK} with dummy toolResult at SK=${toolResultItem.SK}`);
+        repaired.push(toolResultItem);
       }
     }
-  }
-  return dangling;
-};
-
-const buildRepairMessage = (toolUseId: string, name?: string): string => {
-  let message = 'This tool execution was interrupted and no result is available.';
-
-  if (name === 'executeCommand') {
-    try {
-      const pidFilePath = path.join(PID_DIR, toolUseId);
-      if (existsSync(pidFilePath)) {
-        const pidData = JSON.parse(readFileSync(pidFilePath, 'utf-8'));
-        message = `This tool execution was interrupted and no result is available. The process may still be running (PID: ${pidData.pid}, command: ${pidData.command}). You can check with \`ps -p ${pidData.pid}\`.`;
-        try {
-          unlinkSync(pidFilePath);
-        } catch {
-          // ignore cleanup errors
-        }
-      }
-    } catch {
-      // ignore read errors
-    }
-  }
-
-  return message;
-};
-
-const createDummyToolResult = async (
-  workerId: string,
-  toolUseItem: MessageItem,
-  toolUses: { toolUseId: string; name?: string }[]
-): Promise<MessageItem> => {
-  const toolResultContent = toolUses.map(({ toolUseId, name }) => ({
-    toolResult: {
-      toolUseId,
-      content: [{ text: buildRepairMessage(toolUseId, name) }],
-    },
-  }));
-
-  const toolResultItem: MessageItem = {
-    PK: `message-${workerId}`,
-    SK: `${String(Number(toolUseItem.SK) + 1).padStart(15, '0')}`,
-    content: JSON.stringify(toolResultContent),
-    role: 'user',
-    tokenCount: 0,
-    messageType: 'toolResult',
-  };
-
-  await ddb.send(
-    new PutCommand({
-      TableName,
-      Item: toolResultItem,
-    })
-  );
-  console.log(`Repaired dangling toolUse at SK=${toolUseItem.SK} with dummy toolResult at SK=${toolResultItem.SK}`);
-  return toolResultItem;
-};
-
-export const repairDanglingToolUse = async (workerId: string, items: MessageItem[]): Promise<MessageItem[]> => {
-  const danglingItems = findDanglingToolUses(items);
-  const repaired: MessageItem[] = [];
-  for (const { item, toolUses } of danglingItems) {
-    const toolResultItem = await createDummyToolResult(workerId, item, toolUses);
-    repaired.push(toolResultItem);
   }
   return repaired;
 };

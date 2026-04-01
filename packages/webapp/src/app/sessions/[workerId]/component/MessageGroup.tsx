@@ -2,13 +2,9 @@ import React from 'react';
 import { Bot, User, Brain } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MessageView } from './MessageList';
+import { MessageView, MessageGroup } from './MessageList';
 import { MessageItem } from './MessageItem';
-
-type MessageGroup = {
-  role: 'user' | 'assistant';
-  messages: MessageView[];
-};
+import { formatDateTime } from '@/lib/utils';
 
 type MessageGroupProps = {
   group: MessageGroup;
@@ -17,7 +13,12 @@ type MessageGroupProps = {
   onInterrupt?: () => void;
 };
 
-export const MessageGroupComponent = ({ group, agentIconUrl, agentName, onInterrupt }: MessageGroupProps) => {
+export const MessageGroupComponent = React.memo(function MessageGroupComponent({
+  group,
+  agentIconUrl,
+  agentName,
+  onInterrupt,
+}: MessageGroupProps) {
   const locale = useLocale();
   const t = useTranslations('sessions');
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -66,8 +67,7 @@ export const MessageGroupComponent = ({ group, agentIconUrl, agentName, onInterr
           {group.role === 'assistant' ? agentName || 'Assistant' : 'User'}
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-          {firstMessageDate.toLocaleDateString(localeForDate)}{' '}
-          {firstMessageDate.toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+          {formatDateTime(firstMessageDate, localeForDate)}
           {group.role === 'assistant' && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -94,11 +94,18 @@ export const MessageGroupComponent = ({ group, agentIconUrl, agentName, onInterr
         {group.messages.map((message, index) => {
           const showTimestamp =
             index !== 0 && !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
+          const isLastExecutingTool =
+            message.type === 'toolUse' && message.output === undefined && index === group.messages.length - 1;
           return (
-            <MessageItem key={message.id} message={message} showTimestamp={showTimestamp} onInterrupt={onInterrupt} />
+            <MessageItem
+              key={message.id}
+              message={message}
+              showTimestamp={showTimestamp}
+              onInterrupt={isLastExecutingTool ? onInterrupt : undefined}
+            />
           );
         })}
       </div>
     </div>
   );
-};
+});

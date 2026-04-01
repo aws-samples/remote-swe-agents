@@ -96,7 +96,9 @@ export class EventTrigger extends Construct {
     });
 
     // Grant common policies to both SFN roles
+    let policyIndex = 0;
     const applyCommonPolicies = (role: iam.IRole) => {
+      const idx = policyIndex++;
       props.storageTable.grantReadWriteData(role);
 
       role.addToPrincipalPolicy(
@@ -134,7 +136,7 @@ export class EventTrigger extends Construct {
 
       const connectionSecret = secretsmanager.Secret.fromSecretCompleteArn(
         this,
-        `${role.node.id}ConnectionSecret`,
+        `SfnRole${idx}ConnectionSecret`,
         connection.connectionSecretArn
       );
       connectionSecret.grantRead(role);

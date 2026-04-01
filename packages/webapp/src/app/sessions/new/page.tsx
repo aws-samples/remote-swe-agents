@@ -1,10 +1,12 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import NewSessionForm from './NewSessionForm';
-import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
+import { ddb, TableName, s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PromptTemplate } from '@/app/sessions/new/schemas';
 import { getCustomAgents, getPreferences } from '@remote-swe-agents/agent-core/lib';
 
@@ -29,9 +31,25 @@ export default async function NewSessionPage() {
 
   templates = (result.Items ?? []) as PromptTemplate[];
 
+  // Resolve agent icon URLs
+  const agentIconUrls: Record<string, string> = {};
+  for (const agent of customAgents) {
+    if (agent.iconKey) {
+      try {
+        agentIconUrls[agent.SK] = await getSignedUrl(
+          s3,
+          new GetObjectCommand({ Bucket: BucketName, Key: agent.iconKey }),
+          { expiresIn: 3600 }
+        );
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
 
       <main className="flex-grow pt-20">
         <div className="max-w-2xl mx-auto px-4 py-8">
@@ -64,7 +82,12 @@ export default async function NewSessionPage() {
                   </ul>
                 </div>
 
-                <NewSessionForm templates={templates} preferences={preferences} customAgents={customAgents} />
+                <NewSessionForm
+                  templates={templates}
+                  preferences={preferences}
+                  customAgents={customAgents}
+                  agentIconUrls={agentIconUrls}
+                />
               </div>
             </div>
           </div>

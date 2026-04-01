@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { readCommonPrompt, getPreferences } from '@remote-swe-agents/agent-core/lib';
 import PromptForm from './components/PromptForm';
 import PreferenceSection from './components/PreferenceSection';
@@ -19,7 +19,7 @@ export default async function PreferencesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
 
       <main className="flex-grow container max-w-6xl mx-auto px-4 py-6 pt-20">
         <div className="mb-6">

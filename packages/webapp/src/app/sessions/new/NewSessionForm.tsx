@@ -25,9 +25,15 @@ interface NewSessionFormProps {
   templates: PromptTemplate[];
   customAgents: CustomAgent[];
   preferences: GlobalPreferences;
+  agentIconUrls?: Record<string, string>;
 }
 
-export default function NewSessionForm({ templates, customAgents, preferences }: NewSessionFormProps) {
+export default function NewSessionForm({
+  templates,
+  customAgents,
+  preferences,
+  agentIconUrls = {},
+}: NewSessionFormProps) {
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -110,9 +116,19 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
                     </SelectItem>
                     {customAgents.map((agent) => (
                       <SelectItem key={agent.SK} value={agent.SK}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{agent.name}</span>
-                          <span className="text-sm text-gray-500">{agent.description}</span>
+                        <div className="flex items-center gap-2">
+                          {agentIconUrls[agent.SK] && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={agentIconUrls[agent.SK]}
+                              alt={agent.name}
+                              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-medium">{agent.name}</span>
+                            <span className="text-sm text-gray-500">{agent.description}</span>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}

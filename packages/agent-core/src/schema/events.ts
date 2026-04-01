@@ -55,4 +55,12 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('eventTriggerFired'),
+    message: z.string(),
+    name: z.string().optional(),
+    id: z.string().optional(),
+    timestamp: z.number(),
+    workerId: z.string(),
+  }),
 ]);

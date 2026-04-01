@@ -101,6 +101,7 @@ export default function MessageForm({
       const savedDraft = localStorage.getItem(draftStorageKey);
       if (savedDraft) {
         setValue('message', savedDraft);
+        // Restore textarea height after setting value
         requestAnimationFrame(() => {
           if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';

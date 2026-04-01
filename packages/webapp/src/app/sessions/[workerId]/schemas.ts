@@ -1,4 +1,4 @@
-import { agentStatusSchema, modelTypeSchema } from '@remote-swe-agents/agent-core/schema';
+import { agentStatusSchema, modelTypeSchema, runtimeTypeSchema } from '@remote-swe-agents/agent-core/schema';
 import { z } from 'zod';
 
 export const sendMessageToAgentSchema = z.object({
@@ -25,5 +25,9 @@ export const sendEventSchema = z.object({
 });
 
 export const stopSessionSchema = z.object({
+  workerId: z.string(),
+});
+
+export const markSessionReadSchema = z.object({
   workerId: z.string(),
 });

@@ -1,4 +1,5 @@
 import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
+import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
@@ -9,7 +10,8 @@ import { Construct } from 'constructs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { WorkerBus } from './bus';
-import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
+import { VapidKeys } from '../vapid-keys';
+import { EventTrigger } from './event-trigger';
 
 export interface AgentCoreRuntimeProps {
   storageTable: ITableV2;
@@ -32,11 +34,15 @@ export interface AgentCoreRuntimeProps {
   webappOriginSourceParameter: IStringParameter;
   bedrockCriRegionOverride?: string;
   additionalManagedPolicies?: string[];
+  vapidKeys: VapidKeys;
+  eventTrigger: EventTrigger;
 }
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
   public grantPrincipal: IPrincipal;
   public runtimeArn: string;
+
+  private readonly role: Role;
 
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
@@ -45,6 +51,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       assumedBy: ServicePrincipal.fromStaticServicePrincipleName('bedrock-agentcore.amazonaws.com'),
     });
     this.grantPrincipal = role;
+    this.role = role;
 
     if (props.additionalManagedPolicies?.length) {
       props.additionalManagedPolicies.forEach((policy) => {
@@ -98,6 +105,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter?.grantRead(role);
     props.webappOriginSourceParameter.grantRead(role);
+    props.vapidKeys.grantRead(role);
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
 
@@ -128,6 +136,13 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter?.parameterName ?? '',
         GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
+        VAPID_PUBLIC_KEY_PARAMETER_NAME: props.vapidKeys.publicKeyParameter.parameterName,
+        VAPID_PRIVATE_KEY_PARAMETER_NAME: props.vapidKeys.privateKeyParameter.parameterName,
+        EVENT_TRIGGER_SFN_ARN: props.eventTrigger.handlerStateMachine.stateMachineArn,
+        EVENT_TRIGGER_SFN_ROLE_ARN: props.eventTrigger.schedulerRole.roleArn,
+        EVENT_TRIGGER_TTL_SFN_ARN: props.eventTrigger.ttlStateMachine.stateMachineArn,
+        EVENT_TRIGGER_TTL_SFN_ROLE_ARN: props.eventTrigger.schedulerRole.roleArn,
+        EVENT_TRIGGER_RESOURCE_PREFIX: props.eventTrigger.resourcePrefix,
       },
     });
     runtime.node.addDependency(role);

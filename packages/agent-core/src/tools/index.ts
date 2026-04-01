@@ -17,8 +17,11 @@ export * from './session-title';
 import { ciTool } from './ci';
 import { commandExecutionTool } from './command-execution';
 import { createPRTool } from './create-pr';
+import { createNewSessionTool } from './create-session';
 import { fileEditTool } from './editor';
+import { createEventTriggerTool, listEventTriggersTool, deleteEventTriggerTool } from './event-trigger';
 import { getPRCommentsTool, replyPRCommentTool, addIssueCommentTool } from './github-comments';
+import { listAgentsTool, getAgentTool, createAgentTool, updateAgentTool, deleteAgentTool } from './manage-agent';
 import { cloneRepositoryTool } from './repo';
 import { reportProgressTool } from './report-progress';
 import { sendImageTool } from './send-image';
@@ -54,7 +57,21 @@ export const requiredToolNames = requiredTools.map((tool) => tool.name);
  * Optional tools that users can select in the custom agent configuration.
  * This includes all tools except required tools (which are always enabled).
  */
-export const optionalTools = [...gitHubTools, commandExecutionTool, fileEditTool, readImageTool];
+export const optionalTools = [
+  ...gitHubTools,
+  commandExecutionTool,
+  fileEditTool,
+  readImageTool,
+  createNewSessionTool,
+  listAgentsTool,
+  getAgentTool,
+  createAgentTool,
+  updateAgentTool,
+  deleteAgentTool,
+  createEventTriggerTool,
+  listEventTriggersTool,
+  deleteEventTriggerTool,
+];
 
 /**
  * All optional tool names (for use in custom agent forms and default agent config).

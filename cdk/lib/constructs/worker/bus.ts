@@ -43,6 +43,9 @@ export class WorkerBus extends Construct {
       (this.api.node.defaultChild as CfnResource).addPropertyOverride('EventConfig.ConnectionAuthModes.1', {
         AuthType: 'AMAZON_COGNITO_USER_POOLS',
       });
+      (this.api.node.defaultChild as CfnResource).addPropertyOverride('EventConfig.DefaultPublishAuthModes.1', {
+        AuthType: 'AMAZON_COGNITO_USER_POOLS',
+      });
       (this.api.node.defaultChild as CfnResource).addPropertyOverride('EventConfig.DefaultSubscribeAuthModes.1', {
         AuthType: 'AMAZON_COGNITO_USER_POOLS',
       });
