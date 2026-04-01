@@ -2017,7 +2017,7 @@ Remote SWE Agents Team",
                 "Fn::Join": [
                   "",
                   [
-                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    "arn:aws:ssm:us-east-1:123456789012:parameter",
                     {
                       "Ref": "WorkerAmiId428C377C",
                     },
@@ -2777,7 +2777,7 @@ exports.handler = async (event) => {
                 "Fn::Join": [
                   "",
                   [
-                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    "arn:aws:ssm:us-east-1:123456789012:parameter",
                     {
                       "Ref": "WorkerAmiId428C377C",
                     },
@@ -4488,6 +4488,17 @@ exports.handler = async (event) => {
                   "Fn::Join": [
                     "",
                     [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter",
+                      {
+                        "Ref": "WorkerAmiId428C377C",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
                         "Ref": "VapidKeysPrivateKeyBA530D10",
@@ -4513,17 +4524,6 @@ exports.handler = async (event) => {
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
                         "Ref": "WebappOriginNameParameterBBAD7F85",
-                      },
-                    ],
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:ssm:us-east-1:123456789012:parameter/",
-                      {
-                        "Ref": "WorkerAmiId428C377C",
                       },
                     ],
                   ],
@@ -5394,6 +5394,7 @@ exports.handler = async (event) => {
     },
     "WorkerAmiId428C377C": {
       "Properties": {
+        "Name": "/TestMainStack/worker-ami-id",
         "Type": "String",
         "Value": "pending-initial-build",
       },
@@ -6922,6 +6923,7 @@ phases:
       "DeletionPolicy": "Delete",
       "DependsOn": [
         "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7",
+        "WorkerAmiId428C377C",
       ],
       "Properties": {
         "Create": {
@@ -6960,6 +6962,9 @@ phases:
       "UpdateReplacePolicy": "Delete",
     },
     "WorkerImageBuilderPurgeAmiCacheCustomResourcePolicy864B61A7": {
+      "DependsOn": [
+        "WorkerAmiId428C377C",
+      ],
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -6970,7 +6975,7 @@ phases:
                 "Fn::Join": [
                   "",
                   [
-                    "arn:aws:ssm:us-east-1:123456789012:parameter/",
+                    "arn:aws:ssm:us-east-1:123456789012:parameter",
                     {
                       "Ref": "WorkerAmiId428C377C",
                     },
