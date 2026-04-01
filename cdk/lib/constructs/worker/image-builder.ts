@@ -1,4 +1,4 @@
-import { ArnFormat, CfnOutput, CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { CfnOutput, CfnResource, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import { IVpc, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ImagePipeline, ImagePipelineProps } from 'cdk-image-pipeline';
@@ -10,7 +10,7 @@ import { Code, Runtime, SingletonFunction } from 'aws-cdk-lib/aws-lambda';
 import { CfnImageRecipe } from 'aws-cdk-lib/aws-imagebuilder';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
-import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 
 export interface WorkerImageBuilderProps {
@@ -135,7 +135,7 @@ export class WorkerImageBuilder extends Construct {
       }),
     });
 
-    new AwsCustomResource(this, 'PurgeAmiCache', {
+    const purgeAmiCache = new AwsCustomResource(this, 'PurgeAmiCache', {
       onUpdate: {
         service: '@aws-sdk/client-ssm',
         action: 'PutParameter',
@@ -147,17 +147,14 @@ export class WorkerImageBuilder extends Construct {
         },
         physicalResourceId: PhysicalResourceId.of(`${amiVersion}`),
       },
-      policy: AwsCustomResourcePolicy.fromSdkCalls({
-        resources: [
-          Stack.of(this).formatArn({
-            service: 'ssm',
-            resource: 'parameter',
-            resourceName: props.amiIdParameterName.replace(/^\//, ''),
-            arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
-          }),
-        ],
-      }),
+      policy: AwsCustomResourcePolicy.fromStatements([
+        new PolicyStatement({
+          actions: ['ssm:PutParameter'],
+          resources: [props.amiIdParameter.parameterArn],
+        }),
+      ]),
     });
+    purgeAmiCache.node.addDependency(props.amiIdParameter);
 
     new CfnOutput(this, 'RemoveCachedAmiCommand', {
       value: `aws ssm put-parameter --name ${props.amiIdParameterName} --value pending-initial-build --type String --overwrite --region ${Stack.of(this).region}`,
