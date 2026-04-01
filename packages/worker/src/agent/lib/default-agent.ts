@@ -146,7 +146,7 @@ export const DefaultAgent: CustomAgent = {
   systemPrompt: '',
   tools: [...allOptionalTools, ...requiredToolNames],
   mcpConfig: readFileSync('./mcp.json').toString(),
-  runtimeType: 'ec2',
+  runtimeType: 'agent-core',
   createdAt: 0,
   updatedAt: 0,
 };
