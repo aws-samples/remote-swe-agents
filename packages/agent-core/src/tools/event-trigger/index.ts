@@ -17,9 +17,9 @@ const createInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Schedule expression for periodic triggers. e.g. rate(5 minutes), cron(0 12 * * ? *). Mutually exclusive with atExpression and eventPattern.'
+      'Schedule expression for periodic triggers. e.g. rate(5 minutes), cron(0 12 * * ? *). Mutually exclusive with oneTimeSchedule and eventPattern.'
     ),
-  atExpression: z
+  oneTimeSchedule: z
     .string()
     .optional()
     .describe(
@@ -29,13 +29,14 @@ const createInputSchema = z.object({
     .record(z.string(), z.any())
     .optional()
     .describe(
-      'EventBridge event pattern JSON for event-driven triggers. e.g. {"source":["aws.bedrock"],"detail-type":["Bedrock Model Customization Job State Change"]}. Mutually exclusive with scheduleExpression and atExpression.'
+      'EventBridge event pattern JSON for event-driven triggers. e.g. {"source":["aws.bedrock"],"detail-type":["Bedrock Model Customization Job State Change"]}. Mutually exclusive with scheduleExpression and oneTimeSchedule.'
     ),
   message: z.string().describe('Message sent to you when this trigger fires. Include context about what to do.'),
   idleNotifyAfter: z
     .string()
+    .optional()
     .describe(
-      'Relative time duration for idle notification on event pattern triggers. If the event has not fired within this duration, you will be notified. The timer resets each time the event fires. The trigger remains active. e.g. 30s, 5min, 2h, 1d'
+      'Relative time duration for idle notification. Required for event pattern triggers. If the event has not fired within this duration, you will be notified. The timer resets each time the event fires. The trigger remains active. e.g. 30s, 5min, 2h, 1d. Not applicable for schedule or one-time triggers.'
     ),
 });
 
@@ -67,26 +68,30 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
   handler: async (input, context) => {
     const { workerId } = context;
     const { name, scheduleExpression, eventPattern, message: triggerMessage, idleNotifyAfter } = input;
-    let { atExpression } = input;
+    let { oneTimeSchedule } = input;
 
     if (!name) return 'Error: name is required.';
 
-    const specified = [scheduleExpression, atExpression, eventPattern].filter(Boolean).length;
+    const specified = [scheduleExpression, oneTimeSchedule, eventPattern].filter(Boolean).length;
     if (specified !== 1) {
-      return 'Error: Exactly one of scheduleExpression, atExpression, or eventPattern must be specified.';
+      return 'Error: Exactly one of scheduleExpression, oneTimeSchedule, or eventPattern must be specified.';
+    }
+
+    if (eventPattern && !idleNotifyAfter) {
+      return 'Error: idleNotifyAfter is required for event pattern triggers.';
     }
 
     const now = formatUtcNow();
 
-    if (atExpression) {
-      const resolved = parseRelativeTime(atExpression);
+    if (oneTimeSchedule) {
+      const resolved = parseRelativeTime(oneTimeSchedule);
       if (resolved) {
-        atExpression = resolved;
+        oneTimeSchedule = resolved;
       }
     }
 
-    if (scheduleExpression || atExpression) {
-      const expression = atExpression ? `at(${atExpression})` : scheduleExpression!;
+    if (scheduleExpression || oneTimeSchedule) {
+      const expression = oneTimeSchedule ? `at(${oneTimeSchedule})` : scheduleExpression!;
       const trigger = await createScheduleTrigger({
         workerId,
         name,
@@ -95,8 +100,8 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
         sfnArn: getSfnArn(),
         sfnRoleArn: getSfnRoleArn(),
       });
-      const typeLabel = atExpression ? `one-time at ${atExpression} UTC` : `schedule: ${scheduleExpression}`;
-      const fireInfo = atExpression ? `\n- Fires at (UTC): ${atExpression}` : '';
+      const typeLabel = oneTimeSchedule ? `one-time at ${oneTimeSchedule} UTC` : `schedule: ${scheduleExpression}`;
+      const fireInfo = oneTimeSchedule ? `\n- Fires at (UTC): ${oneTimeSchedule}` : '';
       return `Event trigger created successfully.\n- ID: ${trigger.SK}\n- Name: "${name}"\n- Type: ${typeLabel}\n- Message: "${triggerMessage}"\n- Current time (UTC): ${now}${fireInfo}`;
     }
 
@@ -122,7 +127,7 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
 ## Trigger types:
 1. **Schedule** (scheduleExpression): Recurring triggers using rate() or cron() expressions
    - Example: \`rate(5 minutes)\`, \`cron(0 12 * * ? *)\`
-2. **One-time** (atExpression): Fires once at a specific time, then auto-deletes
+2. **One-time** (oneTimeSchedule): Fires once at a specific time, then auto-deletes
    - Absolute: \`2026-03-28T12:00:00\` (ISO 8601, UTC)
    - Relative: \`30s\`, \`5min\`, \`2h\`, \`1d\` (from now)
 3. **Event pattern** (eventPattern): Fires when matching AWS events occur on EventBridge
