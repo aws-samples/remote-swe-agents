@@ -62,15 +62,41 @@ export class EventTrigger extends Construct {
       }),
     });
 
-    const handlerRole = new iam.Role(this, 'HandlerRole', {
-      assumedBy: new iam.ServicePrincipal('states.amazonaws.com'),
+    const eventHttpEndpoint = `https://${props.bus.api.httpDns}`;
+
+    // Create Scheduler role first (referenced by SFN policies)
+    this.schedulerRole = new iam.Role(this, 'SchedulerRole', {
+      assumedBy: new iam.CompositePrincipal(
+        new iam.ServicePrincipal('scheduler.amazonaws.com'),
+        new iam.ServicePrincipal('events.amazonaws.com')
+      ),
     });
 
-    const ttlRole = new iam.Role(this, 'TtlRole', {
-      assumedBy: new iam.ServicePrincipal('states.amazonaws.com'),
+    // Step Functions with auto-generated roles
+    const handlerAslPath = path.join(__dirname, 'event-trigger-handler.asl.json');
+    this.handlerStateMachine = new sfn.StateMachine(this, 'HandlerStateMachine', {
+      definitionBody: sfn.DefinitionBody.fromFile(handlerAslPath),
+      definitionSubstitutions: {
+        tableName: props.storageTable.tableName,
+        eventHttpEndpoint,
+        connectionArn: connection.connectionArn,
+      },
+      timeout: cdk.Duration.seconds(300),
     });
 
-    const commonPolicies = (role: iam.Role) => {
+    const ttlAslPath = path.join(__dirname, 'event-trigger-ttl.asl.json');
+    this.ttlStateMachine = new sfn.StateMachine(this, 'TtlStateMachine', {
+      definitionBody: sfn.DefinitionBody.fromFile(ttlAslPath),
+      definitionSubstitutions: {
+        tableName: props.storageTable.tableName,
+        eventHttpEndpoint,
+        connectionArn: connection.connectionArn,
+      },
+      timeout: cdk.Duration.seconds(300),
+    });
+
+    // Grant common policies to both SFN roles
+    const applyCommonPolicies = (role: iam.IRole) => {
       props.storageTable.grantReadWriteData(role);
 
       role.addToPrincipalPolicy(
@@ -126,18 +152,18 @@ export class EventTrigger extends Construct {
       );
     };
 
-    commonPolicies(handlerRole);
-    commonPolicies(ttlRole);
+    applyCommonPolicies(this.handlerStateMachine.role);
+    applyCommonPolicies(this.ttlStateMachine.role);
 
     // Handler needs scheduler permissions to reset idle timers on event fire
-    handlerRole.addToPrincipalPolicy(
+    this.handlerStateMachine.role.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['scheduler:CreateSchedule', 'scheduler:DeleteSchedule'],
         resources: [`arn:aws:scheduler:${region}:${account}:schedule/default/${this.resourcePrefix}-*`],
       })
     );
 
-    handlerRole.addToPrincipalPolicy(
+    this.handlerStateMachine.role.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['iam:PassRole'],
         resources: [this.schedulerRole.roleArn],
@@ -149,46 +175,15 @@ export class EventTrigger extends Construct {
       })
     );
 
-    ttlRole.addToPrincipalPolicy(
+    // TTL role needs EventBridge cleanup permissions
+    this.ttlStateMachine.role.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['events:RemoveTargets', 'events:DeleteRule'],
         resources: [`arn:aws:events:${region}:${account}:rule/${this.resourcePrefix}-*`],
       })
     );
 
-    const eventHttpEndpoint = `https://${props.bus.api.httpDns}`;
-
-    const handlerAslPath = path.join(__dirname, 'event-trigger-handler.asl.json');
-    this.handlerStateMachine = new sfn.StateMachine(this, 'HandlerStateMachine', {
-      definitionBody: sfn.DefinitionBody.fromFile(handlerAslPath),
-      definitionSubstitutions: {
-        tableName: props.storageTable.tableName,
-        eventHttpEndpoint,
-        connectionArn: connection.connectionArn,
-      },
-      role: handlerRole,
-      timeout: cdk.Duration.seconds(300),
-    });
-
-    const ttlAslPath = path.join(__dirname, 'event-trigger-ttl.asl.json');
-    this.ttlStateMachine = new sfn.StateMachine(this, 'TtlStateMachine', {
-      definitionBody: sfn.DefinitionBody.fromFile(ttlAslPath),
-      definitionSubstitutions: {
-        tableName: props.storageTable.tableName,
-        eventHttpEndpoint,
-        connectionArn: connection.connectionArn,
-      },
-      role: ttlRole,
-      timeout: cdk.Duration.seconds(300),
-    });
-
-    this.schedulerRole = new iam.Role(this, 'SchedulerRole', {
-      assumedBy: new iam.CompositePrincipal(
-        new iam.ServicePrincipal('scheduler.amazonaws.com'),
-        new iam.ServicePrincipal('events.amazonaws.com')
-      ),
-    });
-
+    // Scheduler role can start both SFN state machines
     this.schedulerRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['states:StartExecution'],
