@@ -186,7 +186,7 @@ export default function MessageList({
                     <Bot className="w-3 h-3 text-white" />
                   )}
                 </div>
-                <span className="text-sm animate-gaming-led bg-clip-text text-transparent bg-[length:200%_auto]">
+                <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto]">
                   {instanceStatus === 'starting'
                     ? t('agentStartingMessage')
                     : t('aiAgentResponding', { agentName: agentName || 'Assistant' })}

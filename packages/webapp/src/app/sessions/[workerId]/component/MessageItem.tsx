@@ -54,7 +54,7 @@ export const MessageItem = React.memo(function MessageItem({ message, showTimest
           <EventTriggerRenderer name={message.detail} content={message.content} />
         ) : message.pending ? (
           <div className="pb-2 break-all">
-            <span className="text-sm animate-gaming-led bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">
+            <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">
               {message.content}
             </span>
           </div>
