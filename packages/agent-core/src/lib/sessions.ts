@@ -10,6 +10,7 @@ import {
 import { z } from 'zod';
 import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
+import { deleteUnreadByWorkerId } from './unread';
 
 /**
  * Get session information from DynamoDB
@@ -160,6 +161,13 @@ export const deleteSession = async (workerId: string): Promise<void> => {
         })
       );
     }
+  }
+
+  // Delete all unread items for this session across all users
+  try {
+    await deleteUnreadByWorkerId(workerId);
+  } catch (error) {
+    console.error(`Error cleaning up unread items for session ${workerId}:`, error);
   }
 };
 
