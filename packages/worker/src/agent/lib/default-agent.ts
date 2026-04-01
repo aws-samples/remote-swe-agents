@@ -1,4 +1,4 @@
-import { CustomAgent } from '@remote-swe-agents/agent-core/schema';
+import { CustomAgent, defaultAgentConfig } from '@remote-swe-agents/agent-core/schema';
 import {
   commandExecutionTool,
   DefaultWorkingDirectory,
@@ -142,11 +142,11 @@ export const DefaultAgent: CustomAgent = {
   SK: '0',
   name: 'default agent',
   description: '',
-  defaultModel: 'sonnet4.6',
+  defaultModel: defaultAgentConfig.defaultModel,
   systemPrompt: '',
   tools: [...allOptionalTools, ...requiredToolNames],
   mcpConfig: readFileSync('./mcp.json').toString(),
-  runtimeType: 'agent-core',
+  runtimeType: defaultAgentConfig.runtimeType,
   createdAt: 0,
   updatedAt: 0,
 };

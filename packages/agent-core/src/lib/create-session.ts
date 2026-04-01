@@ -1,6 +1,6 @@
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
-import { MessageItem, ModelType, RuntimeType, SessionItem, defaultRuntimeType } from '../schema';
+import { MessageItem, ModelType, RuntimeType, SessionItem, defaultAgentConfig } from '../schema';
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
@@ -34,7 +34,7 @@ export interface CreateSessionParams {
 export const createSession = async (params: CreateSessionParams): Promise<string> => {
   const { message, initiator, customAgentId, title, modelOverride, slackChannelId, slackMentionUserId } = params;
   const agent = await getCustomAgent(customAgentId);
-  const runtimeType: RuntimeType = agent?.runtimeType ?? defaultRuntimeType;
+  const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
 
   let workerId = `session-${Date.now()}`;
   if (runtimeType === 'agent-core') {
