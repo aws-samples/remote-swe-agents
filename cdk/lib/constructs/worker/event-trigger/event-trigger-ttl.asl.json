@@ -1,6 +1,6 @@
 {
   "QueryLanguage": "JSONata",
-  "Comment": "Handles TTL expiration for event-pattern triggers: cleans up resources, notifies the agent",
+  "Comment": "Handles idle notification for event-pattern triggers: notifies the agent that the event has not fired within the expected time. The trigger remains active.",
   "StartAt": "GetTriggerConfig",
   "States": {
     "GetTriggerConfig": {
@@ -18,8 +18,6 @@
         "triggerName": "{% $states.input.triggerName %}",
         "agentRuntimeArn": "{% $states.input.agentRuntimeArn %}",
         "triggerExists": "{% $exists($states.result.Item) %}",
-        "triggerType": "{% $states.result.Item.type.S %}",
-        "resourceName": "{% $states.result.Item.resourceName.S %}",
         "triggerMessage": "{% $states.result.Item.message.S %}",
         "triggerDisplayName": "{% $states.result.Item.name.S %}"
       },
@@ -33,54 +31,13 @@
           "Next": "AlreadyDeleted"
         }
       ],
-      "Default": "RemoveEventBridgeTargets"
+      "Default": "WriteIdleNotification"
     },
     "AlreadyDeleted": {
       "Type": "Succeed",
-      "Comment": "Trigger already deleted"
+      "Comment": "Trigger already deleted, nothing to notify"
     },
-    "RemoveEventBridgeTargets": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:eventbridge:removeTargets",
-      "Arguments": {
-        "Rule": "{% $resourceName %}",
-        "Ids": ["sfn-target"]
-      },
-      "Next": "DeleteEventBridgeRule",
-      "Catch": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "DeleteEventBridgeRule"
-        }
-      ]
-    },
-    "DeleteEventBridgeRule": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:eventbridge:deleteRule",
-      "Arguments": {
-        "Name": "{% $resourceName %}"
-      },
-      "Next": "DeleteTriggerFromDDB",
-      "Catch": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "DeleteTriggerFromDDB"
-        }
-      ]
-    },
-    "DeleteTriggerFromDDB": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:dynamodb:deleteItem",
-      "Arguments": {
-        "TableName": "${tableName}",
-        "Key": {
-          "PK": { "S": "{% 'event-trigger-' & $workerId %}" },
-          "SK": { "S": "{% $triggerName %}" }
-        }
-      },
-      "Next": "WriteExpirationMessage"
-    },
-    "WriteExpirationMessage": {
+    "WriteIdleNotification": {
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem",
       "Arguments": {
@@ -88,7 +45,7 @@
         "Item": {
           "PK": { "S": "{% 'message-' & $workerId %}" },
           "SK": { "S": "{% $pad($string($millis()), -15, '0') %}" },
-          "content": { "S": "{% $string([{\"text\": '<user_message>\\nEvent trigger \"' & $triggerName & '\" has expired and been automatically deleted. Original message was: \"' & $triggerMessage & '\"\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>'}]) %}" },
+          "content": { "S": "{% $string([{\"text\": '<user_message>\\nEvent trigger \"' & $triggerName & '\" idle notification: the expected event has not fired within the configured time. The trigger is still active and listening. Original message was: \"' & $triggerMessage & '\"\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>'}]) %}" },
           "role": { "S": "user" },
           "tokenCount": { "N": "0" },
           "messageType": { "S": "eventTrigger" },

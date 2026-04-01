@@ -22,6 +22,19 @@ const eventBridge = new EventBridgeClient({});
 const RESOURCE_PREFIX = process.env.EVENT_TRIGGER_RESOURCE_PREFIX ?? 'remote-swe';
 const MAX_TRIGGERS_PER_SESSION = 10;
 
+function parseRelativeTimeToIso(expr: string): string {
+  const match = expr.match(/^(\d+)\s*(s|sec|min|m|h|hr|d)$/i);
+  if (!match) throw new Error(`Invalid relative time expression: ${expr}`);
+  const value = parseInt(match[1], 10);
+  const unit = match[2].toLowerCase();
+  let ms = 0;
+  if (unit === 's' || unit === 'sec') ms = value * 1000;
+  else if (unit === 'min' || unit === 'm') ms = value * 60 * 1000;
+  else if (unit === 'h' || unit === 'hr') ms = value * 60 * 60 * 1000;
+  else if (unit === 'd') ms = value * 24 * 60 * 60 * 1000;
+  return new Date(Date.now() + ms).toISOString().replace(/\.\d{3}Z$/, '');
+}
+
 function generateTriggerId(): string {
   return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -37,7 +50,7 @@ export interface EventTriggerItem {
   message: string;
   resourceName: string;
   ttlScheduleName?: string;
-  expiresAt?: string;
+  idleNotifyAfter?: string;
   createdAt: number;
 }
 
@@ -159,7 +172,7 @@ export interface CreateEventPatternTriggerParams {
   name: string;
   eventPattern: Record<string, any>;
   message: string;
-  expiresAt?: string;
+  idleNotifyAfter?: string;
   sfnArn: string;
   sfnRoleArn: string;
   ttlSfnArn: string;
@@ -167,7 +180,8 @@ export interface CreateEventPatternTriggerParams {
 }
 
 export async function createEventPatternTrigger(params: CreateEventPatternTriggerParams): Promise<EventTriggerItem> {
-  const { workerId, name, eventPattern, message, expiresAt, sfnArn, sfnRoleArn, ttlSfnArn, ttlSfnRoleArn } = params;
+  const { workerId, name, eventPattern, message, idleNotifyAfter, sfnArn, sfnRoleArn, ttlSfnArn, ttlSfnRoleArn } =
+    params;
 
   await validateTriggerLimit(workerId);
 
@@ -204,12 +218,13 @@ export async function createEventPatternTrigger(params: CreateEventPatternTrigge
   );
 
   let ttlScheduleName: string | undefined;
-  if (expiresAt) {
+  if (idleNotifyAfter) {
+    const notifyAt = parseRelativeTimeToIso(idleNotifyAfter);
     ttlScheduleName = makeTtlScheduleName(workerId, triggerId);
     await scheduler.send(
       new CreateScheduleCommand({
         Name: ttlScheduleName,
-        ScheduleExpression: `at(${expiresAt.replace('Z', '')})`,
+        ScheduleExpression: `at(${notifyAt})`,
         ScheduleExpressionTimezone: 'UTC',
         FlexibleTimeWindow: { Mode: FlexibleTimeWindowMode.OFF },
         ActionAfterCompletion: ActionAfterCompletion.DELETE,
@@ -236,7 +251,7 @@ export async function createEventPatternTrigger(params: CreateEventPatternTrigge
     message,
     resourceName,
     ttlScheduleName,
-    expiresAt,
+    idleNotifyAfter,
     createdAt: Date.now(),
   };
 

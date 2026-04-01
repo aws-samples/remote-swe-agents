@@ -32,11 +32,11 @@ const createInputSchema = z.object({
       'EventBridge event pattern JSON for event-driven triggers. e.g. {"source":["aws.bedrock"],"detail-type":["Bedrock Model Customization Job State Change"]}. Mutually exclusive with scheduleExpression and atExpression.'
     ),
   message: z.string().describe('Message sent to you when this trigger fires. Include context about what to do.'),
-  expiresAt: z
+  idleNotifyAfter: z
     .string()
     .optional()
     .describe(
-      'ISO 8601 expiration time (UTC) for event pattern triggers. When this time is reached, the trigger is deleted and you are notified. e.g. 2026-03-29T00:00:00'
+      'Relative time duration for idle notification on event pattern triggers. If the event has not fired within this duration, you will be notified (the trigger remains active). e.g. 30s, 5min, 2h, 1d'
     ),
 });
 
@@ -67,7 +67,7 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
   name: 'createEventTrigger',
   handler: async (input, context) => {
     const { workerId } = context;
-    const { name, scheduleExpression, eventPattern, message: triggerMessage, expiresAt } = input;
+    const { name, scheduleExpression, eventPattern, message: triggerMessage, idleNotifyAfter } = input;
     let { atExpression } = input;
 
     if (!name) return 'Error: name is required.';
@@ -106,14 +106,14 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
       name,
       eventPattern: eventPattern!,
       message: triggerMessage,
-      expiresAt,
+      idleNotifyAfter,
       sfnArn: getSfnArn(),
       sfnRoleArn: getSfnRoleArn(),
       ttlSfnArn: getTtlSfnArn(),
       ttlSfnRoleArn: getTtlSfnRoleArn(),
     });
-    const expiryInfo = expiresAt ? `\n- Expires: ${expiresAt}` : '';
-    return `Event trigger created successfully.\n- ID: ${trigger.SK}\n- Name: "${name}"\n- Type: event-pattern\n- Pattern: ${JSON.stringify(eventPattern)}\n- Message: "${triggerMessage}"${expiryInfo}\n- Current time (UTC): ${now}`;
+    const idleInfo = idleNotifyAfter ? `\n- Idle notification: after ${idleNotifyAfter}` : '';
+    return `Event trigger created successfully.\n- ID: ${trigger.SK}\n- Name: "${name}"\n- Type: event-pattern\n- Pattern: ${JSON.stringify(eventPattern)}\n- Message: "${triggerMessage}"${idleInfo}\n- Current time (UTC): ${now}`;
   },
   schema: createInputSchema,
   toolSpec: async () => ({
@@ -132,7 +132,7 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
 ## Behavior:
 - When a trigger fires, you receive the configured message along with event details (for event patterns)
 - Triggers persist even when the session is sleeping; the session will be woken up
-- Event pattern triggers can have an expiration time (expiresAt) - you'll be notified when they expire
+- Event pattern triggers can have an idle notification (idleNotifyAfter) - you'll be notified if the event hasn't fired within the specified duration, but the trigger remains active
 - Maximum 10 triggers per session
 - One-time schedules are automatically cleaned up after firing
 
@@ -158,8 +158,8 @@ export const listEventTriggersTool: ToolDefinition<z.infer<typeof listInputSchem
     }
     const lines = triggers.map((t) => {
       const typeInfo = t.type === 'schedule' ? `schedule: ${t.scheduleExpression}` : `event-pattern: ${t.eventPattern}`;
-      const expiry = t.expiresAt ? `, expires: ${t.expiresAt}` : '';
-      return `- [${t.SK}] "${t.name}" (${typeInfo}${expiry}): "${t.message}"`;
+      const idleNotify = t.idleNotifyAfter ? `, idle notify: ${t.idleNotifyAfter}` : '';
+      return `- [${t.SK}] "${t.name}" (${typeInfo}${idleNotify}): "${t.message}"`;
     });
     return `Event triggers for this session:\n${lines.join('\n')}`;
   },
