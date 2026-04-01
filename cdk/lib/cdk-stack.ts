@@ -76,6 +76,7 @@ export class MainStack extends cdk.Stack {
       : undefined;
 
     const workerAmiIdParameter = new StringParameter(this, 'WorkerAmiId', {
+      parameterName: `/${this.stackName}/worker-ami-id`,
       stringValue: 'pending-initial-build',
     });
 
