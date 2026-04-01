@@ -8,13 +8,14 @@ import { redirect } from 'next/navigation';
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { message, customAgentId = '' } = parsedInput;
+    const { message, modelOverride, customAgentId = '' } = parsedInput;
     const { userId } = ctx;
 
     const workerId = await createSession({
       message,
       initiator: `webapp#${userId}`,
       customAgentId: customAgentId || undefined,
+      modelOverride,
     });
 
     redirect(`/sessions/${workerId}`);

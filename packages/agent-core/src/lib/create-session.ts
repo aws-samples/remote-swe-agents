@@ -1,6 +1,6 @@
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
-import { MessageItem, RuntimeType, SessionItem, defaultRuntimeType } from '../schema';
+import { MessageItem, ModelType, RuntimeType, SessionItem, defaultRuntimeType } from '../schema';
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
@@ -14,6 +14,7 @@ export interface CreateSessionParams {
   initiator: string;
   customAgentId?: string;
   title?: string;
+  modelOverride?: ModelType;
   /**
    * If provided, a new Slack thread will be created in this channel
    * and linked to the new session.
@@ -31,7 +32,7 @@ export interface CreateSessionParams {
  * @returns The workerId of the newly created session
  */
 export const createSession = async (params: CreateSessionParams): Promise<string> => {
-  const { message, initiator, customAgentId, title, slackChannelId, slackMentionUserId } = params;
+  const { message, initiator, customAgentId, title, modelOverride, slackChannelId, slackMentionUserId } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultRuntimeType;
 
@@ -96,6 +97,7 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               role: 'user',
               tokenCount: 0,
               messageType: 'userMessage',
+              ...(modelOverride ? { modelOverride } : {}),
             } satisfies MessageItem,
           },
         },
