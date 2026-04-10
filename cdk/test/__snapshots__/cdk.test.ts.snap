@@ -5122,6 +5122,14 @@ exports.handler = async (event) => {
               },
             },
             {
+              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/*",
+                "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/*/runtime-endpoint/DEFAULT",
+              ],
+            },
+            {
               "Action": [
                 "scheduler:CreateSchedule",
                 "scheduler:DeleteSchedule",
