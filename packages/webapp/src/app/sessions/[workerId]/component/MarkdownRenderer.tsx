@@ -11,6 +11,9 @@ type MarkdownRendererProps = {
 
 export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
+  const codeStyle = resolvedTheme === 'dark'
+    ? oneDark
+    : { ...oneLight, 'pre[class*="language-"]': { ...oneLight['pre[class*="language-"]'], background: '#e5e7eb' }, 'code[class*="language-"]': { ...oneLight['code[class*="language-"]'], background: '#e5e7eb' } };
 
   return (
     <ReactMarkdown
@@ -36,19 +39,19 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
         code(props: any) {
           const { className, children } = props;
           const match = /language-(\w+)/.exec(className || '');
-          const isInline = !match;
-          return !isInline ? (
-            <SyntaxHighlighter
-              style={resolvedTheme === 'dark' ? oneDark : oneLight}
-              lineProps={{ style: { wordBreak: 'break-word', whiteSpace: 'pre-wrap' } }}
-              language={match[1]}
-              PreTag="div"
-              className="rounded-md"
-              wrapLines
-              wrapLongLines
-            >
-              {String(children).replace(/\n$/, '')}
-            </SyntaxHighlighter>
+          const childStr = String(children);
+          const isBlock = !!match || childStr.includes('\n');
+          return isBlock ? (
+            <div className="overflow-x-auto mb-2 rounded-md" data-scrollable="true">
+              <SyntaxHighlighter
+                style={codeStyle}
+                language={match?.[1] || 'text'}
+                PreTag="div"
+                className="rounded-md"
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            </div>
           ) : (
             <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm whitespace-pre-wrap">
               {children}
