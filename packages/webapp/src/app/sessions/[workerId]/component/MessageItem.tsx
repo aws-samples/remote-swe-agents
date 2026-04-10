@@ -7,6 +7,7 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
 import { EventTriggerRenderer } from './EventTriggerRenderer';
 import { ImageViewer } from './ImageViewer';
+import { FileViewer } from './FileViewer';
 import { formatTime } from '@/lib/utils';
 
 type MessageItemProps = {
@@ -84,6 +85,7 @@ export const MessageItem = React.memo(function MessageItem({ message, showTimest
                 )}
                 <MarkdownRenderer content={message.content} />
                 {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
+                {message.fileKeys && message.fileKeys.length > 0 && <FileViewer fileKeys={message.fileKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
                 <button

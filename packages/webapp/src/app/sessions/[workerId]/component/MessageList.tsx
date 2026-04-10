@@ -17,6 +17,7 @@ export type MessageView = {
   timestamp: Date;
   type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger';
   imageKeys?: string[];
+  fileKeys?: string[];
   thinkingBudget?: number;
   reasoningText?: string;
   modelOverride?: ModelType;

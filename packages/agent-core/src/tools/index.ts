@@ -8,7 +8,7 @@ export * from './github-comments';
 export * from './manage-agent';
 export * from './repo';
 export * from './report-progress';
-export * from './send-image';
+export * from './send-file';
 export * from './think';
 export * from './read-image';
 export * from './todo';
@@ -24,7 +24,7 @@ import { getPRCommentsTool, replyPRCommentTool, addIssueCommentTool } from './gi
 import { listAgentsTool, getAgentTool, createAgentTool, updateAgentTool, deleteAgentTool } from './manage-agent';
 import { cloneRepositoryTool } from './repo';
 import { reportProgressTool } from './report-progress';
-import { sendImageTool } from './send-image';
+import { sendFileTool } from './send-file';
 import { readImageTool } from './read-image';
 import { todoInitTool, todoUpdateTool } from './todo';
 import { updateSessionTitleTool } from './session-title';
@@ -46,7 +46,7 @@ export const gitHubTools = [
  * Required tools that are always enabled regardless of custom agent tool selection.
  * These tools are essential for basic agent functionality.
  */
-export const requiredTools = [reportProgressTool, todoInitTool, todoUpdateTool, sendImageTool, updateSessionTitleTool];
+export const requiredTools = [reportProgressTool, todoInitTool, todoUpdateTool, sendFileTool, updateSessionTitleTool];
 
 /**
  * Required tool names for filtering convenience.

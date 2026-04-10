@@ -304,7 +304,9 @@ const preProcessMessageContent = async (content: Message['content'], workerId: s
 };
 
 const imageCache: Record<string, { data: Uint8Array; localPath: string; format: string }> = {};
+const fileCache: Record<string, { localPath: string }> = {};
 let imageSeqNo = 0;
+let fileSeqNo = 0;
 
 const ensureImagesDirectory = () => {
   const imagesDir = path.join(tmpdir(), `.remote-swe-images`);
@@ -312,6 +314,14 @@ const ensureImagesDirectory = () => {
     mkdirSync(imagesDir, { recursive: true });
   }
   return imagesDir;
+};
+
+const ensureFilesDirectory = () => {
+  const filesDir = path.join(tmpdir(), `.remote-swe-files`);
+  if (!existsSync(filesDir)) {
+    mkdirSync(filesDir, { recursive: true });
+  }
+  return filesDir;
 };
 
 const saveImageToLocalFs = async (imageBuffer: Uint8Array): Promise<string> => {
@@ -332,6 +342,16 @@ const saveImageToLocalFs = async (imageBuffer: Uint8Array): Promise<string> => {
   imageSeqNo++;
 
   // Return the path in the format specified in the issue
+  return filePath;
+};
+
+const saveFileToLocalFs = async (fileBuffer: Uint8Array, fileName: string): Promise<string> => {
+  const filesDir = ensureFilesDirectory();
+
+  const filePath = path.join(filesDir, `${fileSeqNo}_${fileName}`);
+  writeFileSync(filePath, fileBuffer);
+  fileSeqNo++;
+
   return filePath;
 };
 
@@ -375,6 +395,22 @@ const postProcessMessageContent = async (content: string) => {
       });
       flattenedArray.push({
         text: `the image is stored locally on ${localPath}`,
+      });
+    } else if (typeof c.file?.source?.s3Key == 'string') {
+      const s3Key = c.file.source.s3Key as string;
+      const fileName = c.file.fileName || s3Key.split('/').pop() || 'file';
+      let localPath: string;
+
+      if (s3Key in fileCache) {
+        localPath = fileCache[s3Key].localPath;
+      } else {
+        const fileBuffer = await getBytesFromKey(s3Key);
+        localPath = await saveFileToLocalFs(fileBuffer, fileName);
+        fileCache[s3Key] = { localPath };
+      }
+
+      flattenedArray.push({
+        text: `the file "${fileName}" is stored locally on ${localPath}`,
       });
     } else if (c.toolResult?.content != null) {
       c.toolResult.content = await postProcessMessageContent(JSON.stringify(c.toolResult.content));
