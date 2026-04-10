@@ -43,7 +43,7 @@ export const handler: Handler<unknown> = async (rawEvent, context) => {
       await makeIdempotent(
         async (_: string) => {
           const session = await getSession(event.workerId);
-          const runtimeType = session?.runtimeType ?? 'ec2';
+          const runtimeType = session?.runtimeType ?? 'agent-core';
           const res = await getOrCreateWorkerInstance(event.workerId, runtimeType);
 
           if (res.oldStatus == 'stopped') {
