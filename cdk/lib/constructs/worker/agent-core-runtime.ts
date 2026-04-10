@@ -153,7 +153,12 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     // so that agents can create child sessions via InvokeAgentRuntimeCommand.
     // Use wildcard ARN pattern to avoid circular dependency between the role and the runtime.
     const runtimeArnPattern = Arn.format(
-      { service: 'bedrock-agentcore', resource: 'runtime', resourceName: '*', arnFormat: ArnFormat.SLASH_RESOURCE_NAME },
+      {
+        service: 'bedrock-agentcore',
+        resource: 'runtime',
+        resourceName: '*',
+        arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+      },
       Stack.of(this)
     );
     role.addToPrincipalPolicy(
