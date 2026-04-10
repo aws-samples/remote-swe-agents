@@ -29,9 +29,15 @@ export default function BadgeSyncer() {
       }
     };
 
+    const handleSessionRead = () => {
+      syncBadge();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('session-read', handleSessionRead);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('session-read', handleSessionRead);
     };
   }, [syncBadge]);
 

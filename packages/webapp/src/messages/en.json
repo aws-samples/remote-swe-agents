@@ -115,6 +115,7 @@
     "cancel": "Cancel",
     "sessionActions": "Actions",
     "goToSessionList": "View All Sessions",
+    "markAllRead": "Mark all as read",
     "toggleSidebar": "Toggle sidebar",
     "stopSession": "Stop Session",
     "stopSessionSuccess": "Session stopped",
