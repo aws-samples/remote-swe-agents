@@ -182,6 +182,11 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
   // Because changing the max token count purges the prompt cache, we do not want to change it too frequently.
   let maxTokensExceededCount = 0;
 
+  // Track consecutive errors for circuit breaker
+  let consecutiveErrorCount = 0;
+  let lastErrorType = '';
+  const MAX_CONSECUTIVE_ERRORS = 3;
+
   let lastReportedTime = 0;
   while (true) {
     if (cancellationToken.isCancelled) break;
@@ -219,50 +224,109 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     // Will hold the detected budget from bedrockConverse
     let detectedBudget: number | undefined;
 
-    const res = await pRetry(
-      async () => {
-        try {
-          if (cancellationToken.isCancelled) return;
+    let res;
+    try {
+      res = await pRetry(
+        async () => {
+          try {
+            if (cancellationToken.isCancelled) return;
 
-          const converseResult = await bedrockConverse(
-            workerId,
-            [modelOverride],
-            {
-              messages,
-              system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
-              toolConfig,
-            },
-            maxTokensExceededCount
-          );
+            const converseResult = await bedrockConverse(
+              workerId,
+              [modelOverride],
+              {
+                messages,
+                system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
+                toolConfig,
+              },
+              maxTokensExceededCount
+            );
 
-          const res = converseResult.response;
-          // Store the detected budget in the outer scope variable
-          detectedBudget = converseResult.thinkingBudget;
+            const converseResponse = converseResult.response;
+            // Store the detected budget in the outer scope variable
+            detectedBudget = converseResult.thinkingBudget;
 
-          if (res.stopReason == 'max_tokens') {
-            maxTokensExceededCount += 1;
-            throw new MaxTokenExceededError();
-          }
-          return res;
-        } catch (e) {
-          if (e instanceof ThrottlingException) {
-            console.log(`retrying... ${e.message}`);
+            if (converseResponse.stopReason == 'max_tokens') {
+              maxTokensExceededCount += 1;
+              throw new MaxTokenExceededError();
+            }
+            return converseResponse;
+          } catch (e) {
+            if (e instanceof ThrottlingException) {
+              console.log(`retrying... ${e.message}`);
+              throw e;
+            }
+            if (e instanceof MaxTokenExceededError) {
+              console.log(`retrying... maxTokenExceeded ${maxTokensExceededCount} time(s)`);
+              throw e;
+            }
+            console.log(e);
+            if (e instanceof Error) {
+              throw new AbortError(e);
+            }
             throw e;
           }
-          if (e instanceof MaxTokenExceededError) {
-            console.log(`retrying... maxTokenExceeded ${maxTokensExceededCount} time(s)`);
-            throw e;
-          }
-          console.log(e);
-          if (e instanceof Error) {
-            throw new AbortError(e);
-          }
-          throw e;
-        }
-      },
-      { retries: 100, minTimeout: 1000, maxTimeout: 5000 }
-    );
+        },
+        { retries: 100, minTimeout: 1000, maxTimeout: 5000 }
+      );
+    } catch (e) {
+      // Categorize the error for circuit breaker tracking
+      const errorType = categorizeError(e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+
+      // Track consecutive errors of the same type
+      if (errorType === lastErrorType) {
+        consecutiveErrorCount++;
+      } else {
+        consecutiveErrorCount = 1;
+        lastErrorType = errorType;
+      }
+
+      console.log(`Agent loop error (${errorType}, consecutive: ${consecutiveErrorCount}): ${errorMessage}`);
+
+      // Circuit breaker: if the same error type occurs MAX_CONSECUTIVE_ERRORS times, stop and notify user
+      if (consecutiveErrorCount >= MAX_CONSECUTIVE_ERRORS) {
+        const userNotification = `The agent encountered the same error ${MAX_CONSECUTIVE_ERRORS} times consecutively and stopped to avoid an infinite loop.\n\nError type: ${errorType}\nDetails: ${errorMessage}\n\nPlease review and try again.`;
+        await sendSystemMessage(
+          workerId,
+          slackUserId ? `<@${slackUserId}> ${userNotification}` : userNotification,
+          true
+        );
+        break;
+      }
+
+      // Inject error feedback as a user message so the agent can understand and recover
+      const recoveryHint = getRecoveryHint(errorType, errorMessage);
+      const errorFeedbackMessage: Message = {
+        role: 'user',
+        content: [
+          {
+            text: `[SYSTEM ERROR FEEDBACK] An error occurred during your last response generation. Please adjust your approach and try again.\n\nError type: ${errorType}\nDetails: ${errorMessage}\n\n${recoveryHint}`,
+          },
+        ],
+      };
+
+      // Save the error feedback to conversation history so it persists
+      const savedErrorItem = await saveConversationHistory(workerId, errorFeedbackMessage, 0, 'errorFeedback');
+      appendedItems.push(savedErrorItem);
+
+      // Notify the user that an error occurred but the agent is retrying
+      await sendWebappEvent(workerId, {
+        type: 'agentError',
+        errorType,
+        errorMessage,
+        consecutiveCount: consecutiveErrorCount,
+        willRetry: true,
+      });
+
+      // Continue the loop to let the agent retry with error context
+      continue;
+    }
     if (!res) break;
+
+    // Reset consecutive error counter on successful response
+    consecutiveErrorCount = 0;
+    lastErrorType = '';
 
     const lastItem = items.at(-1);
     if (lastItem?.role == 'user') {
@@ -460,8 +524,62 @@ export const resume = async (workerId: string, cancellationToken: CancellationTo
     lastItem?.messageType == 'userMessage' ||
     lastItem?.messageType == 'eventTrigger' ||
     lastItem?.messageType == 'toolResult' ||
-    lastItem?.messageType == 'toolUse'
+    lastItem?.messageType == 'toolUse' ||
+    lastItem?.messageType == 'errorFeedback'
   ) {
     return await onMessageReceived(workerId, cancellationToken);
+  }
+};
+
+const categorizeError = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error);
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('max tokens exceeded too many times')) {
+    return 'max_output_tokens_exceeded';
+  }
+  if (lowerMessage.includes('throttl')) {
+    return 'throttling';
+  }
+  if (lowerMessage.includes('validationexception') || lowerMessage.includes('validation')) {
+    return 'validation_error';
+  }
+  if (lowerMessage.includes('modelerrorexception') || lowerMessage.includes('model error')) {
+    return 'model_error';
+  }
+  if (
+    lowerMessage.includes('serviceunavaila') ||
+    lowerMessage.includes('internalservererror') ||
+    lowerMessage.includes('internal server')
+  ) {
+    return 'service_unavailable';
+  }
+  if (lowerMessage.includes('accessdenied') || lowerMessage.includes('access denied')) {
+    return 'access_denied';
+  }
+  if (lowerMessage.includes('timeout') || lowerMessage.includes('timed out')) {
+    return 'timeout';
+  }
+  return 'unknown_error';
+};
+
+const getRecoveryHint = (errorType: string, errorMessage: string): string => {
+  switch (errorType) {
+    case 'max_output_tokens_exceeded':
+      return 'Recovery hint: Your previous output was too long and exceeded the maximum output token limit even after multiple retries with increased limits. Please significantly reduce your output length. Break your response into smaller parts, use tools to write to files instead of outputting large content directly, and avoid generating very long code blocks or explanations in a single response.';
+    case 'throttling':
+      return 'Recovery hint: The API is being rate-limited. This is usually temporary. Please continue with your task - the system will automatically retry.';
+    case 'validation_error':
+      return `Recovery hint: The request was rejected due to a validation error. This may be caused by malformed input or unsupported content. Please review your last action and try a different approach. Details: ${errorMessage}`;
+    case 'model_error':
+      return 'Recovery hint: The model encountered an internal error processing your request. This can happen with very complex inputs. Try simplifying your approach or breaking the task into smaller steps.';
+    case 'service_unavailable':
+      return 'Recovery hint: The service is temporarily unavailable. Please continue with your task - the system will automatically retry.';
+    case 'access_denied':
+      return 'Recovery hint: Access was denied. This might be a permissions issue. Please notify the user about this error.';
+    case 'timeout':
+      return 'Recovery hint: The request timed out. Try reducing the complexity of your current operation or breaking it into smaller steps.';
+    default:
+      return `Recovery hint: An unexpected error occurred. Please try a different approach or simplify your current task. If this persists, notify the user.`;
   }
 };

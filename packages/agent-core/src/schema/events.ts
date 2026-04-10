@@ -63,4 +63,13 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('agentError'),
+    errorType: z.string(),
+    errorMessage: z.string(),
+    consecutiveCount: z.number(),
+    willRetry: z.boolean(),
+    timestamp: z.number(),
+    workerId: z.string(),
+  }),
 ]);
