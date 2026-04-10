@@ -341,7 +341,6 @@
         "label": "System Prompt",
         "placeholder": "You are a helpful assistant specialized in...",
         "description": "Define the agent's behavior, expertise, and response style",
-        "useDefault": "Use default system prompt",
         "includeDefaultKnowledge": "Include default SWE knowledge (communication style, Git workflow, coding conventions, etc.)"
       },
       "tools": {
