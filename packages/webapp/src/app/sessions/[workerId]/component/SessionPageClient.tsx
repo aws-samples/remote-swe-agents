@@ -117,6 +117,9 @@ export default function SessionPageClient({
           badge: data.badge,
         });
       }
+
+      // Notify NotificationCenter to re-fetch
+      window.dispatchEvent(new CustomEvent('session-read'));
     },
   });
 

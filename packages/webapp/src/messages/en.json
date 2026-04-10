@@ -254,7 +254,16 @@
     "defaultAgentNameDescription": "Custom name for the default agent. Used in the header, browser tab, and PWA app name.",
     "defaultAgentIcon": "Default Agent Icon",
     "defaultAgentIconDescription": "Custom icon for the default agent. Used as favicon, PWA app icon, and chat avatar.",
-    "save": "Save"
+    "save": "Save",
+    "pushNotifications": {
+      "title": "Push Notifications",
+      "description": "Configure browser push notifications for agent responses",
+      "enable": "Enable push notifications",
+      "disable": "Disable push notifications",
+      "enabled": "Push notifications are enabled",
+      "disabled": "Push notifications are disabled",
+      "notSupported": "Push notifications are not supported in this browser"
+    }
   },
   "api_settings": {
     "title": "API Keys",
@@ -386,6 +395,22 @@
     "subscribeFailed": "Failed to enable push notifications",
     "unsubscribeFailed": "Failed to disable push notifications",
     "permissionDenied": "Notification permission was denied",
-    "notConfigured": "Push notifications are not configured on this server"
+    "notConfigured": "Push notifications are not configured on this server",
+    "center": {
+      "title": "Notifications",
+      "noUnread": "No unread notifications",
+      "markAllRead": "Mark all as read",
+      "unreadCount": "{count} unread",
+      "pending": "Pending response",
+      "enablePushBanner": "Push notifications are disabled.",
+      "enablePushLink": "Enable in Preferences",
+      "openSession": "Open session"
+    },
+    "banner": {
+      "title": "Stay updated",
+      "description": "Enable push notifications to get notified when agents respond.",
+      "enable": "Enable",
+      "later": "Later"
+    }
   }
 }

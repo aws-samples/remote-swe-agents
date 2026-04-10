@@ -253,7 +253,16 @@
     "defaultAgentNameDescription": "デフォルトエージェントのカスタム名。ヘッダー、ブラウザタブ、PWAアプリ名に使用されます。",
     "defaultAgentIcon": "デフォルトエージェントアイコン",
     "defaultAgentIconDescription": "デフォルトエージェントのカスタムアイコン。ファビコン、PWAアプリアイコン、チャットアバターとして使用されます。",
-    "save": "保存"
+    "save": "保存",
+    "pushNotifications": {
+      "title": "プッシュ通知",
+      "description": "エージェントの応答に対するブラウザプッシュ通知を設定",
+      "enable": "プッシュ通知を有効にする",
+      "disable": "プッシュ通知を無効にする",
+      "enabled": "プッシュ通知は有効です",
+      "disabled": "プッシュ通知は無効です",
+      "notSupported": "このブラウザではプッシュ通知はサポートされていません"
+    }
   },
   "api_settings": {
     "title": "APIキー",
@@ -385,6 +394,22 @@
     "subscribeFailed": "プッシュ通知の有効化に失敗しました",
     "unsubscribeFailed": "プッシュ通知の無効化に失敗しました",
     "permissionDenied": "通知の権限が拒否されました",
-    "notConfigured": "このサーバーではプッシュ通知が設定されていません"
+    "notConfigured": "このサーバーではプッシュ通知が設定されていません",
+    "center": {
+      "title": "通知",
+      "noUnread": "未読の通知はありません",
+      "markAllRead": "すべて既読にする",
+      "unreadCount": "{count}件の未読",
+      "pending": "応答待ち",
+      "enablePushBanner": "プッシュ通知が無効です。",
+      "enablePushLink": "設定で有効にする",
+      "openSession": "セッションを開く"
+    },
+    "banner": {
+      "title": "通知を受け取ろう",
+      "description": "プッシュ通知を有効にすると、エージェントが応答した時にお知らせします。",
+      "enable": "有効にする",
+      "later": "あとで"
+    }
   }
 }

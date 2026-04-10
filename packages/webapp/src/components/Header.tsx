@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { setUserLocale } from '@/i18n/db';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
-import PushNotificationToggle from './PushNotificationToggle';
+import NotificationCenter from './NotificationCenter';
 
 export default function Header({
   hasCustomIcon,
@@ -58,7 +58,7 @@ export default function Header({
             </Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <PushNotificationToggle />
+            <NotificationCenter />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

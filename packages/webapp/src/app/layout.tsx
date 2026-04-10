@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { getPreferences } from '@remote-swe-agents/agent-core/lib';
 import BadgeSyncer from '@/components/BadgeSyncer';
+import PushNotificationBanner from '@/components/PushNotificationBanner';
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Get the locale from the request
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             {children}
             <Toaster position="top-right" closeButton={true} />
             <BadgeSyncer />
+            <PushNotificationBanner />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
