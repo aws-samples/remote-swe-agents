@@ -7,8 +7,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const preferences = await getPreferences();
-    const iconKey = preferences.defaultAgentIconKey;
+    // Support explicit key parameter for custom agent icons
+    const keyParam = request.nextUrl.searchParams.get('key');
+    let iconKey: string | undefined;
+
+    if (keyParam) {
+      iconKey = keyParam;
+    } else {
+      const preferences = await getPreferences();
+      iconKey = preferences.defaultAgentIconKey;
+    }
 
     if (!iconKey) {
       return NextResponse.redirect(new URL('/icon-192x192.png', request.url));
