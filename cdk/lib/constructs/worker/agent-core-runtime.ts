@@ -1,4 +1,4 @@
-import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
+import { Arn, ArnFormat, CfnOutput, Names, Stack } from 'aws-cdk-lib';
 import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
@@ -148,6 +148,21 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     runtime.node.addDependency(role);
 
     this.runtimeArn = runtime.attrAgentRuntimeArn;
+
+    // Grant the worker role itself permission to invoke this runtime
+    // so that agents can create child sessions via InvokeAgentRuntimeCommand.
+    // Use wildcard ARN pattern to avoid circular dependency between the role and the runtime.
+    const runtimeArnPattern = Arn.format(
+      { service: 'bedrock-agentcore', resource: 'runtime', resourceName: '*', arnFormat: ArnFormat.SLASH_RESOURCE_NAME },
+      Stack.of(this)
+    );
+    role.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [runtimeArnPattern, `${runtimeArnPattern}/runtime-endpoint/DEFAULT`],
+      })
+    );
+
     new CfnOutput(this, 'RuntimeArn', { value: this.runtimeArn });
   }
 
