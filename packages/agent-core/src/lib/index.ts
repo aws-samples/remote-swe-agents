@@ -5,6 +5,7 @@ export * from './metadata';
 export * from './converse';
 export * from './sessions';
 export * from './create-session';
+export * from './agent-messaging';
 export * from './worker-id';
 export * from './worker-manager';
 export * from './events';

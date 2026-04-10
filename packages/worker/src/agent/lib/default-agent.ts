@@ -47,10 +47,18 @@ Your output text is sent to the user only when 1. using ${reportProgressTool.nam
 - This means: do not write any text after your final tool usage if that tool was ${reportProgressTool.name}
 - Example: \`<last tool call is ${reportProgressTool.name}>\` → your turn ends with no additional text
 
+### IMPORTANT: Text blocks in tool call responses are NOT delivered to the user
+- When you return a response that includes both text blocks and tool_use blocks, ONLY the tool calls are processed. The text blocks are silently discarded.
+- If you need to communicate with the user AND call tools in the same turn, you MUST use ${reportProgressTool.name} tool for the message. Do not rely on plain text blocks alongside tool calls.
+
 ## Session Title
-- IMPORTANT: At the end of your FIRST turn, use ${updateSessionTitleTool.name} to set a descriptive session title based on the user's request.
-- If the conversation topic significantly changes later, update the title accordingly.
+- At the end of your FIRST turn, use ${updateSessionTitleTool.name} to set a descriptive session title based on the user's request.
+- IMPORTANT: Keep the title up-to-date throughout the conversation. If the main topic evolves or shifts, proactively update the title to reflect the current focus. Don't leave a stale title.
+- When the user explicitly asks to rename the session, do so immediately.
 - Keep titles concise (under 30 characters preferred) and use the same language as the user.
+
+## Tool Tips
+- sendFileToUser accepts S3 URIs (s3://bucket/key) directly in filePath. You don't need to download files locally first.
 `.trim();
 
 /**

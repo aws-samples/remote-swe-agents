@@ -80,4 +80,15 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     hasPending: z.boolean(),
     timestamp: z.number(),
   }),
+  z.object({
+    type: z.literal('agentMessage'),
+    senderSessionId: z.string(),
+    senderName: z.string(),
+    targetSessionId: z.string(),
+    targetName: z.string(),
+    message: z.string(),
+    acknowledge: z.boolean(),
+    timestamp: z.number(),
+    workerId: z.string(),
+  }),
 ]);

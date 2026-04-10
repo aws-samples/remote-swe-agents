@@ -122,10 +122,77 @@ export const updateSessionLastMessage = async (workerId: string, lastMessage: st
 };
 
 /**
- * Delete a session and all related data (messages, metadata) from DynamoDB
+ * Get direct child sessions of a parent session
+ * @param parentWorkerId Worker ID of the parent session
+ * @returns Array of child SessionItems
+ */
+export const getChildSessions = async (parentWorkerId: string): Promise<SessionItem[]> => {
+  const allSessions = await getSessions(0);
+  return allSessions.filter((s) => s.parentSessionId === parentWorkerId);
+};
+
+/**
+ * Get all descendant sessions (children, grandchildren, etc.) recursively
+ * @param parentWorkerId Worker ID of the root parent session
+ * @returns Array of all descendant SessionItems
+ */
+export const getDescendantSessions = async (parentWorkerId: string): Promise<SessionItem[]> => {
+  const allSessions = await getAllSessionsIncludingChildren();
+  const descendants: SessionItem[] = [];
+  const collect = (parentId: string) => {
+    const children = allSessions.filter((s) => s.parentSessionId === parentId);
+    for (const child of children) {
+      descendants.push(child);
+      collect(child.workerId);
+    }
+  };
+  collect(parentWorkerId);
+  return descendants;
+};
+
+/**
+ * Get all sessions including those with parentSessionId (no isHidden filter)
+ */
+export const getAllSessionsIncludingChildren = async (): Promise<SessionItem[]> => {
+  const paginator = paginateQuery(
+    { client: ddb },
+    {
+      TableName,
+      IndexName: 'LSI1',
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: { ':pk': 'sessions' },
+      ScanIndexForward: false,
+    }
+  );
+  const items: SessionItem[] = [];
+  for await (const page of paginator) {
+    if (page.Items != null) {
+      items.push(...(page.Items as SessionItem[]));
+    }
+  }
+  return items;
+};
+
+/**
+ * Delete a session and all related data (messages, metadata) from DynamoDB.
+ * Also recursively deletes all descendant (child, grandchild, etc.) sessions.
  * @param workerId Worker ID of the session to delete
  */
 export const deleteSession = async (workerId: string): Promise<void> => {
+  // Recursively delete all descendant sessions first
+  const descendants = await getDescendantSessions(workerId);
+  for (const child of descendants) {
+    await deleteSingleSession(child.workerId);
+  }
+
+  // Delete the session itself
+  await deleteSingleSession(workerId);
+};
+
+/**
+ * Delete a single session and its related data (without recursive child deletion)
+ */
+const deleteSingleSession = async (workerId: string): Promise<void> => {
   // Clean up all EventBridge triggers associated with this session
   try {
     await deleteAllEventTriggers(workerId);

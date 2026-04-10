@@ -51,6 +51,8 @@ interface SessionPageClientProps {
   agentName?: string;
   unreadMap?: Record<string, { unreadCount: number; hasPending: boolean }>;
   lastReadAt?: number;
+  childSessions?: { workerId: string; title?: string }[];
+  parentSessionId?: string;
 }
 
 export default function SessionPageClient({
@@ -67,6 +69,7 @@ export default function SessionPageClient({
   agentName,
   unreadMap,
   lastReadAt,
+  parentSessionId,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -316,6 +319,8 @@ export default function SessionPageClient({
                   thinkingBudget: event.thinkingBudget,
                 },
               ]);
+            } else if (['sendMessageToAgent', 'acknowledgeAgent'].includes(event.toolName)) {
+              // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
             } else {
               setMessages((prev) => [
                 ...prev,
@@ -336,6 +341,23 @@ export default function SessionPageClient({
               refetchTodoList({ workerId });
             }
 
+            break;
+          case 'agentMessage':
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `agent-msg-${event.timestamp}`,
+                role: 'user',
+                content: event.message,
+                timestamp: new Date(event.timestamp),
+                type: 'agentMessage',
+                senderSessionId: event.senderSessionId,
+                senderAgentName: event.senderName,
+                targetSessionId: event.targetSessionId,
+                targetAgentName: event.targetName,
+                isAcknowledge: event.acknowledge,
+              },
+            ]);
             break;
         }
       },

@@ -53,7 +53,9 @@ export const bedrockConverse = async (
   maxTokensExceededCount = 0
 ): Promise<{ response: ConverseResponse; thinkingBudget?: number }> => {
   if (maxTokensExceededCount > 5) {
-    throw new Error(`Max tokens exceeded too many times (${maxTokensExceededCount})`);
+    throw new Error(
+      `Max tokens exceeded too many times (${maxTokensExceededCount}). The model output consistently exceeds the maximum output token limit. Please reduce output length significantly.`
+    );
   }
   try {
     const modelType = chooseRandom(modelTypes);

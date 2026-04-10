@@ -70,7 +70,6 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
-
   const { execute: executeDeleteSession } = useAction(deleteSessionAction, {
     onSuccess: () => {
       toast.success(t('deleteSessionSuccess'));
@@ -232,8 +231,23 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
     setSelectedIds(new Set());
   }, []);
 
+  // Build a map of parentSessionId -> child sessions
+  const childrenMap = useMemo(() => {
+    const map: Record<string, SessionItem[]> = {};
+    for (const session of sessions) {
+      if (session.parentSessionId) {
+        if (!map[session.parentSessionId]) {
+          map[session.parentSessionId] = [];
+        }
+        map[session.parentSessionId].push(session);
+      }
+    }
+    return map;
+  }, [sessions]);
+
   const sortedSessions = useMemo(() => {
-    let filtered = sessions;
+    // Only show root sessions (no parentSessionId) at the top level
+    let filtered = sessions.filter((s) => !s.parentSessionId);
     if (hideCompleted) {
       filtered = filtered.filter((s) => s.agentStatus !== 'completed');
     }
@@ -343,6 +357,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
           const status = getUnifiedStatus(session.agentStatus, session.instanceStatus);
           const isOtherUserSession = session.initiator && session.initiator !== `webapp#${currentUserId}`;
           const isSelected = selectedIds.has(session.workerId);
+          const hasChildren = (childrenMap[session.workerId] ?? []).length > 0;
           return (
             <div key={session.workerId} className="relative">
               {selectMode ? (
@@ -485,7 +500,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
                         className="cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        {t('deleteSession')}
+                        {hasChildren ? t('deleteGroup') : t('deleteSession')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -501,7 +516,11 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteSession')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteSessionConfirm')}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {deleteTargetId && (childrenMap[deleteTargetId]?.length ?? 0) > 0
+                ? t('deleteGroupConfirm', { count: childrenMap[deleteTargetId].length })
+                : t('deleteSessionConfirm')}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>

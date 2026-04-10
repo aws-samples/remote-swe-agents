@@ -22,7 +22,9 @@ import {
   getPreferences,
   getCustomAgent,
   updateSessionLastMessage,
+  getChildSessions,
 } from '@remote-swe-agents/agent-core/lib';
+import { resolveAgentDisplayName } from '@remote-swe-agents/agent-core/lib';
 import pRetry, { AbortError } from 'p-retry';
 import { bedrockConverse } from '@remote-swe-agents/agent-core/lib';
 import { getMcpToolSpecs, tryExecuteMcpTool } from './mcp';
@@ -33,6 +35,8 @@ import {
   gitHubTools,
   reportProgressTool,
   cloneRepositoryTool,
+  sendToAgentTool,
+  acknowledgeAgentTool,
 } from '@remote-swe-agents/agent-core/tools';
 import { findRepositoryKnowledge } from './lib/knowledge';
 import { sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -41,6 +45,25 @@ import { updateAgentStatusWithEvent } from '../common/status';
 import { refreshSession } from '../common/refresh-session';
 import { DefaultAgent, getEssentialSystemPrompt, getDefaultKnowledgePrompt } from './lib/default-agent';
 import { EmptyMcpConfig, mcpConfigSchema, modelConfigs, ModelType } from '@remote-swe-agents/agent-core/schema';
+
+/**
+ * Tool names that should reset the lastReportedTime timer.
+ * This includes tools that communicate with users OR other agents,
+ * preventing the forceReport mechanism from firing unnecessarily
+ * (especially in child sessions that primarily use agent-to-agent communication).
+ */
+export const toolNamesThatResetReportTimer = new Set([
+  reportProgressTool.name,
+  sendToAgentTool.name,
+  acknowledgeAgentTool.name,
+]);
+
+/**
+ * Check whether the given tool name should reset the lastReportedTime.
+ */
+export const shouldResetReportTimer = (toolName: string | undefined): boolean => {
+  return toolName != null && toolNamesThatResetReportTimer.has(toolName);
+};
 
 const agentLoop = async (workerId: string, cancellationToken: CancellationToken) => {
   const session = await getSession(workerId);
@@ -68,6 +91,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
         lastItem == null ||
         lastItem.messageType === 'userMessage' ||
         lastItem.messageType === 'eventTrigger' ||
+        lastItem.messageType === 'agentMessage' ||
         attemptCount > 4
       ) {
         return res;
@@ -139,6 +163,90 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
     }
   };
   await tryAppendRepositoryKnowledge();
+
+  // Inject session hierarchy information for parent-child communication
+  if (session) {
+    const hierarchyLines: string[] = [];
+    const selfName = await resolveAgentDisplayName(session);
+
+    if (session.parentSessionId) {
+      const parentSession = await getSession(session.parentSessionId);
+      const parentName = parentSession ? await resolveAgentDisplayName(parentSession) : session.parentSessionId;
+      hierarchyLines.push(`You are a child agent "${selfName}" (Session ID: ${workerId}).`);
+      hierarchyLines.push(`Parent: "${parentName}" (Session ID: ${session.parentSessionId})`);
+      hierarchyLines.push('');
+      hierarchyLines.push('### Message Routing Rules for Child Sessions');
+      hierarchyLines.push('Always reply to whoever sent you the message:');
+      hierarchyLines.push(
+        '- **Parent agent** (via `sendMessageToAgent`) → Reply with `sendMessageToAgent` to the parent.'
+      );
+      hierarchyLines.push("- **User** (typed directly in this session's WebUI) → Reply with `sendMessageToUser`.");
+      hierarchyLines.push('- **Event trigger** (no sender) → Report to the parent with `sendMessageToAgent`.');
+      hierarchyLines.push('');
+      hierarchyLines.push(
+        'IMPORTANT: After calling `sendMessageToUser` or `sendMessageToAgent`, end your turn with NO text output. Text output at end-of-turn is also delivered to the user, causing duplicate messages.'
+      );
+      hierarchyLines.push('Use `acknowledgeAgent` for lightweight responses that do not need immediate action.');
+
+      // Get siblings
+      const siblings = await getChildSessions(session.parentSessionId);
+      const otherSiblings = siblings.filter((s) => s.workerId !== workerId);
+      if (otherSiblings.length > 0) {
+        hierarchyLines.push('');
+        hierarchyLines.push('Siblings:');
+        for (const sib of otherSiblings) {
+          const sibName = await resolveAgentDisplayName(sib);
+          hierarchyLines.push(`- "${sibName}" (Session ID: ${sib.workerId})`);
+        }
+      }
+    } else {
+      // Check if this session has children
+      const children = await getChildSessions(workerId);
+      if (children.length > 0) {
+        hierarchyLines.push(`You are a parent agent "${selfName}" (Session ID: ${workerId}).`);
+        hierarchyLines.push('Your child agents:');
+        for (const child of children) {
+          const childName = await resolveAgentDisplayName(child);
+          hierarchyLines.push(`- "${childName}" (Session ID: ${child.workerId})`);
+        }
+      }
+
+      // Check if this session was created by another session (independent session)
+      if (session.creatorSessionId) {
+        const creatorSession = await getSession(session.creatorSessionId);
+        const creatorName = creatorSession ? await resolveAgentDisplayName(creatorSession) : session.creatorSessionId;
+        hierarchyLines.push('');
+        hierarchyLines.push(`This session was created by: "${creatorName}" (Session ID: ${session.creatorSessionId})`);
+        hierarchyLines.push(
+          'You can use sendMessageToAgent to communicate with the creator session if you need more context or have questions.'
+        );
+      }
+    }
+
+    if (hierarchyLines.length > 0) {
+      hierarchyLines.push('');
+      hierarchyLines.push('Use sendMessageToAgent to send messages to other agents by session ID.');
+      hierarchyLines.push('Use acknowledgeAgent to respond without waking up the target (like a read receipt).');
+      hierarchyLines.push('');
+      hierarchyLines.push('### Child vs Independent Session Decision');
+      hierarchyLines.push('When creating new sessions with `createNewSession`:');
+      hierarchyLines.push(
+        "- **Child session (asChild=true)**: Use ONLY when the task is directly related to the CURRENT session's topic. Child sessions are deleted when the parent session ends."
+      );
+      hierarchyLines.push(
+        '- **Independent session (asChild=false)**: Use when the task is a DIFFERENT topic from the current session. Independent sessions persist on their own.'
+      );
+      hierarchyLines.push('');
+      hierarchyLines.push('Examples:');
+      hierarchyLines.push(
+        '- Current session is about "API performance tuning" → Run a load test → Child session (sub-task of the same topic)'
+      );
+      hierarchyLines.push(
+        '- Current session is about "API performance tuning" → Fix a typo in the README → Independent session (unrelated topic)'
+      );
+      systemPrompt = `${systemPrompt}\n\n## Session Hierarchy\n${hierarchyLines.join('\n')}`;
+    }
+  }
 
   await refreshSession(workerId);
 
@@ -437,7 +545,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
             }
           }
 
-          if (name == reportProgressTool.name) {
+          if (shouldResetReportTimer(name)) {
             lastReportedTime = Date.now();
           }
           if (name == cloneRepositoryTool.name) {
@@ -454,7 +562,11 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
             toolUseId,
             content: toolResultObject ?? [
               {
-                text: renderToolResult({ toolResult, forceReport: Date.now() - lastReportedTime > 300 * 1000 }),
+                text: renderToolResult({
+                  toolResult,
+                  forceReport: Date.now() - lastReportedTime > 300 * 1000,
+                  parentSessionId: session?.parentSessionId,
+                }),
               },
             ],
           },
@@ -493,6 +605,16 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       }
 
       // Save toolResult message to DynamoDB after all tools have been executed
+      // If the assistant included text blocks alongside tool calls, append a warning to the last tool result
+      const textBlocks = toolUseMessage.content?.filter((c) => 'text' in c && c.text) ?? [];
+      if (textBlocks.length > 0) {
+        const lastToolResult = toolResultMessage.content!.findLast((c) => c.toolResult);
+        if (lastToolResult?.toolResult?.content) {
+          lastToolResult.toolResult.content.push({
+            text: '\n<system>WARNING: Your previous response included text blocks alongside tool calls. These text blocks were NOT delivered to the user. If the text was intended for the user, you must resend it using the sendMessageToUser tool.</system>',
+          });
+        }
+      }
       const savedToolResultItem = await saveToolResultMessage(workerId, toolResultMessage, savedToolUseItem.SK);
       appendedItems.push(savedToolUseItem, savedToolResultItem);
     } else {
@@ -511,6 +633,25 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
       const responseText = finalMessage.content?.at(-1)?.text ?? finalMessage.content?.at(0)?.text ?? '';
       // remove <thinking> </thinking> part with multiline support
       const responseTextWithoutThinking = responseText.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
+
+      // If this is a child session and the last incoming message was from an agent,
+      // redirect the end-of-turn response to the parent agent
+      if (session?.parentSessionId) {
+        const lastIncoming = [...initialItems, ...appendedItems].filter((i) => i.role === 'user').at(-1);
+        if (lastIncoming?.messageType === 'agentMessage') {
+          try {
+            const { sendAgentMessage } = await import('@remote-swe-agents/agent-core/lib');
+            await sendAgentMessage({
+              senderWorkerId: workerId,
+              targetSessionIds: [session.parentSessionId],
+              message: responseTextWithoutThinking,
+              acknowledge: true,
+            });
+          } catch (e) {
+            console.error('[agent-loop] Failed to redirect end-of-turn to parent:', e);
+          }
+        }
+      }
 
       const lastMessagePreview = responseTextWithoutThinking.slice(0, 500);
       if (lastMessagePreview) {
@@ -553,6 +694,7 @@ export const resume = async (workerId: string, cancellationToken: CancellationTo
   if (
     lastItem?.messageType == 'userMessage' ||
     lastItem?.messageType == 'eventTrigger' ||
+    lastItem?.messageType == 'agentMessage' ||
     lastItem?.messageType == 'toolResult' ||
     lastItem?.messageType == 'toolUse' ||
     lastItem?.messageType == 'errorFeedback'
