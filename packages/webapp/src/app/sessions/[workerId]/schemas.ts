@@ -5,6 +5,7 @@ export const sendMessageToAgentSchema = z.object({
   workerId: z.string(),
   message: z.string().min(1),
   imageKeys: z.array(z.string()).optional(),
+  fileKeys: z.array(z.string()).optional(),
   modelOverride: modelTypeSchema.optional(),
 });
 

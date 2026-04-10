@@ -92,6 +92,7 @@
     "sortDesc": "Descending",
     "hideCompleted": "Hide completed",
     "attachImage": "Attach image",
+    "attachFile": "Attach file",
     "thinkingBudget": "Thinking Budget",
     "defaultThinkingBudget": "Default",
     "ultrathinkInstruction": "Include 'ultrathink' in your message to grant maximum thinking budget",

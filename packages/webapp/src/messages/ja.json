@@ -92,6 +92,7 @@
     "sortDesc": "降順",
     "hideCompleted": "完了済みを非表示",
     "attachImage": "画像を添付",
+    "attachFile": "ファイルを添付",
     "thinkingBudget": "思考予算",
     "defaultThinkingBudget": "デフォルト",
     "ultrathinkInstruction": "メッセージにultrathinkと入力することで、最大の思考予算を付与します",

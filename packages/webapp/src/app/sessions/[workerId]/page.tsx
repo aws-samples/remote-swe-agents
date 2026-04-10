@@ -198,6 +198,16 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const extracted = extractUserMessage(text);
 
+        // Extract image keys from user message content
+        const userImageKeys = (message.content ?? [])
+          .filter((c: any) => c.image?.source?.s3Key)
+          .map((c: any) => c.image.source.s3Key as string);
+
+        // Extract file keys from user message content
+        const userFileKeys = (message.content ?? [])
+          .filter((c: any) => c.file?.source?.s3Key)
+          .map((c: any) => c.file.source.s3Key as string);
+
         messages.push({
           id: `${item.SK}-${i}`,
           role: 'user',
@@ -205,6 +215,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           timestamp: new Date(parseInt(item.SK)),
           type: 'message',
           modelOverride: item.modelOverride,
+          ...(userImageKeys.length > 0 ? { imageKeys: userImageKeys } : {}),
+          ...(userFileKeys.length > 0 ? { fileKeys: userFileKeys } : {}),
         });
         break;
       }

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
-import { Loader2, Send, Image as ImageIcon, Share } from 'lucide-react';
+import { Loader2, Send, Paperclip, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
@@ -85,6 +85,7 @@ export default function MessageForm({
         message: '',
         workerId: workerId,
         imageKeys: [],
+        fileKeys: [],
         modelOverride: defaultModelOverride,
       },
     },
@@ -181,16 +182,19 @@ export default function MessageForm({
     }
   };
 
-  const { uploadingImages, handleImageSelect, handlePaste, ImagePreviewList, clearImages } = ImageUploader({
+  const { uploadingImages, uploadingFiles, handleFileSelect, handlePaste, ImagePreviewList, clearImages, isUploading: isUploadingFiles } = ImageUploader({
     workerId,
     onImagesChange: (imageKeys) => {
       setValue('imageKeys', imageKeys);
+    },
+    onFilesChange: (fileKeys) => {
+      setValue('fileKeys', fileKeys);
     },
   });
 
   clearImagesRef.current = clearImages;
 
-  const isUploading = uploadingImages.some((img) => !img.key);
+  const isUploading = isUploadingFiles;
 
   const handleOptimisticSubmit = useCallback(
     (e?: React.BaseSyntheticEvent) => {
@@ -248,17 +252,17 @@ export default function MessageForm({
                     <TooltipTrigger asChild>
                       <Button
                         type="button"
-                        onClick={handleImageSelect}
+                        onClick={handleFileSelect}
                         disabled={isExecuting}
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-600"
                       >
-                        <ImageIcon className="w-4 h-4" />
+                        <Paperclip className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{t('attachImage')}</p>
+                      <p>{t('attachFile')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -325,6 +329,7 @@ export default function MessageForm({
 
           <input hidden {...register('workerId')} />
           <input hidden {...register('imageKeys')} />
+          <input hidden {...register('fileKeys')} />
         </form>
       </div>
     </div>
