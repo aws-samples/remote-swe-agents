@@ -55,7 +55,7 @@
     "noSessionsFound": "No sessions found",
     "createSessionToStart": "Create a new session to start chatting with AI agents",
     "usingTool": "Using Tool",
-    "eventTriggerFired": "Event Trigger",
+    "eventTriggerFired": "Event Detected",
     "executing": "Executing...",
     "showRawJson": "Show raw JSON",
     "hideRawJson": "Hide raw JSON",

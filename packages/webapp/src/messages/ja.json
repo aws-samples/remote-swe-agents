@@ -55,7 +55,7 @@
     "noSessionsFound": "セッションが見つかりません",
     "createSessionToStart": "AIエージェントとチャットするには新規セッションを作成してください",
     "usingTool": "ツール使用",
-    "eventTriggerFired": "イベントトリガー",
+    "eventTriggerFired": "イベント検知",
     "executing": "実行中...",
     "showRawJson": "JSONを表示",
     "hideRawJson": "JSONを隠す",
