@@ -40,7 +40,6 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   const router = useRouter();
   const [selectedTools, setSelectedTools] = useState<string[]>(editingAgent?.tools || []);
   const [useAllTools, setUseAllTools] = useState<boolean>(editingAgent?.useAllTools ?? false);
-  const [useDefaultSystemPrompt, setUseDefaultSystemPrompt] = useState<boolean>(!editingAgent?.systemPrompt);
   const [includeDefaultKnowledge, setIncludeDefaultKnowledge] = useState<boolean>(
     editingAgent?.includeDefaultKnowledge !== false
   );
@@ -133,10 +132,6 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
   };
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    if (useDefaultSystemPrompt) {
-      setValue('systemPrompt', '');
-      setValue('includeDefaultKnowledge', true);
-    }
     handleSubmitWithAction(e);
   };
 
@@ -230,44 +225,29 @@ export default function CustomAgentForm({ availableTools, editingAgent, onSucces
           </label>
           <div className="flex items-center gap-2 mb-3">
             <Checkbox
-              id="useDefaultSystemPrompt"
-              checked={useDefaultSystemPrompt}
-              onCheckedChange={(checked) => setUseDefaultSystemPrompt(checked === true)}
+              id="includeDefaultKnowledge"
+              checked={includeDefaultKnowledge}
+              onCheckedChange={(checked) => {
+                const val = checked === true;
+                setIncludeDefaultKnowledge(val);
+                setValue('includeDefaultKnowledge', val);
+              }}
               disabled={isPending}
             />
-            <label htmlFor="useDefaultSystemPrompt" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              {t('form.systemPrompt.useDefault')}
+            <label
+              htmlFor="includeDefaultKnowledge"
+              className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+            >
+              {t('form.systemPrompt.includeDefaultKnowledge')}
             </label>
           </div>
-          {!useDefaultSystemPrompt && (
-            <>
-              <div className="flex items-center gap-2 mb-3">
-                <Checkbox
-                  id="includeDefaultKnowledge"
-                  checked={includeDefaultKnowledge}
-                  onCheckedChange={(checked) => {
-                    const val = checked === true;
-                    setIncludeDefaultKnowledge(val);
-                    setValue('includeDefaultKnowledge', val);
-                  }}
-                  disabled={isPending}
-                />
-                <label
-                  htmlFor="includeDefaultKnowledge"
-                  className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-                >
-                  {t('form.systemPrompt.includeDefaultKnowledge')}
-                </label>
-              </div>
-              <textarea
-                {...register('systemPrompt')}
-                placeholder={t('form.systemPrompt.placeholder')}
-                disabled={isPending}
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
-              />
-            </>
-          )}
+          <textarea
+            {...register('systemPrompt')}
+            placeholder={t('form.systemPrompt.placeholder')}
+            disabled={isPending}
+            rows={6}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-vertical"
+          />
           {formState.errors.systemPrompt && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.systemPrompt.message}</p>
           )}
