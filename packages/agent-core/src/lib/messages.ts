@@ -120,6 +120,46 @@ export const repairDanglingToolUse = async (workerId: string, items: MessageItem
         );
         console.log(`Repaired dangling toolUse at SK=${item.SK} with dummy toolResult at SK=${toolResultItem.SK}`);
         repaired.push(toolResultItem);
+      } else {
+        // Check for PARTIAL toolResult (some toolUseIds missing from the toolResult message)
+        const toolUseContent = JSON.parse(item.content);
+        const toolResultContent = JSON.parse(next.content);
+        const toolUseIds = new Set<string>(
+          toolUseContent
+            .filter((c: any) => c.toolUse?.toolUseId)
+            .map((c: any) => c.toolUse.toolUseId as string)
+        );
+        const toolResultIds = new Set<string>(
+          toolResultContent
+            .filter((c: any) => c.toolResult?.toolUseId)
+            .map((c: any) => c.toolResult.toolUseId as string)
+        );
+        const missingIds = [...toolUseIds].filter((id) => !toolResultIds.has(id));
+        if (missingIds.length > 0) {
+          for (const missingId of missingIds) {
+            toolResultContent.push({
+              toolResult: {
+                toolUseId: missingId,
+                content: [
+                  {
+                    text: 'This tool execution was interrupted and no result is available.',
+                  },
+                ],
+              },
+            });
+          }
+          const updatedContent = JSON.stringify(toolResultContent);
+          await ddb.send(
+            new PutCommand({
+              TableName,
+              Item: { ...next, content: updatedContent },
+            })
+          );
+          console.log(
+            `Repaired partial toolResult at SK=${next.SK}: added ${missingIds.length} missing result(s) for toolUseIds: ${missingIds.join(', ')}`
+          );
+          next.content = updatedContent;
+        }
       }
     }
   }
