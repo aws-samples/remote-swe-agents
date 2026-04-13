@@ -77,7 +77,7 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(mockSendMessageToSlack).toHaveBeenCalledWith('reply to user');
   });
 
-  test('child session with triggering message as agentMessage returns confirmation prompt', async () => {
+  test('child session with triggering message as agentMessage and user messages returns strong warning with confirmSendToUser', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
@@ -92,14 +92,16 @@ describe('sendMessageToUser child session confirmation', () => {
 
     const result = await reportProgressTool.handler({ message: 'blocked message' }, mockContext);
 
-    expect(result).toContain('This is a child session');
+    expect(result).toContain('WARNING');
+    expect(result).toContain('99%');
     expect(result).toContain('Messages from user in this session: 1');
     expect(result).toContain('agentMessage (PM Agent)');
     expect(result).toContain('confirmSendToUser');
+    expect(result).toContain('ABSOLUTELY CERTAIN');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
-  test('child session with triggering message as eventTrigger returns confirmation prompt', async () => {
+  test('child session with triggering message as eventTrigger and no user messages returns hard error', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
@@ -111,13 +113,15 @@ describe('sendMessageToUser child session confirmation', () => {
 
     const result = await reportProgressTool.handler({ message: 'event response' }, mockContext);
 
-    expect(result).toContain('This is a child session');
-    expect(result).toContain('Messages from user in this session: 0');
-    expect(result).toContain('eventTrigger');
+    expect(result).toContain('ERROR');
+    expect(result).toContain('not available');
+    expect(result).toContain('0 user messages');
+    expect(result).toContain('sendMessageToAgent');
+    expect(result).toContain('Do NOT call confirmSendToUser');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
-  test('skips toolUse/toolResult/assistant/errorFeedback to find triggering message', async () => {
+  test('skips toolUse/toolResult/assistant/errorFeedback to find triggering message (no user messages = error)', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
@@ -135,12 +139,39 @@ describe('sendMessageToUser child session confirmation', () => {
 
     const result = await reportProgressTool.handler({ message: 'tool done' }, mockContext);
 
-    expect(result).toContain('This is a child session');
+    expect(result).toContain('ERROR');
+    expect(result).toContain('not available');
+    expect(result).toContain('0 user messages');
+    expect(mockSendMessageToSlack).not.toHaveBeenCalled();
+  });
+
+  test('skips toolUse/toolResult/assistant/errorFeedback to find triggering message (has user messages = warning)', async () => {
+    mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
+    mockGetConversationHistory.mockResolvedValue({
+      items: [
+        { messageType: 'userMessage' },
+        { messageType: 'assistant' },
+        { messageType: 'agentMessage', senderAgentName: 'Parent' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
+        { messageType: 'toolResult' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
+        { messageType: 'toolResult' },
+        { messageType: 'errorFeedback' },
+        { messageType: 'toolUse' },
+      ],
+    });
+
+    const result = await reportProgressTool.handler({ message: 'tool done' }, mockContext);
+
+    expect(result).toContain('WARNING');
+    expect(result).toContain('99%');
     expect(result).toContain('agentMessage (Parent)');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
-  test('child session with empty items returns confirmation prompt', async () => {
+  test('child session with empty items returns hard error (no user messages)', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [],
@@ -148,9 +179,10 @@ describe('sendMessageToUser child session confirmation', () => {
 
     const result = await reportProgressTool.handler({ message: 'empty history' }, mockContext);
 
-    expect(result).toContain('This is a child session');
-    expect(result).toContain('Messages from user in this session: 0');
-    expect(result).toContain('unknown');
+    expect(result).toContain('ERROR');
+    expect(result).toContain('not available');
+    expect(result).toContain('0 user messages');
+    expect(result).toContain('Do NOT call confirmSendToUser');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
@@ -170,10 +202,13 @@ describe('confirmSendToUser', () => {
   });
 
   test('sends the blocked message when called', async () => {
-    // First block a message
+    // First block a message (Case 2: has user messages but non-user trigger)
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
-      items: [{ messageType: 'agentMessage', senderAgentName: 'PM' }],
+      items: [
+        { messageType: 'userMessage' },
+        { messageType: 'agentMessage', senderAgentName: 'PM' },
+      ],
     });
 
     await reportProgressTool.handler({ message: 'pending message content' }, mockContext);
@@ -194,10 +229,13 @@ describe('confirmSendToUser', () => {
   });
 
   test('pending message is cleaned up after confirm', async () => {
-    // Block a message
+    // Block a message (Case 2: has user messages but non-user trigger)
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
-      items: [{ messageType: 'agentMessage', senderAgentName: 'PM' }],
+      items: [
+        { messageType: 'userMessage' },
+        { messageType: 'agentMessage', senderAgentName: 'PM' },
+      ],
     });
 
     await reportProgressTool.handler({ message: 'once only' }, mockContext);
@@ -206,5 +244,20 @@ describe('confirmSendToUser', () => {
     // Second confirm should have no pending message
     const result = await confirmSendToUserTool.handler({}, mockContext);
     expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
+  });
+
+  test('confirmSendToUser fails when message was blocked by Case 1 (no user messages)', async () => {
+    // Case 1: no user messages - message is NOT saved as pending
+    mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
+    mockGetConversationHistory.mockResolvedValue({
+      items: [{ messageType: 'agentMessage', senderAgentName: 'PM' }],
+    });
+
+    await reportProgressTool.handler({ message: 'should not be saved' }, mockContext);
+
+    // confirmSendToUser should have no pending message
+    const result = await confirmSendToUserTool.handler({}, mockContext);
+    expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
+    expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 });

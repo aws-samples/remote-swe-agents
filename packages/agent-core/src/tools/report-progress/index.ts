@@ -65,15 +65,33 @@ export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
         const userMessageCount = items.filter((i) => i.messageType === 'userMessage').length;
         const senderInfo = triggeringItem?.senderAgentName ?? triggeringItem?.senderSessionId ?? 'system';
 
+        // Case 1: No user messages at all - the user never interacted with this session directly.
+        // Block completely without allowing confirmSendToUser.
+        if (userMessageCount === 0) {
+          return [
+            `ERROR: sendMessageToUser is not available in this child session.`,
+            `The user has never sent a message to this session directly (0 user messages), which means they do not expect to receive messages from here.`,
+            ``,
+            `You MUST use sendMessageToAgent to report to your parent session instead.`,
+            `Do NOT call confirmSendToUser — it will not work for this case.`,
+          ].join('\n');
+        }
+
+        // Case 2: User has interacted before, but the most recent triggering message is not from the user.
+        // Allow with strong warning + confirmSendToUser.
         savePendingUserMessage(context.workerId, input.message);
 
         return [
-          `This is a child session. sendMessageToUser will notify the user directly.`,
+          `WARNING: You are almost certainly making a mistake. There is a 99% chance you should NOT send this message directly to the user.`,
+          ``,
+          `This is a child session and the last triggering message is NOT from the user:`,
           `- Messages from user in this session: ${userMessageCount}`,
           `- Last message is from: ${triggeringMessageType} (${senderInfo})`,
           ``,
-          `If you intended to report to the parent, use sendMessageToAgent instead.`,
-          `If you still want to send directly to the user, call confirmSendToUser to confirm.`,
+          `The only scenario where sending directly to the user is appropriate is when the user previously asked you to investigate something directly in this session and you are reporting back after a long delay.`,
+          ``,
+          `In almost all cases, you should use sendMessageToAgent to report to your parent session instead.`,
+          `If you are ABSOLUTELY CERTAIN this is one of the rare exceptions, call confirmSendToUser to proceed.`,
         ].join('\n');
       }
     }
