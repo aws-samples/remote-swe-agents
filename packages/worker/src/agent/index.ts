@@ -360,7 +360,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
             }
 
             console.log(`using tool: ${name} ${JSON.stringify(input)}`);
-            const result = await tool.handler(input as any, { toolUseId, workerId, globalPreferences });
+            const result = await tool.handler(input as any, { toolUseId, workerId, globalPreferences, cancellationToken });
             if (typeof result == 'string') {
               toolResult = result;
             } else {

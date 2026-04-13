@@ -2,6 +2,10 @@ import { Tool, ToolResultContentBlock } from '@aws-sdk/client-bedrock-runtime';
 import z, { ZodType } from 'zod';
 import { GlobalPreferences } from '../../schema';
 
+export interface CancellationToken {
+  readonly isCancelled: boolean;
+}
+
 export type ToolDefinition<Input> = {
   /**
    * Name of the tool. This is the identifier of the tool for the agent.
@@ -9,7 +13,7 @@ export type ToolDefinition<Input> = {
   readonly name: string;
   readonly handler: (
     input: Input,
-    context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences }
+    context: { workerId: string; toolUseId: string; globalPreferences: GlobalPreferences; cancellationToken?: CancellationToken }
   ) => Promise<string | ToolResultContentBlock[]>;
   readonly schema: ZodType<Input>;
   readonly toolSpec: () => Promise<NonNullable<Tool['toolSpec']>>;
