@@ -54,19 +54,23 @@ export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
     // Child session confirmation check
     if (session?.parentSessionId) {
       const { items } = await getConversationHistory(context.workerId);
-      const lastItem = items.at(-1);
-      const lastMessageType = lastItem?.messageType ?? 'unknown';
+      // Skip toolUse/toolResult/assistant/errorFeedback to find the actual triggering message.
+      // The last item is typically toolUse (saved before handler runs), so we need to look past it.
+      const triggeringItem = items.findLast(
+        (i) => !['toolUse', 'toolResult', 'assistant', 'errorFeedback'].includes(i.messageType)
+      );
+      const triggeringMessageType = triggeringItem?.messageType ?? 'unknown';
 
-      if (lastMessageType !== 'userMessage') {
+      if (triggeringMessageType !== 'userMessage') {
         const userMessageCount = items.filter((i) => i.messageType === 'userMessage').length;
-        const senderInfo = lastItem?.senderAgentName ?? lastItem?.senderSessionId ?? 'system';
+        const senderInfo = triggeringItem?.senderAgentName ?? triggeringItem?.senderSessionId ?? 'system';
 
         savePendingUserMessage(context.workerId, input.message);
 
         return [
           `This is a child session. sendMessageToUser will notify the user directly.`,
           `- Messages from user in this session: ${userMessageCount}`,
-          `- Last message is from: ${lastMessageType} (${senderInfo})`,
+          `- Last message is from: ${triggeringMessageType} (${senderInfo})`,
           ``,
           `If you intended to report to the parent, use sendMessageToAgent instead.`,
           `If you still want to send directly to the user, call confirmSendToUser to confirm.`,

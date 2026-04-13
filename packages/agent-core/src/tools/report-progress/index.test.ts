@@ -60,12 +60,14 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(mockSendMessageToSlack).toHaveBeenCalledWith('hello user');
   });
 
-  test('child session with last message as userMessage sends directly', async () => {
+  test('child session with triggering message as userMessage sends directly', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
         { messageType: 'agentMessage', senderAgentName: 'PM' },
         { messageType: 'userMessage' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
       ],
     });
 
@@ -75,12 +77,16 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(mockSendMessageToSlack).toHaveBeenCalledWith('reply to user');
   });
 
-  test('child session with last message as agentMessage returns confirmation prompt', async () => {
+  test('child session with triggering message as agentMessage returns confirmation prompt', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
         { messageType: 'userMessage' },
         { messageType: 'agentMessage', senderAgentName: 'PM Agent' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
+        { messageType: 'toolResult' },
+        { messageType: 'toolUse' },
       ],
     });
 
@@ -93,11 +99,13 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
-  test('child session with last message as eventTrigger returns confirmation prompt', async () => {
+  test('child session with triggering message as eventTrigger returns confirmation prompt', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
         { messageType: 'eventTrigger' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
       ],
     });
 
@@ -109,19 +117,40 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
-  test('child session with last message as toolResult (from agent loop) returns confirmation prompt', async () => {
+  test('skips toolUse/toolResult/assistant/errorFeedback to find triggering message', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
       items: [
         { messageType: 'agentMessage', senderAgentName: 'Parent' },
+        { messageType: 'assistant' },
         { messageType: 'toolUse' },
         { messageType: 'toolResult' },
+        { messageType: 'assistant' },
+        { messageType: 'toolUse' },
+        { messageType: 'toolResult' },
+        { messageType: 'errorFeedback' },
+        { messageType: 'toolUse' },
       ],
     });
 
     const result = await reportProgressTool.handler({ message: 'tool done' }, mockContext);
 
     expect(result).toContain('This is a child session');
+    expect(result).toContain('agentMessage (Parent)');
+    expect(mockSendMessageToSlack).not.toHaveBeenCalled();
+  });
+
+  test('child session with empty items returns confirmation prompt', async () => {
+    mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
+    mockGetConversationHistory.mockResolvedValue({
+      items: [],
+    });
+
+    const result = await reportProgressTool.handler({ message: 'empty history' }, mockContext);
+
+    expect(result).toContain('This is a child session');
+    expect(result).toContain('Messages from user in this session: 0');
+    expect(result).toContain('unknown');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
