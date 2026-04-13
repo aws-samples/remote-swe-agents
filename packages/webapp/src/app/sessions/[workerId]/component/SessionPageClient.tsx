@@ -319,7 +319,7 @@ export default function SessionPageClient({
                   thinkingBudget: event.thinkingBudget,
                 },
               ]);
-            } else if (['sendMessageToAgent', 'acknowledgeAgent'].includes(event.toolName)) {
+            } else if (['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(event.toolName)) {
               // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
             } else {
               setMessages((prev) => [
