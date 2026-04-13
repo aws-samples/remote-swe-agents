@@ -5,6 +5,8 @@ import { sendPushNotificationToUser } from '../../lib/push-notification';
 import { incrementUnread } from '../../lib/unread';
 import { getSession, updateSessionLastMessage } from '../../lib/sessions';
 import { sendWebappEvent } from '../../lib/events';
+import { getConversationHistory } from '../../lib/messages';
+import { savePendingUserMessage } from '../confirm-send-to-user';
 
 const inputSchema = z.object({
   message: z.string().describe('The message you want to send to the user.'),
@@ -12,39 +14,67 @@ const inputSchema = z.object({
 
 const name = 'sendMessageToUser';
 
+export const sendMessageToUser = async (workerId: string, message: string) => {
+  await sendMessageToSlack(message);
+
+  const lastMessagePreview = message.slice(0, 500);
+  await updateSessionLastMessage(workerId, lastMessagePreview);
+  await sendWebappEvent(workerId, {
+    type: 'lastMessageUpdate',
+    lastMessage: lastMessagePreview,
+    lastMessageAt: Date.now(),
+  });
+
+  // Send push notification
+  try {
+    const session = await getSession(workerId);
+    if (session?.initiator?.startsWith('webapp#')) {
+      const userId = session.initiator.replace('webapp#', '');
+      const title = session.title || 'Agent Message';
+
+      await incrementUnread(userId, workerId);
+
+      await sendPushNotificationToUser(userId, {
+        title,
+        body: message.slice(0, 200),
+        url: `/sessions/${workerId}`,
+        workerId,
+      });
+    }
+  } catch (e) {
+    console.error('[push] Failed to send push from sendMessageToUser:', e);
+  }
+};
+
 export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
   handler: async (input: z.infer<typeof inputSchema>, context) => {
-    await sendMessageToSlack(input.message);
+    const session = await getSession(context.workerId);
 
-    const lastMessagePreview = input.message.slice(0, 500);
-    await updateSessionLastMessage(context.workerId, lastMessagePreview);
-    await sendWebappEvent(context.workerId, {
-      type: 'lastMessageUpdate',
-      lastMessage: lastMessagePreview,
-      lastMessageAt: Date.now(),
-    });
+    // Child session confirmation check
+    if (session?.parentSessionId) {
+      const { items } = await getConversationHistory(context.workerId);
+      const lastItem = items.at(-1);
+      const lastMessageType = lastItem?.messageType ?? 'unknown';
 
-    // Send push notification
-    try {
-      const session = await getSession(context.workerId);
-      if (session?.initiator?.startsWith('webapp#')) {
-        const userId = session.initiator.replace('webapp#', '');
-        const title = session.title || 'Agent Message';
+      if (lastMessageType !== 'userMessage') {
+        const userMessageCount = items.filter((i) => i.messageType === 'userMessage').length;
+        const senderInfo = lastItem?.senderAgentName ?? lastItem?.senderSessionId ?? 'system';
 
-        await incrementUnread(userId, context.workerId);
+        savePendingUserMessage(context.workerId, input.message);
 
-        await sendPushNotificationToUser(userId, {
-          title,
-          body: input.message.slice(0, 200),
-          url: `/sessions/${context.workerId}`,
-          workerId: context.workerId,
-        });
+        return [
+          `This is a child session. sendMessageToUser will notify the user directly.`,
+          `- Messages from user in this session: ${userMessageCount}`,
+          `- Last message is from: ${lastMessageType} (${senderInfo})`,
+          ``,
+          `If you intended to report to the parent, use sendMessageToAgent instead.`,
+          `If you still want to send directly to the user, call confirmSendToUser to confirm.`,
+        ].join('\n');
       }
-    } catch (e) {
-      console.error('[push] Failed to send push from sendMessageToUser:', e);
     }
 
+    await sendMessageToUser(context.workerId, input.message);
     return 'Successfully sent a message.';
   },
   schema: inputSchema,

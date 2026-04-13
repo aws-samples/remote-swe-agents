@@ -11,6 +11,7 @@ export * from './report-progress';
 export * from './send-file';
 export * from './send-to-agent';
 export * from './acknowledge-agent';
+export * from './confirm-send-to-user';
 export * from './think';
 export * from './read-image';
 export * from './todo';
@@ -29,6 +30,7 @@ import { reportProgressTool } from './report-progress';
 import { sendFileTool } from './send-file';
 import { sendToAgentTool } from './send-to-agent';
 import { acknowledgeAgentTool } from './acknowledge-agent';
+import { confirmSendToUserTool } from './confirm-send-to-user';
 import { readImageTool } from './read-image';
 import { todoInitTool, todoUpdateTool } from './todo';
 import { updateSessionTitleTool } from './session-title';
@@ -50,7 +52,7 @@ export const gitHubTools = [
  * Required tools that are always enabled regardless of custom agent tool selection.
  * These tools are essential for basic agent functionality.
  */
-export const requiredTools = [reportProgressTool, todoInitTool, todoUpdateTool, sendFileTool, updateSessionTitleTool];
+export const requiredTools = [reportProgressTool, todoInitTool, todoUpdateTool, sendFileTool, updateSessionTitleTool, confirmSendToUserTool];
 
 /**
  * Required tool names for filtering convenience.
