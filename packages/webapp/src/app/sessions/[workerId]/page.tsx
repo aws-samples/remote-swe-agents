@@ -229,6 +229,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
     <>
       <SessionPageClient
         workerId={workerId}
+        userId={userId}
         preferences={preferences}
         initialTitle={session.title}
         initialMessages={messages}

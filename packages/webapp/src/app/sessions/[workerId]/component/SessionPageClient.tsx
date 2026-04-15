@@ -39,6 +39,7 @@ import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 
 interface SessionPageClientProps {
   workerId: string;
+  userId: string;
   preferences: GlobalPreferences;
   initialTitle: string | undefined;
   initialMessages: MessageView[];
@@ -54,6 +55,7 @@ interface SessionPageClientProps {
 
 export default function SessionPageClient({
   workerId,
+  userId,
   preferences,
   initialTitle,
   initialMessages,
@@ -396,21 +398,13 @@ export default function SessionPageClient({
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         unreadMap={currentUnreadMap}
-        onUnreadIncrement={useCallback(
-          (eventWorkerId: string) => {
-            setCurrentUnreadMap((prev) => {
-              const current = prev[eventWorkerId] ?? { unreadCount: 0, hasPending: false };
-              return {
-                ...prev,
-                [eventWorkerId]: {
-                  ...current,
-                  unreadCount: current.unreadCount + 1,
-                },
-              };
-            });
-          },
-          []
-        )}
+        userId={userId}
+        onUnreadUpdate={useCallback((eventWorkerId: string, data: { unreadCount: number; hasPending: boolean }) => {
+          setCurrentUnreadMap((prev) => ({
+            ...prev,
+            [eventWorkerId]: data,
+          }));
+        }, [])}
         onMarkAllRead={useCallback(() => executeMarkAllRead({}), [executeMarkAllRead])}
         isMarkingAllRead={isMarkingAllRead}
       />

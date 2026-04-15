@@ -23,7 +23,7 @@ interface UnreadSession {
   instanceStatus?: string;
 }
 
-export default function NotificationCenter() {
+export default function NotificationCenter({ userId }: { userId: string }) {
   const t = useTranslations('notifications');
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -111,31 +111,38 @@ export default function NotificationCenter() {
       (payload: unknown) => {
         try {
           const event = webappEventSchema.parse(payload);
-          // Skip events for the session the user is currently viewing
-          if (event.workerId === currentWorkerId) return;
 
-          const isAssistantMessage = event.type === 'message' && event.role === 'assistant';
-          const isUserFacingToolUse =
-            event.type === 'toolUse' &&
-            ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser', 'sendFileToUser'].includes(
-              event.toolName
-            );
+          if (event.type === 'unreadUpdate') {
+            if (event.userId !== userId) return;
 
-          if (isAssistantMessage || isUserFacingToolUse) {
-            setTotalUnread((prev) => prev + 1);
-
-            // Update session in the dropdown list if it's open
             setSessions((prev) => {
               const existing = prev.find((s) => s.workerId === event.workerId);
+              let next: UnreadSession[];
               if (existing) {
-                return prev.map((s) =>
+                const updated = prev.map((s) =>
                   s.workerId === event.workerId
-                    ? { ...s, unreadCount: s.unreadCount + 1, updatedAt: Date.now() }
+                    ? { ...s, unreadCount: event.unreadCount, hasPending: event.hasPending, updatedAt: Date.now() }
                     : s
                 );
+                next =
+                  event.unreadCount === 0 && !event.hasPending
+                    ? updated.filter((s) => s.workerId !== event.workerId)
+                    : updated;
+              } else if (event.unreadCount > 0 || event.hasPending) {
+                next = [
+                  ...prev,
+                  {
+                    workerId: event.workerId,
+                    unreadCount: event.unreadCount,
+                    hasPending: event.hasPending,
+                    updatedAt: Date.now(),
+                  },
+                ];
+              } else {
+                next = prev;
               }
-              // New session with unread - will be fetched on next dropdown open
-              return prev;
+              setTotalUnread(next.reduce((sum, s) => sum + Math.max(s.unreadCount, s.hasPending ? 1 : 0), 0));
+              return next;
             });
           }
 
@@ -149,7 +156,7 @@ export default function NotificationCenter() {
           // ignore parse errors
         }
       },
-      [currentWorkerId]
+      [userId]
     ),
   });
 
@@ -245,31 +252,31 @@ export default function NotificationCenter() {
                   session.instanceStatus as InstanceStatus | undefined
                 );
                 return (
-                <Link
-                  key={session.workerId}
-                  href={`/sessions/${session.workerId}`}
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${status.color}`} />
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {session.title || session.workerId}
+                  <Link
+                    key={session.workerId}
+                    href={`/sessions/${session.workerId}`}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${status.color}`} />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {session.title || session.workerId}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-3">
+                        {session.unreadCount > 0
+                          ? t('center.unreadCount', { count: session.unreadCount })
+                          : session.hasPending
+                            ? t('center.pending')
+                            : ''}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-3">
-                      {session.unreadCount > 0
-                        ? t('center.unreadCount', { count: session.unreadCount })
-                        : session.hasPending
-                          ? t('center.pending')
-                          : ''}
-                    </p>
-                  </div>
-                  <span className="flex-shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">
-                    {session.unreadCount > 0 ? session.unreadCount : '!'}
-                  </span>
-                </Link>
+                    <span className="flex-shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">
+                      {session.unreadCount > 0 ? session.unreadCount : '!'}
+                    </span>
+                  </Link>
                 );
               })
             )}

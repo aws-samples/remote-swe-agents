@@ -128,9 +128,7 @@ export default function PushNotificationSettings() {
   }
 
   if (!isSupported) {
-    return (
-      <p className="text-sm text-gray-500 dark:text-gray-400">{t('notSupported')}</p>
-    );
+    return <p className="text-sm text-gray-500 dark:text-gray-400">{t('notSupported')}</p>;
   }
 
   return (
@@ -145,12 +143,7 @@ export default function PushNotificationSettings() {
           {isSubscribed ? t('enabled') : t('disabled')}
         </label>
       </div>
-      <Switch
-        id="push-toggle"
-        checked={isSubscribed}
-        onCheckedChange={handleToggle}
-        disabled={isLoading}
-      />
+      <Switch id="push-toggle" checked={isSubscribed} onCheckedChange={handleToggle} disabled={isLoading} />
     </div>
   );
 }

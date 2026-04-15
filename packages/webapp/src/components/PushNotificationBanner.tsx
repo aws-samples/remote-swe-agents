@@ -110,12 +110,8 @@ export default function PushNotificationBanner() {
           <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {t('banner.title')}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('banner.description')}
-          </p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{t('banner.title')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('banner.description')}</p>
           <div className="flex items-center gap-2 mt-3">
             <Button size="sm" onClick={enable} disabled={isLoading}>
               {t('banner.enable')}

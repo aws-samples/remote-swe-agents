@@ -17,7 +17,8 @@ interface SessionSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   unreadMap?: UnreadMap;
-  onUnreadIncrement?: (workerId: string) => void;
+  userId: string;
+  onUnreadUpdate?: (workerId: string, data: { unreadCount: number; hasPending: boolean }) => void;
   onMarkAllRead?: () => void;
   isMarkingAllRead?: boolean;
 }
@@ -28,7 +29,8 @@ export default function SessionSidebar({
   isOpen,
   onClose,
   unreadMap = {},
-  onUnreadIncrement,
+  userId,
+  onUnreadUpdate,
   onMarkAllRead,
   isMarkingAllRead,
 }: SessionSidebarProps) {
@@ -135,23 +137,16 @@ export default function SessionSidebar({
               });
             });
           }
-          // Increment unread count for other sessions when assistant sends a message
-          if (event.workerId !== currentWorkerId) {
-            if (event.type === 'message' && event.role === 'assistant') {
-              onUnreadIncrement?.(event.workerId);
-            }
-            if (
-              event.type === 'toolUse' &&
-              ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser', 'sendFileToUser'].includes(event.toolName)
-            ) {
-              onUnreadIncrement?.(event.workerId);
-            }
+          // Handle unreadUpdate events from backend
+          if (event.type === 'unreadUpdate') {
+            if (event.userId !== userId) return;
+            onUnreadUpdate?.(event.workerId, { unreadCount: event.unreadCount, hasPending: event.hasPending });
           }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
       },
-      [router, currentWorkerId, onUnreadIncrement, sessions]
+      [router, currentWorkerId, userId, onUnreadUpdate]
     ),
   });
 

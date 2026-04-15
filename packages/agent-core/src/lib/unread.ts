@@ -26,19 +26,29 @@ export const incrementUnread = async (
     exprValues[':true'] = true;
   }
 
-  await ddb.send(
+  const result = await ddb.send(
     new UpdateCommand({
       TableName,
       Key: { PK: pk(userId), SK: workerId },
       UpdateExpression: `SET ${updateExprParts.join(', ')}`,
       ExpressionAttributeNames: exprNames,
       ExpressionAttributeValues: exprValues,
+      ReturnValues: 'ALL_NEW',
     })
   );
+
+  const attrs = result.Attributes;
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: attrs?.unreadCount ?? 1,
+    hasPending: attrs?.hasPending ?? options?.hasPending ?? false,
+  });
 };
 
 export const markPending = async (userId: string, workerId: string): Promise<void> => {
-  await ddb.send(
+  const result = await ddb.send(
     new UpdateCommand({
       TableName,
       Key: { PK: pk(userId), SK: workerId },
@@ -53,8 +63,18 @@ export const markPending = async (userId: string, workerId: string): Promise<voi
         ':now': Date.now(),
         ':zero': 0,
       },
+      ReturnValues: 'ALL_NEW',
     })
   );
+
+  const attrs = result.Attributes;
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: attrs?.unreadCount ?? 0,
+    hasPending: true,
+  });
 };
 
 export const markSessionRead = async (userId: string, workerId: string): Promise<void> => {
@@ -76,6 +96,14 @@ export const markSessionRead = async (userId: string, workerId: string): Promise
       },
     })
   );
+
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: 0,
+    hasPending: false,
+  });
 };
 
 export const getLastReadAt = async (userId: string, workerId: string): Promise<number> => {
