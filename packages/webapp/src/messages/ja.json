@@ -115,6 +115,7 @@
     "cancel": "キャンセル",
     "sessionActions": "操作",
     "goToSessionList": "セッション一覧を表示",
+    "markAllRead": "すべて既読にする",
     "toggleSidebar": "サイドバーの表示切替",
     "stopSession": "セッションを停止",
     "stopSessionSuccess": "セッションを停止しました",
