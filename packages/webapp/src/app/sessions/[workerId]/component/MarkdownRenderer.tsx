@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { useTheme } from 'next-themes';
+import { MermaidDiagram } from './MermaidDiagram';
 
 type MarkdownRendererProps = {
   content: string;
@@ -46,6 +47,11 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
           const match = /language-(\w+)/.exec(className || '');
           const childStr = String(children);
           const isBlock = !!match || childStr.includes('\n');
+
+          if (match?.[1] === 'mermaid') {
+            return <MermaidDiagram chart={childStr.replace(/\n$/, '')} />;
+          }
+
           return isBlock ? (
             <div className="overflow-x-auto mb-2 rounded-md" data-scrollable="true">
               <SyntaxHighlighter style={codeStyle} language={match?.[1] || 'text'} PreTag="div" className="rounded-md">
