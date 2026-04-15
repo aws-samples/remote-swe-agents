@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { MessageSquare, Plus, X, List } from 'lucide-react';
+import { MessageSquare, Plus, X, List, CheckCheck } from 'lucide-react';
 import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations } from 'next-intl';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useRouter } from 'next/navigation';
 import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SessionSidebarProps {
   currentWorkerId: string;
@@ -16,6 +17,10 @@ interface SessionSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   unreadMap?: UnreadMap;
+  userId: string;
+  onUnreadUpdate?: (workerId: string, data: { unreadCount: number; hasPending: boolean }) => void;
+  onMarkAllRead?: () => void;
+  isMarkingAllRead?: boolean;
 }
 
 export default function SessionSidebar({
@@ -24,6 +29,10 @@ export default function SessionSidebar({
   isOpen,
   onClose,
   unreadMap = {},
+  userId,
+  onUnreadUpdate,
+  onMarkAllRead,
+  isMarkingAllRead,
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -128,11 +137,16 @@ export default function SessionSidebar({
               });
             });
           }
+          // Handle unreadUpdate events from backend
+          if (event.type === 'unreadUpdate') {
+            if (event.userId !== userId) return;
+            onUnreadUpdate?.(event.workerId, { unreadCount: event.unreadCount, hasPending: event.hasPending });
+          }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
       },
-      [router]
+      [router, currentWorkerId, userId, onUnreadUpdate]
     ),
   });
 
@@ -158,6 +172,22 @@ export default function SessionSidebar({
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t('title')}</h2>
           <div className="flex items-center gap-1">
+            {Object.values(unreadMap).some((v) => v.unreadCount > 0) && onMarkAllRead && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onMarkAllRead}
+                      disabled={isMarkingAllRead}
+                      className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <CheckCheck className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('markAllRead')}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <Link
               href="/sessions/new"
               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"

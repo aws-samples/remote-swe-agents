@@ -72,4 +72,12 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('unreadUpdate'),
+    workerId: z.string(),
+    userId: z.string(),
+    unreadCount: z.number(),
+    hasPending: z.boolean(),
+    timestamp: z.number(),
+  }),
 ]);

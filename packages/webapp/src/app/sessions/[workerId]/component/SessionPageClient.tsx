@@ -7,6 +7,7 @@ import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus, sendEventToAgent, stopSession, markSessionReadAction } from '../actions';
+import { markAllReadAction } from '@/actions/badge/action';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -38,6 +39,7 @@ import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 
 interface SessionPageClientProps {
   workerId: string;
+  userId: string;
   preferences: GlobalPreferences;
   initialTitle: string | undefined;
   initialMessages: MessageView[];
@@ -53,6 +55,7 @@ interface SessionPageClientProps {
 
 export default function SessionPageClient({
   workerId,
+  userId,
   preferences,
   initialTitle,
   initialMessages,
@@ -117,6 +120,9 @@ export default function SessionPageClient({
           badge: data.badge,
         });
       }
+
+      // Notify NotificationCenter to re-fetch
+      window.dispatchEvent(new CustomEvent('session-read'));
     },
   });
 
@@ -124,6 +130,22 @@ export default function SessionPageClient({
   useEffect(() => {
     executeMarkRead({ workerId });
   }, [workerId]);
+
+  // Mark all sessions as read
+  const { execute: executeMarkAllRead, isExecuting: isMarkingAllRead } = useAction(markAllReadAction, {
+    onSuccess: ({ data }) => {
+      setCurrentUnreadMap({});
+      window.dispatchEvent(new CustomEvent('session-read'));
+
+      // Clear OS badge
+      if (data?.badge && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'UPDATE_BADGE',
+          badge: data.badge,
+        });
+      }
+    },
+  });
 
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
@@ -188,6 +210,9 @@ export default function SessionPageClient({
 
         // Mark session as read since user is viewing it
         if (event.type === 'message' || event.type === 'toolUse') {
+          executeMarkRead({ workerId });
+        }
+        if (event.type === 'agentStatusUpdate' && event.status === 'pending') {
           executeMarkRead({ workerId });
         }
 
@@ -373,6 +398,15 @@ export default function SessionPageClient({
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         unreadMap={currentUnreadMap}
+        userId={userId}
+        onUnreadUpdate={useCallback((eventWorkerId: string, data: { unreadCount: number; hasPending: boolean }) => {
+          setCurrentUnreadMap((prev) => ({
+            ...prev,
+            [eventWorkerId]: data,
+          }));
+        }, [])}
+        onMarkAllRead={useCallback(() => executeMarkAllRead({}), [executeMarkAllRead])}
+        isMarkingAllRead={isMarkingAllRead}
       />
 
       {/* Main content */}
@@ -385,10 +419,17 @@ export default function SessionPageClient({
                 {/* Sidebar toggle (hamburger on mobile, hidden on lg) */}
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="inline-flex items-center p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer lg:hidden"
+                  className="relative inline-flex items-center p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer lg:hidden"
                   title={t('toggleSidebar')}
                 >
                   <Menu className="w-5 h-5" />
+                  {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 99
+                        ? '99+'
+                        : Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0)}
+                    </span>
+                  )}
                 </button>
                 <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white truncate min-w-0">
                   {sessionTitle || workerId}

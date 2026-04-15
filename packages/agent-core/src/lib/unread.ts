@@ -26,19 +26,29 @@ export const incrementUnread = async (
     exprValues[':true'] = true;
   }
 
-  await ddb.send(
+  const result = await ddb.send(
     new UpdateCommand({
       TableName,
       Key: { PK: pk(userId), SK: workerId },
       UpdateExpression: `SET ${updateExprParts.join(', ')}`,
       ExpressionAttributeNames: exprNames,
       ExpressionAttributeValues: exprValues,
+      ReturnValues: 'ALL_NEW',
     })
   );
+
+  const attrs = result.Attributes;
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: attrs?.unreadCount ?? 1,
+    hasPending: attrs?.hasPending ?? options?.hasPending ?? false,
+  });
 };
 
 export const markPending = async (userId: string, workerId: string): Promise<void> => {
-  await ddb.send(
+  const result = await ddb.send(
     new UpdateCommand({
       TableName,
       Key: { PK: pk(userId), SK: workerId },
@@ -53,8 +63,18 @@ export const markPending = async (userId: string, workerId: string): Promise<voi
         ':now': Date.now(),
         ':zero': 0,
       },
+      ReturnValues: 'ALL_NEW',
     })
   );
+
+  const attrs = result.Attributes;
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: attrs?.unreadCount ?? 0,
+    hasPending: true,
+  });
 };
 
 export const markSessionRead = async (userId: string, workerId: string): Promise<void> => {
@@ -76,6 +96,14 @@ export const markSessionRead = async (userId: string, workerId: string): Promise
       },
     })
   );
+
+  const { sendWebappEvent } = await import('./events');
+  await sendWebappEvent(workerId, {
+    type: 'unreadUpdate',
+    userId,
+    unreadCount: 0,
+    hasPending: false,
+  });
 };
 
 export const getLastReadAt = async (userId: string, workerId: string): Promise<number> => {
@@ -121,6 +149,54 @@ export const getUnreadItems = async (userId: string): Promise<UnreadItem[]> => {
   );
 
   return (result.Items ?? []) as UnreadItem[];
+};
+
+export interface UnreadSessionDetail {
+  workerId: string;
+  unreadCount: number;
+  hasPending: boolean;
+  updatedAt: number;
+  title?: string;
+  agentStatus?: string;
+  instanceStatus?: string;
+}
+
+export const getUnreadSessionDetails = async (userId: string): Promise<UnreadSessionDetail[]> => {
+  const items = await getUnreadItems(userId);
+  const unreadItems = items.filter((item) => item.unreadCount > 0 || item.hasPending);
+
+  if (unreadItems.length === 0) {
+    return [];
+  }
+
+  // Batch fetch session details for all unread sessions
+  const { getSession } = await import('./sessions');
+  const details: UnreadSessionDetail[] = [];
+
+  for (const item of unreadItems) {
+    const session = await getSession(item.SK);
+    details.push({
+      workerId: item.SK,
+      unreadCount: item.unreadCount,
+      hasPending: item.hasPending,
+      updatedAt: item.updatedAt,
+      title: session?.title,
+      agentStatus: session?.agentStatus,
+      instanceStatus: session?.instanceStatus,
+    });
+  }
+
+  // Sort by updatedAt descending (most recent first)
+  details.sort((a, b) => b.updatedAt - a.updatedAt);
+
+  return details;
+};
+
+export const markAllSessionsRead = async (userId: string): Promise<void> => {
+  const items = await getUnreadItems(userId);
+  const unreadItems = items.filter((item) => item.unreadCount > 0 || item.hasPending);
+
+  await Promise.all(unreadItems.map((item) => markSessionRead(userId, item.SK)));
 };
 
 export type UnreadMap = Record<string, { unreadCount: number; hasPending: boolean }>;
