@@ -62,8 +62,10 @@ const isImageFile = (filePath: string): boolean => {
 
 const guessRegionFromBucket = (bucket: string): string => {
   // Common pattern: bucket names containing region hints
-  const regionMatch = bucket.match(/(us-(?:east|west)-\d|eu-(?:west|central|north|south)-\d|ap-(?:northeast|southeast|south|east)-\d)/);
-  return regionMatch ? regionMatch[1] : process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? 'us-east-1';
+  const regionMatch = bucket.match(
+    /(us-(?:east|west)-\d|eu-(?:west|central|north|south)-\d|ap-(?:northeast|southeast|south|east)-\d)/
+  );
+  return regionMatch ? regionMatch[1] : (process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? 'us-east-1');
 };
 
 export const sendFileTool: ToolDefinition<z.infer<typeof inputSchema>> = {

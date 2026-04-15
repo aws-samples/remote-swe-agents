@@ -182,7 +182,15 @@ export default function MessageForm({
     }
   };
 
-  const { uploadingImages, uploadingFiles, handleFileSelect, handlePaste, ImagePreviewList, clearImages, isUploading: isUploadingFiles } = ImageUploader({
+  const {
+    uploadingImages,
+    uploadingFiles,
+    handleFileSelect,
+    handlePaste,
+    ImagePreviewList,
+    clearImages,
+    isUploading: isUploadingFiles,
+  } = ImageUploader({
     workerId,
     onImagesChange: (imageKeys) => {
       setValue('imageKeys', imageKeys);

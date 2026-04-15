@@ -27,7 +27,11 @@ const getFileIcon = (fileName: string) => {
   if (['csv', 'xls', 'xlsx'].includes(ext)) {
     return <FileSpreadsheet className="w-4 h-4 flex-shrink-0" />;
   }
-  if (['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'go', 'rs', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'sh'].includes(ext)) {
+  if (
+    ['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'go', 'rs', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'sh'].includes(
+      ext
+    )
+  ) {
     return <FileCode className="w-4 h-4 flex-shrink-0" />;
   }
   return <File className="w-4 h-4 flex-shrink-0" />;

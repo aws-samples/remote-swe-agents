@@ -195,7 +195,7 @@ export default function NewSessionForm({
                 className="flex gap-2 items-center"
               >
                 <Paperclip className="w-4 h-4" />
-                {(uploadingImages.length + uploadingFiles.length) > 0
+                {uploadingImages.length + uploadingFiles.length > 0
                   ? t('imagesCount', { count: uploadingImages.length + uploadingFiles.length })
                   : sessionsT('attachFile')}
               </Button>

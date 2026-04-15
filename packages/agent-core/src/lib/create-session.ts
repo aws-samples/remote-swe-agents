@@ -34,7 +34,17 @@ export interface CreateSessionParams {
  * @returns The workerId of the newly created session
  */
 export const createSession = async (params: CreateSessionParams): Promise<string> => {
-  const { message, initiator, customAgentId, title, modelOverride, imageKeys = [], fileKeys = [], slackChannelId, slackMentionUserId } = params;
+  const {
+    message,
+    initiator,
+    customAgentId,
+    title,
+    modelOverride,
+    imageKeys = [],
+    fileKeys = [],
+    slackChannelId,
+    slackMentionUserId,
+  } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
 

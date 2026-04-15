@@ -28,14 +28,18 @@ type ImageUploaderProps = {
   onPasteOverride?: (e: ClipboardEvent<HTMLTextAreaElement>) => void;
 };
 
-export default function ImageUploader({ workerId, onImagesChange, onFilesChange, onPasteOverride }: ImageUploaderProps) {
+export default function ImageUploader({
+  workerId,
+  onImagesChange,
+  onFilesChange,
+  onPasteOverride,
+}: ImageUploaderProps) {
   const [uploadingImages, setUploadingImages] = useState<UploadedImage[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const generalFileInputRef = useRef<HTMLInputElement>(null);
 
-  const isImageContentType = (type: string) =>
-    ['image/png', 'image/webp', 'image/jpeg'].includes(type);
+  const isImageContentType = (type: string) => ['image/png', 'image/webp', 'image/jpeg'].includes(type);
 
   const processAndUploadImage = async (file: File) => {
     const previewUrl = URL.createObjectURL(file);
@@ -253,10 +257,10 @@ export default function ImageUploader({ workerId, onImagesChange, onFilesChange,
               <div key={file.id} className="relative">
                 <div className="h-20 px-3 flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                   <FileDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                  <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{file.fileName}</span>
-                  {!file.key && (
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />
-                  )}
+                  <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                    {file.fileName}
+                  </span>
+                  {!file.key && <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />}
                 </div>
                 <button
                   type="button"
@@ -277,13 +281,7 @@ export default function ImageUploader({ workerId, onImagesChange, onFilesChange,
           multiple
           className="hidden"
         />
-        <input
-          type="file"
-          ref={generalFileInputRef}
-          onChange={handleFileChange}
-          multiple
-          className="hidden"
-        />
+        <input type="file" ref={generalFileInputRef} onChange={handleFileChange} multiple className="hidden" />
       </>
     ),
   };
