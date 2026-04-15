@@ -196,9 +196,7 @@ export const markAllSessionsRead = async (userId: string): Promise<void> => {
   const items = await getUnreadItems(userId);
   const unreadItems = items.filter((item) => item.unreadCount > 0 || item.hasPending);
 
-  for (const item of unreadItems) {
-    await markSessionRead(userId, item.SK);
-  }
+  await Promise.all(unreadItems.map((item) => markSessionRead(userId, item.SK)));
 };
 
 export type UnreadMap = Record<string, { unreadCount: number; hasPending: boolean }>;
