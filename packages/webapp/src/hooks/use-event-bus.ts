@@ -68,7 +68,7 @@ export const useEventBus = ({ channelName, onReceived, onConnected, onError }: U
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isMounted) {
-        console.log('Page became visible, reconnecting EventBus...');
+        console.debug('Page became visible, reconnecting EventBus...');
         if (channel) {
           channel.close();
           channel = null;
