@@ -144,7 +144,9 @@ export const executeCommand = async (
     if (cancellationToken) {
       cancellationInterval = setInterval(() => {
         if (cancellationToken.isCancelled && !hasExited) {
-          console.log(`Cancellation requested, leaving process running in background for command: ${command} (PID: ${childProcess.pid})`);
+          console.log(
+            `Cancellation requested, leaving process running in background for command: ${command} (PID: ${childProcess.pid})`
+          );
           clearTimeout(timer);
           if (longRunningTimer) clearTimeout(longRunningTimer);
           clearInterval(cancellationInterval!);

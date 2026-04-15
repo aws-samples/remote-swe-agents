@@ -11,14 +11,7 @@ describe('executeCommand with cancellationToken', () => {
     const cancellationToken = { isCancelled: false };
 
     const startTime = Date.now();
-    const resultPromise = executeCommand(
-      'sleep 300',
-      undefined,
-      60000,
-      false,
-      undefined,
-      cancellationToken
-    );
+    const resultPromise = executeCommand('sleep 300', undefined, 60000, false, undefined, cancellationToken);
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     (cancellationToken as any).isCancelled = true;
@@ -79,7 +72,11 @@ describe('executeCommand with cancellationToken', () => {
     // Cleanup: kill the background process using PID from result
     const pidMatch = result.error?.match(/PID: (\d+)/);
     if (pidMatch) {
-      try { process.kill(parseInt(pidMatch[1]!, 10), 'SIGTERM'); } catch { /* already exited */ }
+      try {
+        process.kill(parseInt(pidMatch[1]!, 10), 'SIGTERM');
+      } catch {
+        /* already exited */
+      }
     }
     // Also kill by marker just in case
     await executeCommand(`pkill -f "${marker}" || true`, undefined, 5000);
@@ -88,14 +85,7 @@ describe('executeCommand with cancellationToken', () => {
   test('completes normally when not cancelled', async () => {
     const cancellationToken = { isCancelled: false };
 
-    const result = await executeCommand(
-      'echo hello',
-      undefined,
-      60000,
-      false,
-      undefined,
-      cancellationToken
-    );
+    const result = await executeCommand('echo hello', undefined, 60000, false, undefined, cancellationToken);
 
     expect(result.stdout).toContain('hello');
     expect(result.error).toBeUndefined();
@@ -111,14 +101,7 @@ describe('executeCommand with cancellationToken', () => {
   test('cancellation resolves rather than rejects', async () => {
     const cancellationToken = { isCancelled: false };
 
-    const resultPromise = executeCommand(
-      'sleep 300',
-      undefined,
-      60000,
-      false,
-      undefined,
-      cancellationToken
-    );
+    const resultPromise = executeCommand('sleep 300', undefined, 60000, false, undefined, cancellationToken);
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     (cancellationToken as any).isCancelled = true;
