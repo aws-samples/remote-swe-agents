@@ -6,11 +6,11 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BucketName, s3 } from '@remote-swe-agents/agent-core/aws';
 import { z } from 'zod';
 
-const getImageUrlsSchema = z.object({
+const getFileUrlsSchema = z.object({
   keys: z.array(z.string()),
 });
 
-export const getImageUrls = authActionClient.inputSchema(getImageUrlsSchema).action(async ({ parsedInput }) => {
+export const getFileUrls = authActionClient.inputSchema(getFileUrlsSchema).action(async ({ parsedInput }) => {
   const { keys } = parsedInput;
   if (!BucketName) {
     throw new Error('S3 bucket name is not configured');

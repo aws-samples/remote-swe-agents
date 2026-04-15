@@ -27,7 +27,7 @@ import { MessageItem } from '@remote-swe-agents/agent-core/schema';
 export const sendMessageToAgent = authActionClient
   .inputSchema(sendMessageToAgentSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { workerId, message, imageKeys = [], modelOverride } = parsedInput;
+    const { workerId, message, imageKeys = [], fileKeys = [], modelOverride } = parsedInput;
     const session = await getSession(workerId);
     if (!session) {
       throw new Error('Session not found');
@@ -42,6 +42,17 @@ export const sendMessageToAgent = authActionClient
           source: {
             s3Key: key,
           },
+        },
+      });
+    });
+    fileKeys.forEach((key) => {
+      const fileName = key.split('/').pop() || 'file';
+      content.push({
+        file: {
+          source: {
+            s3Key: key,
+          },
+          fileName,
         },
       });
     });

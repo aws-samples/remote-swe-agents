@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon, FileText } from 'lucide-react';
+import { Paperclip, FileText } from 'lucide-react';
 import { createNewWorker } from './actions';
 import { createNewWorkerSchema, PromptTemplate } from './schemas';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ export default function NewSessionForm({
       defaultValues: {
         message: '',
         imageKeys: [],
+        fileKeys: [],
         modelOverride: preferences.modelOverride,
         customAgentId: 'DEFAULT',
       },
@@ -60,14 +61,15 @@ export default function NewSessionForm({
   });
   const { register, formState, reset, setValue, watch, control } = form;
 
-  const { uploadingImages, fileInputRef, handleImageSelect, handleImageChange, handlePaste, ImagePreviewList } =
+  const { uploadingImages, uploadingFiles, handleFileSelect, handlePaste, ImagePreviewList, isUploading } =
     ImageUploader({
       onImagesChange: (keys) => {
         setValue('imageKeys', keys);
       },
+      onFilesChange: (keys) => {
+        setValue('fileKeys', keys);
+      },
     });
-
-  const isUploading = uploadingImages.some((img) => !img.key);
 
   const handleTemplateSelect = (template: PromptTemplate) => {
     setValue('message', template.content, { shouldValidate: true });
@@ -186,14 +188,16 @@ export default function NewSessionForm({
               </Button>
               <Button
                 type="button"
-                onClick={handleImageSelect}
+                onClick={handleFileSelect}
                 disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
               >
-                <ImageIcon className="w-4 h-4" />
-                {uploadingImages.length > 0 ? t('imagesCount', { count: uploadingImages.length }) : t('addImage')}
+                <Paperclip className="w-4 h-4" />
+                {uploadingImages.length + uploadingFiles.length > 0
+                  ? t('imagesCount', { count: uploadingImages.length + uploadingFiles.length })
+                  : sessionsT('attachFile')}
               </Button>
             </div>
           </div>

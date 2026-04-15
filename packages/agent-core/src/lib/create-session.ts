@@ -15,6 +15,8 @@ export interface CreateSessionParams {
   customAgentId?: string;
   title?: string;
   modelOverride?: ModelType;
+  imageKeys?: string[];
+  fileKeys?: string[];
   /**
    * If provided, a new Slack thread will be created in this channel
    * and linked to the new session.
@@ -32,7 +34,17 @@ export interface CreateSessionParams {
  * @returns The workerId of the newly created session
  */
 export const createSession = async (params: CreateSessionParams): Promise<string> => {
-  const { message, initiator, customAgentId, title, modelOverride, slackChannelId, slackMentionUserId } = params;
+  const {
+    message,
+    initiator,
+    customAgentId,
+    title,
+    modelOverride,
+    imageKeys = [],
+    fileKeys = [],
+    slackChannelId,
+    slackMentionUserId,
+  } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
 
@@ -45,7 +57,28 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   }
 
   const now = Date.now();
-  const content = [{ text: renderUserMessage({ message }) }];
+  const content: any[] = [{ text: renderUserMessage({ message }) }];
+  for (const key of imageKeys) {
+    content.push({
+      image: {
+        format: 'webp',
+        source: {
+          s3Key: key,
+        },
+      },
+    });
+  }
+  for (const key of fileKeys) {
+    const fileName = key.split('/').pop() || 'file';
+    content.push({
+      file: {
+        source: {
+          s3Key: key,
+        },
+        fileName,
+      },
+    });
+  }
 
   let slackThreadTs: string | undefined;
   if (slackChannelId) {

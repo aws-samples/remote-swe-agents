@@ -1,5 +1,7 @@
 import {
   getAttachedImageKey,
+  getAttachedFileKey,
+  isImageKey,
   getConversationHistory,
   getCustomAgent,
   getLastReadAt,
@@ -37,7 +39,18 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
 
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
-    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser'].includes(toolName ?? '');
+    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser', 'sendFileToUser'].includes(toolName ?? '');
+
+  // Collect all completed toolUseIds from toolResult messages
+  const completedToolUseIds = new Set<string>();
+  for (const msg of filteredMessages) {
+    for (const block of msg.content ?? []) {
+      if (block.toolResult?.toolUseId) {
+        completedToolUseIds.add(block.toolResult.toolUseId);
+      }
+    }
+  }
+
   for (let i = 0; i < filteredMessages.length; i++) {
     const message = filteredMessages[i];
     const item = filteredItems[i];
@@ -74,6 +87,41 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
                 thinkingBudget: item.thinkingBudget,
                 reasoningText,
               });
+            } else if (toolName === 'sendFileToUser') {
+              const messageText = formatMessage(input?.message ?? '');
+              const key = getAttachedFileKey(workerId, toolUseId, input.filePath);
+              const isToolComplete = completedToolUseIds.has(toolUseId);
+
+              // Extract reasoning content if available
+              let reasoningText: string | undefined;
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
+              if (reasoningBlocks.length > 0) {
+                reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
+              }
+
+              if (isImageKey(key)) {
+                messages.push({
+                  id: `${item.SK}-${i}-${toolUseId}`,
+                  role: 'assistant',
+                  content: messageText,
+                  timestamp: new Date(parseInt(item.SK)),
+                  type: 'message',
+                  imageKeys: isToolComplete ? [key] : undefined,
+                  thinkingBudget: item.thinkingBudget,
+                  reasoningText,
+                });
+              } else {
+                messages.push({
+                  id: `${item.SK}-${i}-${toolUseId}`,
+                  role: 'assistant',
+                  content: messageText,
+                  timestamp: new Date(parseInt(item.SK)),
+                  type: 'message',
+                  fileKeys: isToolComplete ? [key] : undefined,
+                  thinkingBudget: item.thinkingBudget,
+                  reasoningText,
+                });
+              }
             } else {
               // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
               const messageText = formatMessage(input?.message ?? '');
@@ -150,6 +198,16 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const extracted = extractUserMessage(text);
 
+        // Extract image keys from user message content
+        const userImageKeys = (message.content ?? [])
+          .filter((c: any) => c.image?.source?.s3Key)
+          .map((c: any) => c.image.source.s3Key as string);
+
+        // Extract file keys from user message content
+        const userFileKeys = (message.content ?? [])
+          .filter((c: any) => c.file?.source?.s3Key)
+          .map((c: any) => c.file.source.s3Key as string);
+
         messages.push({
           id: `${item.SK}-${i}`,
           role: 'user',
@@ -157,6 +215,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           timestamp: new Date(parseInt(item.SK)),
           type: 'message',
           modelOverride: item.modelOverride,
+          ...(userImageKeys.length > 0 ? { imageKeys: userImageKeys } : {}),
+          ...(userFileKeys.length > 0 ? { fileKeys: userFileKeys } : {}),
         });
         break;
       }
