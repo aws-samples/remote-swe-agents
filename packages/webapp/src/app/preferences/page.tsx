@@ -3,6 +3,7 @@ import { readCommonPrompt, getPreferences } from '@remote-swe-agents/agent-core/
 import PromptForm from './components/PromptForm';
 import PreferenceSection from './components/PreferenceSection';
 import GlobalPreferencesForm from './components/GlobalPreferencesForm';
+import PushNotificationSettings from './components/PushNotificationSettings';
 import { getTranslations } from 'next-intl/server';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,7 @@ export default async function PreferencesPage() {
   const t = await getTranslations('preferences');
   const promptT = await getTranslations('preferences.prompt');
   const globalT = await getTranslations('preferences.global');
+  const pushT = await getTranslations('preferences.pushNotifications');
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -29,6 +31,10 @@ export default async function PreferencesPage() {
         <div className="space-y-6">
           <PreferenceSection title={globalT('title')} description={globalT('description')}>
             <GlobalPreferencesForm preference={globalPreferences} />
+          </PreferenceSection>
+
+          <PreferenceSection title={pushT('title')} description={pushT('description')}>
+            <PushNotificationSettings />
           </PreferenceSection>
 
           <PreferenceSection title={promptT('title')} description={promptT('description')}>
