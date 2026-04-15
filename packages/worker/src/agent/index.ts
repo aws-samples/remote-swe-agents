@@ -460,6 +460,31 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
           toolUseId: toolUseId,
           output: toolResult ? toolResult : (toolResultObject?.map((r) => r.text).join('\n') ?? ''),
         });
+
+        // Check cancellation after each tool execution to stop early
+        if (cancellationToken.isCancelled) break;
+      }
+
+      // Fill in missing tool results for tools that were not executed due to cancellation
+      if (cancellationToken.isCancelled) {
+        for (const request of toolUseRequests) {
+          const toolUseId = request.toolUse?.toolUseId;
+          if (toolUseId == null) continue;
+          const alreadyHasResult = toolResultMessage.content!.some((c) => c.toolResult?.toolUseId === toolUseId);
+          if (!alreadyHasResult) {
+            console.log(`Filling missing toolResult for cancelled tool: ${request.toolUse?.name} (${toolUseId})`);
+            toolResultMessage.content!.push({
+              toolResult: {
+                toolUseId,
+                content: [
+                  {
+                    text: 'This tool execution was skipped because the agent session was interrupted by a new incoming message.',
+                  },
+                ],
+              },
+            });
+          }
+        }
       }
 
       // Save toolResult message to DynamoDB after all tools have been executed
