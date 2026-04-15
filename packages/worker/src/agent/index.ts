@@ -406,9 +406,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
         for (const request of toolUseRequests) {
           const toolUseId = request.toolUse?.toolUseId;
           if (toolUseId == null) continue;
-          const alreadyHasResult = toolResultMessage.content!.some(
-            (c) => c.toolResult?.toolUseId === toolUseId
-          );
+          const alreadyHasResult = toolResultMessage.content!.some((c) => c.toolResult?.toolUseId === toolUseId);
           if (!alreadyHasResult) {
             console.log(`Filling missing toolResult for cancelled tool: ${request.toolUse?.name} (${toolUseId})`);
             toolResultMessage.content!.push({

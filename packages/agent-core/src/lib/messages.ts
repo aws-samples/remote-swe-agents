@@ -125,9 +125,7 @@ export const repairDanglingToolUse = async (workerId: string, items: MessageItem
         const toolUseContent = JSON.parse(item.content);
         const toolResultContent = JSON.parse(next.content);
         const toolUseIds = new Set<string>(
-          toolUseContent
-            .filter((c: any) => c.toolUse?.toolUseId)
-            .map((c: any) => c.toolUse.toolUseId as string)
+          toolUseContent.filter((c: any) => c.toolUse?.toolUseId).map((c: any) => c.toolUse.toolUseId as string)
         );
         const toolResultIds = new Set<string>(
           toolResultContent
