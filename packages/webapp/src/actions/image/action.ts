@@ -26,8 +26,8 @@ export const getImageUrls = authActionClient.inputSchema(getImageUrlsSchema).act
               Key: key,
             })
           );
-        } catch (e) {
-          if (e instanceof NoSuchKey) {
+        } catch (e: any) {
+          if (e instanceof NoSuchKey || e.name === 'NotFound' || e.$metadata?.httpStatusCode === 404) {
             return;
           }
           throw e;
