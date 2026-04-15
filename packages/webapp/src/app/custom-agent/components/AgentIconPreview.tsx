@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Bot } from 'lucide-react';
-import { getImageUrls } from '@/actions/image/action';
 
 type AgentIconPreviewProps = {
   iconKey?: string;
@@ -10,19 +8,8 @@ type AgentIconPreviewProps = {
 };
 
 export default function AgentIconPreview({ iconKey, size = 32 }: AgentIconPreviewProps) {
-  const [iconUrl, setIconUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (iconKey) {
-      getImageUrls({ keys: [iconKey] }).then((result) => {
-        if (result?.data && result.data.length > 0) {
-          setIconUrl(result.data[0].url);
-        }
-      });
-    }
-  }, [iconKey]);
-
-  if (iconUrl) {
+  if (iconKey) {
+    const iconUrl = `/api/agent-icon?key=${encodeURIComponent(iconKey)}`;
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img

@@ -4,7 +4,6 @@ import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUploadUrl } from '@/actions/upload/action';
-import { getImageUrls } from '@/actions/image/action';
 
 type AgentIconUploaderProps = {
   currentIconKey?: string;
@@ -25,11 +24,7 @@ export default function AgentIconUploader({
 
   useEffect(() => {
     if (currentIconKey) {
-      getImageUrls({ keys: [currentIconKey] }).then((result) => {
-        if (result?.data && result.data.length > 0) {
-          setPreviewUrl(result.data[0].url);
-        }
-      });
+      setPreviewUrl(`/api/agent-icon?key=${encodeURIComponent(currentIconKey)}`);
     }
   }, [currentIconKey]);
 
