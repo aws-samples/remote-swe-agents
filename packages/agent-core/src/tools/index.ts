@@ -52,7 +52,14 @@ export const gitHubTools = [
  * Required tools that are always enabled regardless of custom agent tool selection.
  * These tools are essential for basic agent functionality.
  */
-export const requiredTools = [reportProgressTool, todoInitTool, todoUpdateTool, sendFileTool, updateSessionTitleTool, confirmSendToUserTool];
+export const requiredTools = [
+  reportProgressTool,
+  todoInitTool,
+  todoUpdateTool,
+  sendFileTool,
+  updateSessionTitleTool,
+  confirmSendToUserTool,
+];
 
 /**
  * Required tool names for filtering convenience.

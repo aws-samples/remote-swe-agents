@@ -104,11 +104,7 @@ describe('sendMessageToUser child session confirmation', () => {
   test('child session with triggering message as eventTrigger and no user messages returns hard error', async () => {
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
-      items: [
-        { messageType: 'eventTrigger' },
-        { messageType: 'assistant' },
-        { messageType: 'toolUse' },
-      ],
+      items: [{ messageType: 'eventTrigger' }, { messageType: 'assistant' }, { messageType: 'toolUse' }],
     });
 
     const result = await reportProgressTool.handler({ message: 'event response' }, mockContext);
@@ -205,10 +201,7 @@ describe('confirmSendToUser', () => {
     // First block a message (Case 2: has user messages but non-user trigger)
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
-      items: [
-        { messageType: 'userMessage' },
-        { messageType: 'agentMessage', senderAgentName: 'PM' },
-      ],
+      items: [{ messageType: 'userMessage' }, { messageType: 'agentMessage', senderAgentName: 'PM' }],
     });
 
     await reportProgressTool.handler({ message: 'pending message content' }, mockContext);
@@ -232,10 +225,7 @@ describe('confirmSendToUser', () => {
     // Block a message (Case 2: has user messages but non-user trigger)
     mockGetSession.mockResolvedValue({ parentSessionId: 'parent-123' });
     mockGetConversationHistory.mockResolvedValue({
-      items: [
-        { messageType: 'userMessage' },
-        { messageType: 'agentMessage', senderAgentName: 'PM' },
-      ],
+      items: [{ messageType: 'userMessage' }, { messageType: 'agentMessage', senderAgentName: 'PM' }],
     });
 
     await reportProgressTool.handler({ message: 'once only' }, mockContext);

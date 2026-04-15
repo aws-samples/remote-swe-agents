@@ -91,23 +91,27 @@ export async function sendAgentMessage(params: SendAgentMessageParams): Promise<
 
       // Notify the parent session's webapp about the communication (for communication log)
       const parentSessionId = senderSession.parentSessionId || targetSession.parentSessionId;
-      if (parentSessionId && parentSessionId !== targetId) {
-        // Persist the agent message in the parent session's history so it survives page reload
-        const parentItem: MessageItem = {
-          PK: `message-${parentSessionId}`,
-          SK: String(now + 1).padStart(15, '0'),
-          content: JSON.stringify([{ text: message }]),
-          role: 'user',
-          tokenCount: 0,
-          messageType: 'agentMessage',
-          senderSessionId: senderWorkerId,
-          senderAgentName: senderName,
-          targetSessionId: targetId,
-          targetAgentName: targetName,
-          isAcknowledge: acknowledge,
-        };
-        await ddb.send(new PutCommand({ TableName, Item: parentItem }));
+      if (parentSessionId) {
+        if (parentSessionId !== targetId) {
+          // Persist the agent message in the parent session's history so it survives page reload
+          // Only for sibling-to-sibling messages; child-to-parent messages are already stored in the target (parent) history
+          const parentItem: MessageItem = {
+            PK: `message-${parentSessionId}`,
+            SK: String(now + 1).padStart(15, '0'),
+            content: JSON.stringify([{ text: message }]),
+            role: 'user',
+            tokenCount: 0,
+            messageType: 'agentMessage',
+            senderSessionId: senderWorkerId,
+            senderAgentName: senderName,
+            targetSessionId: targetId,
+            targetAgentName: targetName,
+            isAcknowledge: acknowledge,
+          };
+          await ddb.send(new PutCommand({ TableName, Item: parentItem }));
+        }
 
+        // Always send real-time webapp notification to the parent session
         await sendWebappEvent(parentSessionId, {
           type: 'agentMessage',
           senderSessionId: senderWorkerId,
