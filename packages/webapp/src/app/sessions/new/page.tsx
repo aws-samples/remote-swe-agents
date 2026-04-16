@@ -3,10 +3,8 @@ import { ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import NewSessionForm from './NewSessionForm';
-import { ddb, TableName, s3, BucketName } from '@remote-swe-agents/agent-core/aws';
+import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PromptTemplate } from '@/app/sessions/new/schemas';
 import { getCustomAgents, getPreferences } from '@remote-swe-agents/agent-core/lib';
 
@@ -31,19 +29,11 @@ export default async function NewSessionPage() {
 
   templates = (result.Items ?? []) as PromptTemplate[];
 
-  // Resolve agent icon URLs
+  // Resolve agent icon URLs via /api/agent-icon route (cached by CloudFront)
   const agentIconUrls: Record<string, string> = {};
   for (const agent of customAgents) {
     if (agent.iconKey) {
-      try {
-        agentIconUrls[agent.SK] = await getSignedUrl(
-          s3,
-          new GetObjectCommand({ Bucket: BucketName, Key: agent.iconKey }),
-          { expiresIn: 3600 }
-        );
-      } catch {
-        // Ignore errors
-      }
+      agentIconUrls[agent.SK] = `/api/agent-icon?key=${encodeURIComponent(agent.iconKey)}`;
     }
   }
 

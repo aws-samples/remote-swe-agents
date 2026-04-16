@@ -16,11 +16,8 @@ import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
-import { extractUserMessage, formatMessage } from '@/lib/message-formatter';
+import { extractUserMessage, formatMessage, stripAgentMessagePrefix } from '@/lib/message-formatter';
 import { getSession as getAuthSession } from '@/lib/auth';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { s3, BucketName } from '@remote-swe-agents/agent-core/aws';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,6 +37,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
     ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser', 'sendFileToUser'].includes(toolName ?? '');
+  const isHiddenTool = (toolName: string | undefined) =>
+    isMsg(toolName) || ['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(toolName ?? '');
 
   // Collect all completed toolUseIds from toolResult messages
   const completedToolUseIds = new Set<string>();
@@ -150,7 +149,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
 
         const tools = (message.content ?? [])
           .filter((c) => c.toolUse != undefined)
-          .filter((c) => !isMsg(c.toolUse.name));
+          .filter((c) => !isHiddenTool(c.toolUse.name));
 
         if (tools.length > 0) {
           const content = tools.map((block) => block.toolUse.name).join(' + ');
@@ -234,6 +233,24 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         });
         break;
       }
+      case 'agentMessage': {
+        const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
+        const extracted = stripAgentMessagePrefix(extractUserMessage(text));
+
+        messages.push({
+          id: `${item.SK}-${i}`,
+          role: 'user',
+          content: extracted,
+          timestamp: new Date(parseInt(item.SK)),
+          type: 'agentMessage',
+          senderSessionId: item.senderSessionId,
+          senderAgentName: item.senderAgentName,
+          targetSessionId: item.targetSessionId,
+          targetAgentName: item.targetAgentName,
+          isAcknowledge: item.isAcknowledge,
+        });
+        break;
+      }
       case 'assistant': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const formatted = formatMessage(text);
@@ -271,18 +288,12 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const { userId } = await getAuthSession();
   const [unreadMap, lastReadAt] = await Promise.all([getUnreadMap(userId), getLastReadAt(userId, workerId)]);
 
-  // Resolve agent icon URL
+  // Resolve agent icon URL via /api/agent-icon route (cached by CloudFront)
   let agentIconUrl: string | undefined;
   const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
   const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
   if (iconKey) {
-    try {
-      agentIconUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BucketName, Key: iconKey }), {
-        expiresIn: 3600,
-      });
-    } catch {
-      // Ignore errors, fall back to default icon
-    }
+    agentIconUrl = `/api/agent-icon?key=${encodeURIComponent(iconKey)}`;
   }
 
   return (
@@ -298,9 +309,10 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         initialTodoList={todoList}
         allSessions={allSessions}
         agentIconUrl={agentIconUrl}
-        agentName={customAgent?.name || preferences.defaultAgentName || undefined}
+        agentName={session.agentName || customAgent?.name || preferences.defaultAgentName || undefined}
         unreadMap={unreadMap}
         lastReadAt={lastReadAt}
+        parentSessionId={session.parentSessionId}
       />
       <RefreshOnFocus />
     </>

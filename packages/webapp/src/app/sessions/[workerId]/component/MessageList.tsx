@@ -15,13 +15,23 @@ export type MessageView = {
   detail?: string;
   output?: string; // Added for toolResult output JSON
   timestamp: Date;
-  type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger';
+  type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger' | 'agentMessage';
   imageKeys?: string[];
   fileKeys?: string[];
   thinkingBudget?: number;
   reasoningText?: string;
   modelOverride?: ModelType;
   pending?: boolean;
+  agentName?: string;
+  childSessionId?: string;
+  /** For agentMessage: sender info */
+  senderSessionId?: string;
+  senderAgentName?: string;
+  /** For agentMessage on parent view: target info */
+  targetSessionId?: string;
+  targetAgentName?: string;
+  /** Whether this is an acknowledge (non-waking) message */
+  isAcknowledge?: boolean;
 };
 
 export type MessageGroup = {
@@ -39,6 +49,7 @@ type MessageListProps = {
   agentIconUrl?: string;
   agentName?: string;
   lastReadAt?: number;
+  childSessions?: { workerId: string; title?: string }[];
 };
 
 export default function MessageList({
@@ -49,6 +60,7 @@ export default function MessageList({
   agentIconUrl,
   agentName,
   lastReadAt,
+  childSessions,
 }: MessageListProps) {
   const t = useTranslations('sessions');
   const { userScrolledUp } = useScrollPosition();
@@ -59,14 +71,27 @@ export default function MessageList({
     let currentGroup: MessageGroup | null = null;
 
     messages.forEach((message) => {
-      if (!currentGroup || currentGroup.role !== message.role) {
+      // Agent messages always start a new group (each has its own sender context)
+      const isAgentMsg = message.type === 'agentMessage';
+      const prevIsAgentMsg = currentGroup?.messages[0]?.type === 'agentMessage';
+
+      // Start a new group if: different role, different agentName, or agent message boundary
+      const currentAgentName = currentGroup?.messages[0]?.agentName;
+      const isSameSource =
+        currentGroup &&
+        currentGroup.role === message.role &&
+        currentAgentName === message.agentName &&
+        !isAgentMsg &&
+        !prevIsAgentMsg;
+
+      if (!isSameSource) {
         currentGroup = {
           role: message.role,
           messages: [message],
         };
         groups.push(currentGroup);
       } else {
-        currentGroup.messages.push(message);
+        currentGroup!.messages.push(message);
       }
     });
 

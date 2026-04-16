@@ -1,12 +1,15 @@
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
 import { MessageItem, ModelType, RuntimeType, SessionItem, defaultAgentConfig } from '../schema';
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
-import { renderUserMessage } from './prompt';
+import { renderUserMessage, renderAgentMessage, renderSystemNotification } from './prompt';
 import { postNewSlackThread } from './slack';
 import { getWebappSessionUrl } from './webapp-origin';
+import { getChildSessions, getSession } from './sessions';
+import { resolveAgentDisplayName } from './agent-messaging';
 import { randomBytes } from 'crypto';
 
 export interface CreateSessionParams {
@@ -14,7 +17,9 @@ export interface CreateSessionParams {
   initiator: string;
   customAgentId?: string;
   title?: string;
+  agentName?: string;
   modelOverride?: ModelType;
+  parentSessionId?: string;
   imageKeys?: string[];
   fileKeys?: string[];
   /**
@@ -26,6 +31,12 @@ export interface CreateSessionParams {
    * Slack user ID to mention in the new thread notification.
    */
   slackMentionUserId?: string;
+  /**
+   * Session ID that created this session (for independent sessions).
+   * Unlike parentSessionId (which establishes parent-child hierarchy),
+   * this simply records who created the session so it can send messages back.
+   */
+  creatorSessionId?: string;
 }
 
 /**
@@ -39,11 +50,14 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     initiator,
     customAgentId,
     title,
+    agentName,
     modelOverride,
+    parentSessionId,
     imageKeys = [],
     fileKeys = [],
     slackChannelId,
     slackMentionUserId,
+    creatorSessionId,
   } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
@@ -57,7 +71,13 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   }
 
   const now = Date.now();
-  const content: any[] = [{ text: renderUserMessage({ message }) }];
+  const content: any[] = [
+    {
+      text: parentSessionId
+        ? renderAgentMessage({ message, senderSessionId: parentSessionId })
+        : renderUserMessage({ message }),
+    },
+  ];
   for (const key of imageKeys) {
     content.push({
       image: {
@@ -94,6 +114,19 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     }
   }
 
+  // Resolve parent agent name for child sessions
+  let parentAgentName: string | undefined;
+  if (parentSessionId) {
+    try {
+      const parentSession = await getSession(parentSessionId);
+      if (parentSession) {
+        parentAgentName = await resolveAgentDisplayName(parentSession);
+      }
+    } catch (e) {
+      console.error('Failed to resolve parent agent name:', e);
+    }
+  }
+
   await ddb.send(
     new TransactWriteCommand({
       TransactItems: [
@@ -115,6 +148,9 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               customAgentId: agent?.SK,
               runtimeType,
               ...(title ? { title } : {}),
+              ...(agentName ? { agentName } : {}),
+              ...(parentSessionId ? { parentSessionId } : {}),
+              ...(creatorSessionId ? { creatorSessionId } : {}),
               ...(slackChannelId ? { slackChannelId } : {}),
               ...(slackThreadTs ? { slackThreadTs } : {}),
             } satisfies SessionItem,
@@ -129,8 +165,10 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               content: JSON.stringify(content),
               role: 'user',
               tokenCount: 0,
-              messageType: 'userMessage',
+              messageType: parentSessionId ? 'agentMessage' : 'userMessage',
               ...(modelOverride ? { modelOverride } : {}),
+              ...(parentSessionId ? { senderSessionId: parentSessionId } : {}),
+              ...(parentAgentName ? { senderAgentName: parentAgentName } : {}),
             } satisfies MessageItem,
           },
         },
@@ -144,6 +182,36 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   } catch (e) {
     await updateInstanceStatus(workerId, 'terminated');
     throw e;
+  }
+
+  // Notify existing sibling sessions about the new child
+  if (parentSessionId) {
+    try {
+      const siblings = await getChildSessions(parentSessionId);
+      const displayName = agentName || title || workerId;
+      for (const sibling of siblings) {
+        if (sibling.workerId === workerId) continue;
+        const notifyContent = [
+          {
+            text: renderSystemNotification({
+              message: `A new sibling session has joined: "${displayName}" (ID: ${workerId}). You can communicate with it using sendMessageToAgent.`,
+            }),
+          },
+        ];
+        const notifyItem: MessageItem = {
+          PK: `message-${sibling.workerId}`,
+          SK: String(Date.now()).padStart(15, '0'),
+          content: JSON.stringify(notifyContent),
+          role: 'user',
+          tokenCount: 0,
+          messageType: 'eventTrigger',
+        };
+        await ddb.send(new PutCommand({ TableName, Item: notifyItem }));
+        await sendWorkerEvent(sibling.workerId, { type: 'onMessageReceived' });
+      }
+    } catch (e) {
+      console.error('Failed to notify sibling sessions:', e);
+    }
   }
 
   return workerId;

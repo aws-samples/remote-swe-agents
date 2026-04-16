@@ -3,6 +3,7 @@ import { ModelType, modelTypeSchema } from './model';
 
 export const agentStatusSchema = z.union([z.literal('working'), z.literal('pending'), z.literal('completed')]);
 export const runtimeTypeSchema = z.union([z.literal('ec2'), z.literal('agent-core')]);
+export const defaultRuntimeType: RuntimeType = 'agent-core';
 
 export type AgentStatus = z.infer<typeof agentStatusSchema>;
 export type RuntimeType = z.infer<typeof runtimeTypeSchema>;

@@ -30,6 +30,9 @@ export const sessionItemSchema = z.object({
   lastMessageAt: z.number().optional(),
   customAgentId: z.string().optional(),
   runtimeType: runtimeTypeSchema.optional(),
+  parentSessionId: z.string().optional(),
+  creatorSessionId: z.string().optional(),
+  agentName: z.string().optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

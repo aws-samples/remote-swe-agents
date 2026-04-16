@@ -29,12 +29,12 @@ export const updateSessionTitleTool: ToolDefinition<z.infer<typeof inputSchema>>
 
 ## When to use:
 - At the end of your FIRST turn, after understanding what the user wants
-- When the conversation topic significantly changes
+- Proactively whenever the conversation topic evolves or shifts to a different focus. Don't leave a stale title.
 - When the user explicitly asks to rename the session
 
 ## Guidelines:
 - Keep titles concise (under 30 characters preferred)
-- Make titles descriptive of the main topic or task
+- Make titles descriptive of the current main topic or task
 - Use the same language the user is using`,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),

@@ -6,6 +6,7 @@ import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
 import { EventTriggerRenderer } from './EventTriggerRenderer';
+import { AgentMessageRenderer } from './AgentMessageRenderer';
 import { ImageViewer } from './ImageViewer';
 import { FileViewer } from './FileViewer';
 import { formatTime } from '@/lib/utils';
@@ -14,9 +15,15 @@ type MessageItemProps = {
   message: MessageView;
   showTimestamp: boolean;
   onInterrupt?: () => void;
+  agentName?: string;
 };
 
-export const MessageItem = React.memo(function MessageItem({ message, showTimestamp, onInterrupt }: MessageItemProps) {
+export const MessageItem = React.memo(function MessageItem({
+  message,
+  showTimestamp,
+  onInterrupt,
+  agentName,
+}: MessageItemProps) {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -53,6 +60,8 @@ export const MessageItem = React.memo(function MessageItem({ message, showTimest
           />
         ) : message.type === 'eventTrigger' ? (
           <EventTriggerRenderer name={message.detail} content={message.content} />
+        ) : message.type === 'agentMessage' ? (
+          <AgentMessageRenderer message={message} agentName={agentName} />
         ) : message.pending ? (
           <div className="pb-2 break-all">
             <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">

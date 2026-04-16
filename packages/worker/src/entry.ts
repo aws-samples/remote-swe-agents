@@ -41,40 +41,63 @@ Amplify.configure(
 );
 
 class ConverseSessionTracker {
-  private sessions: { isFinished: boolean; cancellationToken: CancellationToken }[] = [];
+  private sessions: { promise: Promise<void>; isFinished: boolean; cancellationToken: CancellationToken }[] = [];
+  private operationQueue: Promise<void> = Promise.resolve();
   public constructor(private readonly workerId: string) {}
 
+  private enqueue(operation: () => Promise<void>): void {
+    this.operationQueue = this.operationQueue.then(operation).catch((e) => {
+      console.log('Operation queue error:', e);
+    });
+  }
+
   public startOnMessageReceived() {
-    const session = { isFinished: false, cancellationToken: new CancellationToken() };
+    this.enqueue(async () => {
+      await this.cancelCurrentSessions();
+      this._startOnMessageReceived();
+    });
+  }
+
+  public startResume() {
+    this.enqueue(async () => {
+      await this.cancelCurrentSessions();
+      this._startResume();
+    });
+  }
+
+  public forceStop(callback?: () => Promise<any>) {
+    this.enqueue(async () => {
+      await this.cancelCurrentSessions(callback);
+    });
+  }
+
+  private _startOnMessageReceived() {
+    const session = { promise: Promise.resolve(), isFinished: false, cancellationToken: new CancellationToken() };
     this.sessions.push(session);
     // temporarily pause kill timer when an agent loop is running
     const restartToken = pauseKillTimer();
-    onMessageReceived(this.workerId, session.cancellationToken)
-      .then(() => {
-        session.isFinished = true;
-      })
+    session.promise = onMessageReceived(this.workerId, session.cancellationToken)
       .catch((e) => {
         sendSystemMessage(this.workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
         console.log(e);
       })
       .finally(() => {
+        session.isFinished = true;
         restartKillTimer(this.workerId, restartToken);
       });
   }
 
-  public startResume() {
-    const session = { isFinished: false, cancellationToken: new CancellationToken() };
+  private _startResume() {
+    const session = { promise: Promise.resolve(), isFinished: false, cancellationToken: new CancellationToken() };
     this.sessions.push(session);
     const restartToken = pauseKillTimer();
-    resume(this.workerId, session.cancellationToken)
-      .then(() => {
-        session.isFinished = true;
-      })
+    session.promise = resume(this.workerId, session.cancellationToken)
       .catch((e) => {
         sendSystemMessage(this.workerId, `An error occurred: ${e}`).catch((e) => console.log(e));
         console.log(e);
       })
       .finally(() => {
+        session.isFinished = true;
         restartKillTimer(this.workerId, restartToken);
       });
   }
@@ -83,12 +106,20 @@ class ConverseSessionTracker {
    *
    * @param callback The callback function that is executed when each session is cancelled.
    */
-  public cancelCurrentSessions(callback?: () => Promise<any>) {
+  private async cancelCurrentSessions(callback?: () => Promise<any>) {
+    const runningPromises: Promise<void>[] = [];
     // cancel unfinished sessions
     for (const task of this.sessions) {
       if (task.isFinished) continue;
       task.cancellationToken.cancel(callback);
+      runningPromises.push(task.promise);
       console.log(`cancelled an ongoing converse session.`);
+    }
+    // await all running loops to fully stop before returning
+    if (runningPromises.length > 0) {
+      console.log(`Awaiting ${runningPromises.length} running session(s) to complete...`);
+      await Promise.allSettled(runningPromises);
+      console.log(`All sessions settled.`);
     }
     // remove finished sessions
     for (let i = this.sessions.length - 1; i >= 0; i--) {
@@ -135,10 +166,9 @@ export const main = async (workerId: string) => {
       }
       const type = event.type;
       if (type == 'onMessageReceived') {
-        tracker.cancelCurrentSessions();
         tracker.startOnMessageReceived();
       } else if (type == 'forceStop') {
-        tracker.cancelCurrentSessions(async () => {
+        tracker.forceStop(async () => {
           // Update agent status to pending after force stop
           await updateAgentStatusWithEvent(workerId, 'pending');
           await sendSystemMessage(workerId, 'Agent work was stopped.');
