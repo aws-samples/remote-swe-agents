@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, MessageSquare, Clock, DollarSign, Users, EyeOff, PowerOff } from 'lucide-react';
 import {
   Plus,
   MessageSquare,
@@ -43,8 +42,6 @@ import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
-import { hideSessionAction } from '../actions';
-import { endSessionAction } from '../../[workerId]/actions';
 import { deleteSessionAction, batchDeleteSessionsAction, updateAgentStatusFromListAction } from '../actions';
 import { extractUserMessage } from '@/lib/message-formatter';
 import { formatDateTime } from '@/lib/utils';
@@ -66,10 +63,6 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
-  const [showHideButton, setShowHideButton] = useState(false);
-
-  const { execute: hideSession } = useAction(hideSessionAction, {
-    onSuccess: () => {
   const [sortKey, setSortKey] = useState<SortKey>('lastMessageAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -107,15 +100,6 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
     onError: (error) => {
       console.error('Failed to batch delete sessions:', error);
       toast.error(t('batchDeleteError'));
-    },
-  });
-
-  const { execute: endSession, isExecuting: isEndingSession } = useAction(endSessionAction, {
-    onSuccess: () => {
-      router.refresh();
-    },
-    onError: (error) => {
-      console.error('Failed to end session:', error);
     },
   });
 
@@ -285,27 +269,16 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
     setSelectedIds(new Set(sortedSessions.map((s) => s.workerId)));
   }, [sortedSessions]);
 
-  const handleEndSession = useCallback(
-    (event: React.MouseEvent, workerId: string) => {
-      event.preventDefault();
-      event.stopPropagation();
-      endSession({ workerId });
-    },
-    [endSession]
-  );
-
   return (
     <>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('aiAgentSessions')}</h1>
-        {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
-          <Link href="/sessions/new">
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('newSession')}</span>
-            </Button>
-          </Link>
-        )}
+        <Link href="/sessions/new">
+          <Button className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('newSession')}</span>
+          </Button>
+        </Link>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -386,59 +359,6 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
           const isSelected = selectedIds.has(session.workerId);
           const hasChildren = (childrenMap[session.workerId] ?? []).length > 0;
           return (
-            <Link key={session.workerId} href={`/sessions/${session.workerId}`} className="block">
-              <div
-                className={`border border-gray-200 dark:border-gray-700 ${session.agentStatus === 'completed' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col h-40 relative`}
-              >
-                {isOtherUserSession && (
-                  <div className="absolute bottom-2 right-2" title={t('initiatedByOtherUsers')}>
-                    <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                  </div>
-                )}
-
-                {(showHideButton || session.instanceStatus !== 'terminated') && (
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    {session.instanceStatus !== 'terminated' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-6 p-0 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={(e) => handleEndSession(e, session.workerId)}
-                        disabled={isEndingSession}
-                        title={t('endSession')}
-                      >
-                        <PowerOff className="w-3 h-3" />
-                      </Button>
-                    )}
-                    {showHideButton && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-6 p-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
-                        onClick={(e) => handleHideSession(e, session.workerId)}
-                        title="Hide session"
-                      >
-                        <EyeOff className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 mb-3">
-                  <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {session.title || session.SK}
-                  </h3>
-                </div>
-
-                <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                  {extractUserMessage(session.initialMessage)}
-                </p>
-
-                <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center">
-                    <div className="w-4 flex justify-center">
-                      <span className={`inline-block w-2 h-2 rounded-full ${status.color}`} />
             <div key={session.workerId} className="relative">
               {selectMode ? (
                 <div onClick={() => toggleSelection(session.workerId)} className="block cursor-pointer">
@@ -645,19 +565,13 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
         <div className="text-center py-12">
           <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('noSessionsFound')}</h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION === 'true'
-              ? t('createSessionFromSlackOnly')
-              : t('createSessionToStart')}
-          </p>
-          {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
-            <Link href="/sessions/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">{t('newSession')}</span>
-              </Button>
-            </Link>
-          )}
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{t('createSessionToStart')}</p>
+          <Link href="/sessions/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">{t('newSession')}</span>
+            </Button>
+          </Link>
         </div>
       )}
     </>
