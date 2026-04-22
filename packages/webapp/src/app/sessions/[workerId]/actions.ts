@@ -1,7 +1,5 @@
 'use server';
 
-import { fetchTodoListSchema, sendMessageToAgentSchema, updateAgentStatusSchema, sendEventSchema } from './schemas';
-import { z } from 'zod';
 import {
   fetchTodoListSchema,
   sendMessageToAgentSchema,
@@ -18,7 +16,6 @@ import {
   renderUserMessage,
   getTodoList,
   getSession,
-  updateInstanceStatus,
   stopWorkerInstance,
   markSessionRead as markSessionReadLib,
   getUnreadSummary,
@@ -121,18 +118,6 @@ export const sendEventToAgent = authActionClient.inputSchema(sendEventSchema).ac
   return { success: true };
 });
 
-const endSessionSchema = z.object({
-  workerId: z.string(),
-});
-
-export const endSessionAction = authActionClient.inputSchema(endSessionSchema).action(async ({ parsedInput }) => {
-  const { workerId } = parsedInput;
-  await updateInstanceStatus(workerId, 'terminated');
-  if (process.env.WORKER_TERMINATE_ON_SESSION_END === 'true') {
-    await sendWorkerEvent(workerId, { type: 'requestTerminate' });
-  }
-  return { success: true };
-});
 export const stopSession = authActionClient.inputSchema(stopSessionSchema).action(async ({ parsedInput }) => {
   const { workerId } = parsedInput;
   const session = await getSession(workerId);

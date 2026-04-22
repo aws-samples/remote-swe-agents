@@ -2,11 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Plus, Loader2, Share, PowerOff } from 'lucide-react';
-import { useScrollPosition } from '@/hooks/use-scroll-position';
-import Link from 'next/link';
-import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus, sendEventToAgent, endSessionAction } from '../actions';
 import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
@@ -173,16 +168,6 @@ export default function SessionPageClient({
       });
     }
   }, [workerId, agentStatus, sendEvent]);
-
-  const { execute: endSession, isExecuting: isEndingSession } = useAction(endSessionAction, {
-    onSuccess: () => {
-      toast.success(t('endSessionSuccess'));
-      router.push('/sessions');
-    },
-    onError: (error) => {
-      toast.error(`${t('endSessionError')}: ${error?.error?.serverError || error}`);
-    },
-  });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -557,69 +542,6 @@ export default function SessionPageClient({
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
                     {todoList.items.length})
-                  </h2>
-                  <button
-                    onClick={() => setShowTodoModal(false)}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="p-4 max-h-[70vh] overflow-y-auto">
-                  <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
-                </div>
-              </div>
-            </div>
-          )}
-              {instanceStatus !== 'terminated' && (
-                <button
-                  type="button"
-                  onClick={() => endSession({ workerId })}
-                  disabled={isEndingSession}
-                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
-                  title={t('endSession')}
-                >
-                  {isEndingSession ? (
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                  ) : (
-                    <PowerOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                  )}
-                  <span className="hidden sm:inline truncate">{t('endSession')}</span>
-                </button>
-              )}
-              {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
-                <Link
-                  href="/sessions/new"
-                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline truncate">{t('newSession')}</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main className="flex-grow flex flex-col relative pt-18">
-        {/* Todo List Popup */}
-        {todoList && showTodoModal && (
-          <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
-                  {todoList.items.length})
-                </h2>
-                <button
-                  onClick={() => setShowTodoModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="p-4 max-h-[70vh] overflow-y-auto">
-                <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
                   </h2>
                   <button
                     onClick={() => setShowTodoModal(false)}
