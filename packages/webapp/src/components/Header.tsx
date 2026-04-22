@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, Languages, LogOut, Check, Key, Settings, Bot } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import {
@@ -22,21 +23,36 @@ import { useLocale, useTranslations } from 'next-intl';
 import { setUserLocale } from '@/i18n/db';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 
-export default function Header() {
+export default function Header({
+  hasCustomIcon,
+  hasSidebar,
+}: {
+  hasCustomIcon?: boolean;
+  hasSidebar?: boolean;
+} = {}) {
   const t = useTranslations('header');
   const { localeOptions, currentLocale, changeLocale } = useLanguageSwitcher();
   const { isHeaderVisible } = useScrollPosition();
 
   return (
     <header
-      className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full fixed top-0 z-40 transition-transform duration-300 ${
+      className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${
         isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}
+      } ${hasSidebar ? 'lg:left-72' : ''}`}
     >
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between h-16 items-center w-full">
           <div className="flex-shrink-0 min-w-0">
-            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white truncate">
+            <Link href="/" className="text-xl font-bold text-gray-900 dark:text-white truncate flex items-center gap-2">
+              {hasCustomIcon && (
+                <Image
+                  src="/api/agent-icon"
+                  alt="Agent icon"
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover flex-shrink-0"
+                />
+              )}
               {t('title')}
             </Link>
           </div>

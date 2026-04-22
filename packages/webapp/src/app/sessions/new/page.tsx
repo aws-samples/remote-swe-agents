@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
@@ -34,9 +34,17 @@ export default async function NewSessionPage() {
 
   templates = (result.Items ?? []) as PromptTemplate[];
 
+  // Resolve agent icon URLs via /api/agent-icon route (cached by CloudFront)
+  const agentIconUrls: Record<string, string> = {};
+  for (const agent of customAgents) {
+    if (agent.iconKey) {
+      agentIconUrls[agent.SK] = `/api/agent-icon?key=${encodeURIComponent(agent.iconKey)}`;
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HeaderWithPreferences />
 
       <main className="flex-grow pt-20">
         <div className="max-w-2xl mx-auto px-4 py-8">
@@ -69,7 +77,12 @@ export default async function NewSessionPage() {
                   </ul>
                 </div>
 
-                <NewSessionForm templates={templates} preferences={preferences} customAgents={customAgents} />
+                <NewSessionForm
+                  templates={templates}
+                  preferences={preferences}
+                  customAgents={customAgents}
+                  agentIconUrls={agentIconUrls}
+                />
               </div>
             </div>
           </div>

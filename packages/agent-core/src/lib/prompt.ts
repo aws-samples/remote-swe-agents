@@ -2,13 +2,19 @@ import { reportProgressTool } from '../tools/report-progress';
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws/ddb';
 
-export const renderToolResult = (props: { toolResult: string; forceReport: boolean }) => {
+export const renderToolResult = (props: { toolResult: string; forceReport: boolean; parentSessionId?: string }) => {
+  let forceReportMessage = '';
+  if (props.forceReport) {
+    forceReportMessage = props.parentSessionId
+      ? `Long time has passed since you sent the last message. Please use sendMessageToAgent tool to report progress to the parent (session ID: ${props.parentSessionId}).`
+      : `Long time has passed since you sent the last message. Please use ${reportProgressTool.name} tool to send a response asap.`;
+  }
   return `
 <result>
 ${props.toolResult}
 </result>
 <command>
-${props.forceReport ? `Long time has passed since you sent the last message. Please use ${reportProgressTool.name} tool to send a response asap.` : ''}
+${forceReportMessage}
 </command>
 `.trim();
 };
@@ -20,6 +26,27 @@ ${props.message}
 </user_message>
 <command>
 User sent you a message. Please use ${reportProgressTool.name} tool to send a response asap.
+</command>
+`.trim();
+};
+
+export const renderAgentMessage = (props: { message: string; senderSessionId: string }) => {
+  return `
+<user_message>
+${props.message}
+</user_message>
+<command>
+An agent sent you a message. Please use sendMessageToAgent tool to reply to the sender (session ID: ${props.senderSessionId}).
+</command>
+`.trim();
+};
+
+export const renderSystemNotification = (props: { message: string }) => {
+  return `
+<user_message>
+${props.message}
+</user_message>
+<command>
 </command>
 `.trim();
 };

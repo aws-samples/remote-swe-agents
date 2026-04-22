@@ -1,9 +1,11 @@
 import { spawn } from 'child_process';
 import { authorizeGitHubCli } from './github';
-import { homedir } from 'os';
+export { isGitHubConfigured } from './github';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
+import { mkdirSync, writeFileSync, unlinkSync } from 'fs';
 import { z } from 'zod';
-import { ToolDefinition, truncate, zodToJsonSchemaBody } from '../../private/common/lib';
+import { CancellationToken, ToolDefinition, truncate, zodToJsonSchemaBody } from '../../private/common/lib';
 import { generateSuggestion } from './suggestion';
 
 const inputSchema = z.object({
@@ -24,7 +26,33 @@ const inputSchema = z.object({
 export const DefaultWorkingDirectory = join(homedir(), `.remote-swe-workspace`);
 spawn('mkdir', ['-p', DefaultWorkingDirectory]);
 
-export const executeCommand = async (command: string, cwd?: string, timeoutMs = 60000, longRunningProcess = false) => {
+export const PID_DIR = join(tmpdir(), '.remote-swe-pids');
+mkdirSync(PID_DIR, { recursive: true });
+
+const savePidFile = (toolUseId: string, pid: number, command: string) => {
+  try {
+    writeFileSync(join(PID_DIR, toolUseId), JSON.stringify({ pid, command }));
+  } catch (e) {
+    console.log(`Failed to write PID file for ${toolUseId}: ${e}`);
+  }
+};
+
+const removePidFile = (toolUseId: string) => {
+  try {
+    unlinkSync(join(PID_DIR, toolUseId));
+  } catch {
+    // file may already be deleted
+  }
+};
+
+export const executeCommand = async (
+  command: string,
+  cwd?: string,
+  timeoutMs = 60000,
+  longRunningProcess = false,
+  toolUseId?: string,
+  cancellationToken?: CancellationToken
+) => {
   // Ignore error when github token is not available
   const token = await authorizeGitHubCli().catch((e) => console.log(e));
 
@@ -48,19 +76,45 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
       },
     });
 
+    if (toolUseId && childProcess.pid) {
+      savePidFile(toolUseId, childProcess.pid, command);
+    }
+
     let stdout = '';
     let stderr = '';
     let timer: NodeJS.Timeout;
     let longRunningTimer: NodeJS.Timeout | undefined;
+    let cancellationInterval: NodeJS.Timeout | undefined;
     let hasExited = false;
+    let resolved = false;
+
+    const safeResolve = (result: {
+      stdout: string;
+      stderr: string;
+      error?: string;
+      exitCode?: number;
+      suggestion?: string;
+      isLongRunning?: boolean;
+    }) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(result);
+      }
+    };
 
     const resetTimer = () => {
+      if (resolved) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
-        // Only kill the process if it's not a long-running one
-        if (!longRunningProcess) {
+        // Only kill the process if it's not a long-running one and not already resolved
+        if (!longRunningProcess && !resolved) {
+          clearTimeout(timer);
+          if (longRunningTimer) clearTimeout(longRunningTimer);
+          if (cancellationInterval) clearInterval(cancellationInterval);
+          hasExited = true;
+          if (toolUseId) removePidFile(toolUseId);
           childProcess.kill();
-          resolve({
+          safeResolve({
             error: `Command execution timed out after ${Math.round(timeoutMs / 1000)} seconds of inactivity`,
             stdout: truncate(stdout, 40e3),
             stderr: truncate(stderr),
@@ -77,7 +131,7 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
       longRunningTimer = setTimeout(() => {
         if (!hasExited) {
           console.log(`Returning control to agent after 10 seconds for long-running process: ${command}`);
-          resolve({
+          safeResolve({
             stdout: truncate(stdout, 40e3),
             stderr: truncate(stderr),
             isLongRunning: true,
@@ -87,11 +141,33 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
       }, 10000); // 10 seconds
     }
 
+    if (cancellationToken) {
+      cancellationInterval = setInterval(() => {
+        if (cancellationToken.isCancelled && !hasExited) {
+          console.log(
+            `Cancellation requested, leaving process running in background for command: ${command} (PID: ${childProcess.pid})`
+          );
+          clearTimeout(timer);
+          if (longRunningTimer) clearTimeout(longRunningTimer);
+          clearInterval(cancellationInterval!);
+          // Do NOT kill the process — let it continue in background
+          // Do NOT remove PID file — process is still running
+          safeResolve({
+            stdout: truncate(stdout, 40e3),
+            stderr: truncate(stderr),
+            error: `Command is still running in background (PID: ${childProcess.pid}). The agent session was interrupted by a new incoming message.`,
+          });
+        }
+      }, 100);
+    }
+
     childProcess.on('error', (error) => {
       clearTimeout(timer);
       if (longRunningTimer) clearTimeout(longRunningTimer);
+      if (cancellationInterval) clearInterval(cancellationInterval);
       hasExited = true;
-      resolve({
+      if (toolUseId) removePidFile(toolUseId);
+      safeResolve({
         error: `Failed to interact with the process: ${error.message}`,
         stdout: truncate(stdout, 40e3),
         stderr: truncate(stderr),
@@ -100,11 +176,13 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
     });
 
     childProcess.stdout.on('data', (data) => {
+      if (resolved) return;
       stdout += data.toString();
       resetTimer();
     });
 
     childProcess.stderr.on('data', (data) => {
+      if (resolved) return;
       stderr += data.toString();
       resetTimer();
     });
@@ -112,18 +190,20 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
     childProcess.on('close', (code) => {
       clearTimeout(timer);
       if (longRunningTimer) clearTimeout(longRunningTimer);
+      if (cancellationInterval) clearInterval(cancellationInterval);
       hasExited = true;
+      if (toolUseId) removePidFile(toolUseId);
 
       // If the process exits within the 10 seconds window for long-running processes,
       // we should report that instead of leaving it running
       if (code === 0) {
-        resolve({
+        safeResolve({
           stdout: truncate(stdout, 40e3),
           stderr: truncate(stderr),
           suggestion: generateSuggestion(command, true),
         });
       } else {
-        resolve({
+        safeResolve({
           error: `Command failed with exit code ${code}`,
           exitCode: code!,
           stdout: truncate(stdout, 40e3),
@@ -135,7 +215,10 @@ export const executeCommand = async (command: string, cwd?: string, timeoutMs = 
   });
 };
 
-const handler = async (input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number }) => {
+const handler = async (
+  input: { command: string; cwd?: string; longRunningProcess?: boolean; timeoutMs?: number },
+  context: { toolUseId: string; cancellationToken?: CancellationToken }
+) => {
   // Validate that timeoutMs and longRunningProcess are not used together
   if (input.timeoutMs !== undefined && input.longRunningProcess === true) {
     throw new Error(
@@ -143,7 +226,14 @@ const handler = async (input: { command: string; cwd?: string; longRunningProces
     );
   }
 
-  const res = await executeCommand(input.command, input.cwd, input.timeoutMs ?? 60000, input.longRunningProcess);
+  const res = await executeCommand(
+    input.command,
+    input.cwd,
+    input.timeoutMs ?? 60000,
+    input.longRunningProcess,
+    context.toolUseId,
+    context.cancellationToken
+  );
   return JSON.stringify(res, undefined, 1);
 };
 

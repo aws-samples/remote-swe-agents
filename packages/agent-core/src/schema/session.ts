@@ -26,8 +26,13 @@ export const sessionItemSchema = z.object({
   slackChannelId: z.string().optional(),
   slackThreadTs: z.string().optional(),
   title: z.string().optional(),
+  lastMessage: z.string().optional(),
+  lastMessageAt: z.number().optional(),
   customAgentId: z.string().optional(),
   runtimeType: runtimeTypeSchema.optional(),
+  parentSessionId: z.string().optional(),
+  creatorSessionId: z.string().optional(),
+  agentName: z.string().optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;

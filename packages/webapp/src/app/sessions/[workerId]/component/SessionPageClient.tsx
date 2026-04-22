@@ -2,20 +2,28 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
-import { ArrowLeft, ListChecks, Check, Plus, Loader2, Share, PowerOff } from 'lucide-react';
+import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus, sendEventToAgent, endSessionAction } from '../actions';
+import { updateAgentStatus, sendEventToAgent, stopSession, markSessionReadAction } from '../actions';
+import { markAllReadAction } from '@/actions/badge/action';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   webappEventSchema,
   TodoList as TodoListType,
   AgentStatus,
   InstanceStatus,
   GlobalPreferences,
+  SessionItem,
 } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
@@ -25,25 +33,43 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
 import TakeOverModal from './TakeOverModal';
+import SessionSidebar from './SessionSidebar';
+import { ArrowLeft } from 'lucide-react';
+import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 
 interface SessionPageClientProps {
   workerId: string;
+  userId: string;
   preferences: GlobalPreferences;
   initialTitle: string | undefined;
   initialMessages: MessageView[];
   initialInstanceStatus?: InstanceStatus;
   initialAgentStatus?: AgentStatus;
   initialTodoList: TodoListType | null;
+  allSessions: SessionItem[];
+  agentIconUrl?: string;
+  agentName?: string;
+  unreadMap?: Record<string, { unreadCount: number; hasPending: boolean }>;
+  lastReadAt?: number;
+  childSessions?: { workerId: string; title?: string }[];
+  parentSessionId?: string;
 }
 
 export default function SessionPageClient({
   workerId,
+  userId,
   preferences,
   initialTitle,
   initialMessages,
   initialInstanceStatus,
   initialAgentStatus,
   initialTodoList,
+  allSessions,
+  agentIconUrl,
+  agentName,
+  unreadMap,
+  lastReadAt,
+  parentSessionId,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -72,7 +98,57 @@ export default function SessionPageClient({
 
   const [showTodoModal, setShowTodoModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUnreadMap, setCurrentUnreadMap] = useState(unreadMap ?? {});
   const { isBottom, isHeaderVisible } = useScrollPosition();
+
+  useSwipeGesture({
+    onSwipeRight: useCallback(() => setSidebarOpen(true), []),
+    onSwipeLeft: useCallback(() => setSidebarOpen(false), []),
+  });
+
+  // Mark session as read and update badge
+  const { execute: executeMarkRead } = useAction(markSessionReadAction, {
+    onSuccess: ({ data }) => {
+      // Clear current session from unread map
+      setCurrentUnreadMap((prev) => {
+        const next = { ...prev };
+        delete next[workerId];
+        return next;
+      });
+
+      if (data?.badge && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'UPDATE_BADGE',
+          badge: data.badge,
+        });
+      }
+
+      // Notify NotificationCenter to re-fetch
+      window.dispatchEvent(new CustomEvent('session-read'));
+    },
+  });
+
+  // Mark as read on mount
+  useEffect(() => {
+    executeMarkRead({ workerId });
+  }, [workerId]);
+
+  // Mark all sessions as read
+  const { execute: executeMarkAllRead, isExecuting: isMarkingAllRead } = useAction(markAllReadAction, {
+    onSuccess: ({ data }) => {
+      setCurrentUnreadMap({});
+      window.dispatchEvent(new CustomEvent('session-read'));
+
+      // Clear OS badge
+      if (data?.badge && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'UPDATE_BADGE',
+          badge: data.badge,
+        });
+      }
+    },
+  });
 
   // Setup event handler for Escape key press to force stop agent work
   const { execute: sendEvent } = useAction(sendEventToAgent, {
@@ -92,16 +168,6 @@ export default function SessionPageClient({
       });
     }
   }, [workerId, agentStatus, sendEvent]);
-
-  const { execute: endSession, isExecuting: isEndingSession } = useAction(endSessionAction, {
-    onSuccess: () => {
-      toast.success(t('endSessionSuccess'));
-      router.push('/sessions');
-    },
-    onError: (error) => {
-      toast.error(`${t('endSessionError')}: ${error?.error?.serverError || error}`);
-    },
-  });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -145,6 +211,14 @@ export default function SessionPageClient({
         console.log('Received event:', payload);
         const event = webappEventSchema.parse(payload);
 
+        // Mark session as read since user is viewing it
+        if (event.type === 'message' || event.type === 'toolUse') {
+          executeMarkRead({ workerId });
+        }
+        if (event.type === 'agentStatusUpdate' && event.status === 'pending') {
+          executeMarkRead({ workerId });
+        }
+
         switch (event.type) {
           case 'message':
             if (event.message) {
@@ -171,6 +245,23 @@ export default function SessionPageClient({
             break;
           case 'agentStatusUpdate':
             setAgentStatus(event.status);
+            break;
+          case 'eventTriggerFired':
+            setMessages((prev) => {
+              const msgId = event.id ? `${event.id}-0` : Date.now().toString();
+              if (prev.some((m) => m.id === msgId)) return prev;
+              return [
+                ...prev,
+                {
+                  id: msgId,
+                  role: 'assistant',
+                  content: event.message,
+                  detail: event.name,
+                  timestamp: new Date(event.timestamp),
+                  type: 'eventTrigger',
+                },
+              ];
+            });
             break;
           case 'sessionTitleUpdate':
             setSessionTitle(event.newTitle);
@@ -228,6 +319,8 @@ export default function SessionPageClient({
                   thinkingBudget: event.thinkingBudget,
                 },
               ]);
+            } else if (['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(event.toolName)) {
+              // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
             } else {
               setMessages((prev) => [
                 ...prev,
@@ -249,6 +342,23 @@ export default function SessionPageClient({
             }
 
             break;
+          case 'agentMessage':
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `agent-msg-${event.timestamp}`,
+                role: 'user',
+                content: event.message,
+                timestamp: new Date(event.timestamp),
+                type: 'agentMessage',
+                senderSessionId: event.senderSessionId,
+                senderAgentName: event.senderName,
+                targetSessionId: event.targetSessionId,
+                targetAgentName: event.targetName,
+                isAcknowledge: event.acknowledge,
+              },
+            ]);
+            break;
         }
       },
       [refetchTodoList]
@@ -258,6 +368,16 @@ export default function SessionPageClient({
   const onSendMessage = async (message: MessageView) => {
     setMessages((prev) => [...prev, message]);
   };
+
+  const onConfirmMessage = useCallback((pendingId: string, confirmedId: string) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === pendingId ? { ...msg, id: confirmedId, pending: false } : msg))
+    );
+  }, []);
+
+  const onRollbackMessage = useCallback((pendingId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== pendingId));
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -270,6 +390,9 @@ export default function SessionPageClient({
   const { execute: executeUpdateStatus, isExecuting: isUpdatingStatus } = useAction(updateAgentStatus, {
     onSuccess: ({ input }) => {
       setAgentStatus(input.status);
+      if (input.status === 'completed') {
+        setInstanceStatus('stopped');
+      }
       router.refresh();
     },
     onError: (error) => {
@@ -277,88 +400,127 @@ export default function SessionPageClient({
     },
   });
 
+  const { execute: executeStopSession } = useAction(stopSession, {
+    onSuccess: () => {
+      setInstanceStatus('stopped');
+      toast.success(t('stopSessionSuccess'));
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(t('stopSessionError'));
+    },
+  });
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
-        <Header />
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
-          <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
-              <Link
-                href="/sessions"
-                className="inline-flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex-shrink-0"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline truncate text-sm sm:text-base">{t('sessionList')}</span>
-              </Link>
-              <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white hidden sm:block truncate min-w-0">
-                {sessionTitle || workerId}
-              </h1>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {/* Session status toggle button */}
-              <button
-                onClick={() =>
-                  executeUpdateStatus({
-                    workerId,
-                    status: agentStatus === 'completed' ? 'pending' : 'completed',
-                  })
-                }
-                className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 border-2 rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  agentStatus === 'completed'
-                    ? 'border-gray-400 bg-gray-400 hover:border-gray-500 hover:bg-gray-500 dark:border-gray-500 dark:bg-gray-500 dark:hover:border-gray-400 dark:hover:bg-gray-400'
-                    : 'border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500'
-                }`}
-                title={agentStatus === 'completed' ? t('markAsIncomplete') : t('markAsCompleted')}
-                disabled={isUpdatingStatus}
-              >
-                {isUpdatingStatus ? (
-                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-gray-600 dark:text-gray-300" />
-                ) : (
-                  agentStatus === 'completed' && <Check className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                )}
-              </button>
-              {(instanceStatus || agentStatus) && (
-                <div className="flex items-center gap-1 sm:gap-2 w-20 sm:w-24 min-w-0">
-                  <span
-                    className={`inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getSessionStatus().color}`}
-                  />
-                  <span className="text-xs sm:text-sm font-medium truncate">{getSessionStatus().text}</span>
-                </div>
-              )}
-              {todoList && (
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar */}
+      <SessionSidebar
+        currentWorkerId={workerId}
+        sessions={allSessions}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        unreadMap={currentUnreadMap}
+        userId={userId}
+        onUnreadUpdate={useCallback((eventWorkerId: string, data: { unreadCount: number; hasPending: boolean }) => {
+          setCurrentUnreadMap((prev) => ({
+            ...prev,
+            [eventWorkerId]: data,
+          }));
+        }, [])}
+        onMarkAllRead={useCallback(() => executeMarkAllRead({}), [executeMarkAllRead])}
+        isMarkingAllRead={isMarkingAllRead}
+      />
+
+      {/* Main content */}
+      <div className="flex-1 min-h-screen flex flex-col min-w-0">
+        <div className={`sticky z-10 transition-all duration-300 ${isHeaderVisible ? 'top-16' : 'top-0'}`}>
+          <Header hasCustomIcon={!!preferences.defaultAgentIconKey} hasSidebar />
+          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
+            <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
+                {/* Sidebar toggle (hamburger on mobile, hidden on lg) */}
                 <button
-                  onClick={() => setShowTodoModal(!showTodoModal)}
-                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                  title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
+                  onClick={() => setSidebarOpen(true)}
+                  className="relative inline-flex items-center p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer lg:hidden"
+                  title={t('toggleSidebar')}
                 >
-                  <ListChecks className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline truncate">
-                    {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
-                    {todoList.items.length})
-                  </span>
-                  <span className="inline sm:hidden truncate">
-                    ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
-                  </span>
-                </button>
-              )}
-              {instanceStatus !== 'terminated' && (
-                <button
-                  type="button"
-                  onClick={() => endSession({ workerId })}
-                  disabled={isEndingSession}
-                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
-                  title={t('endSession')}
-                >
-                  {isEndingSession ? (
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                  ) : (
-                    <PowerOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <Menu className="w-5 h-5" />
+                  {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 99
+                        ? '99+'
+                        : Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0)}
+                    </span>
                   )}
-                  <span className="hidden sm:inline truncate">{t('endSession')}</span>
                 </button>
-              )}
-              {process.env.NEXT_PUBLIC_SLACK_ONLY_SESSION_CREATION !== 'true' && (
+                <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white truncate min-w-0">
+                  {sessionTitle || workerId}
+                </h1>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                {/* Status badge as dropdown */}
+                {(instanceStatus || agentStatus) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {isUpdatingStatus ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${getSessionStatus().color}`}
+                          />
+                        )}
+                        <span className="truncate">{getSessionStatus().text}</span>
+                        <ChevronDown className="w-3 h-3 text-gray-400" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          executeUpdateStatus({
+                            workerId,
+                            status: agentStatus === 'completed' ? 'pending' : 'completed',
+                          })
+                        }
+                        className="cursor-pointer"
+                      >
+                        {agentStatus === 'completed' ? (
+                          <>
+                            <Circle className="w-4 h-4 mr-2" />
+                            {t('markAsIncomplete')}
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            {t('markAsCompleted')}
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      {instanceStatus !== 'stopped' && agentStatus !== 'completed' && (
+                        <DropdownMenuItem onClick={() => executeStopSession({ workerId })} className="cursor-pointer">
+                          <Square className="w-4 h-4 mr-2" />
+                          {t('stopSession')}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {todoList && (
+                  <button
+                    onClick={() => setShowTodoModal(!showTodoModal)}
+                    className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 h-8 sm:h-10 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                    title={showTodoModal ? t('hideTodoList') : t('showTodoList')}
+                  >
+                    <ListChecks className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline truncate">
+                      {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                      {todoList.items.length})
+                    </span>
+                    <span className="inline sm:hidden truncate">
+                      ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
+                    </span>
+                  </button>
+                )}
                 <Link
                   href="/sessions/new"
                   className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -366,75 +528,81 @@ export default function SessionPageClient({
                   <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                   <span className="hidden sm:inline truncate">{t('newSession')}</span>
                 </Link>
-              )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <main className="flex-grow flex flex-col relative pt-18">
-        {/* Todo List Popup */}
-        {todoList && showTodoModal && (
-          <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
-                  {todoList.items.length})
-                </h2>
-                <button
-                  onClick={() => setShowTodoModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="p-4 max-h-[70vh] overflow-y-auto">
-                <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
+        <main className="flex-grow flex flex-col relative pt-18">
+          {/* Todo List Popup */}
+          {todoList && showTodoModal && (
+            <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
+                    {todoList.items.length})
+                  </h2>
+                  <button
+                    onClick={() => setShowTodoModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="p-4 max-h-[70vh] overflow-y-auto">
+                  <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <TakeOverModal workerId={workerId} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+          <TakeOverModal workerId={workerId} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
 
-        <MessageList
-          messages={messages}
-          instanceStatus={instanceStatus}
-          agentStatus={agentStatus}
-          onInterrupt={handleInterrupt}
-        />
+          <MessageList
+            messages={messages}
+            instanceStatus={instanceStatus}
+            agentStatus={agentStatus}
+            onInterrupt={handleInterrupt}
+            agentIconUrl={agentIconUrl}
+            agentName={agentName}
+            lastReadAt={lastReadAt}
+          />
 
-        <MessageForm
-          onSubmit={onSendMessage}
-          workerId={workerId}
-          onShareSession={() => setShowShareModal(true)}
-          defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
-        />
+          <MessageForm
+            onSubmit={onSendMessage}
+            onConfirm={onConfirmMessage}
+            onRollback={onRollbackMessage}
+            workerId={workerId}
+            onShareSession={() => setShowShareModal(true)}
+            defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
+          />
 
-        {/* Scroll buttons */}
-        <div className="fixed bottom-24 right-6 flex flex-col gap-2 z-10">
-          <button
-            onClick={scrollToTop}
-            className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
-            title={t('scrollToTop')}
-            aria-label={t('scrollToTop')}
-          >
-            <ArrowLeft className="w-5 h-5 rotate-90" />
-          </button>
-          <button
-            onClick={scrollToBottom}
-            className={`p-2 rounded-full shadow-md focus:outline-none transition-colors ${
-              isBottom ? 'bg-gray-400 text-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+          {/* Scroll buttons - hidden when scrolled to bottom */}
+          <div
+            className={`fixed bottom-24 right-6 flex flex-col gap-2 z-10 transition-opacity duration-300 ${
+              isBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
-            title={t('scrollToBottom')}
-            aria-label={t('scrollToBottom')}
-            disabled={isBottom}
           >
-            <ArrowLeft className="w-5 h-5 -rotate-90" />
-          </button>
-        </div>
-      </main>
+            <button
+              onClick={scrollToTop}
+              className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
+              title={t('scrollToTop')}
+              aria-label={t('scrollToTop')}
+            >
+              <ArrowLeft className="w-5 h-5 rotate-90" />
+            </button>
+            <button
+              onClick={scrollToBottom}
+              className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 focus:outline-none cursor-pointer"
+              title={t('scrollToBottom')}
+              aria-label={t('scrollToBottom')}
+            >
+              <ArrowLeft className="w-5 h-5 -rotate-90" />
+            </button>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -59,3 +59,11 @@ export function extractUserMessage(message: string | undefined): string {
     .slice(message.indexOf('<user_message>') + '<user_message>'.length, message.indexOf('</user_message>'))
     .trim();
 }
+
+/**
+ * Strips the "[Message from AgentName]: " prefix from agent-to-agent messages.
+ * The sender name is already shown in the UI header, so the prefix is redundant.
+ */
+export function stripAgentMessagePrefix(message: string): string {
+  return message.replace(/^\[Message from [^\]]+\]:\s*/, '');
+}

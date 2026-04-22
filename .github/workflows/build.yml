@@ -76,6 +76,10 @@ jobs:
           npm run test
         working-directory: ./cdk
         name: Run snapshot test
+      - run: |
+          npx cdk synth
+        working-directory: ./cdk
+        name: Run cdk cli
   Build-and-Test-Slack-Bolt-App:
     needs: changes
     if: ${{ needs.changes.outputs.slack_bolt_app == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}

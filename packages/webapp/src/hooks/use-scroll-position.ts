@@ -2,15 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ScrollPositionOptions {
   threshold?: number;
-  bottomThreshold?: number;
+  bottomPixelThreshold?: number;
 }
 
 export function useScrollPosition(options: ScrollPositionOptions = {}) {
-  const { threshold = 80, bottomThreshold = 0.95 } = options;
-  const [isBottom, setIsBottom] = useState(false);
+  const { threshold = 80, bottomPixelThreshold = 150 } = options;
+  const [isBottom, setIsBottom] = useState(true);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
   const rafRef = useRef<number>(0);
+  const lastScrollYRef = useRef(0);
 
   const handleScroll = useCallback(() => {
     if (rafRef.current) {
@@ -19,24 +21,32 @@ export function useScrollPosition(options: ScrollPositionOptions = {}) {
 
     rafRef.current = requestAnimationFrame(() => {
       const currentScrollY = window.scrollY;
+      const prevScrollY = lastScrollYRef.current;
 
       // Header visibility logic
-      if (currentScrollY > lastScrollY && currentScrollY > threshold) {
+      if (currentScrollY > prevScrollY && currentScrollY > threshold) {
         setIsHeaderVisible(false);
       } else {
         setIsHeaderVisible(true);
       }
       setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
 
-      // Bottom detection logic
-      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const windowScroll = document.documentElement.scrollTop;
-      const scrolled = height > 0 ? windowScroll / height : 0;
+      // Bottom detection logic using pixel-based threshold
+      const maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const distanceFromBottom = maxScroll - currentScrollY;
+      const newIsBottom = maxScroll <= 0 || distanceFromBottom <= bottomPixelThreshold;
 
-      const newIsBottom = scrolled > bottomThreshold;
       setIsBottom((prev) => (prev !== newIsBottom ? newIsBottom : prev));
+
+      // Track if user intentionally scrolled up
+      if (currentScrollY < prevScrollY && !newIsBottom) {
+        setUserScrolledUp(true);
+      } else if (newIsBottom) {
+        setUserScrolledUp(false);
+      }
     });
-  }, [lastScrollY, threshold, bottomThreshold]);
+  }, [threshold, bottomPixelThreshold]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -48,5 +58,5 @@ export function useScrollPosition(options: ScrollPositionOptions = {}) {
     };
   }, [handleScroll]);
 
-  return { isBottom, isHeaderVisible };
+  return { isBottom, isHeaderVisible, userScrolledUp };
 }

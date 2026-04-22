@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type { CustomAgent } from '@remote-swe-agents/agent-core/schema';
 import { mcpConfigSchema } from '@remote-swe-agents/agent-core/schema';
 import CustomAgentForm from './CustomAgentForm';
+import AgentIconPreview from './AgentIconPreview';
+import { formatDate } from '@/lib/utils';
 
 type CustomAgentListProps = {
   initialAgents: CustomAgent[];
@@ -14,6 +16,8 @@ type CustomAgentListProps = {
 
 export default function CustomAgentList({ initialAgents, availableTools }: CustomAgentListProps) {
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
+  const locale = useLocale();
+  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
 
   const handleCardClick = (agentId: string) => {
     setExpandedAgentId(expandedAgentId === agentId ? null : agentId);
@@ -41,11 +45,12 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
             className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
           >
             <div
-              className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               onClick={() => handleCardClick(agent.SK)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3 flex-wrap">
+                  <AgentIconPreview iconKey={agent.iconKey} size={32} />
                   <h3 className="text-lg font-semibold">{agent.name}</h3>
                   <div className="flex gap-2 flex-wrap">
                     <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
@@ -55,7 +60,7 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
                       {agent.runtimeType}
                     </span>
                     <span className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded">
-                      Tools: {agent.tools.length}
+                      Tools: {agent.useAllTools ? 'All' : agent.tools.length}
                     </span>
                     {mcpServersCount > 0 && (
                       <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded">
@@ -66,7 +71,7 @@ export default function CustomAgentList({ initialAgents, availableTools }: Custo
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(agent.createdAt).toLocaleDateString()}
+                    {formatDate(new Date(agent.createdAt), localeForDate)}
                   </span>
                   {expandedAgentId === agent.SK ? (
                     <ChevronUpIcon className="h-4 w-4 text-gray-500" />

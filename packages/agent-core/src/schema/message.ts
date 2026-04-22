@@ -22,4 +22,24 @@ export type MessageItem = {
    */
   thinkingBudget?: number;
   modelOverride?: ModelType;
+  /**
+   * Session ID of the agent that sent this message (for agent-to-agent communication)
+   */
+  senderSessionId?: string;
+  /**
+   * Display name of the sender agent
+   */
+  senderAgentName?: string;
+  /**
+   * Session ID of the target agent that received this message (for agent-to-agent communication)
+   */
+  targetSessionId?: string;
+  /**
+   * Display name of the target agent
+   */
+  targetAgentName?: string;
+  /**
+   * Whether this is an acknowledge (non-waking) message
+   */
+  isAcknowledge?: boolean;
 };

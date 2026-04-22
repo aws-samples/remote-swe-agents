@@ -1,10 +1,11 @@
-import { agentStatusSchema, modelTypeSchema } from '@remote-swe-agents/agent-core/schema';
+import { agentStatusSchema, modelTypeSchema, runtimeTypeSchema } from '@remote-swe-agents/agent-core/schema';
 import { z } from 'zod';
 
 export const sendMessageToAgentSchema = z.object({
   workerId: z.string(),
   message: z.string().min(1),
   imageKeys: z.array(z.string()).optional(),
+  fileKeys: z.array(z.string()).optional(),
   modelOverride: modelTypeSchema.optional(),
 });
 
@@ -22,4 +23,12 @@ export const sendEventSchema = z.object({
   event: z.object({
     type: z.literal('forceStop'),
   }),
+});
+
+export const stopSessionSchema = z.object({
+  workerId: z.string(),
+});
+
+export const markSessionReadSchema = z.object({
+  workerId: z.string(),
 });

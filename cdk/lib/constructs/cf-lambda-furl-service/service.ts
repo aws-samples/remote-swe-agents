@@ -138,6 +138,12 @@ export class CloudFrontLambdaFunctionUrlService extends Construct {
           originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           // we won't need lambda@edge for GET/HEAD requests.
         },
+        'api/agent-icon*': {
+          origin,
+          cachePolicy: staticCachePolicy,
+          allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        },
       },
       logBucket: accessLogBucket,
       logFilePrefix: `${serviceName}/`,

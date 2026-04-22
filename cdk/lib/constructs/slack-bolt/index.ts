@@ -1,8 +1,8 @@
-import { CfnOutput, Duration, IgnoreMode, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, DockerImageCode, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { WorkerBus } from '../worker/bus';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
@@ -11,6 +11,8 @@ import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Storage } from '../storage';
+import { AgentCoreRuntime } from '../worker/agent-core-runtime';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 
 export interface SlackBoltProps {
   signingSecretParameter: IStringParameter;
@@ -23,8 +25,7 @@ export interface SlackBoltProps {
   workerLogGroupName: string;
   workerAmiIdParameter: IStringParameter;
   webappOriginNameParameter: IStringParameter;
-  /** Use Spot instances for workers. Set WORKER_USE_SPOT in Lambda environment. */
-  workerUseSpot?: boolean;
+  agentCoreRuntime: AgentCoreRuntime;
 }
 
 export class SlackBolt extends Construct {
@@ -32,13 +33,16 @@ export class SlackBolt extends Construct {
     super(scope, id);
 
     const { botTokenParameter, signingSecretParameter, webappOriginNameParameter } = props;
+
+    const slackImage = new ContainerImageBuild(this, 'Image', {
+      directory: '..',
+      file: join('docker', 'slack-bolt-app.Dockerfile'),
+      exclude: readFileSync('.dockerignore').toString().split('\n'),
+      platform: Platform.LINUX_ARM64,
+    });
+
     const asyncHandler = new DockerImageFunction(this, 'AsyncHandler', {
-      code: DockerImageCode.fromImageAsset('..', {
-        file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync('.dockerignore').toString().split('\n'),
-        cmd: ['async-handler.handler'],
-        platform: Platform.LINUX_ARM64,
-      }),
+      code: slackImage.toLambdaDockerImageCode({ cmd: ['async-handler.handler'] }),
       timeout: Duration.minutes(10),
       environment: {
         WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
@@ -48,7 +52,7 @@ export class SlackBolt extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: props.storage.table.tableName,
         BUCKET_NAME: props.storage.bucket.bucketName,
-        ...(props.workerUseSpot ? { WORKER_USE_SPOT: 'true' } : {}),
+        AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
       },
       architecture: Architecture.ARM_64,
     });
@@ -56,13 +60,10 @@ export class SlackBolt extends Construct {
     props.storage.table.grantReadWriteData(asyncHandler);
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
+    props.agentCoreRuntime.grantInvoke(asyncHandler);
 
     const handler = new DockerImageFunction(this, 'Handler', {
-      code: DockerImageCode.fromImageAsset('..', {
-        file: join('docker', 'slack-bolt-app.Dockerfile'),
-        exclude: readFileSync('.dockerignore').toString().split('\n'),
-        platform: Platform.LINUX_ARM64,
-      }),
+      code: slackImage.toLambdaDockerImageCode(),
       timeout: Duration.seconds(29),
       memorySize: 256,
       environment: {
@@ -123,17 +124,6 @@ export class SlackBolt extends Construct {
         resources: ['*'],
       })
     );
-    if (props.workerUseSpot) {
-      asyncHandler.addToRolePolicy(
-        new PolicyStatement({
-          actions: ['iam:CreateServiceLinkedRole'],
-          resources: ['*'],
-          conditions: {
-            StringEquals: { 'iam:AWSServiceName': 'spot.amazonaws.com' },
-          },
-        })
-      );
-    }
 
     new CfnOutput(this, 'EndpointUrl', { value: api.apiEndpoint });
   }

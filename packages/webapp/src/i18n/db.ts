@@ -10,5 +10,9 @@ export async function getUserLocale(): Promise<Locale> {
 }
 
 export async function setUserLocale(locale: string) {
-  (await cookies()).set(COOKIE_NAME, locale);
+  (await cookies()).set(COOKIE_NAME, locale, {
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    path: '/',
+    sameSite: 'lax',
+  });
 }
