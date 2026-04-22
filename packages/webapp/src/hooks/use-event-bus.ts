@@ -31,29 +31,59 @@ Amplify.configure(
 type UseEventBusProps = {
   channelName: string;
   onReceived: (payload: unknown) => void;
+  onConnected?: () => void;
+  onError?: (err: unknown) => void;
 };
 
-export const useEventBus = ({ channelName, onReceived }: UseEventBusProps) => {
+export const useEventBus = ({ channelName, onReceived, onConnected, onError }: UseEventBusProps) => {
   useEffect(() => {
-    const connectAndSubscribe = async () => {
-      const channel = await events.connect(`event-bus/${channelName}`);
-      console.log(`subscribing channel ${channelName}`);
+    let channel: Awaited<ReturnType<typeof events.connect>> | null = null;
+    let isMounted = true;
 
-      channel.subscribe({
-        next: (data) => {
-          onReceived(data.event);
-        },
-        error: (err) => console.error('error', err),
-      });
-      return channel;
+    const connectAndSubscribe = async () => {
+      try {
+        const ch = await events.connect(`event-bus/${channelName}`);
+        if (!isMounted) {
+          ch.close();
+          return;
+        }
+        channel = ch;
+        ch.subscribe({
+          next: (data) => {
+            onReceived(data.event);
+          },
+          error: (err) => {
+            console.error('EventBus error:', err);
+            onError?.(err);
+          },
+        });
+        onConnected?.();
+      } catch (err) {
+        console.error('EventBus connect error:', err);
+        onError?.(err);
+      }
     };
 
-    const pr = connectAndSubscribe();
+    connectAndSubscribe();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        console.debug('Page became visible, reconnecting EventBus...');
+        if (channel) {
+          channel.close();
+          channel = null;
+        }
+        connectAndSubscribe();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      pr.then((channel) => {
+      isMounted = false;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (channel) {
         channel.close();
-      });
+      }
     };
-  }, [channelName, onReceived]);
+  }, [channelName, onReceived, onConnected, onError]);
 };

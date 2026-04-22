@@ -15,6 +15,7 @@ import { Auth } from './constructs/auth';
 import { AsyncJob } from './constructs/async-job';
 import { Webapp } from './constructs/webapp';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { VapidKeys } from './constructs/vapid-keys';
 
 export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
@@ -23,12 +24,12 @@ export interface MainStackProps extends cdk.StackProps {
   readonly cloudFrontWebAclArn?: string;
   readonly vpcId?: string;
 
-  readonly slack: {
+  readonly slack?: {
     botTokenParameterName: string;
     signingSecretParameterName: string;
     adminUserIdList?: string;
   };
-  readonly github:
+  readonly github?:
     | {
         appId: string;
         installationId: string;
@@ -41,7 +42,6 @@ export interface MainStackProps extends cdk.StackProps {
     awsAccounts: string[];
     roleName: string;
   };
-  readonly workerAmiIdParameterName: string;
   readonly additionalManagedPolicies?: string[];
 
   /**
@@ -102,19 +102,23 @@ export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MainStackProps) {
     super(scope, id, { ...props, description: `${props.description ?? 'Remote SWE Agents stack'} (uksb-lv52f92xel)` });
 
-    const botToken = StringParameter.fromStringParameterAttributes(this, 'SlackBotToken', {
-      parameterName: props.slack.botTokenParameterName,
-      forceDynamicReference: true,
-    });
+    const botToken = props.slack
+      ? StringParameter.fromStringParameterAttributes(this, 'SlackBotToken', {
+          parameterName: props.slack.botTokenParameterName,
+          forceDynamicReference: true,
+        })
+      : undefined;
 
-    const signingSecret = StringParameter.fromStringParameterAttributes(this, 'SlackSigningSecret', {
-      parameterName: props.slack.signingSecretParameterName,
-      forceDynamicReference: true,
-    });
+    const signingSecret = props.slack
+      ? StringParameter.fromStringParameterAttributes(this, 'SlackSigningSecret', {
+          parameterName: props.slack.signingSecretParameterName,
+          forceDynamicReference: true,
+        })
+      : undefined;
 
-    const workerAmiIdParameter = StringParameter.fromStringParameterAttributes(this, 'WorkerAmiId', {
-      parameterName: props.workerAmiIdParameterName,
-      forceDynamicReference: true,
+    const workerAmiIdParameter = new StringParameter(this, 'WorkerAmiId', {
+      parameterName: `/${this.stackName}/worker-ami-id`,
+      stringValue: 'pending-initial-build',
     });
 
     const hostedZone = props.domainName
@@ -160,12 +164,20 @@ export class MainStack extends cdk.Stack {
         })
       : undefined;
 
+    const auth = new Auth(this, 'Auth', {
+      hostedZone,
+      sharedCertificate: props.sharedCertificate,
+      initialUserEmail: props.initialWebappUserEmail,
+    });
+
+    const vapidKeys = new VapidKeys(this, 'VapidKeys');
+
     const worker = new Worker(this, 'Worker', {
       vpc,
       storageTable: storage.table,
       imageBucket: storage.bucket,
       slackBotTokenParameter: botToken,
-      ...('appId' in props.github
+      ...(props.github && 'appId' in props.github
         ? {
             gitHubApp: {
               appId: props.github.appId,
@@ -173,19 +185,22 @@ export class MainStack extends cdk.Stack {
               privateKeyParameterName: props.github.privateKeyParameterName,
             },
           }
-        : {
-            githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
-              this,
-              'GitHubPersonalAccessToken',
-              {
-                parameterName: props.github.personalAccessTokenParameterName,
-                forceDynamicReference: true,
-              }
-            ),
-          }),
+        : props.github && 'personalAccessTokenParameterName' in props.github
+          ? {
+              githubPersonalAccessTokenParameter: StringParameter.fromStringParameterAttributes(
+                this,
+                'GitHubPersonalAccessToken',
+                {
+                  parameterName: props.github.personalAccessTokenParameterName,
+                  forceDynamicReference: true,
+                }
+              ),
+            }
+          : {}),
       loadBalancing: props.loadBalancing,
       accessLogBucket,
       amiIdParameterName: workerAmiIdParameter.parameterName,
+      amiIdParameter: workerAmiIdParameter,
       webappOriginSourceParameter: originNameParameter,
       additionalManagedPolicies: props.additionalManagedPolicies,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
@@ -193,12 +208,9 @@ export class MainStack extends cdk.Stack {
       anthropicApiKeyParameter,
       deployBedrockRuntime: props.deployBedrockRuntime,
       workerInstanceType: props.workerInstanceType,
-    });
-
-    const auth = new Auth(this, 'Auth', {
-      hostedZone,
-      sharedCertificate: props.sharedCertificate,
-      initialUserEmail: props.initialWebappUserEmail,
+      userPool: auth.userPool,
+      cognitoDomainName: auth.domainName,
+      vapidKeys,
     });
 
     worker.bus.addUserPoolProvider(auth.userPool);
@@ -224,25 +236,30 @@ export class MainStack extends cdk.Stack {
       workerUseSpot: props.workerUseSpot,
       workerTerminateOnSessionEnd: props.workerTerminateOnSessionEnd,
       slackOnlySessionCreation: props.slackOnlySessionCreation,
+      vapidKeys,
     });
 
-    new SlackBolt(this, 'SlackBolt', {
-      botTokenParameter: botToken,
-      signingSecretParameter: signingSecret,
-      launchTemplateId: worker.launchTemplate.launchTemplateId!,
-      subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
-      workerBus: worker.bus,
-      storage,
-      adminUserIdList: props.slack.adminUserIdList,
-      workerLogGroupName: worker.logGroup.logGroupName,
-      workerAmiIdParameter,
-      webappOriginNameParameter: originNameParameter,
-      workerUseSpot: props.workerUseSpot,
-    });
+    if (props.slack && botToken && signingSecret) {
+      new SlackBolt(this, 'SlackBolt', {
+        botTokenParameter: botToken,
+        signingSecretParameter: signingSecret,
+        launchTemplateId: worker.launchTemplate.launchTemplateId!,
+        subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
+        workerBus: worker.bus,
+        storage,
+        adminUserIdList: props.slack.adminUserIdList,
+        workerLogGroupName: worker.logGroup.logGroupName,
+        workerAmiIdParameter,
+        webappOriginNameParameter: originNameParameter,
+        agentCoreRuntime: worker.agentCoreRuntime,
+        workerUseSpot: props.workerUseSpot,
+      });
+    }
 
     new EC2GarbageCollector(this, 'EC2GarbageCollector', {
       expirationInDays: 1,
       imageRecipeName: worker.imageBuilder.imageRecipeName,
+      workerAmiIdParameter: workerAmiIdParameter,
     });
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {

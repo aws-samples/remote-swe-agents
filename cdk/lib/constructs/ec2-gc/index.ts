@@ -3,10 +3,12 @@ import { Duration } from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { EC2GarbageCollectorStepFunctions } from './sfn';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 
 export interface EC2GarbageCollectorProps {
   imageRecipeName: string;
   expirationInDays: number;
+  workerAmiIdParameter: IStringParameter;
 }
 
 export class EC2GarbageCollector extends Construct {
@@ -17,6 +19,7 @@ export class EC2GarbageCollector extends Construct {
     const eC2GarbageCollectorStepFunctions = new EC2GarbageCollectorStepFunctions(this, 'StateMachine', {
       imageRecipeName: props.imageRecipeName,
       expirationInDays: props.expirationInDays,
+      workerAmiIdParameter: props.workerAmiIdParameter,
     });
 
     const schedule = new events.Rule(this, 'Schedule', {

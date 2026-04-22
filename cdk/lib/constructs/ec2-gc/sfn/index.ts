@@ -4,10 +4,12 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Construct } from 'constructs';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 
 export interface EC2GarbageCollectorStepFunctionsProps {
   imageRecipeName: string;
   expirationInDays: number;
+  workerAmiIdParameter: IStringParameter;
 }
 
 export class EC2GarbageCollectorStepFunctions extends Construct {
@@ -24,6 +26,7 @@ export class EC2GarbageCollectorStepFunctions extends Construct {
       definitionSubstitutions: {
         expirationInDays: props.expirationInDays.toString(),
         imageRecipeNamePattern: `${props.imageRecipeName}*`,
+        workerAmiIdParameterName: props.workerAmiIdParameter.parameterName,
       },
       timeout: cdk.Duration.seconds(600),
     });
@@ -40,12 +43,7 @@ export class EC2GarbageCollectorStepFunctions extends Construct {
         resources: ['*'],
       })
     );
-    this.stateMachine.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: ['arn:aws:ssm:*:*:parameter/remote-swe/worker/ami-id'],
-      })
-    );
+    props.workerAmiIdParameter.grantRead(this.stateMachine);
     this.stateMachine.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['imagebuilder:DeleteImage'],

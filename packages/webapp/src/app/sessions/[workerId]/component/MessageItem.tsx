@@ -5,15 +5,25 @@ import { toast } from 'sonner';
 import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ToolUseRenderer } from './ToolUseRenderer';
-import { UrlRenderer } from './UrlRenderer';
+import { EventTriggerRenderer } from './EventTriggerRenderer';
+import { AgentMessageRenderer } from './AgentMessageRenderer';
 import { ImageViewer } from './ImageViewer';
+import { FileViewer } from './FileViewer';
+import { formatTime } from '@/lib/utils';
 
 type MessageItemProps = {
   message: MessageView;
   showTimestamp: boolean;
+  onInterrupt?: () => void;
+  agentName?: string;
 };
 
-export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
+export const MessageItem = React.memo(function MessageItem({
+  message,
+  showTimestamp,
+  onInterrupt,
+  agentName,
+}: MessageItemProps) {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
@@ -37,21 +47,31 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
         className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
         style={{ minWidth: '55px' }}
       >
-        {showTimestamp &&
-          new Date(message.timestamp).toLocaleTimeString(localeForDate, { hour: '2-digit', minute: '2-digit' })}
+        {showTimestamp && formatTime(new Date(message.timestamp))}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {message.type === 'toolUse' ? (
           <ToolUseRenderer
             content={message.content}
             input={message.detail}
             output={message.output}
             messageId={message.id}
+            onInterrupt={onInterrupt}
           />
+        ) : message.type === 'eventTrigger' ? (
+          <EventTriggerRenderer name={message.detail} content={message.content} />
+        ) : message.type === 'agentMessage' ? (
+          <AgentMessageRenderer message={message} agentName={agentName} />
+        ) : message.pending ? (
+          <div className="pb-2 break-all">
+            <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">
+              {message.content}
+            </span>
+          </div>
         ) : (
           <div className="text-gray-900 dark:text-white pb-2 break-all">
             <div className="flex items-start">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {message.reasoningText && (
                   <div className="mb-3">
                     <button
@@ -72,12 +92,9 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
                     )}
                   </div>
                 )}
-                {message.role === 'user' ? (
-                  <UrlRenderer content={message.content} />
-                ) : (
-                  <MarkdownRenderer content={message.content} />
-                )}
+                <MarkdownRenderer content={message.content} />
                 {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
+                {message.fileKeys && message.fileKeys.length > 0 && <FileViewer fileKeys={message.fileKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
                 <button
@@ -94,4 +111,4 @@ export const MessageItem = ({ message, showTimestamp }: MessageItemProps) => {
       </div>
     </div>
   );
-};
+});

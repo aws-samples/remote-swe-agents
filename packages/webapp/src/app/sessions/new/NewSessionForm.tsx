@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon, FileText } from 'lucide-react';
+import { Paperclip, FileText } from 'lucide-react';
 import { createNewWorker } from './actions';
 import { createNewWorkerSchema, PromptTemplate } from './schemas';
 import { toast } from 'sonner';
@@ -25,9 +25,15 @@ interface NewSessionFormProps {
   templates: PromptTemplate[];
   customAgents: CustomAgent[];
   preferences: GlobalPreferences;
+  agentIconUrls?: Record<string, string>;
 }
 
-export default function NewSessionForm({ templates, customAgents, preferences }: NewSessionFormProps) {
+export default function NewSessionForm({
+  templates,
+  customAgents,
+  preferences,
+  agentIconUrls = {},
+}: NewSessionFormProps) {
   const t = useTranslations('new_session');
   const sessionsT = useTranslations('sessions');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -47,6 +53,7 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
       defaultValues: {
         message: '',
         imageKeys: [],
+        fileKeys: [],
         modelOverride: preferences.modelOverride,
         customAgentId: 'DEFAULT',
       },
@@ -54,14 +61,15 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
   });
   const { register, formState, reset, setValue, watch, control } = form;
 
-  const { uploadingImages, fileInputRef, handleImageSelect, handleImageChange, handlePaste, ImagePreviewList } =
+  const { uploadingImages, uploadingFiles, handleFileSelect, handlePaste, ImagePreviewList, isUploading } =
     ImageUploader({
       onImagesChange: (keys) => {
         setValue('imageKeys', keys);
       },
+      onFilesChange: (keys) => {
+        setValue('fileKeys', keys);
+      },
     });
-
-  const isUploading = uploadingImages.some((img) => !img.key);
 
   const handleTemplateSelect = (template: PromptTemplate) => {
     setValue('message', template.content, { shouldValidate: true });
@@ -110,9 +118,19 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
                     </SelectItem>
                     {customAgents.map((agent) => (
                       <SelectItem key={agent.SK} value={agent.SK}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{agent.name}</span>
-                          <span className="text-sm text-gray-500">{agent.description}</span>
+                        <div className="flex items-center gap-2">
+                          {agentIconUrls[agent.SK] && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={agentIconUrls[agent.SK]}
+                              alt={agent.name}
+                              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-medium">{agent.name}</span>
+                            <span className="text-sm text-gray-500">{agent.description}</span>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -170,14 +188,16 @@ export default function NewSessionForm({ templates, customAgents, preferences }:
               </Button>
               <Button
                 type="button"
-                onClick={handleImageSelect}
+                onClick={handleFileSelect}
                 disabled={isPending}
                 size="sm"
                 variant="outline"
                 className="flex gap-2 items-center"
               >
-                <ImageIcon className="w-4 h-4" />
-                {uploadingImages.length > 0 ? t('imagesCount', { count: uploadingImages.length }) : t('addImage')}
+                <Paperclip className="w-4 h-4" />
+                {uploadingImages.length + uploadingFiles.length > 0
+                  ? t('imagesCount', { count: uploadingImages.length + uploadingFiles.length })
+                  : sessionsT('attachFile')}
               </Button>
             </div>
           </div>

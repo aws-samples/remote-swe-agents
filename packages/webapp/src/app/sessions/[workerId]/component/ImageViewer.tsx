@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Loader2, ExternalLink, X } from 'lucide-react';
 import { getImageUrls } from '@/actions/image/action';
 
 type ImageViewerProps = {
@@ -18,6 +18,7 @@ type ImageData = {
 export const ImageViewer = ({ imageKeys: inputKeys }: ImageViewerProps) => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [imageCache, setImageCache] = useState<Map<string, ImageData>>(new Map());
+  const [previewImage, setPreviewImage] = useState<ImageData | null>(null);
   const imageKeys = useMemo(
     () =>
       inputKeys.filter(
@@ -27,6 +28,7 @@ export const ImageViewer = ({ imageKeys: inputKeys }: ImageViewerProps) => {
           key.endsWith('.png') ||
           key.endsWith('.webp') ||
           key.endsWith('.svg') ||
+          key.endsWith('.gif') ||
           false
       ),
     [inputKeys]
@@ -91,35 +93,91 @@ export const ImageViewer = ({ imageKeys: inputKeys }: ImageViewerProps) => {
     }
   }, [imageKeys]);
 
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && previewImage) {
+        e.stopPropagation();
+        setPreviewImage(null);
+      }
+    },
+    [previewImage]
+  );
+
+  useEffect(() => {
+    if (previewImage) {
+      document.addEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown, true);
+        document.body.style.overflow = '';
+      };
+    }
+  }, [previewImage, handleKeyDown]);
+
   if (imageKeys.length === 0) {
     return null;
   }
 
   return (
-    <div className="mt-2">
-      <div className="flex flex-wrap gap-2">
-        {images.map((image) => (
-          <div key={image.key}>
-            {image.loading ? (
-              <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              </div>
-            ) : image.error ? (
-              <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                <span className="text-xs text-gray-500">Error</span>
-              </div>
-            ) : (
-              <a href={image.url} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={image.url}
-                  alt={`Image ${image.key}`}
-                  className="w-32 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                />
-              </a>
-            )}
-          </div>
-        ))}
+    <>
+      <div className="mt-2">
+        <div className="flex flex-wrap gap-2">
+          {images.map((image) => (
+            <div key={image.key}>
+              {image.loading ? (
+                <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+              ) : image.error ? (
+                <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                  <span className="text-xs text-gray-500">Error</span>
+                </div>
+              ) : (
+                <button onClick={() => setPreviewImage(image)} className="block">
+                  <img
+                    src={image.url}
+                    alt={`Image ${image.key}`}
+                    className="w-32 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            <a
+              href={previewImage.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              title="Open in new tab"
+            >
+              <ExternalLink className="w-5 h-5" />
+            </a>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <img
+            src={previewImage.url}
+            alt={`Preview ${previewImage.key}`}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
   );
 };

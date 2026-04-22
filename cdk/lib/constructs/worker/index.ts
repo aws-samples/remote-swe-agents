@@ -3,7 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { WorkerBus } from './bus';
 import { BlockPublicAccess, Bucket, IBucket } from 'aws-cdk-lib/aws-s3';
-import { AssetHashType, DockerImage, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { AssetHashType, DockerImage, RemovalPolicy, Stack, ILocalBundling, BundlingOptions } from 'aws-cdk-lib';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { join } from 'path';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
@@ -11,15 +11,19 @@ import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { WorkerImageBuilder } from './image-builder';
 import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { Asset, AssetProps } from 'aws-cdk-lib/aws-s3-assets';
 import { AgentCoreRuntime } from './agent-core-runtime';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import { EventTrigger } from './event-trigger';
+import { VapidKeys } from '../vapid-keys';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 
 export interface WorkerProps {
   vpc: ec2.IVpc;
   storageTable: ITableV2;
   imageBucket: IBucket;
-  slackBotTokenParameter: IStringParameter;
+  slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
     appId: string;
@@ -32,6 +36,7 @@ export interface WorkerProps {
   };
   accessLogBucket: IBucket;
   amiIdParameterName: string;
+  amiIdParameter: IStringParameter;
   webappOriginSourceParameter: IStringParameter;
   additionalManagedPolicies?: string[];
   bedrockCriRegionOverride?: string;
@@ -48,6 +53,9 @@ export interface WorkerProps {
    * @default 't3.large'
    */
   workerInstanceType?: string;
+  userPool: UserPool;
+  cognitoDomainName: string;
+  vapidKeys: VapidKeys;
 }
 
 export class Worker extends Construct {
@@ -56,6 +64,8 @@ export class Worker extends Construct {
   public readonly logGroup: logs.LogGroup;
   public readonly imageBuilder: WorkerImageBuilder;
   public readonly agentCoreRuntime: AgentCoreRuntime | undefined;
+  public readonly eventTrigger: EventTrigger;
+  public readonly ec2Role: iam.Role;
 
   constructor(scope: Construct, id: string, props: WorkerProps) {
     super(scope, id);
@@ -96,6 +106,36 @@ export class Worker extends Construct {
     const bus = new WorkerBus(this, 'Bus', {});
     this.bus = bus;
 
+    const eventTrigger = new EventTrigger(this, 'EventTrigger', {
+      storageTable: props.storageTable,
+      bus: bus,
+      userPool: props.userPool,
+      cognitoDomainName: props.cognitoDomainName,
+    });
+    this.eventTrigger = eventTrigger;
+
+    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
+      storageTable: props.storageTable,
+      imageBucket: props.imageBucket,
+      bus: bus,
+      slackBotTokenParameter: props.slackBotTokenParameter,
+      gitHubApp: props.gitHubApp,
+      gitHubAppPrivateKeyParameter: privateKey,
+      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
+      loadBalancing: props.loadBalancing,
+      accessLogBucket: props.accessLogBucket,
+      amiIdParameterName: props.amiIdParameterName,
+      webappOriginSourceParameter: props.webappOriginSourceParameter,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      additionalManagedPolicies: props.additionalManagedPolicies,
+      vapidKeys: props.vapidKeys,
+      eventTrigger,
+    });
+    this.agentCoreRuntime = agentCoreRuntime;
+
+    // Grant event trigger management to AgentCore role
+    eventTrigger.grantManage(agentCoreRuntime);
+
     const assetProps: AssetProps = {
       // we set dummy directory here because all the files are included in the build image.
       path: join('..', 'resources'),
@@ -111,7 +151,35 @@ export class Worker extends Construct {
             'mv source.tar.gz /asset-output/source',
           ].join('&&'),
         ],
-        image: DockerImage.fromBuild('..', { file: join('docker', 'worker.Dockerfile') }),
+        image: DockerImage.fromRegistry('public.ecr.aws/docker/library/alpine'),
+        local: {
+          tryBundle(outputDir: string, _options: BundlingOptions): boolean {
+            try {
+              const sourceDir = join(__dirname, '..', '..', '..', '..');
+              const outSourceDir = join(outputDir, 'source');
+              execSync(`mkdir -p "${outSourceDir}"`, { stdio: 'inherit' });
+              execSync(
+                [
+                  `tar -zcf "${join(outSourceDir, 'source.tar.gz')}"`,
+                  '--exclude=./.git',
+                  '--exclude=./.github',
+                  '--exclude=./cdk',
+                  '--exclude=./docs',
+                  '--exclude=./resources',
+                  '--exclude=./node_modules',
+                  '--exclude=*/node_modules',
+                  '--exclude=*/dist',
+                  '--exclude=*/.next',
+                  `-C "${sourceDir}" .`,
+                ].join(' '),
+                { stdio: 'inherit' }
+              );
+              return true;
+            } catch {
+              return false;
+            }
+          },
+        } satisfies ILocalBundling,
       },
       assetHashType: AssetHashType.OUTPUT,
     };
@@ -338,12 +406,9 @@ fi
 # Set up dynamic environment variables
 TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
 export WORKER_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/RemoteSweWorkerId)
-export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name ${
-        props.slackBotTokenParameter.parameterName
-      } --query "Parameter.Value" --output text)
-export GITHUB_PERSONAL_ACCESS_TOKEN=${
-        props.githubPersonalAccessTokenParameter
-          ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text)`
+export SLACK_BOT_TOKEN=${
+        props.slackBotTokenParameter
+          ? `$(aws ssm get-parameter --name ${props.slackBotTokenParameter.parameterName} --query "Parameter.Value" --output text 2>/dev/null || echo "")`
           : '""'
       }
 export ANTHROPIC_API_KEY=${
@@ -351,6 +416,19 @@ export ANTHROPIC_API_KEY=${
           ? `$(aws ssm get-parameter --name ${props.anthropicApiKeyParameter.parameterName} --query \"Parameter.Value\" --output text)`
           : '""'
       }
+export GITHUB_PERSONAL_ACCESS_TOKEN=${
+        props.githubPersonalAccessTokenParameter
+          ? `$(aws ssm get-parameter --name ${props.githubPersonalAccessTokenParameter.parameterName} --query \"Parameter.Value\" --output text 2>/dev/null || echo "")`
+          : '""'
+      }
+
+# Fetch VAPID keys from SSM if configured
+if [ -n "$VAPID_PUBLIC_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PUBLIC_KEY=$(aws ssm get-parameter --name "$VAPID_PUBLIC_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
+if [ -n "$VAPID_PRIVATE_KEY_PARAMETER_NAME" ]; then
+  export VAPID_PRIVATE_KEY=$(aws ssm get-parameter --name "$VAPID_PRIVATE_KEY_PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+fi
 
 # Start app
 cd packages/worker
@@ -397,6 +475,13 @@ Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
 Environment=BEDROCK_CRI_REGION_OVERRIDE=${props.bedrockCriRegionOverride ?? ''}
 Environment=LLM_PROVIDER=${props.llmProvider ?? 'bedrock'}
 Environment=ANTHROPIC_API_KEY_PARAMETER_NAME=${props.anthropicApiKeyParameter?.parameterName ?? ''}
+Environment=VAPID_PUBLIC_KEY_PARAMETER_NAME=${props.vapidKeys.publicKeyParameter.parameterName}
+Environment=VAPID_PRIVATE_KEY_PARAMETER_NAME=${props.vapidKeys.privateKeyParameter.parameterName}
+Environment=EVENT_TRIGGER_SFN_ARN=${eventTrigger.handlerStateMachine.stateMachineArn}
+Environment=EVENT_TRIGGER_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
+Environment=EVENT_TRIGGER_TTL_SFN_ARN=${eventTrigger.ttlStateMachine.stateMachineArn}
+Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
+Environment=EVENT_TRIGGER_RESOURCE_PREFIX=${eventTrigger.resourcePrefix}
 
 [Install]
 WantedBy=multi-user.target
@@ -485,6 +570,7 @@ systemctl start myapp
       vpc,
       installDependenciesCommand,
       amiIdParameterName: props.amiIdParameterName,
+      amiIdParameter: props.amiIdParameter,
       sourceBucket,
       sourceAssetHash,
     });
@@ -509,6 +595,7 @@ systemctl start myapp
       this.agentCoreRuntime = undefined;
     }
 
+>>>>>>> upstream/main
     props.webappOriginSourceParameter.grantRead(role);
     role.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -543,8 +630,15 @@ systemctl start myapp
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter.grantRead(role);
     props.anthropicApiKeyParameter?.grantRead(role);
+    props.slackBotTokenParameter?.grantRead(role);
+    props.vapidKeys.grantRead(role);
+
+    this.ec2Role = role;
     bus.api.grantPublishAndSubscribe(role);
     bus.api.grantConnect(role);
+
+    // Grant event trigger management permissions to EC2 worker role
+    eventTrigger.grantManage(role);
 
     // Grant permissions to write logs to CloudWatch
     this.logGroup.grantWrite(role);

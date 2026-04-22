@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAction } from 'next-safe-action/hooks';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { createPromptTemplate, updatePromptTemplate, deletePromptTemplate } from './template-actions';
 import { PromptTemplate } from '@/app/sessions/new/schemas';
+import { formatDate } from '@/lib/utils';
 
 interface TemplateModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface TemplateModalProps {
 
 export default function TemplateModal({ isOpen, onClose, templates, onSelectTemplate }: TemplateModalProps) {
   const t = useTranslations('new_session.templateModal');
+  const locale = useLocale();
+  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -165,7 +168,7 @@ export default function TemplateModal({ isOpen, onClose, templates, onSelectTemp
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('createdAt', { date: new Date(template.createdAt).toLocaleDateString() })}
+                          {t('createdAt', { date: formatDate(new Date(template.createdAt), localeForDate) })}
                         </span>
                         <div className="flex gap-2">
                           <Button onClick={() => handleEdit(template)} size="sm" variant="ghost">

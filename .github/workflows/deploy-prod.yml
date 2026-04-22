@@ -1,9 +1,6 @@
 name: Deploy-Prod
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 concurrency: ${{ github.workflow }}
 env:
   ROLE_ARN: ${{ secrets.IAM_ROLE_ARN }}

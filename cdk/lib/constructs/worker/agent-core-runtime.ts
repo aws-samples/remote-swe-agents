@@ -1,20 +1,23 @@
-import { CfnOutput, Names, Stack } from 'aws-cdk-lib';
+import { Arn, ArnFormat, CfnOutput, Names, Stack } from 'aws-cdk-lib';
+import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { IGrantable, IPrincipal, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
+import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { WorkerBus } from './bus';
-import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
+import { VapidKeys } from '../vapid-keys';
+import { EventTrigger } from './event-trigger';
 
 export interface AgentCoreRuntimeProps {
   storageTable: ITableV2;
   imageBucket: IBucket;
   bus: WorkerBus;
-  slackBotTokenParameter: IStringParameter;
+  slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
     appId: string;
@@ -32,11 +35,16 @@ export interface AgentCoreRuntimeProps {
   bedrockCriRegionOverride?: string;
   llmProvider?: string;
   anthropicApiKeyParameter?: IStringParameter;
+  additionalManagedPolicies?: string[];
+  vapidKeys: VapidKeys;
+  eventTrigger: EventTrigger;
 }
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
   public grantPrincipal: IPrincipal;
   public runtimeArn: string;
+
+  private readonly role: Role;
 
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
@@ -45,8 +53,19 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       assumedBy: ServicePrincipal.fromStaticServicePrincipleName('bedrock-agentcore.amazonaws.com'),
     });
     this.grantPrincipal = role;
+    this.role = role;
 
-    const image = new DockerImageAsset(this, 'WorkerImage', {
+    if (props.additionalManagedPolicies?.length) {
+      props.additionalManagedPolicies.forEach((policy) => {
+        role.addManagedPolicy(
+          policy.startsWith('arn:')
+            ? ManagedPolicy.fromManagedPolicyArn(this, `Policy-${policy.split('/').pop()}`, policy)
+            : ManagedPolicy.fromAwsManagedPolicyName(policy)
+        );
+      });
+    }
+
+    const image = new ContainerImageBuild(this, 'WorkerImage', {
       directory: '..',
       file: join('docker', 'agent.Dockerfile'),
       exclude: readFileSync('.dockerignore').toString().split('\n'),
@@ -71,6 +90,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
           'bedrock-agentcore:GetWorkloadAccessToken',
           'bedrock-agentcore:GetWorkloadAccessTokenForJWT',
           'bedrock-agentcore:GetWorkloadAccessTokenForUserId',
+          'bedrock-agentcore:StopRuntimeSession',
         ],
         resources: ['*'],
       })
@@ -87,7 +107,9 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter.grantRead(role);
     props.anthropicApiKeyParameter?.grantRead(role);
+    props.slackBotTokenParameter?.grantRead(role);
     props.webappOriginSourceParameter.grantRead(role);
+    props.vapidKeys.grantRead(role);
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
 
@@ -115,16 +137,43 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
         // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
         // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',
-        SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter.parameterName ?? '',
+        SLACK_BOT_TOKEN_PARAMETER_NAME: props.slackBotTokenParameter?.parameterName ?? '',
         GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME: props.githubPersonalAccessTokenParameter?.parameterName ?? '',
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
         LLM_PROVIDER: props.llmProvider ?? 'bedrock',
         ANTHROPIC_API_KEY_PARAMETER_NAME: props.anthropicApiKeyParameter?.parameterName ?? '',
+        VAPID_PUBLIC_KEY_PARAMETER_NAME: props.vapidKeys.publicKeyParameter.parameterName,
+        VAPID_PRIVATE_KEY_PARAMETER_NAME: props.vapidKeys.privateKeyParameter.parameterName,
+        EVENT_TRIGGER_SFN_ARN: props.eventTrigger.handlerStateMachine.stateMachineArn,
+        EVENT_TRIGGER_SFN_ROLE_ARN: props.eventTrigger.schedulerRole.roleArn,
+        EVENT_TRIGGER_TTL_SFN_ARN: props.eventTrigger.ttlStateMachine.stateMachineArn,
+        EVENT_TRIGGER_TTL_SFN_ROLE_ARN: props.eventTrigger.schedulerRole.roleArn,
+        EVENT_TRIGGER_RESOURCE_PREFIX: props.eventTrigger.resourcePrefix,
       },
     });
     runtime.node.addDependency(role);
 
     this.runtimeArn = runtime.attrAgentRuntimeArn;
+
+    // Grant the worker role itself permission to invoke this runtime
+    // so that agents can create child sessions via InvokeAgentRuntimeCommand.
+    // Use wildcard ARN pattern to avoid circular dependency between the role and the runtime.
+    const runtimeArnPattern = Arn.format(
+      {
+        service: 'bedrock-agentcore',
+        resource: 'runtime',
+        resourceName: '*',
+        arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+      },
+      Stack.of(this)
+    );
+    role.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [runtimeArnPattern, `${runtimeArnPattern}/runtime-endpoint/DEFAULT`],
+      })
+    );
+
     new CfnOutput(this, 'RuntimeArn', { value: this.runtimeArn });
   }
 

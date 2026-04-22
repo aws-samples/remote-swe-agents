@@ -1,7 +1,7 @@
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-import { PutCommand, UpdateCommand, paginateQuery, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import sharp from 'sharp';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { ddb, TableName } from './aws/ddb';
@@ -14,10 +14,11 @@ import { MessageItem } from '../schema';
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;
 
-export const saveConversationHistoryAtomic = async (
+const PID_DIR = path.join(tmpdir(), '.remote-swe-pids');
+
+export const saveToolUseMessage = async (
   workerId: string,
   toolUseMessage: Message,
-  toolResultMessage: Message,
   outputTokenCount: number,
   thinkingBudget?: number
 ) => {
@@ -32,21 +33,135 @@ export const saveConversationHistoryAtomic = async (
     thinkingBudget,
   };
 
+  await ddb.send(
+    new PutCommand({
+      TableName,
+      Item: toolUseItem,
+    })
+  );
+  return toolUseItem;
+};
+
+export const saveToolResultMessage = async (workerId: string, toolResultMessage: Message, toolUseSK: string) => {
+  const toolUseSKNum = Number(toolUseSK);
   const toolResultItem: MessageItem = {
     PK: `message-${workerId}`,
-    SK: `${String(now + 1).padStart(15, '0')}`, // just add 1 to minimize the possibility of SK conflict
+    SK: `${String(toolUseSKNum + 1).padStart(15, '0')}`,
     content: await preProcessMessageContent(toolResultMessage.content, workerId),
     role: toolResultMessage.role ?? 'unknown',
-    tokenCount: 0, // Will be updated later when we get token information
+    tokenCount: 0,
     messageType: 'toolResult',
   };
 
   await ddb.send(
-    new TransactWriteCommand({
-      TransactItems: [{ Put: { TableName, Item: toolUseItem } }, { Put: { TableName, Item: toolResultItem } }],
+    new PutCommand({
+      TableName,
+      Item: toolResultItem,
     })
   );
-  return [toolUseItem, toolResultItem];
+  return toolResultItem;
+};
+
+export const repairDanglingToolUse = async (workerId: string, items: MessageItem[]): Promise<MessageItem[]> => {
+  const repaired: MessageItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.messageType === 'toolUse') {
+      const next = items[i + 1];
+      if (!next || next.messageType !== 'toolResult') {
+        const content = JSON.parse(item.content);
+        const toolUses: { toolUseId: string; name?: string }[] = content
+          .filter((c: any) => c.toolUse?.toolUseId)
+          .map((c: any) => ({ toolUseId: c.toolUse.toolUseId, name: c.toolUse.name }));
+
+        const toolResultContent = toolUses.map(({ toolUseId, name }) => {
+          let message = 'This tool execution was interrupted and no result is available.';
+
+          // Try to read PID info from file if it was an executeCommand
+          if (name === 'executeCommand') {
+            try {
+              const pidFilePath = path.join(PID_DIR, toolUseId);
+              if (existsSync(pidFilePath)) {
+                const pidData = JSON.parse(readFileSync(pidFilePath, 'utf-8'));
+                message = `This tool execution was interrupted and no result is available. The process may still be running (PID: ${pidData.pid}, command: ${pidData.command}). You can check with \`ps -p ${pidData.pid}\`.`;
+                try {
+                  unlinkSync(pidFilePath);
+                } catch {
+                  // ignore cleanup errors
+                }
+              }
+            } catch (e) {
+              // ignore read errors
+            }
+          }
+
+          return {
+            toolResult: {
+              toolUseId,
+              content: [{ text: message }],
+            },
+          };
+        });
+
+        const toolResultItem: MessageItem = {
+          PK: `message-${workerId}`,
+          SK: `${String(Number(item.SK) + 1).padStart(15, '0')}`,
+          content: JSON.stringify(toolResultContent),
+          role: 'user',
+          tokenCount: 0,
+          messageType: 'toolResult',
+        };
+
+        await ddb.send(
+          new PutCommand({
+            TableName,
+            Item: toolResultItem,
+          })
+        );
+        console.log(`Repaired dangling toolUse at SK=${item.SK} with dummy toolResult at SK=${toolResultItem.SK}`);
+        repaired.push(toolResultItem);
+      } else {
+        // Check for PARTIAL toolResult (some toolUseIds missing from the toolResult message)
+        const toolUseContent = JSON.parse(item.content);
+        const toolResultContent = JSON.parse(next.content);
+        const toolUseIds = new Set<string>(
+          toolUseContent.filter((c: any) => c.toolUse?.toolUseId).map((c: any) => c.toolUse.toolUseId as string)
+        );
+        const toolResultIds = new Set<string>(
+          toolResultContent
+            .filter((c: any) => c.toolResult?.toolUseId)
+            .map((c: any) => c.toolResult.toolUseId as string)
+        );
+        const missingIds = [...toolUseIds].filter((id) => !toolResultIds.has(id));
+        if (missingIds.length > 0) {
+          for (const missingId of missingIds) {
+            toolResultContent.push({
+              toolResult: {
+                toolUseId: missingId,
+                content: [
+                  {
+                    text: 'This tool execution was interrupted and no result is available.',
+                  },
+                ],
+              },
+            });
+          }
+          const updatedContent = JSON.stringify(toolResultContent);
+          await ddb.send(
+            new PutCommand({
+              TableName,
+              Item: { ...next, content: updatedContent },
+            })
+          );
+          console.log(
+            `Repaired partial toolResult at SK=${next.SK}: added ${missingIds.length} missing result(s) for toolUseIds: ${missingIds.join(', ')}`
+          );
+          next.content = updatedContent;
+        }
+      }
+    }
+  }
+  return repaired;
 };
 
 export const saveConversationHistory = async (
@@ -123,17 +238,17 @@ const searchForLastSlackUserId = (items: MessageItem[]) => {
   }
 };
 
-export const middleOutFiltering = async (items: MessageItem[]) => {
+export const middleOutFiltering = async (items: MessageItem[], maxInputToken = MAX_INPUT_TOKEN) => {
   // Calculate total token count to determine if we need middle-out filtering
   let totalTokenCount = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
   const headRatio = 0.6;
   const tailRatio = 1 - headRatio;
 
   // Apply middle-out strategy if token count exceeds the maximum
-  if (totalTokenCount < MAX_INPUT_TOKEN) {
+  if (totalTokenCount < maxInputToken) {
     return { items, totalTokenCount, messages: await itemsToMessages(items) };
   }
-  console.log(`Applying middle-out strategy. Total tokens: ${totalTokenCount}, max tokens: ${MAX_INPUT_TOKEN}`);
+  console.log(`Applying middle-out strategy. Total tokens: ${totalTokenCount}, max tokens: ${maxInputToken}`);
 
   totalTokenCount = 0;
   // Get front messages until we reach half of max tokens
@@ -144,7 +259,7 @@ export const middleOutFiltering = async (items: MessageItem[]) => {
     frontTokenCount += item.tokenCount;
 
     // always include the first message.
-    if (i == 0 || frontTokenCount <= MAX_INPUT_TOKEN * headRatio) {
+    if (i == 0 || frontTokenCount <= maxInputToken * headRatio) {
       frontMessages.push(item);
       totalTokenCount += item.tokenCount;
     } else {
@@ -159,7 +274,7 @@ export const middleOutFiltering = async (items: MessageItem[]) => {
     const item = items[i];
     endTokenCount += item.tokenCount;
 
-    if (endTokenCount <= MAX_INPUT_TOKEN * tailRatio) {
+    if (endTokenCount <= maxInputToken * tailRatio) {
       endMessages.unshift(item); // Add to start of array to maintain order
       totalTokenCount += item.tokenCount;
     } else {
@@ -227,7 +342,9 @@ const preProcessMessageContent = async (content: Message['content'], workerId: s
 };
 
 const imageCache: Record<string, { data: Uint8Array; localPath: string; format: string }> = {};
+const fileCache: Record<string, { localPath: string }> = {};
 let imageSeqNo = 0;
+let fileSeqNo = 0;
 
 const ensureImagesDirectory = () => {
   const imagesDir = path.join(tmpdir(), `.remote-swe-images`);
@@ -235,6 +352,14 @@ const ensureImagesDirectory = () => {
     mkdirSync(imagesDir, { recursive: true });
   }
   return imagesDir;
+};
+
+const ensureFilesDirectory = () => {
+  const filesDir = path.join(tmpdir(), `.remote-swe-files`);
+  if (!existsSync(filesDir)) {
+    mkdirSync(filesDir, { recursive: true });
+  }
+  return filesDir;
 };
 
 const saveImageToLocalFs = async (imageBuffer: Uint8Array): Promise<string> => {
@@ -255,6 +380,16 @@ const saveImageToLocalFs = async (imageBuffer: Uint8Array): Promise<string> => {
   imageSeqNo++;
 
   // Return the path in the format specified in the issue
+  return filePath;
+};
+
+const saveFileToLocalFs = async (fileBuffer: Uint8Array, fileName: string): Promise<string> => {
+  const filesDir = ensureFilesDirectory();
+
+  const filePath = path.join(filesDir, `${fileSeqNo}_${fileName}`);
+  writeFileSync(filePath, fileBuffer);
+  fileSeqNo++;
+
   return filePath;
 };
 
@@ -298,6 +433,22 @@ const postProcessMessageContent = async (content: string) => {
       });
       flattenedArray.push({
         text: `the image is stored locally on ${localPath}`,
+      });
+    } else if (typeof c.file?.source?.s3Key == 'string') {
+      const s3Key = c.file.source.s3Key as string;
+      const fileName = c.file.fileName || s3Key.split('/').pop() || 'file';
+      let localPath: string;
+
+      if (s3Key in fileCache) {
+        localPath = fileCache[s3Key].localPath;
+      } else {
+        const fileBuffer = await getBytesFromKey(s3Key);
+        localPath = await saveFileToLocalFs(fileBuffer, fileName);
+        fileCache[s3Key] = { localPath };
+      }
+
+      flattenedArray.push({
+        text: `the file "${fileName}" is stored locally on ${localPath}`,
       });
     } else if (c.toolResult?.content != null) {
       c.toolResult.content = await postProcessMessageContent(JSON.stringify(c.toolResult.content));

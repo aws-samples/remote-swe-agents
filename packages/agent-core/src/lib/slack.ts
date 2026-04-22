@@ -158,3 +158,35 @@ export const sendFileToSlack = async (imagePath: string, message: string) => {
 
   return result;
 };
+
+/**
+ * Post a new root message to a Slack channel, starting a new thread.
+ * @returns The thread_ts of the new message, or undefined if Slack is not configured.
+ */
+export const postNewSlackThread = async (channelId: string, message: string): Promise<string | undefined> => {
+  if (!SlackBotToken) {
+    console.log(`[Slack] Bot token not configured, skipping postNewSlackThread`);
+    return undefined;
+  }
+
+  const app = await getApp();
+  const result = await app.client.chat.postMessage({
+    channel: channelId,
+    text: message,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: message,
+        },
+      },
+    ],
+  });
+
+  if (!result.ok || !result.ts) {
+    throw new Error(`Failed to post new Slack thread: ${result.error}`);
+  }
+
+  return result.ts;
+};
