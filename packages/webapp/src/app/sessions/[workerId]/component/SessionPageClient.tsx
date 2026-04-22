@@ -557,12 +557,20 @@ export default function SessionPageClient({
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {t('todoList')} ({todoList.items.filter((item) => item.status === 'completed').length}/
                     {todoList.items.length})
-                  </span>
-                  <span className="inline sm:hidden truncate">
-                    ({todoList.items.filter((item) => item.status === 'completed').length}/{todoList.items.length})
-                  </span>
-                </button>
-              )}
+                  </h2>
+                  <button
+                    onClick={() => setShowTodoModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="p-4 max-h-[70vh] overflow-y-auto">
+                  <TodoList todoList={todoList} isRefreshing={isRefetchingTodoList} />
+                </div>
+              </div>
+            </div>
+          )}
               {instanceStatus !== 'terminated' && (
                 <button
                   type="button"

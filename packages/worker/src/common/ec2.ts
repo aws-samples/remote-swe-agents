@@ -1,6 +1,5 @@
 import { ec2 } from '@remote-swe-agents/agent-core/aws';
 import { StopInstancesCommand, TerminateInstancesCommand } from '@aws-sdk/client-ec2';
-import { StopInstancesCommand } from '@aws-sdk/client-ec2';
 import { BedrockAgentCoreClient, StopRuntimeSessionCommand } from '@aws-sdk/client-bedrock-agentcore';
 
 const workerRuntime = process.env.WORKER_RUNTIME ?? 'ec2';

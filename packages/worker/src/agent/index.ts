@@ -339,17 +339,7 @@ const agentLoop = async (workerId: string, cancellationToken: CancellationToken)
           try {
             if (cancellationToken.isCancelled) return;
 
-          const converseResult = await converse(
-            workerId,
-            [modelOverride],
-            {
-              messages,
-              system: [{ text: systemPrompt }, { cachePoint: { type: 'default' } }],
-              toolConfig,
-            },
-            maxTokensExceededCount
-          );
-            const converseResult = await bedrockConverse(
+            const converseResult = await converse(
               workerId,
               [modelOverride],
               {
