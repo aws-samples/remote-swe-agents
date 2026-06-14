@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
-    "esbuild": "^0.25.1",
+    "esbuild": "^0.28.1",
     "prettier": "^3.5.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
