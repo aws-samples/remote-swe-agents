@@ -14,6 +14,7 @@ export * from './cost';
 export * from './todo';
 export * from './api-key';
 export * from './images';
+export * from './image-resize';
 export * from './webapp-origin';
 export * from './preferences';
 export * from './custom-agent';
