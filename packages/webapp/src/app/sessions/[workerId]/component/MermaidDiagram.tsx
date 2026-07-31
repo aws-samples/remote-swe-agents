@@ -61,10 +61,20 @@ export const MermaidDiagram = React.memo(function MermaidDiagram({ chart }: Merm
   }, [chart, mermaidTheme, uniqueId]);
 
   if (error) {
+    // `react-markdown` wraps fenced code blocks in a default `<pre>` whose
+    // browser-default `white-space: pre` is inherited by every descendant.
+    // Without `whitespace-normal` here, the error `<p>` below would refuse
+    // to wrap on long lines and blow past the chat bubble's `max-width`,
+    // producing a page-level horizontal scroll on mobile. `max-w-full`
+    // on the outer container plus `break-words` on the message and
+    // `overflow-x-auto` on the chart `<pre>` keep the rendering inside
+    // the bubble (chart scrolls internally when the diagram source is
+    // wider than the bubble), matching the existing code-block / table
+    // overflow pattern in `MarkdownRenderer`.
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mb-2">
-        <p className="text-red-600 dark:text-red-400 text-sm">Mermaid diagram error: {error}</p>
-        <pre className="text-xs mt-2 text-gray-600 dark:text-gray-400 overflow-x-auto">{chart}</pre>
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mb-2 max-w-full whitespace-normal">
+        <p className="text-red-600 dark:text-red-400 text-sm break-words">Mermaid diagram error: {error}</p>
+        <pre className="text-xs mt-2 text-gray-600 dark:text-gray-400 overflow-x-auto max-w-full">{chart}</pre>
       </div>
     );
   }

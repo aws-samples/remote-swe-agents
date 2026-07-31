@@ -17,5 +17,6 @@ export * from './images';
 export * from './webapp-origin';
 export * from './preferences';
 export * from './custom-agent';
+export * from './mermaid-validator';
 export * from './push-notification';
 export * from './unread';
