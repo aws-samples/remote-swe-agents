@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 import { authorizeGitHubCli } from './github';
-export { isGitHubConfigured } from './github';
+export { isGitHubConfigured, authorizeGitHubCli } from './github';
 import { homedir, tmpdir } from 'os';
 import { join } from 'path';
 import { mkdirSync, writeFileSync, unlinkSync } from 'fs';
@@ -25,6 +25,14 @@ const inputSchema = z.object({
 
 export const DefaultWorkingDirectory = join(homedir(), `.remote-swe-workspace`);
 spawn('mkdir', ['-p', DefaultWorkingDirectory]);
+
+/**
+ * Stable marker embedded in the error returned when a command is cancelled
+ * mid-flight and left running in the background. Exported so other tools
+ * (e.g. waitForCondition) can detect this state without depending on the
+ * surrounding wording, which would otherwise drift silently.
+ */
+export const BACKGROUND_CANCELLATION_MARKER = 'is still running in background';
 
 export const PID_DIR = join(tmpdir(), '.remote-swe-pids');
 mkdirSync(PID_DIR, { recursive: true });
@@ -155,7 +163,7 @@ export const executeCommand = async (
           safeResolve({
             stdout: truncate(stdout, 40e3),
             stderr: truncate(stderr),
-            error: `Command is still running in background (PID: ${childProcess.pid}). The agent session was interrupted by a new incoming message.`,
+            error: `Command ${BACKGROUND_CANCELLATION_MARKER} (PID: ${childProcess.pid}). The agent session was interrupted by a new incoming message.`,
           });
         }
       }, 100);

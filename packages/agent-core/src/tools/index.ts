@@ -13,6 +13,7 @@ export * from './send-to-agent';
 export * from './acknowledge-agent';
 export * from './confirm-send-to-user';
 export * from './think';
+export * from './wait-for';
 export * from './read-image';
 export * from './todo';
 export * from './session-title';
@@ -34,6 +35,7 @@ import { confirmSendToUserTool } from './confirm-send-to-user';
 import { readImageTool } from './read-image';
 import { todoInitTool, todoUpdateTool } from './todo';
 import { updateSessionTitleTool } from './session-title';
+import { waitForConditionTool } from './wait-for';
 
 /**
  * Tools that require GitHub configuration.
@@ -73,6 +75,7 @@ export const requiredToolNames = requiredTools.map((tool) => tool.name);
 export const optionalTools = [
   ...gitHubTools,
   commandExecutionTool,
+  waitForConditionTool,
   fileEditTool,
   readImageTool,
   createNewSessionTool,
