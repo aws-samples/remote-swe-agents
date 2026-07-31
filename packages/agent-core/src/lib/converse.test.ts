@@ -133,4 +133,46 @@ describe('preProcessInput', () => {
       expect(thinkingBudget).toBeUndefined();
     });
   });
+
+  describe('assistant message prefill normalization', () => {
+    const withTrailingAssistant = (): ConverseCommandInput => ({
+      modelId: 'dummy',
+      messages: [
+        { role: 'user', content: [{ text: 'Count to 3.' }] },
+        { role: 'assistant', content: [{ text: '1, 2, 3.' }] },
+      ],
+    });
+
+    test('strips trailing assistant for prefill-unsupported model (sonnet5)', () => {
+      const { input } = preProcessInput(withTrailingAssistant(), 'sonnet5', 0);
+      expect(input.messages?.map((m) => m.role)).toEqual(['user']);
+    });
+
+    test('keeps trailing assistant for prefill-supported model (sonnet4.5)', () => {
+      const { input } = preProcessInput(withTrailingAssistant(), 'sonnet4.5', 0);
+      expect(input.messages?.map((m) => m.role)).toEqual(['user', 'assistant']);
+    });
+
+    test('strips multiple trailing assistant messages for sonnet5', () => {
+      const input: ConverseCommandInput = {
+        modelId: 'dummy',
+        messages: [
+          { role: 'user', content: [{ text: 'hi' }] },
+          { role: 'assistant', content: [{ text: 'a' }] },
+          { role: 'assistant', content: [{ text: 'b' }] },
+        ],
+      };
+      const { input: processed } = preProcessInput(input, 'sonnet5', 0);
+      expect(processed.messages?.map((m) => m.role)).toEqual(['user']);
+    });
+
+    test('leaves an all-assistant conversation untouched (never empties)', () => {
+      const input: ConverseCommandInput = {
+        modelId: 'dummy',
+        messages: [{ role: 'assistant', content: [{ text: 'x' }] }],
+      };
+      const { input: processed } = preProcessInput(input, 'sonnet5', 0);
+      expect(processed.messages?.map((m) => m.role)).toEqual(['assistant']);
+    });
+  });
 });

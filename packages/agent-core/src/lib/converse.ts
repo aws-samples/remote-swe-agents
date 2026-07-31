@@ -154,26 +154,51 @@ export const preProcessInput = (
   if (enableReasoning) {
     // Detect if we need to adjust the thinking budget based on keywords
     const enableUltraThink = shouldUltraThink(input);
-    const budget = enableUltraThink ? Math.min(Math.floor(modelConfig.maxOutputTokens / 2), 31999) : 2000;
 
-    reasoningFields = {
-      reasoning_config: {
-        type: 'enabled',
-        budget_tokens: budget,
-      },
-      ...(modelConfig.interleavedThinkingSupport ? { anthropic_beta: ['interleaved-thinking-2025-05-14'] } : {}),
-    };
+    if (modelConfig.adaptiveThinkingOnly) {
+      // Opus 4.7+ only supports adaptive thinking (type: 'enabled' returns 400)
+      // Interleaved thinking is automatically enabled with adaptive mode (no beta header needed)
+      reasoningFields = {
+        reasoning_config: {
+          type: 'adaptive',
+        },
+        output_config: { effort: enableUltraThink ? 'max' : 'xhigh' },
+      };
 
-    // If we're using ultrathink (non-default budget), store the budget value
-    if (enableUltraThink) {
-      thinkingBudget = budget;
+      if (enableUltraThink) {
+        thinkingBudget = Math.min(Math.floor(modelConfig.maxOutputTokens / 2), 31999);
+      }
+    } else {
+      const budget = enableUltraThink ? Math.min(Math.floor(modelConfig.maxOutputTokens / 2), 31999) : 2000;
+
+      reasoningFields = {
+        reasoning_config: {
+          type: 'enabled',
+          budget_tokens: budget,
+        },
+        ...(modelConfig.interleavedThinkingSupport ? { anthropic_beta: ['interleaved-thinking-2025-05-14'] } : {}),
+      };
+
+      // If we're using ultrathink (non-default budget), store the budget value
+      if (enableUltraThink) {
+        thinkingBudget = budget;
+      }
     }
 
     // Adjust output tokens as well
-    input.inferenceConfig = {
-      ...input.inferenceConfig,
-      maxTokens: Math.max(adjustedMaxToken, Math.min(budget * 2, modelConfig.maxOutputTokens)),
-    };
+    if (modelConfig.adaptiveThinkingOnly) {
+      // For adaptive thinking models, use the full maxOutputTokens
+      input.inferenceConfig = {
+        ...input.inferenceConfig,
+        maxTokens: modelConfig.maxOutputTokens,
+      };
+    } else {
+      const budget = enableUltraThink ? Math.min(Math.floor(modelConfig.maxOutputTokens / 2), 31999) : 2000;
+      input.inferenceConfig = {
+        ...input.inferenceConfig,
+        maxTokens: Math.max(adjustedMaxToken, Math.min(budget * 2, modelConfig.maxOutputTokens)),
+      };
+    }
   } else {
     // when we disable reasoning, we have to remove
     // reasoningContent blocks from all the previous message contents
@@ -212,6 +237,27 @@ export const preProcessInput = (
         if ('cachePoint' in content[i]) {
           content.splice(i, 1);
         }
+    }
+  }
+
+  // Normalize assistant message prefill for models that reject it.
+  // Some models (e.g. Sonnet 5) return a ValidationException when the request
+  // ends with an assistant message ("does not support assistant message
+  // prefill. The conversation must end with a user turn"). This can happen when
+  // a new turn starts while the persisted history still ends with the previous
+  // turn's final assistant message. Strip trailing assistant messages so the
+  // request ends on a user turn. Only applied to flagged models — models that
+  // support prefill are untouched. If stripping would empty the conversation or
+  // still leave a trailing assistant (unexpected), leave it as-is and let the
+  // generic error-recovery path handle it.
+  if (modelConfig.assistantPrefillSupport === false && input.messages && input.messages.length > 0) {
+    const messages = input.messages;
+    let end = messages.length;
+    while (end > 0 && messages[end - 1].role === 'assistant') {
+      end--;
+    }
+    if (end > 0 && end < messages.length) {
+      input.messages = messages.slice(0, end);
     }
   }
 
