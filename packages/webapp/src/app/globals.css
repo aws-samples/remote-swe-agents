@@ -127,6 +127,7 @@
   }
 
   /* Scroll affordance for containers with overflowing math.
+     Uses mask-image to fade edges (background-color independent — no cover
      color mismatch issues). A useScrollOverflow hook sets data-overflowing,
      data-at-start, data-at-end on the container; CSS drives the mask. */
   .katex-scroll-container[data-overflowing='true'] {
@@ -146,7 +147,11 @@
     -webkit-mask-image: none;
   }
 
-  /* Slim custom scrollbar for math containers. */
+  /* Slim custom scrollbar for math containers.
+     overflow-y: clip prevents vertical scrollbar — CSS spec computes
+     overflow-y to auto when overflow-x is auto, which can expose a
+     vertical scrollbar on tall KaTeX expressions. clip suppresses this
+     without creating a scroll mechanism. */
   .katex-scroll-container {
     overflow-y: clip;
     scrollbar-width: thin;
@@ -169,6 +174,10 @@
     background: rgba(255, 255, 255, 0.2);
   }
 
+  /* Defensive: duplicates katex.min.css declaration to guard against future
+     versions that might drop or weaken it. Note: if a future KaTeX upgrade
+     introduces higher-specificity rules for .katex-display > .katex, this
+     may create cascade conflicts — verify after upgrading. */
   .katex-display > .katex {
     white-space: nowrap;
   }

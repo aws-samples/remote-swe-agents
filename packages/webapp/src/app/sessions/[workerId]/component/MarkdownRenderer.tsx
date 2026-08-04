@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes';
 import type { PluggableList } from 'unified';
 import { MermaidDiagram } from './MermaidDiagram';
 import { KatexScrollContainer } from './KatexScrollContainer';
+import { escapePriceDollars } from '@/lib/escape-price-dollars';
 
 type MarkdownRendererProps = {
   content: string;
@@ -56,6 +57,8 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
 
   const remarkPlugins = React.useMemo<PluggableList>(() => [remarkGfm, remarkMath], []);
   const rehypePlugins = React.useMemo<PluggableList>(() => [[rehypeKatex, REHYPE_KATEX_OPTIONS]], []);
+
+  const processedContent = React.useMemo(() => escapePriceDollars(content), [content]);
 
   return (
     <ReactMarkdown
@@ -159,7 +162,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
         ),
       }}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   );
 });
