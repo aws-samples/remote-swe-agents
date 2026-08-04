@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-amplify/adapter-nextjs": "1.7.1",
     "@aws-sdk/client-lambda": "^3.799.0",
+    "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/client-ssm": "^3.812.0",
     "@aws-sdk/s3-request-presigner": "^3.1068.0",
     "@hookform/resolvers": "^5.2.1",
@@ -33,6 +34,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "katex": "^0.16.47",
     "lucide-react": "^0.488.0",
     "mermaid": "^11.14.0",
     "next": "^16.1.6",
@@ -44,15 +46,15 @@
     "react-hook-form": "^7.62.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-cjk-friendly": "^2.3.1",
+    "remark-cjk-friendly-gfm-strikethrough": "^2.3.1",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tw-animate-css": "^1.2.5",
-    "zod": "^4.0.0",
-    "@aws-sdk/client-s3": "^3.1068.0",
-    "katex": "^0.16.47",
-    "rehype-katex": "^7.0.1",
-    "remark-math": "^6.0.0"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -65,11 +67,11 @@
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
     "prettier": "^3.5.3",
-    "tailwindcss": "^4",
-    "typescript": "^5",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
     "unified": "^11.0.5"
   }
 }

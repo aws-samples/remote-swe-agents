@@ -3,6 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import remarkCjkFriendly from 'remark-cjk-friendly';
+import remarkCjkFriendlyGfmStrikethrough from 'remark-cjk-friendly-gfm-strikethrough';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { useTheme } from 'next-themes';
@@ -55,7 +57,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
           'code[class*="language-"]': { ...oneLight['code[class*="language-"]'], background: '#e5e7eb' },
         };
 
-  const remarkPlugins = React.useMemo<PluggableList>(() => [remarkGfm, remarkMath], []);
+  const remarkPlugins = React.useMemo<PluggableList>(
+    () => [remarkGfm, remarkCjkFriendly, remarkCjkFriendlyGfmStrikethrough, remarkMath],
+    []
+  );
   const rehypePlugins = React.useMemo<PluggableList>(() => [[rehypeKatex, REHYPE_KATEX_OPTIONS]], []);
 
   const processedContent = React.useMemo(() => escapePriceDollars(content), [content]);

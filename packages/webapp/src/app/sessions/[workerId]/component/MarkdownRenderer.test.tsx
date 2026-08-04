@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 import remarkGfm from 'remark-gfm';
+import remarkCjkFriendly from 'remark-cjk-friendly';
+import remarkCjkFriendlyGfmStrikethrough from 'remark-cjk-friendly-gfm-strikethrough';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
@@ -9,7 +11,8 @@ import { unified } from 'unified';
 
 /**
  * `MarkdownRenderer` (the React component) wires `react-markdown` with
- * `remark-gfm` + `remark-math` + `[rehype-katex, { errorColor: 'currentColor' }]`.
+ * `remark-gfm` + `remark-cjk-friendly` + `remark-cjk-friendly-gfm-strikethrough` +
+ * `remark-math` + `[rehype-katex, { errorColor: 'currentColor' }]`.
  * Internally that pipeline is just `unified().use(remarkParse).use(...)` —
  * so we can pin the math behaviour we ship to users by running the same
  * plugin chain at the unified level and asserting on the produced HTML.
@@ -31,6 +34,8 @@ function renderMarkdown(markdown: string): string {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkCjkFriendly)
+    .use(remarkCjkFriendlyGfmStrikethrough)
     .use(remarkMath)
     .use(remarkRehype)
     .use(rehypeKatex, REHYPE_KATEX_OPTIONS)
@@ -101,5 +106,59 @@ describe('MarkdownRenderer math pipeline', () => {
     expect(html).not.toMatch(/class="katex"/);
     expect(html).toContain('$100');
     expect(html).toContain('$200');
+  });
+});
+
+describe('MarkdownRenderer CJK emphasis', () => {
+  test('bold adjacent to CJK full-width parenthesis renders as <strong>', () => {
+    // CJK adjacency test: closing ** preceded by full-width ）, followed by CJK
+    const html = renderMarkdown(
+      '**Luma の現行モデルは Ray3.2（2026年6月リリース・Ray2 は Luma 自身が deprecated 扱い）**で、'
+    );
+    expect(html).toContain('<strong>');
+    expect(html).not.toContain('**');
+  });
+
+  test('bold followed directly by CJK character (no space) renders as <strong>', () => {
+    // CJK adjacency test: bold markers directly adjacent to CJK without space
+    const html = renderMarkdown('これは**重要な**情報です');
+    expect(html).toContain('<strong>');
+    expect(html).not.toContain('**');
+  });
+
+  test('bold preceded directly by CJK character (no space) renders as <strong>', () => {
+    // CJK adjacency test: opening ** directly after CJK
+    const html = renderMarkdown('日本語**テスト**だよ');
+    expect(html).toContain('<strong>');
+    expect(html).not.toContain('**');
+  });
+
+  test('italic adjacent to CJK renders as <em>', () => {
+    // CJK adjacency test: emphasis markers adjacent to CJK
+    const html = renderMarkdown('これは*斜体*のテスト');
+    expect(html).toContain('<em>');
+    expect(html).not.toContain('*斜体*');
+  });
+
+  test('bold with full-width punctuation inside, followed by CJK', () => {
+    // CJK adjacency test: closing ** after full-width 。 followed by CJK
+    const html = renderMarkdown('**注意：これは重要。**次に進む');
+    expect(html).toContain('<strong>');
+    expect(html).not.toContain('**');
+  });
+
+  test('GFM strikethrough adjacent to CJK renders as <del>', () => {
+    // CJK adjacency test: strikethrough markers adjacent to CJK
+    const html = renderMarkdown('これは~~削除~~されたテキスト');
+    expect(html).toContain('<del>');
+    expect(html).not.toContain('~~');
+  });
+
+  test('multiple bold segments in CJK text all render correctly', () => {
+    // CJK adjacency test: multiple bold segments within CJK prose
+    const html = renderMarkdown('**最初**と**次**と**最後**の三つ');
+    const strongCount = (html.match(/<strong>/g) || []).length;
+    expect(strongCount).toBe(3);
+    expect(html).not.toContain('**');
   });
 });
