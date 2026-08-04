@@ -3,17 +3,51 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { useTheme } from 'next-themes';
+import type { PluggableList } from 'unified';
 import { MermaidDiagram } from './MermaidDiagram';
+import { KatexScrollContainer } from './KatexScrollContainer';
+import { escapePriceDollars } from '@/lib/escape-price-dollars';
 
 type MarkdownRendererProps = {
   content: string;
 };
 
+// Render KaTeX parse errors in the surrounding text color (instead of the
+// default red) so that streaming partial block math like `$$\sum_{i=1}^n`
+// doesn't flash red on every new token. `trust` stays at its safe default
+// of false — never enable: it would allow user-controlled HTML/JS via
+// `\href` and similar primitives. Inline math `$...$` and block math
+// `$$...$$` use `remark-math`'s defaults (singleDollarTextMath: true) so
+// that GitHub-/Pandoc-/Jupyter-compatible syntax works out of the box.
+const REHYPE_KATEX_OPTIONS = {
+  errorColor: 'currentColor',
+} as const;
+
+function containsKatex(children: React.ReactNode): boolean {
+  return React.Children.toArray(children).some((child) => {
+    if (!React.isValidElement(child)) return false;
+    const props = child.props as Record<string, unknown>;
+    const cn = typeof props.className === 'string' ? props.className : '';
+    if (cn.includes('katex')) return true;
+    if (props.children) return containsKatex(props.children as React.ReactNode);
+    return false;
+  });
+}
+
 export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
+  // resolvedTheme is undefined during SSR but resolved on the client, so a
+  // theme-dependent code style mismatches between the two renders (hydration
+  // error #418). Stay on the light style until mounted, then switch.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   const codeStyle =
-    resolvedTheme === 'dark'
+    mounted && resolvedTheme === 'dark'
       ? oneDark
       : {
           ...oneLight,
@@ -21,15 +55,28 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
           'code[class*="language-"]': { ...oneLight['code[class*="language-"]'], background: '#e5e7eb' },
         };
 
+  const remarkPlugins = React.useMemo<PluggableList>(() => [remarkGfm, remarkMath], []);
+  const rehypePlugins = React.useMemo<PluggableList>(() => [[rehypeKatex, REHYPE_KATEX_OPTIONS]], []);
+
+  const processedContent = React.useMemo(() => escapePriceDollars(content), [content]);
+
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
       components={{
         p: ({ children }) => {
+          if (containsKatex(children)) {
+            return (
+              <KatexScrollContainer tag="p" className="mb-2">
+                {children}
+              </KatexScrollContainer>
+            );
+          }
           if (typeof children === 'string') {
             const parts = children.split('\n');
             return (
-              <p className="mb-2">
+              <p className="mb-2 overflow-x-auto">
                 {parts.map((part, i) => (
                   <React.Fragment key={i}>
                     {i > 0 && <br />}
@@ -39,7 +86,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
               </p>
             );
           }
-          return <p className="mb-2">{children}</p>;
+          return <p className="mb-2 overflow-x-auto">{children}</p>;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         code(props: any) {
@@ -70,7 +117,14 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
 
         ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-        li: ({ children }) => <li className="ml-2">{children}</li>,
+        li: ({ children }) =>
+          containsKatex(children) ? (
+            <KatexScrollContainer tag="li" className="ml-2">
+              {children}
+            </KatexScrollContainer>
+          ) : (
+            <li className="ml-2 overflow-x-auto">{children}</li>
+          ),
         blockquote: ({ children }) => (
           <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-2">
             {children}
@@ -108,7 +162,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
         ),
       }}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   );
 });

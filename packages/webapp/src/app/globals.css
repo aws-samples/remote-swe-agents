@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'katex/dist/katex.min.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -118,6 +119,67 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* Scroll affordance for containers with overflowing math.
+     Uses mask-image to fade edges (background-color independent — no cover
+     color mismatch issues). A useScrollOverflow hook sets data-overflowing,
+     data-at-start, data-at-end on the container; CSS drives the mask. */
+  .katex-scroll-container[data-overflowing='true'] {
+    mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+  }
+  .katex-scroll-container[data-overflowing='true'][data-at-start='true'] {
+    mask-image: linear-gradient(to right, black 0%, black calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 24px), transparent);
+  }
+  .katex-scroll-container[data-overflowing='true'][data-at-end='true'] {
+    mask-image: linear-gradient(to right, transparent, black 24px, black 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black 100%);
+  }
+  .katex-scroll-container[data-overflowing='true'][data-at-start='true'][data-at-end='true'] {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  /* Slim custom scrollbar for math containers.
+     overflow-y: clip prevents vertical scrollbar — CSS spec computes
+     overflow-y to auto when overflow-x is auto, which can expose a
+     vertical scrollbar on tall KaTeX expressions. clip suppresses this
+     without creating a scroll mechanism. */
+  .katex-scroll-container {
+    overflow-y: clip;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  .dark .katex-scroll-container {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+  .katex-scroll-container::-webkit-scrollbar {
+    height: 3px;
+  }
+  .katex-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .katex-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  .dark .katex-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Defensive: duplicates katex.min.css declaration to guard against future
+     versions that might drop or weaken it. Note: if a future KaTeX upgrade
+     introduces higher-specificity rules for .katex-display > .katex, this
+     may create cascade conflicts — verify after upgrading. */
+  .katex-display > .katex {
+    white-space: nowrap;
   }
 }
 
