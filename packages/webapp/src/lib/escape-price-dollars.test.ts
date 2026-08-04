@@ -26,13 +26,14 @@ describe('escapePriceDollars', () => {
   // -- Real-world examples that demonstrate the price-dollar pairing bug --
 
   const EXAMPLE_1 =
-    '直すには A の絵を作り直しで **+$0.21〜0.25** かかるんだけど、承認もらってる \\$7 枠がほぼ使い切り（≈$6.86）なので、超過分のOKが要る状態にゃ。';
+    'Redrawing artwork A costs **+$0.21~0.25** extra, but the approved \\$7 budget is nearly spent (approx $6.86), so overage approval is needed.';
 
-  const EXAMPLE_2 = '新トランシェ **$1.00** を承認する（旧$0.60枠とは別勘定・CALLS.jsonl は継続追記）。';
+  const EXAMPLE_2 = 'Approve new tranche **$1.00** (separate from old $0.60 budget; CALLS.jsonl continues appending).';
 
-  const EXAMPLE_3 = '消費 $0.52 / 残 $0.08。次手は裁定不要と自己判断: **$0 の決定論クローンで plate 作成を先行**';
+  const EXAMPLE_3 =
+    'Spent $0.52 / remaining $0.08. Next step self-assessed as no arbitration needed: **$0 deterministic clone to create plate first**';
 
-  const EXAMPLE_4 = '消費 **$0.59 / 予算 $0.60 / 残 $0.01**・追加生成不可。';
+  const EXAMPLE_4 = 'Spent **$0.59 / budget $0.60 / remaining $0.01** — no further generation allowed.';
 
   describe('without preprocessor — demonstrates the bug', () => {
     test('example 1: unescaped $0.21 and $6.86 form spurious math pair', () => {
@@ -364,21 +365,24 @@ describe('escapePriceDollars', () => {
   });
 
   describe('R-1: price patterns with - and / are escaped', () => {
-    test('$0.60/回 with \\$1.20 mixed — slash price is escaped, already-escaped preserved', () => {
+    // CJK adjacency: tests slash-price next to CJK characters
+    test('slash price adjacent to CJK chars is escaped, already-escaped preserved', () => {
       const input = '1回あたり$0.60/回で、合計\\$1.20になるにゃ';
       const processed = escapePriceDollars(input);
       expect(processed).toContain('\\$0.60');
       expect(processed).not.toContain('\\\\$1.20');
     });
 
-    test('$100-200（残り$50-60）— dash ranges are escaped', () => {
+    // CJK adjacency: tests dash-range prices surrounded by CJK text
+    test('dash-range prices surrounded by CJK text are escaped', () => {
       const input = '予算$100-200（残り$50-60）で対応';
       const processed = escapePriceDollars(input);
       expect(processed).toContain('\\$100');
       expect(processed).toContain('\\$50');
     });
 
-    test('$0.60/回 does not pair with later \\$ to form math', () => {
+    // CJK adjacency: slash-price in CJK context must not pair with later \$ as math
+    test('slash price in CJK context does not pair with later escaped dollar as math', () => {
       const input = '消費$0.60/回で計算。予算は\\$7枠にゃ。';
       const processed = escapePriceDollars(input);
       const html = renderMarkdown(processed);
@@ -442,7 +446,8 @@ describe('escapePriceDollars', () => {
       expect(processed).not.toContain('\\\\$5M');
     });
 
-    test('月$100+かかる（残り$80）— + followed by CJK is price', () => {
+    // CJK adjacency: + followed by CJK character means price, not math
+    test('plus sign followed by CJK character is treated as price', () => {
       const input = '月$100+かかる（残り$80）';
       const processed = escapePriceDollars(input);
       expect(processed).toContain('\\$100');
