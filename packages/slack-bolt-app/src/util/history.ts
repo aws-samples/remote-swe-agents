@@ -8,10 +8,16 @@ export const saveConversationHistory = async (
   workerId: string,
   message: string,
   slackUserId: string,
-  imageS3Keys: string[] = []
+  imageS3Keys: string[] = [],
+  slackDisplayName?: string
 ) => {
   const content = [];
-  content.push({ text: renderUserMessage({ message }) });
+  content.push({
+    text: renderUserMessage({
+      message,
+      sender: slackUserId ? { type: 'slack', id: slackUserId, displayName: slackDisplayName } : undefined,
+    }),
+  });
   imageS3Keys.forEach((key) => {
     content.push({
       image: {

@@ -8,6 +8,7 @@ import { sendWorkerEvent } from '../../../agent-core/src/lib';
 import { getWebappSessionUrl, sendWebappEvent, updateSessionLastMessage } from '@remote-swe-agents/agent-core/lib';
 import { saveSessionInfo } from '../util/session';
 import { getSessionIdFromSlack } from '../util/session-map';
+import { resolveSlackDisplayName } from '../util/slack-user-cache';
 
 const BotToken = process.env.BOT_TOKEN!;
 const lambda = new LambdaClient();
@@ -70,8 +71,12 @@ export async function handleMessage(
 
   const sessionUrl = await getWebappSessionUrl(workerId);
 
+  // Resolve Slack display name so we can attribute the message to its sender
+  // in the LLM conversation history.
+  const slackDisplayName = userId ? await resolveSlackDisplayName(client, userId) : undefined;
+
   const promises = [
-    saveConversationHistory(workerId, message, userId, imageKeys),
+    saveConversationHistory(workerId, message, userId, imageKeys, slackDisplayName),
     sendWorkerEvent(workerId, { type: 'onMessageReceived' }),
     sendWebappEvent(workerId, { type: 'message', role: 'user', message }),
     updateSessionLastMessage(workerId, message.slice(0, 500)),
