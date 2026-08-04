@@ -102,9 +102,17 @@ describe('searchSessionContent', () => {
 
   test('scope=session searches single session', async () => {
     mockedGetSession.mockResolvedValue({
-      PK: 'sessions', SK: 's1', workerId: 's1', title: 'Test',
-      createdAt: 1700000000000, updatedAt: 1700000000000, LSI1: '001700000000000',
-      initialMessage: 'hi', instanceStatus: 'running', sessionCost: 0, agentStatus: 'working',
+      PK: 'sessions',
+      SK: 's1',
+      workerId: 's1',
+      title: 'Test',
+      createdAt: 1700000000000,
+      updatedAt: 1700000000000,
+      LSI1: '001700000000000',
+      initialMessage: 'hi',
+      instanceStatus: 'running',
+      sessionCost: 0,
+      agentStatus: 'working',
     });
     mockedGetHistory.mockResolvedValue({
       items: [
@@ -122,22 +130,47 @@ describe('searchSessionContent', () => {
 
   test('scope=tree searches parent and descendants', async () => {
     mockedGetSession.mockResolvedValue({
-      PK: 'sessions', SK: 'p1', workerId: 'p1', title: 'Parent',
-      createdAt: 1700000000000, updatedAt: 1700000000000, LSI1: '001700000000000',
-      initialMessage: 'hi', instanceStatus: 'running', sessionCost: 0, agentStatus: 'working',
+      PK: 'sessions',
+      SK: 'p1',
+      workerId: 'p1',
+      title: 'Parent',
+      createdAt: 1700000000000,
+      updatedAt: 1700000000000,
+      LSI1: '001700000000000',
+      initialMessage: 'hi',
+      instanceStatus: 'running',
+      sessionCost: 0,
+      agentStatus: 'working',
     });
-    mockedGetDescendantSessions.mockResolvedValue([{
-      PK: 'sessions', SK: 'c1', workerId: 'c1', title: 'Child',
-      createdAt: 1700000000000, updatedAt: 1700000000000, LSI1: '001700000000000',
-      initialMessage: 'hi', instanceStatus: 'running', sessionCost: 0, agentStatus: 'working',
-      parentSessionId: 'p1',
-    }]);
+    mockedGetDescendantSessions.mockResolvedValue([
+      {
+        PK: 'sessions',
+        SK: 'c1',
+        workerId: 'c1',
+        title: 'Child',
+        createdAt: 1700000000000,
+        updatedAt: 1700000000000,
+        LSI1: '001700000000000',
+        initialMessage: 'hi',
+        instanceStatus: 'running',
+        sessionCost: 0,
+        agentStatus: 'working',
+        parentSessionId: 'p1',
+      },
+    ]);
 
     let call = 0;
     mockedGetHistory.mockImplementation(async () => {
       call++;
-      if (call === 1) return { items: [makeItem(JSON.stringify([{ text: 'keyword here' }]), '001700000000001')], slackUserId: undefined };
-      return { items: [makeItem(JSON.stringify([{ text: 'keyword there' }]), '001700000000010')], slackUserId: undefined };
+      if (call === 1)
+        return {
+          items: [makeItem(JSON.stringify([{ text: 'keyword here' }]), '001700000000001')],
+          slackUserId: undefined,
+        };
+      return {
+        items: [makeItem(JSON.stringify([{ text: 'keyword there' }]), '001700000000010')],
+        slackUserId: undefined,
+      };
     });
 
     const result = await searchSessionContent({ query: 'keyword', scope: 'tree', sessionId: 'p1' });
@@ -147,9 +180,17 @@ describe('searchSessionContent', () => {
 
   test('respects maxResults', async () => {
     mockedGetSession.mockResolvedValue({
-      PK: 'sessions', SK: 's1', workerId: 's1', title: 'Test',
-      createdAt: 1700000000000, updatedAt: 1700000000000, LSI1: '001700000000000',
-      initialMessage: 'hi', instanceStatus: 'running', sessionCost: 0, agentStatus: 'working',
+      PK: 'sessions',
+      SK: 's1',
+      workerId: 's1',
+      title: 'Test',
+      createdAt: 1700000000000,
+      updatedAt: 1700000000000,
+      LSI1: '001700000000000',
+      initialMessage: 'hi',
+      instanceStatus: 'running',
+      sessionCost: 0,
+      agentStatus: 'working',
     });
     const items = Array.from({ length: 10 }, (_, i) =>
       makeItem(JSON.stringify([{ text: `keyword ${i}` }]), String(1700000000000 + i).padStart(15, '0'))
@@ -162,9 +203,17 @@ describe('searchSessionContent', () => {
 
   test('filters out non-searchable message types', async () => {
     mockedGetSession.mockResolvedValue({
-      PK: 'sessions', SK: 's1', workerId: 's1', title: 'Test',
-      createdAt: 1700000000000, updatedAt: 1700000000000, LSI1: '001700000000000',
-      initialMessage: 'hi', instanceStatus: 'running', sessionCost: 0, agentStatus: 'working',
+      PK: 'sessions',
+      SK: 's1',
+      workerId: 's1',
+      title: 'Test',
+      createdAt: 1700000000000,
+      updatedAt: 1700000000000,
+      LSI1: '001700000000000',
+      initialMessage: 'hi',
+      instanceStatus: 'running',
+      sessionCost: 0,
+      agentStatus: 'working',
     });
     mockedGetHistory.mockResolvedValue({
       items: [

@@ -228,10 +228,7 @@ export async function searchSessionContent(input: SearchSessionsInput): Promise<
     }
   };
 
-  const workers = Array.from(
-    { length: Math.min(concurrencyLimit, targetSessions.length) },
-    () => runNext()
-  );
+  const workers = Array.from({ length: Math.min(concurrencyLimit, targetSessions.length) }, () => runNext());
   await Promise.all(workers);
 
   const results = sortAndTruncate(allResults, maxResults);
