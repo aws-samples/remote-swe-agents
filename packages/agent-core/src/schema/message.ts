@@ -42,4 +42,9 @@ export type MessageItem = {
    * Whether this is an acknowledge (non-waking) message
    */
   isAcknowledge?: boolean;
+  /**
+   * DynamoDB TTL (epoch seconds). When set, DDB auto-deletes the item after
+   * expiry. Used for ephemeral records like user-delivery-dedup log entries.
+   */
+  TTL?: number;
 };

@@ -482,3 +482,39 @@ export const sendSystemMessage = async (workerId: string, message: string, appen
     await sendMessageToSlack(message);
   }
 };
+
+/**
+ * Convert a timestamp (ms since epoch) into a zero-padded SK string matching the
+ * DDB message table's sort key format. Used for range queries (e.g. "all messages
+ * since X ms ago") that exploit DDB's lexicographic ordering of the zero-padded
+ * 15-char SK.
+ */
+export const messageSKFromTimestamp = (timestampMs: number): string => String(timestampMs).padStart(15, '0');
+
+/**
+ * Retrieve all messages for a session created at or after `sinceMs` (epoch ms).
+ * Uses pagination to collect all items from the DDB query. Useful for dedup
+ * windows and recent-history lookups.
+ */
+export const getRecentMessages = async (workerId: string, sinceMs: number): Promise<MessageItem[]> => {
+  const cutoff = messageSKFromTimestamp(Math.max(0, Math.floor(sinceMs)));
+  const items: MessageItem[] = [];
+  const paginator = paginateQuery(
+    {
+      client: ddb,
+    },
+    {
+      TableName,
+      KeyConditionExpression: 'PK = :pk AND SK >= :cutoff',
+      ExpressionAttributeValues: {
+        ':pk': `message-${workerId}`,
+        ':cutoff': cutoff,
+      },
+    }
+  );
+  for await (const page of paginator) {
+    if (page.Items == null) continue;
+    items.push(...(page.Items as MessageItem[]));
+  }
+  return items;
+};

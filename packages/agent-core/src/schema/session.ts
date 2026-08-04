@@ -33,6 +33,12 @@ export const sessionItemSchema = z.object({
   parentSessionId: z.string().optional(),
   creatorSessionId: z.string().optional(),
   agentName: z.string().optional(),
+  rewindState: z
+    .object({
+      cutoffSK: z.string(),
+      rewindedAt: z.number(),
+    })
+    .optional(),
 });
 
 export type SessionItem = z.infer<typeof sessionItemSchema>;
