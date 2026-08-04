@@ -33,7 +33,7 @@
     "@aws-sdk/client-dynamodb": "^3.744.0",
     "@aws-sdk/client-ec2": "^3.746.0",
     "@aws-sdk/client-eventbridge": "^3.1019.0",
-    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/client-scheduler": "^3.1019.0",
     "@aws-sdk/client-ssm": "^3.817.0",
     "@aws-sdk/client-sts": "^3.758.0",
@@ -52,7 +52,7 @@
     "@types/node": "^22.13.1",
     "@types/web-push": "^3.6.4",
     "typescript": "^5.7.3",
-    "vitest": "^3.1.1",
+    "vitest": "^4.1.8",
     "zod": "^4.0.0",
     "@types/jsdom": "^21.1.7"
   },
