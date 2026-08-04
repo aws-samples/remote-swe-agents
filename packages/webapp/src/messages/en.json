@@ -127,7 +127,18 @@
     "viewChildSession": "View details",
     "viewSession": "View",
     "deleteGroup": "Delete Group",
-    "deleteGroupConfirm": "Are you sure you want to delete this session and its {count} child sessions? This action cannot be undone."
+    "deleteGroupConfirm": "Are you sure you want to delete this session and its {count} child sessions? This action cannot be undone.",
+    "clearFilter": "Clear",
+    "searchContent": "Search messages",
+    "searchContentPlaceholder": "Search within this session tree...",
+    "searchCancel": "Cancel search",
+    "closeSearch": "Close search",
+    "searchError": "Search failed. Please try again.",
+    "searchRetry": "Retry",
+    "searchNoResults": "No matching messages found.",
+    "searchResults": "Search results",
+    "searchResultCount": "{count, plural, one {# result} other {# results}}",
+    "searchTimedOut": "Results may be incomplete (search timed out)."
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

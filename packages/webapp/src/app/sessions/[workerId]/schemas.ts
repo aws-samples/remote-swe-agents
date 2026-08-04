@@ -32,3 +32,8 @@ export const stopSessionSchema = z.object({
 export const markSessionReadSchema = z.object({
   workerId: z.string(),
 });
+
+export const searchSessionContentSchema = z.object({
+  workerId: z.string(),
+  query: z.string().min(1).max(200),
+});

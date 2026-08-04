@@ -127,7 +127,18 @@
     "viewChildSession": "詳細を見る",
     "viewSession": "表示",
     "deleteGroup": "グループ削除",
-    "deleteGroupConfirm": "このセッションと{count}件の子セッションを削除しますか？この操作は取り消せません。"
+    "deleteGroupConfirm": "このセッションと{count}件の子セッションを削除しますか？この操作は取り消せません。",
+    "clearFilter": "クリア",
+    "searchContent": "メッセージを検索",
+    "searchContentPlaceholder": "このセッションツリー内を検索...",
+    "searchCancel": "検索をキャンセル",
+    "closeSearch": "検索を閉じる",
+    "searchError": "検索に失敗しました。もう一度お試しください。",
+    "searchRetry": "再試行",
+    "searchNoResults": "一致するメッセージが見つかりません。",
+    "searchResults": "検索結果",
+    "searchResultCount": "{count}件の結果",
+    "searchTimedOut": "結果が不完全な可能性があります（検索がタイムアウトしました）。"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

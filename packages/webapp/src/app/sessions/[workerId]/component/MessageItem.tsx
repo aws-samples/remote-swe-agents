@@ -42,7 +42,7 @@ export const MessageItem = React.memo(function MessageItem({
   };
 
   return (
-    <div className="flex items-start gap-1 py-1">
+    <div id={`msg-${message.id}`} className="flex items-start gap-1 py-1">
       <div
         className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
         style={{ minWidth: '55px' }}

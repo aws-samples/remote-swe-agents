@@ -34,6 +34,7 @@ import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
 import TakeOverModal from './TakeOverModal';
 import SessionSidebar from './SessionSidebar';
+import SessionContentSearch from './SessionContentSearch';
 import { ArrowLeft } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
 
@@ -534,6 +535,9 @@ export default function SessionPageClient({
         </div>
 
         <main className="flex-grow flex flex-col relative pt-18">
+          {/* Session Content Search */}
+          <SessionContentSearch workerId={workerId} />
+
           {/* Todo List Popup */}
           {todoList && showTodoModal && (
             <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">

@@ -21,3 +21,4 @@ export * from './custom-agent';
 export * from './mermaid-validator';
 export * from './push-notification';
 export * from './unread';
+export * from './search-sessions';

@@ -126,6 +126,17 @@ export default function MessageList({
       initialScrollDone.current = true;
       // Use requestAnimationFrame to ensure DOM is rendered
       requestAnimationFrame(() => {
+        // If URL has a #msg-{id} hash, scroll to that message and flash it
+        const hash = window.location.hash;
+        if (hash.startsWith('#msg-')) {
+          const el = document.getElementById(hash.slice(1));
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('search-highlight-flash');
+            setTimeout(() => el.classList.remove('search-highlight-flash'), 3000);
+            return;
+          }
+        }
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
       });
     }

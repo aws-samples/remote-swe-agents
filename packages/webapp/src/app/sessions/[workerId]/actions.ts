@@ -7,6 +7,7 @@ import {
   sendEventSchema,
   stopSessionSchema,
   markSessionReadSchema,
+  searchSessionContentSchema,
 } from './schemas';
 import { authActionClient } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
@@ -20,6 +21,7 @@ import {
   markSessionRead as markSessionReadLib,
   getUnreadSummary,
   updateSessionLastMessage,
+  searchSessionContent,
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem } from '@remote-swe-agents/agent-core/schema';
@@ -135,4 +137,18 @@ export const markSessionReadAction = authActionClient
     await markSessionReadLib(ctx.userId, workerId);
     const summary = await getUnreadSummary(ctx.userId);
     return { success: true, badge: summary };
+  });
+
+export type { SearchHit as SearchResult } from '@remote-swe-agents/agent-core/lib';
+
+export const searchSessionContentAction = authActionClient
+  .inputSchema(searchSessionContentSchema)
+  .action(async ({ parsedInput }) => {
+    const { workerId, query } = parsedInput;
+    const { results, totalSessions, timedOut } = await searchSessionContent({
+      query,
+      scope: 'tree',
+      sessionId: workerId,
+    });
+    return { results, totalSessions, timedOut };
   });
