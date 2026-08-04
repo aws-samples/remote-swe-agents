@@ -1,6 +1,10 @@
 {
   "common": {
-    "locale": "English"
+    "locale": "English",
+    "deploymentRecovery": {
+      "appUpdated": "The app has been updated. Please reload the page to continue.",
+      "reload": "Reload"
+    }
   },
   "header": {
     "title": "Remote SWE Agents",
