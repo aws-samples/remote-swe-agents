@@ -28,14 +28,11 @@ describe('escapePriceDollars', () => {
   const EXAMPLE_1 =
     '直すには A の絵を作り直しで **+$0.21〜0.25** かかるんだけど、承認もらってる \\$7 枠がほぼ使い切り（≈$6.86）なので、超過分のOKが要る状態にゃ。';
 
-  const EXAMPLE_2 =
-    '新トランシェ **$1.00** を承認する（旧$0.60枠とは別勘定・CALLS.jsonl は継続追記）。';
+  const EXAMPLE_2 = '新トランシェ **$1.00** を承認する（旧$0.60枠とは別勘定・CALLS.jsonl は継続追記）。';
 
-  const EXAMPLE_3 =
-    '消費 $0.52 / 残 $0.08。次手は裁定不要と自己判断: **$0 の決定論クローンで plate 作成を先行**';
+  const EXAMPLE_3 = '消費 $0.52 / 残 $0.08。次手は裁定不要と自己判断: **$0 の決定論クローンで plate 作成を先行**';
 
-  const EXAMPLE_4 =
-    '消費 **$0.59 / 予算 $0.60 / 残 $0.01**・追加生成不可。';
+  const EXAMPLE_4 = '消費 **$0.59 / 予算 $0.60 / 残 $0.01**・追加生成不可。';
 
   describe('without preprocessor — demonstrates the bug', () => {
     test('example 1: unescaped $0.21 and $6.86 form spurious math pair', () => {
@@ -231,7 +228,7 @@ describe('escapePriceDollars', () => {
     });
 
     test("fenced code block with $' is untouched", () => {
-      const input = "```js\nstr.replace(/a/, \"$'\");\n```";
+      const input = '```js\nstr.replace(/a/, "$\'");\n```';
       const processed = escapePriceDollars(input);
       expect(processed).toBe(input);
     });
