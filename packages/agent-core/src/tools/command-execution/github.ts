@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
 
@@ -14,6 +14,47 @@ export const isGitHubConfigured = () => {
   );
 };
 
+export const buildGhLoginEnv = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => {
+  const { GITHUB_TOKEN, GH_TOKEN, ...rest } = env;
+  return rest;
+};
+
+const GH_LOGIN_TIMEOUT_MS = 10_000;
+
+const loginGhWithToken = (token: string, env: NodeJS.ProcessEnv): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const loginEnv = buildGhLoginEnv(env);
+    const proc = spawn('gh', ['auth', 'login', '--hostname', 'github.com', '--with-token'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: loginEnv,
+    });
+    let stderr = '';
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      proc.kill('SIGKILL');
+      reject(new Error(`gh auth login timed out after ${GH_LOGIN_TIMEOUT_MS}ms`));
+    }, GH_LOGIN_TIMEOUT_MS);
+    proc.stderr.on('data', (d) => (stderr += d.toString()));
+    proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(err);
+    });
+    proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (code === 0) resolve();
+      else reject(new Error(`gh auth login failed (code ${code}): ${stderr}`));
+    });
+    proc.stdin.write(token);
+    proc.stdin.end();
+  });
+};
+
 export const authorizeGitHubCli = async () => {
   if (cache.updatedAt > Date.now() - 50 * 60 * 1000) {
     return cache.token;
@@ -21,7 +62,6 @@ export const authorizeGitHubCli = async () => {
   if (process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
     cache.token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
   } else if (
-    //
     process.env.GITHUB_APP_PRIVATE_KEY_PATH &&
     process.env.GITHUB_APP_ID &&
     process.env.GITHUB_APP_INSTALLATION_ID
@@ -39,12 +79,15 @@ export const authorizeGitHubCli = async () => {
     return undefined;
   }
 
-  await execAsync(`gh auth setup-git`, {
-    env: {
-      ...process.env,
-      GITHUB_TOKEN: cache.token,
-    },
-  });
+  const authEnv = {
+    ...process.env,
+    GITHUB_TOKEN: cache.token,
+  };
+
+  await execAsync(`gh auth setup-git`, { env: authEnv });
+
+  await loginGhWithToken(cache.token, authEnv);
+
   cache.updatedAt = Date.now();
   return cache.token;
 };

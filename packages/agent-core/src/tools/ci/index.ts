@@ -11,10 +11,45 @@ const inputSchema = z.object({
     .describe('The sequential number of the pull request issued from GitHub, or the branch name.'),
 });
 
+interface ActionsRun {
+  runId: string;
+  name: string;
+}
+
+interface ExternalCheck {
+  name: string;
+  link: string;
+  state: string;
+}
+
+interface CheckStatusInProgress {
+  status: 'in_progress';
+}
+
+interface CheckStatusSuccess {
+  status: 'success';
+}
+
+interface CheckStatusFailure {
+  status: 'failure';
+  failedActionsRuns: ActionsRun[];
+  failedExternalChecks: ExternalCheck[];
+}
+
+type CheckStatusResult = CheckStatusInProgress | CheckStatusSuccess | CheckStatusFailure;
+
+const isActionsRunLink = (link: string | null | undefined): boolean => {
+  return !!link && link.includes('/actions/runs/');
+};
+
+const extractRunId = (link: string): string | undefined => {
+  const parts = link.split('/actions/runs/');
+  if (parts.length < 2) return undefined;
+  return parts[1].split('/')[0];
+};
+
 const getLatestRunResult = async (input: { owner: string; repo: string; pullRequestId: string }) => {
   const { owner, repo, pullRequestId } = input;
-  // If it is executed too soon, the workflow might not be queued yet, resulting in an empty success.
-  // To avoid it, we wait a bit here.
   await setTimeout(5000);
 
   while (true) {
@@ -27,14 +62,29 @@ const getLatestRunResult = async (input: { owner: string; repo: string; pullRequ
       if (checkResult.status === 'success') {
         return `CI succeeded without errors!`;
       } else if (checkResult.status === 'failure') {
-        const failed = checkResult.failedRuns;
-        const result: string = await execute(`gh run view ${failed[0].runId} -R ${owner}/${repo}`, true);
-        const logs: string = await execute(`gh run view ${failed[0].runId} -R ${owner}/${repo} --log-failed`, true);
-        logs
-          .split('\n')
-          .map((l) => l.split('\t').at(-1))
-          .join('\n');
-        return `CI failed with errors! <detail>${result}</detail>\n\nHere's the result of gh run view --log-failed:<log>${logs}</logs>`;
+        const parts: string[] = [];
+
+        if (checkResult.failedActionsRuns.length > 0) {
+          const firstRun = checkResult.failedActionsRuns[0];
+          const result: string = await execute(`gh run view ${firstRun.runId} -R ${owner}/${repo}`, true);
+          const logs: string = await execute(`gh run view ${firstRun.runId} -R ${owner}/${repo} --log-failed`, true);
+          const formattedLogs = logs
+            .split('\n')
+            .map((l) => l.split('\t').at(-1))
+            .join('\n');
+          parts.push(
+            `CI failed with errors! <detail>${result}</detail>\n\nHere's the result of gh run view --log-failed:<log>${formattedLogs}</log>`
+          );
+        }
+
+        if (checkResult.failedExternalChecks.length > 0) {
+          const externalSummary = checkResult.failedExternalChecks
+            .map((c) => `- ${c.name} (${c.state}): ${c.link}`)
+            .join('\n');
+          parts.push(`External checks failed:\n${externalSummary}`);
+        }
+
+        return parts.join('\n\n');
       }
     } catch (e) {
       console.log(e);
@@ -56,12 +106,11 @@ const execute = async (command: string, plain = false): Promise<any> => {
   return parsed;
 };
 
-const getPrCheckStatus = async (
+export const getPrCheckStatus = async (
   owner: string,
   repo: string,
   pullRequestId: string
-): Promise<{ status: 'in_progress' | 'success' } | { status: 'failure'; failedRuns: { runId: string }[] }> => {
-  // Use gh pr checks to get all check runs for the PR
+): Promise<CheckStatusResult> => {
   const checks = (await execute(
     `gh pr checks -R ${owner}/${repo} ${pullRequestId} --json state,name,workflow,link,bucket`
   )) as { link: string; name: string; state: string; workflow: string; bucket: string }[];
@@ -70,26 +119,37 @@ const getPrCheckStatus = async (
     throw new Error('No checks found for this PR');
   }
 
-  // bucket: pass, fail, pending, skipping, or cancel.
-  // Check if any workflow is still running
-  // We have to wait all the runs complete because otherwise we cannot get their execution log by gh run view command.
   const runningChecks = checks.filter((check) => ['pending'].includes(check.bucket));
 
   if (runningChecks.length > 0) {
     return { status: 'in_progress' };
   }
 
-  // Check if there is failed run
   const failedChecks = checks.filter((check) => check.bucket === 'fail');
-  const failedRuns = failedChecks.map((check) => {
-    const runId = check.link.split('/actions/runs/')[1].split('/')[0];
-    return { runId };
-  });
-  if (failedRuns.length > 0) {
-    return { status: 'failure', failedRuns };
+  if (failedChecks.length === 0) {
+    // cancel/skipping → treated as success
+    return { status: 'success' };
   }
 
-  return { status: 'success' };
+  const failedActionsRuns: ActionsRun[] = [];
+  const seenRunIds = new Set<string>();
+  const failedExternalChecks: ExternalCheck[] = [];
+
+  for (const check of failedChecks) {
+    if (isActionsRunLink(check.link)) {
+      const runId = extractRunId(check.link);
+      if (runId && !seenRunIds.has(runId)) {
+        seenRunIds.add(runId);
+        failedActionsRuns.push({ runId, name: check.name });
+      } else if (!runId) {
+        failedExternalChecks.push({ name: check.name, link: check.link, state: check.state });
+      }
+    } else {
+      failedExternalChecks.push({ name: check.name, link: check.link, state: check.state });
+    }
+  }
+
+  return { status: 'failure', failedActionsRuns, failedExternalChecks };
 };
 
 const name = 'getGitHubActionsLatestResult';
