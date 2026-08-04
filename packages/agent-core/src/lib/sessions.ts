@@ -5,6 +5,7 @@ import {
   UpdateCommand,
   DeleteCommand,
   BatchWriteCommand,
+  TransactWriteCommand,
   paginateQuery,
 } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
@@ -12,6 +13,7 @@ import { ddb, TableName } from './aws';
 import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
 import { deleteAllEventTriggers } from './event-triggers';
 import { deleteUnreadByWorkerId } from './unread';
+import { sendWebappEvent } from './events';
 
 /**
  * Get session information from DynamoDB
@@ -289,4 +291,74 @@ export const updateSession = async (workerId: string, params: UpdateSessionParam
       ExpressionAttributeValues: expressionAttributeValues,
     })
   );
+};
+
+/**
+ * Move one or more sessions under a new parent (atomically via TransactWrite).
+ * Used by the `createNewSession` tool's `role=successor` path to re-parent
+ * the current session and its children under the newly-created successor.
+ *
+ * Safety:
+ * - Cycle detection: walks the new parent's ancestor chain to ensure no child
+ *   being moved is already an ancestor.
+ * - Self-parent guard: rejects `newParentId` appearing in `childWorkerIds`.
+ * - Bounded at 100 items (DDB TransactWrite limit).
+ *
+ * @param newParentId Worker ID of the session that will become the new parent
+ * @param childWorkerIds Worker IDs to re-parent under newParentId
+ */
+export const reparentSessions = async (newParentId: string, childWorkerIds: string[]): Promise<void> => {
+  if (childWorkerIds.length === 0) return;
+
+  if (childWorkerIds.length > 100) {
+    throw new Error(
+      `Cannot reparent more than 100 sessions in a single transaction (got ${childWorkerIds.length}); TransactWrite supports at most 100 items.`
+    );
+  }
+
+  const childIdSet = new Set(childWorkerIds);
+  if (childIdSet.has(newParentId)) {
+    throw new Error(`Cannot set session ${newParentId} as its own parent`);
+  }
+
+  // Walk the new parent's ancestor chain. If any session being re-parented is
+  // already an ancestor of the new parent, the move would create a cycle.
+  const visited = new Set<string>([newParentId]);
+  let cursor = (await getSession(newParentId))?.parentSessionId;
+  while (cursor && !visited.has(cursor)) {
+    if (childIdSet.has(cursor)) {
+      throw new Error(`Reparenting would create a cycle: ${cursor} is an ancestor of ${newParentId}`);
+    }
+    visited.add(cursor);
+    cursor = (await getSession(cursor))?.parentSessionId;
+  }
+
+  const now = Date.now();
+  await ddb.send(
+    new TransactWriteCommand({
+      TransactItems: childWorkerIds.map((childId) => ({
+        Update: {
+          TableName,
+          Key: { PK: 'sessions', SK: childId },
+          ConditionExpression: 'attribute_exists(SK)',
+          UpdateExpression: 'SET #parentSessionId = :parentSessionId, #updatedAt = :updatedAt',
+          ExpressionAttributeNames: { '#parentSessionId': 'parentSessionId', '#updatedAt': 'updatedAt' },
+          ExpressionAttributeValues: { ':parentSessionId': newParentId, ':updatedAt': now },
+        },
+      })),
+    })
+  );
+
+  // Notify webapp of hierarchy change so the sidebar can update in real time.
+  for (const childId of childWorkerIds) {
+    try {
+      await sendWebappEvent(childId, {
+        type: 'sessionReparented',
+        newParentSessionId: newParentId,
+        oldParentSessionId: null,
+      });
+    } catch {
+      // Non-critical: webapp event failure does not affect the reparent
+    }
+  }
 };

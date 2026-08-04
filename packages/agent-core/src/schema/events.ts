@@ -91,4 +91,11 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     timestamp: z.number(),
     workerId: z.string(),
   }),
+  z.object({
+    type: z.literal('sessionReparented'),
+    workerId: z.string(),
+    newParentSessionId: z.string(),
+    oldParentSessionId: z.string().nullable(),
+    timestamp: z.number(),
+  }),
 ]);
