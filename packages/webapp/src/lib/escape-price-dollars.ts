@@ -16,7 +16,7 @@
  *
  * NOT treated as math continuation (high-frequency price patterns):
  * - `-` (price ranges: $100-200)
- * - `/` (per-unit prices: $0.60/回)
+ * - `/` (per-unit prices: $0.60/unit)
  * - `+` followed by space/CJK/EOL (price suffix: $100+)
  *
  * Known limitations:
