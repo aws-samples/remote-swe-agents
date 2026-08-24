@@ -42,9 +42,9 @@ export const isEndOfTurnPlaceholder = (text: string | undefined | null): boolean
 
 /**
  * Scaffolding-artifact detector. Matches texts whose ENTIRE content is a
- * single `<...>` block — e.g. `"<続きは以下のツール呼び出しで>"` emitted
- * alone as a placeholder. These are LLM scaffolding artifacts with no
- * user-facing value.
+ * single `<...>` block — e.g. `"<continued in the following tool call>"`
+ * (or its non-English equivalent) emitted alone as a placeholder. These are
+ * LLM scaffolding artifacts with no user-facing value.
  *
  * Narrow conditions to avoid false positives against legitimate messages
  * that happen to *contain* tag-shaped text:
@@ -76,6 +76,10 @@ export const isScaffoldingArtifact = (text: string | undefined | null): boolean 
  * trailing), since the scaffolding block itself is the decorator.
  */
 const SCAFFOLDING_PREFIX_RE = /^<([^<>\n]{1,100})>/;
+// Keyword gate for the prefix stripper. Includes non-ASCII (e.g. Japanese)
+// markers as FUNCTIONAL literals: the inference backend emits scaffolding tags
+// in the agent's working language, so these must be matched, not treated as
+// example text. Japanese: 続き=continued, 以下=below/following, 呼び出し=call.
 const SCAFFOLDING_KEYWORDS = /続き|continue|以下|next|tool|呼び出し|call|step|below/i;
 export const stripScaffoldingPrefix = (text: string): string => {
   const m = SCAFFOLDING_PREFIX_RE.exec(text);

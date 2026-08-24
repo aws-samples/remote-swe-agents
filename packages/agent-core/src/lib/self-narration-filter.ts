@@ -11,12 +11,12 @@
  *       turn's send-tool `toolUse`).
  *   A-2 (self-narration after send): this turn called a send/report tool and
  *       the end-of-turn text near-duplicates that tool's `message` argument
- *       ("I sent …", "Xを送ったにゃ").
+ *       ("I sent …", "I reported X to them").
  *   A-3 (no-information wake-up monologue): a turn woken by a timer /
  *       agentMessage / systemRetrigger (NOT a real user message) that ran NO
  *       new work tool, whose end-of-turn text is internal monologue / meta
  *       scaffolding ("Silent terminate.", "Routine progress …",
- *       "Already acknowledged …", "(無情報なので silent terminate)").
+ *       "Already acknowledged …", "(no new information, so silent terminate)").
  *
  * ## Conservatism contract (shared with message-dedup.ts)
  *
@@ -30,8 +30,8 @@
  *     activity. The text-pattern match is a secondary, subordinate condition.
  *     A normal report — which is produced on a turn that ran real work tools —
  *     is excluded by the structural gate regardless of vocabulary overlap, so
- *     legitimate Japanese progress reports are never dropped even if they share
- *     words with the (deliberately minimal) Japanese marker set.
+ *     legitimate progress reports are never dropped even if they share words
+ *     with the (deliberately minimal) monologue marker set.
  *
  * The module is side-effect-free, has no IO, and does not depend on any AWS
  * SDK, so the decision logic is unit-testable in isolation from DynamoDB and
@@ -80,7 +80,7 @@ export const REHASH_CONTAINMENT_THRESHOLD = 0.65;
  * self-narration path.
  *
  * The general near-duplicate gate (`isNearDuplicateMessage`) requires BOTH
- * sides to be ≥ `MIN_DEDUP_LENGTH` (60). But A-2 self-narration ("…と送ったにゃ")
+ * sides to be ≥ `MIN_DEDUP_LENGTH` (60). But A-2 self-narration ("I sent that …")
  * is frequently a SAME-LENGTH restatement well under 60 chars — too short for
  * that gate, and too long-ratio for the containment path (it is not a
  * condensation). It is, however, strongly symmetrically similar to the text it
@@ -103,10 +103,11 @@ export const REHASH_SIMILARITY_THRESHOLD = 0.7;
  * score is coincidental rather than a restatement.
  *
  * This guards the "conditional statement → similarly-long achievement report"
- * false positive: prior "E2E が全部通ったら本番にデプロイする予定にゃ" vs candidate
- * "E2E テストが全部通ったので本番にデプロイしたにゃ" scores ~0.76 containment but the
- * candidate is a genuine NEW achievement (the condition was met), almost the
- * same length as the condition — dropping it would silence a real report, the
+ * false positive: prior "will deploy to prod once all E2E tests pass" vs
+ * candidate "deployed to prod because all E2E tests passed" scores ~0.76
+ * containment but the candidate is a genuine NEW achievement (the condition was
+ * met), almost the same length as the condition — dropping it would silence a
+ * real report, the
  * single worst failure mode. Requiring the candidate to be meaningfully shorter
  * (≤ 85% of the prior) lets such same-length achievement reports through while
  * still catching true condensed restatements (which run 0.5–0.6 of the source
@@ -206,8 +207,10 @@ export const isRehashOrSelfNarration = (candidate: string, priorMessages: Recent
  * pattern condition ON THEIR OWN (still subject to the structural gate).
  *
  * Predominantly English meta phrases observed leaking on send-zero wake-up
- * turns (real fixture: session-1782220199114), plus a deliberately MINIMAL set
- * of high-confidence Japanese self-memo markers.
+ * turns, plus a deliberately MINIMAL set of high-confidence self-memo markers
+ * in other languages (e.g. Japanese) — these are FUNCTIONAL detection literals,
+ * not example text: the filter must recognise monologue emitted in the agent's
+ * working language, so the non-ASCII markers below are intentionally retained.
  */
 export const STRONG_MONOLOGUE_RE =
   /silent terminate|no new information|already acknowledg|routine progress|monitor re-?armed|duplicate (?:of|with).*(?:no new|in-flight)|wake-?up turn|ターン終了|無情報|報告済み[^。]*待ち|既に対応済み[—-]|(?<![がの])待機中にゃ(?![けが])|待機してて|スコープ[^。]*待ち|レビュー[^。]*待[ちつ]|指摘[^。]*待[ちつ]|それまで待機/i;

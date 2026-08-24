@@ -66,6 +66,10 @@ describe('isEndOfTurnPlaceholder', () => {
   });
 });
 
+// Some cases use Japanese scaffolding tags (e.g. "<続きは以下のツール呼び出しで>",
+// meaning "<continued in the following tool call>") on purpose: the backend
+// emits such tags in the agent's working language, so detecting the non-ASCII
+// form is part of the system-under-test, not incidental example text.
 describe('isScaffoldingArtifact', () => {
   test('whole-message single <...> block is an artifact', () => {
     expect(isScaffoldingArtifact('<続きは以下のツール呼び出しで>')).toBe(true);
@@ -96,11 +100,11 @@ describe('isScaffoldingArtifact', () => {
 
 describe('stripScaffoldingPrefix', () => {
   test('strips a keyword-matching leading <...> block and delivers the remainder', () => {
-    expect(stripScaffoldingPrefix('<続きは以下のツール呼び出しで>パパに中間報告にゃ')).toBe('パパに中間報告にゃ');
+    expect(stripScaffoldingPrefix('<続きは以下のツール呼び出しで>中間報告です')).toBe('中間報告です');
     expect(stripScaffoldingPrefix('<continue with more info>some message')).toBe('some message');
     expect(stripScaffoldingPrefix('<next step> hello')).toBe('hello');
     expect(stripScaffoldingPrefix('<続き> Summary: done.')).toBe('Summary: done.');
-    expect(stripScaffoldingPrefix('<続き>パパに報告')).toBe('パパに報告');
+    expect(stripScaffoldingPrefix('<続き>報告します')).toBe('報告します');
   });
 
   test('does NOT strip legitimate markup (keyword gate)', () => {
@@ -151,9 +155,9 @@ describe('sanitiseForDelivery', () => {
   });
 
   test('returns stripped body when scaffolding prefix wraps a real message', () => {
-    expect(sanitiseForDelivery('<続きは以下のツール呼び出しで>パパに中間報告にゃ')).toEqual({
+    expect(sanitiseForDelivery('<続きは以下のツール呼び出しで>中間報告です')).toEqual({
       shouldSend: true,
-      message: 'パパに中間報告にゃ',
+      message: '中間報告です',
     });
     expect(sanitiseForDelivery('<continue with more info>some message')).toEqual({
       shouldSend: true,

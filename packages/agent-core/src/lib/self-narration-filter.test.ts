@@ -13,19 +13,24 @@ import {
   REHASH_CONTAINMENT_THRESHOLD,
 } from './self-narration-filter';
 
-// Real send-zero internal-monologue leaks observed in session-1782220199114.
-// Every one of these was emitted as end-of-turn text on a timer/ack wake-up
-// turn that called NO send tool — the A-3 target.
+// Representative send-zero internal-monologue leaks: each was emitted as
+// end-of-turn text on a timer/ack wake-up turn that called NO send tool — the
+// A-3 target. These exercise the English strong-marker patterns.
 const A3_FIXTURES = [
-  'Routine progress report — R10 produced S5 scaffold with honest caveats, awaiting truth dump/box. No decision needed. Silent terminate.',
-  "Already acknowledged R9's status; this is a duplicate of the same in-flight report with no new information. Silent terminate.",
-  'Silent — R9 confirmed alive at 03:37 with a 03:51 self-wake to verify the truth-dump DONE marker; no new milestone for パパ yet, monitor re-armed to catch the landed result or escalate if R9 self-wake cycle breaks.',
+  'Routine progress report — the worker produced a scaffold with honest caveats, awaiting the next artifact. No decision needed. Silent terminate.',
+  "Already acknowledged the peer's status; this is a duplicate of the same in-flight report with no new information. Silent terminate.",
+  'Silent — the peer confirmed alive at 03:37 with a 03:51 self-wake to verify the completion marker; no new milestone yet, monitor re-armed to catch the landed result or escalate if the self-wake cycle breaks.',
   'Already acknowledged this exact milestone and re-armed the monitor to 11:30Z; this is a duplicate with no new information. Silent terminate.',
-  'Routine progress — R10 confirmed 64² FFC resolution from manifest, scaffold proceeding, awaiting 11:30Z box for S6 compile. No decision needed, monitor already armed for 11:30Z. Silent terminate.',
+  'Routine progress — the worker confirmed the resolution from the manifest, scaffold proceeding, awaiting the 11:30Z window for the next compile. No decision needed, monitor already armed for 11:30Z. Silent terminate.',
 ];
 
 const recent = (message: string, timestampMs = 1000): RecentMessageForDedup => ({ message, timestampMs });
 
+// NOTE: several cases below use Japanese (CJK) input on purpose. The filter
+// operates on character bigrams and must detect rehash / monologue in the
+// agent's working language regardless of script, so CJK strings are the
+// system-under-test here, not incidental example text. Test names and comments
+// are in English; the CJK payloads are retained to validate CJK behaviour.
 describe('containmentScore', () => {
   test('a condensed paraphrase of a prior scores high', () => {
     const prior =
@@ -145,7 +150,7 @@ describe('isInternalMonologue (A-3 pattern, subordinate to structural gate)', ()
   test('matches Japanese self-memo markers', () => {
     expect(isInternalMonologue('(無情報なので silent terminate)')).toBe(true);
     expect(isInternalMonologue('(既に対応済み — ターン終了)')).toBe(true);
-    expect(isInternalMonologue('報告済み、R10の結果待ちにゃ')).toBe(true);
+    expect(isInternalMonologue('報告済み、結果待ちにゃ')).toBe(true);
   });
 
   test('matches Japanese standby/waiting phrases (retrigger ack-loop prevention)', () => {

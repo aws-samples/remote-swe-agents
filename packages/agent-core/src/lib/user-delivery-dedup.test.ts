@@ -22,7 +22,7 @@ import {
 } from './user-delivery-dedup';
 
 const LONG =
-  'デプロイを開始するにゃ。まずはCDKのスタックを確認して、変更点を洗い出してから順番に適用していくにゃ。差分が出たら都度報告するから安心してにゃ。';
+  'Starting the deploy now. First I will check the CDK stacks, enumerate the changes, and apply them in order. I will report on every diff as it comes up, so no need to worry.';
 
 const deliveryLogItem = (text: string, sk: number): MessageItem =>
   ({
@@ -53,14 +53,14 @@ describe('shouldSuppressUserDelivery', () => {
 
   test('never suppresses a short message even if identical', async () => {
     const now = 1_000_000;
-    const short = '了解にゃ';
+    const short = 'got it';
     mockGetRecentMessages.mockResolvedValue([deliveryLogItem(short, now - 1000)]);
     expect(await shouldSuppressUserDelivery('w1', short, now)).toBe(false);
   });
 
   test('short-circuits BEFORE the DynamoDB lookup for short messages', async () => {
     const now = 1_000_000;
-    expect(await shouldSuppressUserDelivery('w1', '了解にゃ', now)).toBe(false);
+    expect(await shouldSuppressUserDelivery('w1', 'got it', now)).toBe(false);
     // The DDB read must be skipped entirely for sub-MIN_DEDUP_LENGTH messages.
     expect(mockGetRecentMessages).not.toHaveBeenCalled();
   });
@@ -69,7 +69,7 @@ describe('shouldSuppressUserDelivery', () => {
     const now = 1_000_000;
     mockGetRecentMessages.mockResolvedValue([deliveryLogItem(LONG, now - 1000)]);
     const different =
-      'テストが全部通ったにゃ。型チェックも問題なし。これからPRを作成して、レビューに回す準備を進めるにゃ。完了したらまた連絡するにゃん。';
+      'Investigation finished: root cause was an expired auth token during the nightly sync. Patched the refresh logic, added a regression case, and reran the full pipeline.';
     expect(await shouldSuppressUserDelivery('w1', different, now)).toBe(false);
   });
 
@@ -183,13 +183,13 @@ describe('shouldSuppressToolUseRedelivery', () => {
     const now = 1_000_000;
     mockGetRecentMessages.mockResolvedValue([toolUseItem('sendMessageToUser', LONG, now - 1000)]);
     const different =
-      'テストが全部通ったにゃ。型チェックも問題なし。これからPRを作成して、レビューに回す準備を進めるにゃ。完了したらまた連絡するにゃん。';
+      'Investigation finished: root cause was an expired auth token during the nightly sync. Patched the refresh logic, added a regression case, and reran the full pipeline.';
     expect(await shouldSuppressToolUseRedelivery('w1', different, now)).toBe(false);
   });
 
   test('never suppresses a short message + short-circuits the DDB lookup', async () => {
     const now = 1_000_000;
-    expect(await shouldSuppressToolUseRedelivery('w1', '了解にゃ', now)).toBe(false);
+    expect(await shouldSuppressToolUseRedelivery('w1', 'got it', now)).toBe(false);
     expect(mockGetRecentMessages).not.toHaveBeenCalled();
   });
 

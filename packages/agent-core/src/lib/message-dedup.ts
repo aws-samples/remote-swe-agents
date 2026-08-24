@@ -12,8 +12,8 @@
  * the model, prompted with the re-aggregated user tail, RE-EMITS essentially
  * the same opening message it already sent before the interruption.
  *
- * Observed live (session-1781843831851): two "deploy 開始するにゃ …" intros sent
- * ~62s apart, near-identical but not byte-identical (the model rephrased the
+ * Observed in practice: two "starting the deploy ..." intros sent about a
+ * minute apart, near-identical but not byte-identical (the model rephrased the
  * second). A naive exact-match dedup would miss them, so we normalise and use a
  * conservative prefix/length heuristic.
  *
@@ -26,7 +26,7 @@
  *   - the previous message was sent within `windowMs`, and
  *   - the normalised texts are either identical OR share a long identical
  *     leading prefix (>= PREFIX_MATCH_LENGTH chars).
- * Short messages ("ack", "了解にゃ", "進捗報告にゃ:") are intentionally NEVER
+ * Short messages ("ack", "got it", "progress update:") are intentionally NEVER
  * deduped — legitimate repeats of those are common and harmless.
  */
 
@@ -37,17 +37,17 @@ export const MIN_DEDUP_LENGTH = 60;
  * Character-bigram Jaccard similarity threshold above which two long messages
  * are treated as near-duplicates.
  *
- * Calibrated against the real observed B4 incident (session-1781843831851): the
- * two rephrased "deploy 開始するにゃ …" intros score ~0.32, while genuinely
- * different reports / intro-vs-status pairs from the same session score ≤ 0.15.
- * 0.30 sits comfortably in that gap — it catches the real re-emit while leaving
- * a wide margin against false positives. We use character bigrams (not word
- * tokens) because the messages are Japanese, where whitespace tokenisation is
- * unreliable without a morphological analyser.
+ * Calibrated against observed re-emit incidents: two rephrased "starting the
+ * deploy ..." intros score ~0.32, while genuinely different reports /
+ * intro-vs-status pairs from the same session score <= 0.15. 0.30 sits
+ * comfortably in that gap — it catches the real re-emit while leaving a wide
+ * margin against false positives. We use character bigrams (not word tokens)
+ * because messages may be in languages (e.g. CJK) where whitespace tokenisation
+ * is unreliable without a morphological analyser.
  *
  * Conservatism note: the cost of a FALSE POSITIVE (dropping a genuinely new
  * message) is higher than a FALSE NEGATIVE, so this is deliberately combined
- * with the MIN_DEDUP_LENGTH gate (short messages — "ack", "了解にゃ" — are never
+ * with the MIN_DEDUP_LENGTH gate (short messages — "ack", "got it" — are never
  * deduped) and the time window in `shouldSuppressDuplicateMessage`.
  */
 export const SIMILARITY_THRESHOLD = 0.3;
@@ -151,7 +151,7 @@ export const shouldSuppressDuplicateMessage = (
  * intentionally NEVER dedups messages shorter than {@link MIN_DEDUP_LENGTH},
  * because legitimate short repeats are common and the bigram similarity is
  * unreliable on tiny strings. But an auto-retrigger re-runs a turn and re-emits
- * the SAME short acknowledgement ("了解にゃ", "Got it, working on it.") to the
+ * the SAME short acknowledgement ("ack", "Got it, working on it.") to the
  * SAME peer, which slips straight through that short-message gate — the
  * observed "agent keeps sending the same ack" symptom.
  *
@@ -159,7 +159,7 @@ export const shouldSuppressDuplicateMessage = (
  * only when a normalised-IDENTICAL message was already sent (to the same
  * sender→target pair — the caller scopes `recent`) within the window. Requiring
  * an EXACT normalised match (not similarity) keeps the false-positive risk
- * minimal: "了解にゃ" vs "進めるにゃ" are different strings and both pass, so a
+ * minimal: "got it" vs "on it" are different strings and both pass, so a
  * genuinely different ack is never dropped. Only a verbatim repeat inside the
  * window — the retrigger signature — is folded.
  *
