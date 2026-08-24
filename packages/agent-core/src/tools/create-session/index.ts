@@ -28,7 +28,7 @@ const inputSchema = z.object({
     .describe(
       'The relationship of the new session to the current one. Must be explicitly specified.\n' +
         '- "child": Sub-task of the current session. Current session becomes the parent.\n' +
-        '- "successor": Hand over coordination to a fresh parent. Current session + its children are re-parented under the new session. Use when the user asks for session handover / 引き継ぎ.\n' +
+        '- "successor": Hand over coordination to a fresh parent. Current session + its children are re-parented under the new session. Use when the user asks for a session handover.\n' +
         '- "independent": A completely separate top-level session for an unrelated topic.'
     ),
 });
@@ -106,8 +106,8 @@ The \`role\` parameter is REQUIRED. Pick the correct one:
   - You need to coordinate/aggregate results from the new session
   - The sub-task's progress should be visible in the current session's chat view
 
-- **"successor"** (handover): Use when the user asks you to hand over, 引き継ぎ, or create a fresh coordinator. This creates a new top-level parent and re-parents the current session and all its children under it. Use when:
-  - The user explicitly asks for a session handover / 引き継ぎ
+- **"successor"** (handover): Use when the user asks you to hand over or create a fresh coordinator. This creates a new top-level parent and re-parents the current session and all its children under it. Use when:
+  - The user explicitly asks for a session handover
   - Your context has grown too large and you need a fresh coordinator
   - You want to keep child sessions running under a new parent
 
