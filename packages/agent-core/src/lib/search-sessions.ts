@@ -47,12 +47,7 @@ export const SEARCHABLE_MESSAGE_TYPES = new Set([
   'communicationLog',
 ]);
 
-export const MSG_TOOLS = new Set([
-  'sendMessageToUser',
-  'sendMessageToUserIfNecessary',
-  'sendImageToUser',
-  'sendFileToUser',
-]);
+export const MSG_TOOLS = new Set(['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendFileToUser']);
 
 export function extractTextFromContent(content: any[], messageType: string): string {
   if (messageType === 'toolUse') {

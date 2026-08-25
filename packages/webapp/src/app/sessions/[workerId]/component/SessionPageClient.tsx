@@ -301,25 +301,6 @@ export default function SessionPageClient({
                   },
                 ]);
               }
-            } else if (['sendImageToUser'].includes(event.toolName)) {
-              const input = JSON.parse(event.input);
-              const messageText = input.message;
-              // TODO: share the same logic with backend
-              const ext = '.' + input.imagePath.split('.').at(-1);
-              const key = `${workerId}/${event.toolUseId}${ext}`;
-
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  role: 'assistant',
-                  content: messageText,
-                  timestamp: new Date(event.timestamp),
-                  type: 'message',
-                  imageKeys: [key],
-                  thinkingBudget: event.thinkingBudget,
-                },
-              ]);
             } else if (['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(event.toolName)) {
               // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
             } else {

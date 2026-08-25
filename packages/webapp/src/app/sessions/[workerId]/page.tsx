@@ -1,5 +1,4 @@
 import {
-  getAttachedImageKey,
   getAttachedFileKey,
   isImageKey,
   getConversationHistory,
@@ -36,7 +35,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
 
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
-    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendImageToUser', 'sendFileToUser'].includes(toolName ?? '');
+    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendFileToUser'].includes(toolName ?? '');
   const isHiddenTool = (toolName: string | undefined) =>
     isMsg(toolName) || ['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(toolName ?? '');
 
@@ -65,28 +64,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const input = block.toolUse?.input as any;
 
-            if (toolName === 'sendImageToUser') {
-              const messageText = formatMessage(input?.message ?? '');
-              const key = getAttachedImageKey(workerId, toolUseId, input.imagePath);
-
-              // Extract reasoning content if available
-              let reasoningText: string | undefined;
-              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
-              if (reasoningBlocks.length > 0) {
-                reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
-              }
-
-              messages.push({
-                id: `${item.SK}-${i}-${toolUseId}`,
-                role: 'assistant',
-                content: messageText,
-                timestamp: new Date(parseInt(item.SK)),
-                type: 'message',
-                imageKeys: [key],
-                thinkingBudget: item.thinkingBudget,
-                reasoningText,
-              });
-            } else if (toolName === 'sendFileToUser') {
+            if (toolName === 'sendFileToUser') {
               const messageText = formatMessage(input?.message ?? '');
               const key = getAttachedFileKey(workerId, toolUseId, input.filePath);
               const isToolComplete = completedToolUseIds.has(toolUseId);

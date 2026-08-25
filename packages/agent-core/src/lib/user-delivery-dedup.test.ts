@@ -140,7 +140,6 @@ describe('isMessageDeliveryToolName', () => {
   test('matches the user-facing message-delivery tools', () => {
     expect(isMessageDeliveryToolName('sendMessageToUser')).toBe(true);
     expect(isMessageDeliveryToolName('sendMessageToUserIfNecessary')).toBe(true);
-    expect(isMessageDeliveryToolName('sendImageToUser')).toBe(true);
     expect(isMessageDeliveryToolName('sendFileToUser')).toBe(true);
   });
 

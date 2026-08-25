@@ -144,7 +144,6 @@ describe('MSG_TOOLS (search-content-lib)', () => {
   it('includes user-visible message-sending tools', () => {
     expect(MSG_TOOLS.has('sendMessageToUser')).toBe(true);
     expect(MSG_TOOLS.has('sendMessageToUserIfNecessary')).toBe(true);
-    expect(MSG_TOOLS.has('sendImageToUser')).toBe(true);
     expect(MSG_TOOLS.has('sendFileToUser')).toBe(true);
   });
 

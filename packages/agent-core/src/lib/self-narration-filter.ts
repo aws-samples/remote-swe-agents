@@ -323,7 +323,6 @@ export const shouldSuppressWakeupMonologue = (opts: {
 export const NON_WORK_TOOL_NAMES = new Set<string>([
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
-  'sendImageToUser',
   'sendFileToUser',
   'sendMessageToAgent',
   'acknowledgeAgent',

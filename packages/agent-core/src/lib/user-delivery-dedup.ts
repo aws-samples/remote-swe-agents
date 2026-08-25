@@ -138,7 +138,6 @@ export const recordUserDelivery = async (
 export const MESSAGE_DELIVERY_TOOL_NAMES = [
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
-  'sendImageToUser',
   'sendFileToUser',
 ] as const;
 
