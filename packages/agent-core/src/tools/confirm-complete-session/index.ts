@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { getSession, updateSessionAgentStatus, stopWorkerInstance } from '../../lib';
 import { sendWebappEvent } from '../../lib/events';
+import { terminatePreview } from '../preview';
 
 const PENDING_DIR = tmpdir();
 
@@ -48,6 +49,12 @@ export const confirmCompleteSessionTool: ToolDefinition<z.infer<typeof inputSche
 
     await updateSessionAgentStatus(context.workerId, 'completed');
     await sendWebappEvent(context.workerId, { type: 'agentStatusUpdate', status: 'completed' });
+
+    try {
+      await terminatePreview(context.workerId);
+    } catch (e: any) {
+      console.error(`[confirmCompleteSession] Preview cleanup failed for ${context.workerId}:`, e.message);
+    }
 
     const runtimeType = session.runtimeType ?? 'ec2';
     await stopWorkerInstance(context.workerId, runtimeType);

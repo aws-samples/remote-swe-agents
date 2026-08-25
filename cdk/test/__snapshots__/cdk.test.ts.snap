@@ -112,7 +112,7 @@ exports[`Snapshot test: MainStack 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -1516,7 +1516,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1561,7 +1561,7 @@ Remote SWE Agents Team",
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3821,7 +3821,7 @@ exports.handler = async (event) => {
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -5364,6 +5364,22 @@ exports.handler = async (event) => {
                   ],
                 ],
               },
+            },
+            {
+              "Action": [
+                "lambda-microvms:CreateMicrovmAuthToken",
+                "lambda-microvms:GetMicrovm",
+                "lambda-microvms:ListMicrovms",
+                "lambda-microvms:ResumeMicrovm",
+                "lambda-microvms:RunMicrovm",
+                "lambda-microvms:SuspendMicrovm",
+                "lambda-microvms:TerminateMicrovm",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:lambda-microvms:us-east-1:123456789012:image/*",
+                "arn:aws:lambda-microvms:us-east-1:123456789012:microvm/*",
+              ],
             },
             {
               "Action": "bedrock-agentcore:InvokeAgentRuntime",
@@ -8982,6 +8998,80 @@ exports[`Snapshot test: UsEast1Stack 1`] = `
     },
   },
   "Resources": {
+    "PreviewOriginRequestHandler3F7C07CC": {
+      "DependsOn": [
+        "PreviewOriginRequestHandlerServiceRoleE4417E80",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "PreviewOriginRequestHandlerServiceRoleE4417E80",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "PreviewOriginRequestHandlerCurrentVersionC07F9B9Cd8ea558aa69bb62394a584cb5af5d585": {
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PreviewOriginRequestHandler3F7C07CC",
+        },
+      },
+      "Type": "AWS::Lambda::Version",
+    },
+    "PreviewOriginRequestHandlerFunctionVersion1671394B": {
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "PreviewOriginRequestHandlerCurrentVersionC07F9B9Cd8ea558aa69bb62394a584cb5af5d585",
+        },
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "PreviewOriginRequestHandlerServiceRoleE4417E80": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "edgelambda.amazonaws.com",
+                  "lambda.amazonaws.com",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "SignPayloadHandlerCFEAA14C": {
       "DependsOn": [
         "SignPayloadHandlerServiceRole29261232",

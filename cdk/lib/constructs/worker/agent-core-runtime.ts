@@ -37,6 +37,7 @@ export interface AgentCoreRuntimeProps {
   additionalManagedPolicies?: string[];
   vapidKeys: VapidKeys;
   eventTrigger: EventTrigger;
+  previewMicrovmImageArn?: string;
 }
 
 export class AgentCoreRuntime extends Construct implements IGrantable {
@@ -111,6 +112,41 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     props.bus.api.grantPublishAndSubscribe(role);
     props.bus.api.grantConnect(role);
 
+    // Lambda MicroVMs permissions for preview functionality
+    role.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: [
+          'lambda-microvms:RunMicrovm',
+          'lambda-microvms:TerminateMicrovm',
+          'lambda-microvms:SuspendMicrovm',
+          'lambda-microvms:ResumeMicrovm',
+          'lambda-microvms:CreateMicrovmAuthToken',
+          'lambda-microvms:GetMicrovm',
+          'lambda-microvms:ListMicrovms',
+        ],
+        resources: [
+          Arn.format(
+            {
+              service: 'lambda-microvms',
+              resource: 'microvm',
+              resourceName: '*',
+              arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+            },
+            Stack.of(this)
+          ),
+          Arn.format(
+            {
+              service: 'lambda-microvms',
+              resource: 'image',
+              resourceName: '*',
+              arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+            },
+            Stack.of(this)
+          ),
+        ],
+      })
+    );
+
     const runtime = new CfnRuntime(this, 'Runtime', {
       agentRuntimeName: Names.uniqueResourceName(this, { maxLength: 40 }),
       agentRuntimeArtifact: {
@@ -146,6 +182,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         EVENT_TRIGGER_TTL_SFN_ARN: props.eventTrigger.ttlStateMachine.stateMachineArn,
         EVENT_TRIGGER_TTL_SFN_ROLE_ARN: props.eventTrigger.schedulerRole.roleArn,
         EVENT_TRIGGER_RESOURCE_PREFIX: props.eventTrigger.resourcePrefix,
+        ...(props.previewMicrovmImageArn ? { PREVIEW_MICROVM_IMAGE_ARN: props.previewMicrovmImageArn } : {}),
       },
     });
     runtime.node.addDependency(role);

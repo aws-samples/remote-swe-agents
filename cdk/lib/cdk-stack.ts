@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import { join } from 'path';
 import { Construct } from 'constructs';
 import { SlackBolt } from './constructs/slack-bolt';
 import { Worker } from './constructs/worker';
@@ -16,9 +17,13 @@ import { AsyncJob } from './constructs/async-job';
 import { Webapp } from './constructs/webapp';
 import { IRepository } from 'aws-cdk-lib/aws-ecr';
 import { VapidKeys } from './constructs/vapid-keys';
+import { Preview } from './constructs/preview';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
 export interface MainStackProps extends cdk.StackProps {
   readonly signPayloadHandler: EdgeFunction;
+  readonly previewOriginRequestHandler?: EdgeFunction;
+  readonly previewConfigParameterName?: string;
   readonly domainName?: string;
   readonly sharedCertificate?: ICertificate;
   readonly cloudFrontWebAclArn?: string;
@@ -124,11 +129,23 @@ export class MainStack extends cdk.Stack {
 
     const vapidKeys = new VapidKeys(this, 'VapidKeys');
 
+    const preview = props.previewOriginRequestHandler
+      ? new Preview(this, 'Preview', {
+          storageTable: storage.table,
+          accessLogBucket,
+          webAclArn: props.cloudFrontWebAclArn,
+          originRequestHandler: props.previewOriginRequestHandler,
+          configParameterName: props.previewConfigParameterName || `/${this.stackName}/preview-config`,
+          proxyCodeDirectory: join(__dirname, '../../packages/microvm-preview-proxy'),
+        })
+      : undefined;
+
     const worker = new Worker(this, 'Worker', {
       vpc,
       storageTable: storage.table,
       imageBucket: storage.bucket,
       skillBucket: storage.skillBucket,
+      previewMicrovmImageArn: preview?.microvmImageArn,
       slackBotTokenParameter: botToken,
       ...(props.github && 'appId' in props.github
         ? {
@@ -206,6 +223,17 @@ export class MainStack extends cdk.Stack {
       imageRecipeName: worker.imageBuilder.imageRecipeName,
       workerAmiIdParameter: workerAmiIdParameter,
     });
+
+    if (preview) {
+      webapp.handler.addEnvironment('PREVIEW_HANDOFF_SECRET_ARN', preview.handoffSecretArn);
+      webapp.handler.addEnvironment('PREVIEW_CLOUDFRONT_DOMAIN', preview.distributionDomainName);
+      webapp.handler.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [preview.handoffSecretArn],
+        })
+      );
+    }
 
     new cdk.CfnOutput(this, 'FrontendDomainName', {
       value: webapp.baseUrl,

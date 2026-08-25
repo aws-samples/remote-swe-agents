@@ -1,0 +1,19 @@
+{
+  "name": "@remote-swe-agents/microvm-preview-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.3"
+  }
+}

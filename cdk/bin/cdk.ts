@@ -50,6 +50,8 @@ const props: MainStackProps = {
   },
   crossRegionReferences: true,
   signPayloadHandler: virginia.signPayloadHandler,
+  previewOriginRequestHandler: virginia.previewOriginRequestHandler,
+  previewConfigParameterName: virginia.previewConfigParameterName,
   cloudFrontWebAclArn: virginia.webAclArn,
 
   // === Slack Integration (optional) ===

@@ -1,6 +1,6 @@
 import { Stack } from 'aws-cdk-lib';
-import { PolicyStatement, ServicePrincipal, Role } from 'aws-cdk-lib/aws-iam';
-import { Runtime, IVersion, Version, Architecture } from 'aws-cdk-lib/aws-lambda';
+import { PolicyStatement, ServicePrincipal, Role, IRole } from 'aws-cdk-lib/aws-iam';
+import { Runtime, IVersion, Version } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { AwsCustomResource, PhysicalResourceId, AwsCustomResourcePolicy } from 'aws-cdk-lib/custom-resources';
@@ -11,10 +11,12 @@ const StackRegion = 'us-east-1';
 
 export interface EdgeFunctionProps {
   entryPath: string;
+  bundlingDefine?: Record<string, string>;
 }
 
 export class EdgeFunction extends Construct {
   private readonly functionVersionParameter: StringParameter;
+  public readonly role: IRole;
 
   constructor(scope: Construct, id: string, props: EdgeFunctionProps) {
     super(scope, id);
@@ -26,11 +28,19 @@ export class EdgeFunction extends Construct {
     const handler = new NodejsFunction(this, 'Handler', {
       runtime: Runtime.NODEJS_22_X,
       entry: props.entryPath,
+      ...(props.bundlingDefine
+        ? {
+            bundling: {
+              define: props.bundlingDefine,
+            },
+          }
+        : {}),
     });
     handler.currentVersion;
     this.functionVersionParameter = new StringParameter(this, 'FunctionVersion', {
       stringValue: handler.currentVersion.edgeArn,
     });
+    this.role = handler.role!;
 
     const statement = new PolicyStatement();
     const edgeLambdaServicePrincipal = new ServicePrincipal('edgelambda.amazonaws.com');
