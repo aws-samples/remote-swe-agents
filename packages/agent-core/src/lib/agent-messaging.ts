@@ -3,7 +3,7 @@ import { ddb, TableName } from './aws';
 import { getSession } from './sessions';
 import { sendWorkerEvent, sendWebappEvent } from './events';
 import { getOrCreateWorkerInstance } from './worker-manager';
-import { renderAgentMessage } from './prompt';
+import { renderAgentMessage, sanitizeSenderLabel } from './prompt';
 import { getCustomAgent } from './custom-agent';
 import { getPreferences } from './preferences';
 import { MessageItem, SessionItem } from '../schema';
@@ -44,7 +44,11 @@ export interface SendAgentMessageResult {
  * No routing restrictions - any session can message any other session by ID.
  */
 export async function sendAgentMessage(params: SendAgentMessageParams): Promise<SendAgentMessageResult> {
-  const { senderWorkerId, targetSessionIds, message, acknowledge } = params;
+  const { senderWorkerId, message, acknowledge } = params;
+
+  // De-duplicate targets so a caller that passes the same session id twice
+  // does not deliver (and wake) the same target more than once.
+  const targetSessionIds = [...new Set(params.targetSessionIds)];
 
   const senderSession = await getSession(senderWorkerId);
   if (!senderSession) {
@@ -68,7 +72,15 @@ export async function sendAgentMessage(params: SendAgentMessageParams): Promise<
       }
 
       const now = Date.now();
-      const wrappedMessage = `[Message from ${senderName} (${senderWorkerId})]: ${message}`;
+      // Sanitise the components embedded in the inline `[Message from ... (...)]`
+      // prefix. `senderName` / `senderWorkerId` are normally trusted (resolved
+      // from session metadata / internally generated), but the label lives inside
+      // the LLM prompt envelope where a stray newline or bracket would allow
+      // prompt injection, so we sanitise as defence in depth. See
+      // `sanitizeSenderLabel` in prompt.ts.
+      const safeSenderName = sanitizeSenderLabel(senderName) || 'agent';
+      const safeSenderWorkerId = sanitizeSenderLabel(senderWorkerId) || 'unknown';
+      const wrappedMessage = `[Message from ${safeSenderName} (${safeSenderWorkerId})]: ${message}`;
       const content = [{ text: renderAgentMessage({ message: wrappedMessage, senderSessionId: senderWorkerId }) }];
 
       const targetName = await resolveAgentDisplayName(targetSession);
