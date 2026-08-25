@@ -108,6 +108,19 @@ export const isInterruptPlaceholder = (text: string | undefined | null): boolean
 };
 
 /**
+ * Detect single-word acknowledgement responses that a backend's protocol may
+ * inject as synthetic assistant messages to satisfy alternating-turn
+ * requirements. When the model echoes these on an agentMessage-triggered turn,
+ * they carry no user-facing value and should be suppressed.
+ */
+const ACK_WORD_PLACEHOLDER_RE = /^(understood|noted|acknowledged|ok|got it|roger|copy)\.?$/i;
+export const isAckWordPlaceholder = (text: string | undefined | null): boolean => {
+  if (text == null) return false;
+  const stripped = text.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim();
+  return ACK_WORD_PLACEHOLDER_RE.test(stripped);
+};
+
+/**
  * One-shot sanitize + placeholder check for delivery-path filters.
  *
  * Returns `{ shouldSend: false }` when the caller must NOT forward the

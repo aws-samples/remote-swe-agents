@@ -1,5 +1,5 @@
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-import { PutCommand, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, QueryCommand, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import sharp from 'sharp';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
@@ -8,6 +8,7 @@ import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey } from './aws/s3';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
+import { updateSessionLastMessage } from './sessions';
 import { getWebappSessionUrl } from './webapp-origin';
 import { MessageItem } from '../schema';
 
@@ -169,11 +170,26 @@ export const saveConversationHistory = async (
   message: Message,
   tokenCount: number,
   messageType: string,
-  thinkingBudget?: number
+  thinkingBudget?: number,
+  options: { ensureAfterSK?: string } = {}
 ) => {
+  // Ordering guard: the end-of-turn assistant message must never sort BEFORE
+  // an intra-turn message (a `sendMessageToAgent` / `sendMessageToUser` emitted
+  // earlier in the same turn). Because every SK is `Date.now()` at write time,
+  // a delayed final write could otherwise take a timestamp LARGER than an
+  // intermediate whose own write was delayed. When `ensureAfterSK` is supplied
+  // we clamp the SK to be strictly greater than it, preserving intra-turn
+  // order. Callers pass the max SK observed in the session so far.
+  let skNum = Date.now();
+  if (options.ensureAfterSK) {
+    const after = Number(options.ensureAfterSK);
+    if (Number.isFinite(after) && after >= skNum) {
+      skNum = after + 1;
+    }
+  }
   const item = {
     PK: `message-${workerId}`,
-    SK: `${String(Date.now()).padStart(15, '0')}`, // make sure it can be sorted in dictionary order
+    SK: `${String(skNum).padStart(15, '0')}`, // make sure it can be sorted in dictionary order
     content: await preProcessMessageContent(message.content, workerId),
     role: message.role ?? 'unknown',
     tokenCount,
@@ -461,13 +477,47 @@ const postProcessMessageContent = async (content: string) => {
   return flattenedArray;
 };
 
-export const sendSystemMessage = async (workerId: string, message: string, appendWebappUrl: boolean = false) => {
-  // Always send original message to webapp
-  await sendWebappEvent(workerId, {
-    type: 'message',
-    role: 'assistant',
-    message,
-  });
+export const sendSystemMessage = async (
+  workerId: string,
+  message: string,
+  appendWebappUrl: boolean = false,
+  skipWebappEmit: boolean = false,
+  messageSK?: string
+) => {
+  // Webapp message emit is gated on `skipWebappEmit` so callers that have
+  // already delivered the same text to the webapp through another channel can
+  // avoid creating a duplicate `type:'message'` bubble — the webapp's
+  // `SessionPageClient` does not deduplicate assistant messages by content,
+  // so a re-emit would surface as a visual duplicate. Slack delivery is NEVER
+  // gated by this flag.
+  if (!skipWebappEmit) {
+    await sendWebappEvent(workerId, {
+      type: 'message',
+      role: 'assistant',
+      message,
+      ...(messageSK ? { messageSK } : {}),
+    });
+  }
+
+  // Update the session's list-preview (lastMessage) and ordering timestamp
+  // (lastMessageAt) ONLY when the message is persisted to DDB (indicated by
+  // `messageSK`). Non-persisted messages (e.g. kill-timer "Going to sleep")
+  // are transient real-time notifications that should NOT reorder the session
+  // list, and don't survive a page refresh.
+  if (messageSK) {
+    try {
+      const cleanMessage = message.replace(/^<@[A-Z0-9]+>\s*/, '');
+      const lastMessagePreview = cleanMessage.slice(0, 500);
+      await updateSessionLastMessage(workerId, lastMessagePreview);
+      await sendWebappEvent(workerId, {
+        type: 'lastMessageUpdate',
+        lastMessage: lastMessagePreview,
+        lastMessageAt: Date.now(),
+      });
+    } catch (e) {
+      console.error('[sendSystemMessage] lastMessageUpdate best-effort failed:', e);
+    }
+  }
 
   // For Slack, optionally append webapp URL
   if (appendWebappUrl) {
@@ -517,4 +567,44 @@ export const getRecentMessages = async (workerId: string, sinceMs: number): Prom
     items.push(...(page.Items as MessageItem[]));
   }
   return items;
+};
+
+/**
+ * Return the SK (sort key) of the most recent message for a worker/session,
+ * or `undefined` when the session has no messages yet. SKs are zero-padded
+ * fixed-width millisecond timestamps, so the largest SK is the newest message.
+ */
+export const getLatestMessageSK = async (workerId: string): Promise<string | undefined> => {
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName,
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `message-${workerId}`,
+      },
+      ScanIndexForward: false, // newest (largest SK) first
+      Limit: 1,
+      ProjectionExpression: 'SK',
+    })
+  );
+  return res.Items?.[0]?.SK as string | undefined;
+};
+
+/**
+ * Overwrite the `messageType` attribute of an already-persisted message.
+ */
+export const updateMessageType = async (workerId: string, messageSK: string, messageType: string) => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: {
+        PK: `message-${workerId}`,
+        SK: messageSK,
+      },
+      UpdateExpression: 'SET messageType = :messageType',
+      ExpressionAttributeValues: {
+        ':messageType': messageType,
+      },
+    })
+  );
 };

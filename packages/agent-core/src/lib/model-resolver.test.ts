@@ -234,7 +234,7 @@ describe('resolveModelConfig', () => {
     });
   });
 
-  describe('B-1: session bedrockDefaultModel is respected in bedrock runtime', () => {
+  describe('session bedrockDefaultModel is respected in bedrock runtime', () => {
     test('session bedrockDefaultModel overrides customAgent when both are present', () => {
       const result = resolveModelConfig({
         session: { bedrockDefaultModel: 'haiku4.5' },
@@ -252,7 +252,7 @@ describe('resolveModelConfig', () => {
     });
   });
 
-  describe('B-2: legacy updateAgent({defaultModel}) reflects correctly', () => {
+  describe('legacy updateAgent({defaultModel}) reflects correctly', () => {
     test('when bedrockDefaultModel is set via reverse sync, resolver picks it up', () => {
       // Simulates the scenario where updateAgent({defaultModel: 'sonnet4.6'})
       // triggers reverse sync to also set bedrockDefaultModel: 'sonnet4.6'

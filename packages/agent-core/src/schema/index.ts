@@ -12,3 +12,4 @@ export * from './preferences';
 export * from './push-subscription';
 export * from './unread';
 export * from './skill';
+export * from './user-preferences';
