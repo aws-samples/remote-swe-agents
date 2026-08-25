@@ -92,6 +92,7 @@ export class Webapp extends Construct {
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
+        SKILL_BUCKET_NAME: storage.skillBucket.bucketName,
         AGENT_RUNTIME_ARN: props.agentCoreRuntime.runtimeArn,
         BEDROCK_CRI_REGION_OVERRIDE: props.bedrockCriRegionOverride ?? '',
         ...(props.vapidKeys
@@ -108,6 +109,7 @@ export class Webapp extends Construct {
     asyncJob.handler.grantInvoke(handler);
     storage.table.grantReadWriteData(handler);
     storage.bucket.grantReadWrite(handler);
+    storage.skillBucket.grantReadWrite(handler);
     workerBus.api.grantPublish(handler);
     props.agentCoreRuntime.grantInvoke(handler);
     if (props.vapidKeys) {

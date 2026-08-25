@@ -16,6 +16,7 @@ import { EventTrigger } from './event-trigger';
 export interface AgentCoreRuntimeProps {
   storageTable: ITableV2;
   imageBucket: IBucket;
+  skillBucket: IBucket;
   bus: WorkerBus;
   slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
@@ -101,6 +102,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     );
     props.storageTable.grantReadWriteData(role);
     props.imageBucket.grantReadWrite(role);
+    props.skillBucket.grantReadWrite(role);
     props.gitHubAppPrivateKeyParameter?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter?.grantRead(role);
@@ -130,6 +132,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         GITHUB_APP_INSTALLATION_ID: props.gitHubApp?.installationId ?? '',
         TABLE_NAME: props.storageTable.tableName,
         BUCKET_NAME: props.imageBucket.bucketName,
+        SKILL_BUCKET_NAME: props.skillBucket.bucketName,
         WEBAPP_ORIGIN_NAME_PARAMETER: props.webappOriginSourceParameter.parameterName,
         // BEDROCK_AWS_ACCOUNTS: props.loadBalancing?.awsAccounts.join(',') ?? '',
         // BEDROCK_AWS_ROLE_NAME: props.loadBalancing?.roleName ?? '',

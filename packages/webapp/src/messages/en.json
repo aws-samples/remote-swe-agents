@@ -14,7 +14,8 @@
     "preferences": "Preferences",
     "apiKeys": "API Keys",
     "costAnalysis": "Cost Analysis",
-    "customAgent": "Custom Agents"
+    "customAgent": "Custom Agents",
+    "skills": "Skills"
   },
   "sessions": {
     "title": "Sessions",
@@ -438,6 +439,40 @@
       "description": "Enable push notifications to get notified when agents respond.",
       "enable": "Enable",
       "later": "Later"
+    }
+  },
+  "skills": {
+    "title": "Skills",
+    "description": "Upload and manage skill packages that extend agent capabilities",
+    "list": {
+      "title": "Registered Skills",
+      "description": "Skills available for your agents"
+    },
+    "upload": {
+      "title": "Upload Skill",
+      "description": "Upload a zip file or select a directory containing a SKILL.md"
+    },
+    "uploadZip": "Upload Zip",
+    "importDir": "Import Directory",
+    "uploading": "Uploading...",
+    "registering": "Registering...",
+    "uploadSuccess": "Skill registered successfully",
+    "uploadError": "Failed to register skill",
+    "deleteSuccess": "Skill deleted successfully",
+    "deleteError": "Failed to delete skill",
+    "confirmDelete": "Are you sure you want to delete this skill?",
+    "confirmReplace": "A skill with the same name already exists. Replace it?",
+    "noSkills": "No skills registered yet",
+    "files": "files",
+    "errors": {
+      "SKILL_SIZE_EXCEEDED": "Total storage limit exceeded (100 MB)",
+      "INVALID_SKILL": "Invalid skill package: SKILL.md is missing or malformed",
+      "INVALID_PATH": "Invalid file path detected",
+      "PACKAGE_TOO_LARGE": "Zip file exceeds maximum package size (1 MB)",
+      "INVALID_EXTENSION": "File contains disallowed extension",
+      "TOO_MANY_FILES": "Too many files in package (max 50)",
+      "FRONTMATTER_INVALID": "SKILL.md frontmatter is invalid",
+      "UPLOAD_FAILED": "Failed to upload file to storage"
     }
   }
 }
