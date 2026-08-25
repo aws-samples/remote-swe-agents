@@ -18,7 +18,14 @@ async function processInput(input: string) {
         workerId,
         {
           role: 'user',
-          content: [{ text: renderUserMessage({ message: input }) }],
+          content: [
+            {
+              text: renderUserMessage({
+                message: input,
+                sender: { type: 'webapp', id: 'local-dev', displayName: 'local-dev' },
+              }),
+            },
+          ],
         },
         0,
         'userMessage'
