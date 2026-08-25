@@ -17,6 +17,11 @@ export * from './wait-for';
 export * from './read-image';
 export * from './todo';
 export * from './session-title';
+export * from './complete-session';
+export * from './confirm-complete-session';
+export * from './list-sessions';
+export * from './reparent-session';
+export * from './export-session-diagnostics';
 
 import { ciTool } from './ci';
 import { commandExecutionTool } from './command-execution';
@@ -36,6 +41,11 @@ import { readImageTool } from './read-image';
 import { todoInitTool, todoUpdateTool } from './todo';
 import { updateSessionTitleTool } from './session-title';
 import { waitForConditionTool } from './wait-for';
+import { completeSessionTool } from './complete-session';
+import { confirmCompleteSessionTool } from './confirm-complete-session';
+import { listSessionsTool } from './list-sessions';
+import { reparentSessionTool } from './reparent-session';
+import { exportSessionDiagnosticsTool } from './export-session-diagnostics';
 
 /**
  * Tools that require GitHub configuration.
@@ -61,6 +71,7 @@ export const requiredTools = [
   sendFileTool,
   updateSessionTitleTool,
   confirmSendToUserTool,
+  confirmCompleteSessionTool,
 ];
 
 /**
@@ -89,6 +100,10 @@ export const optionalTools = [
   createEventTriggerTool,
   listEventTriggersTool,
   deleteEventTriggerTool,
+  completeSessionTool,
+  listSessionsTool,
+  reparentSessionTool,
+  exportSessionDiagnosticsTool,
 ];
 
 /**
