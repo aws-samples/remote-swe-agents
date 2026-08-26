@@ -8,6 +8,8 @@ const mockUpdateSessionLastMessage = vi.fn();
 const mockSendWebappEvent = vi.fn();
 const mockSendPushNotificationToUser = vi.fn();
 const mockIncrementUnread = vi.fn();
+const mockShouldSuppressUserDelivery = vi.fn();
+const mockRecordUserDelivery = vi.fn();
 
 vi.mock('../../lib/sessions', () => ({
   getSession: (...args: any[]) => mockGetSession(...args),
@@ -28,10 +30,28 @@ vi.mock('../../lib/events', () => ({
 
 vi.mock('../../lib/push-notification', () => ({
   sendPushNotificationToUser: (...args: any[]) => mockSendPushNotificationToUser(...args),
+  resolveNotificationAgentName: (opts: {
+    customAgentId?: string;
+    customAgentName?: string;
+    sessionAgentName?: string;
+    defaultAgentName?: string;
+  }) => {
+    if (opts.customAgentId && opts.customAgentName) return opts.customAgentName;
+    return opts.sessionAgentName || opts.defaultAgentName || 'Agent';
+  },
+}));
+
+vi.mock('../../lib/preferences', () => ({
+  getPreferences: async () => ({ defaultAgentName: '' }),
 }));
 
 vi.mock('../../lib/unread', () => ({
   incrementUnread: (...args: any[]) => mockIncrementUnread(...args),
+}));
+
+vi.mock('../../lib/user-delivery-dedup', () => ({
+  shouldSuppressUserDelivery: (...args: any[]) => mockShouldSuppressUserDelivery(...args),
+  recordUserDelivery: (...args: any[]) => mockRecordUserDelivery(...args),
 }));
 
 import { reportProgressTool } from './index';
@@ -249,5 +269,156 @@ describe('confirmSendToUser', () => {
     const result = await confirmSendToUserTool.handler({}, mockContext);
     expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendMessageToUser placeholder / scaffolding filter (delivery-path safety)', () => {
+  // Same detector as the orchestrator's end-of-turn suppression, applied on
+  // the tool-invocation path so a `.` / `<続き…>` / empty message cannot be
+  // delivered regardless of which channel the LLM chose. The regression
+  // reopens the moment the two paths drift, so these tests are intentionally
+  // exhaustive against the real observed patterns.
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const PLACEHOLDER_REJECTION_MESSAGE =
+    "Your message was detected as a placeholder (empty / '.' / scaffolding artifact) and was NOT delivered to the user. " +
+    'Please call sendMessageToUser again with meaningful content, OR end your turn silently if you have nothing new to report.';
+
+  const shouldReject = async (message: string) => {
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    const result = await reportProgressTool.handler({ message }, mockContext);
+    expect(result).toBe(PLACEHOLDER_REJECTION_MESSAGE);
+    expect(mockSendMessageToSlack).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLastMessage).not.toHaveBeenCalled();
+    expect(mockSendWebappEvent).not.toHaveBeenCalled();
+    expect(mockSendPushNotificationToUser).not.toHaveBeenCalled();
+  };
+
+  const shouldDeliver = async (message: string, expectedDelivered = message) => {
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    const result = await reportProgressTool.handler({ message }, mockContext);
+    expect(result).toBe('Successfully sent a message.');
+    expect(mockSendMessageToSlack).toHaveBeenCalledWith(expectedDelivered);
+  };
+
+  test('rejects "." and multi-dot placeholders', async () => {
+    await shouldReject('.');
+    vi.clearAllMocks();
+    await shouldReject('..');
+    vi.clearAllMocks();
+    await shouldReject('...');
+  });
+
+  test('rejects invisible-unicode-wrapped "." (ZWSP / ZWNJ / ZWJ / WJ / BOM)', async () => {
+    await shouldReject('\u200b.');
+    vi.clearAllMocks();
+    await shouldReject('.\u200b');
+    vi.clearAllMocks();
+    await shouldReject('\u200c.');
+    vi.clearAllMocks();
+    await shouldReject('\u200d.');
+    vi.clearAllMocks();
+    await shouldReject(' \u2060 . ');
+    vi.clearAllMocks();
+    await shouldReject('\ufeff.');
+  });
+
+  test('rejects whitespace-only and single punctuation', async () => {
+    await shouldReject('   ');
+    vi.clearAllMocks();
+    await shouldReject('\n\t');
+    vi.clearAllMocks();
+    await shouldReject(',');
+    vi.clearAllMocks();
+    await shouldReject('_');
+  });
+
+  test('rejects whole-message scaffolding artifact', async () => {
+    await shouldReject('<続きは以下のツール呼び出しで>');
+    vi.clearAllMocks();
+    await shouldReject('<continue with more info>');
+    vi.clearAllMocks();
+    await shouldReject('  <proceeding to next step>  ');
+  });
+
+  test('rejects scaffolding prefix with only a placeholder body', async () => {
+    // `<続き> .` → prefix-strip → "." → placeholder → reject
+    await shouldReject('<続きは以下のツール呼び出しで> .');
+    vi.clearAllMocks();
+    await shouldReject('<continue> ');
+  });
+
+  test('delivers the stripped body when scaffolding prefix wraps a real message', async () => {
+    // CJK-behavior validation input: a real CJK body ("reporting progress now")
+    // after the CJK scaffolding prefix must survive the strip and be delivered.
+    await shouldDeliver('<続きは以下のツール呼び出しで>進捗を報告します', '進捗を報告します');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('<continue with more info>some message', 'some message');
+  });
+
+  test('delivers legitimate short replies unchanged (narrow filter)', async () => {
+    await shouldDeliver('ok');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('done.');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('4');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('Completed.');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('Summary: pushed to branch foo');
+  });
+
+  test('delivers legitimate markup unchanged (keyword-gated strip skipped)', async () => {
+    await shouldDeliver('<html><body>hello</body></html>');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('<div> tag is useful');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('Use <strong> for emphasis');
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+    await shouldDeliver('<?xml version="1.0"?> metadata');
+  });
+});
+
+describe('sendMessageToUser duplicate suppression (auto-retrigger re-emit)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Parent session (top-level) so the child-confirmation branch is skipped.
+    mockGetSession.mockResolvedValue({ parentSessionId: undefined });
+  });
+
+  test('delivers + records when NOT a near-duplicate', async () => {
+    mockShouldSuppressUserDelivery.mockResolvedValue(false);
+
+    const result = await reportProgressTool.handler({ message: 'a fresh status update' }, mockContext);
+
+    expect(result).toBe('Successfully sent a message.');
+    expect(mockSendMessageToSlack).toHaveBeenCalledWith('a fresh status update');
+    expect(mockRecordUserDelivery).toHaveBeenCalledWith('test-worker-123', 'a fresh status update');
+  });
+
+  test('suppresses Slack / push / record when a near-duplicate', async () => {
+    mockShouldSuppressUserDelivery.mockResolvedValue(true);
+
+    const result = await reportProgressTool.handler({ message: 'duplicate status update' }, mockContext);
+
+    // The tool still returns success so the LLM is not confused into retrying.
+    expect(result).toBe('Successfully sent a message.');
+    // ...but NOTHING was delivered to the user, and no delivery was recorded.
+    expect(mockSendMessageToSlack).not.toHaveBeenCalled();
+    expect(mockRecordUserDelivery).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLastMessage).not.toHaveBeenCalled();
+    expect(mockIncrementUnread).not.toHaveBeenCalled();
+    expect(mockSendPushNotificationToUser).not.toHaveBeenCalled();
   });
 });

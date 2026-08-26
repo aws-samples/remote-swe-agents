@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { executeCommand } from './index';
+import { executeCommand, MAX_OUTPUT_BUFFER_BYTES } from './index';
 
 vi.mock('./github', () => ({
   authorizeGitHubCli: async () => undefined,
@@ -141,4 +141,45 @@ describe('executeCommand with cancellationToken', () => {
     // Cleanup
     await executeCommand(`pkill -f "${marker}" || true`, undefined, 5000);
   }, 15000);
+});
+
+describe('executeCommand max output buffer guard', () => {
+  test('kills process and truncates when stdout exceeds MAX_OUTPUT_BUFFER_BYTES', async () => {
+    // `yes` outputs "y\n" infinitely — it will exceed buffer quickly
+    const result = await executeCommand('yes', undefined, 30000);
+
+    expect(result.error).toContain('exceeded maximum buffer size');
+    expect(result.error).toContain(`${MAX_OUTPUT_BUFFER_BYTES} bytes`);
+    expect(result.stdout).toContain('[output truncated:');
+    // stdout should be capped by truncate (40K chars) + marker
+    expect(result.stdout.length).toBeLessThan(50000);
+  }, 30000);
+
+  test('kills process and truncates when stderr exceeds MAX_OUTPUT_BUFFER_BYTES', async () => {
+    // Redirect yes to stderr
+    const result = await executeCommand('yes >&2', undefined, 30000);
+
+    expect(result.error).toContain('exceeded maximum buffer size');
+    expect(result.stderr).toContain('[output truncated:');
+    expect(result.stderr.length).toBeLessThan(50000);
+  }, 30000);
+
+  test('does not truncate for normal-sized output', async () => {
+    const result = await executeCommand('echo "hello world"', undefined, 10000);
+
+    expect(result.error).toBeUndefined();
+    expect(result.stdout).toContain('hello world');
+  }, 10000);
+
+  test('combined stdout+stderr triggers guard', async () => {
+    // Generate large output on both streams simultaneously
+    // Each stream produces ~6MB, combined exceeds 10MB limit
+    const cmd = `bash -c 'dd if=/dev/zero bs=1024 count=6144 2>/dev/null | tr "\\0" "A" & dd if=/dev/zero bs=1024 count=6144 2>&1 | tr "\\0" "B" >&2; wait'`;
+    const result = await executeCommand(cmd, undefined, 30000);
+
+    expect(result.error).toContain('exceeded maximum buffer size');
+    // Marker should be appended to whichever stream is larger
+    const hasMarker = result.stdout.includes('[output truncated:') || result.stderr.includes('[output truncated:');
+    expect(hasMarker).toBe(true);
+  }, 30000);
 });
