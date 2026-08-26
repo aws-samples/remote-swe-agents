@@ -4,10 +4,16 @@ import { useTheme } from 'next-themes';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
+import { useMounted } from '@/hooks/use-mounted';
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const t = useTranslations('theme');
+  // useTheme() returns undefined during SSR but the stored theme on the
+  // client, so rendering a theme-dependent icon before mount causes a
+  // hydration mismatch (React #418). Render a stable placeholder until
+  // mounted (the pattern recommended by next-themes).
+  const mounted = useMounted();
 
   const cycleTheme = () => {
     if (theme === 'light') {
@@ -44,6 +50,14 @@ export default function ThemeToggle() {
         return t('light');
     }
   };
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="w-9 h-9" aria-label={t('light')}>
+        <Sun className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   return (
     <Button
