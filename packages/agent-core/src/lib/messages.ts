@@ -1,16 +1,15 @@
 import { Message } from '@aws-sdk/client-bedrock-runtime';
-import { PutCommand, QueryCommand, UpdateCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand, QueryCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
 import sharp from 'sharp';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey, BucketName } from './aws/s3';
-import { ensureImageWithinBounds } from './image-resize';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
-import { updateSessionLastMessage } from './sessions';
 import { getWebappSessionUrl } from './webapp-origin';
+import { updateSessionLastMessage } from './sessions';
 import {
   MessageItem,
   INTERNAL_ERROR_MESSAGE_TYPE,
@@ -20,6 +19,9 @@ import {
 
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;
+
+import { ensureImageWithinBounds } from './image-resize';
+export { ensureImageWithinBounds };
 
 const PID_DIR = path.join(tmpdir(), '.remote-swe-pids');
 
@@ -179,13 +181,17 @@ export const saveConversationHistory = async (
   thinkingBudget?: number,
   options: { ensureAfterSK?: string } = {}
 ) => {
-  // Ordering guard: the end-of-turn assistant message must never sort BEFORE
-  // an intra-turn message (a `sendMessageToAgent` / `sendMessageToUser` emitted
-  // earlier in the same turn). Because every SK is `Date.now()` at write time,
-  // a delayed final write could otherwise take a timestamp LARGER than an
-  // intermediate whose own write was delayed. When `ensureAfterSK` is supplied
-  // we clamp the SK to be strictly greater than it, preserving intra-turn
-  // order. Callers pass the max SK observed in the session so far.
+  // Ordering guard: the end-of-turn assistant message must never sort
+  // BEFORE an intra-turn message (a `sendMessageToAgent` / `sendMessageToUser`
+  // emitted earlier in the same turn). Because every SK is `Date.now()` at
+  // write time, a delayed final write (kiro-cli tool round-trip, retrigger
+  // sleep, DDB latency) could otherwise take a timestamp LARGER than an
+  // intermediate whose own write was delayed — or, on a resurrection turn, an
+  // intermediate re-sent later than the final report (observed live: an
+  // in-progress status update landed 41s AFTER its own completion report).
+  // When `ensureAfterSK` is supplied we clamp the SK to be strictly greater
+  // than it, preserving intra-turn order. Callers pass the max SK observed
+  // in the session so far.
   let skNum = Date.now();
   if (options.ensureAfterSK) {
     const after = Number(options.ensureAfterSK);
@@ -212,6 +218,86 @@ export const saveConversationHistory = async (
   return item;
 };
 
+/**
+ * Fetch the maximum (latest) SK currently stored for a session, or `undefined`
+ * when the session has no messages yet. Used by the end-of-turn persist path
+ * to clamp the final assistant message's SK so it sorts after every intra-turn
+ * message (the ordering guard above). Reads ALL message types (`includeAll`) because
+ * communicationLog mirrors of outgoing agent messages also occupy SK slots and
+ * must be ordered before the final reply.
+ *
+ * Implemented as a single DynamoDB `Query` with `ScanIndexForward: false` +
+ * `Limit: 1`, which returns only the row with the largest SK — an O(1) read
+ * regardless of session length. SKs are zero-padded fixed-width millisecond
+ * timestamps (`String(Date.now()).padStart(15, '0')`), so DynamoDB's
+ * lexicographic SK ordering coincides with numeric ordering and the last item
+ * is genuinely the max SK. We intentionally do NOT filter by `messageType`
+ * here (no `includeAll` equivalent): every persisted row — including the
+ * communicationLog mirrors of outgoing agent messages — occupies an SK slot
+ * and must be considered when clamping the final reply's SK.
+ */
+export const getLatestMessageSK = async (workerId: string): Promise<string | undefined> => {
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName,
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `message-${workerId}`,
+      },
+      ScanIndexForward: false, // newest (largest SK) first
+      Limit: 1,
+      ProjectionExpression: 'SK',
+    })
+  );
+  return res.Items?.[0]?.SK as string | undefined;
+};
+
+/**
+ * Format a millisecond epoch timestamp into the zero-padded, fixed-width SK
+ * representation the message table uses (`String(ms).padStart(15, '0')`).
+ * Exported for unit testing so callers / tests don't re-derive the padding.
+ */
+export const messageSKFromTimestamp = (timestampMs: number): string => String(timestampMs).padStart(15, '0');
+
+/**
+ * Fetch only the messages written at or after `sinceMs` (a millisecond epoch
+ * timestamp), using a DynamoDB `SK >= :cutoff` KeyCondition so the read is
+ * bounded to the recent window instead of scanning the full session history.
+ *
+ * Used by the agent-messaging dedup look-back, which only ever cares about the
+ * last `DEFAULT_DEDUP_WINDOW_MS` (~5 min) of outgoing messages. Returns ALL
+ * message types (no `communicationLog` / internalError filtering) because the
+ * dedup look-back inspects the sender's own `communicationLog` mirror rows; the
+ * caller applies its own `messageType` / sender / target filter in memory.
+ *
+ * SKs are zero-padded fixed-width millisecond timestamps, so a lexicographic
+ * `SK >= cutoff` comparison coincides with the numeric `timestamp >= sinceMs`
+ * window. A negative `sinceMs` is clamped to 0 so the cutoff is always a valid
+ * 15-char SK.
+ */
+export const getRecentMessages = async (workerId: string, sinceMs: number): Promise<MessageItem[]> => {
+  const cutoff = messageSKFromTimestamp(Math.max(0, Math.floor(sinceMs)));
+  const items: MessageItem[] = [];
+  const paginator = paginateQuery(
+    {
+      client: ddb,
+    },
+    {
+      TableName,
+      KeyConditionExpression: 'PK = :pk AND SK >= :cutoff',
+      ExpressionAttributeValues: {
+        ':pk': `message-${workerId}`,
+        ':cutoff': cutoff,
+      },
+    }
+  );
+  for await (const page of paginator) {
+    if (page.Items == null) continue;
+    items.push(...(page.Items as MessageItem[]));
+  }
+  return items;
+};
+
 export const updateMessageTokenCount = async (workerId: string, messageSK: string, tokenCount: number) => {
   await ddb.send(
     new UpdateCommand({
@@ -228,18 +314,37 @@ export const updateMessageTokenCount = async (workerId: string, messageSK: strin
   );
 };
 
+export const updateMessageType = async (workerId: string, messageSK: string, messageType: string) => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: {
+        PK: `message-${workerId}`,
+        SK: messageSK,
+      },
+      UpdateExpression: 'SET messageType = :messageType',
+      ExpressionAttributeValues: {
+        ':messageType': messageType,
+      },
+    })
+  );
+};
+
 export interface GetConversationHistoryOptions {
   /**
    * When true, return all messages without filtering.
-   * When false/omitted, internal-only bookkeeping rows (`internalError`,
-   * `retriggerGiveup`, `cancelledTurn`) are excluded. These rows are written
-   * by the kiro-cli backend for debugging / recovery bookkeeping and must
-   * never enter an LLM context or reach the UX.
+   * When false/omitted, messages with `messageType === 'communicationLog'` are excluded.
+   *
+   * `communicationLog` items are sibling-to-sibling agent-messaging entries that are
+   * persisted in the parent session's DynamoDB history purely for UI display (so the
+   * webapp can reconstruct the sibling communication log after a page reload). They
+   * must NOT be included when building LLM context, because on a PM-style parent with
+   * many children they would balloon the context and cause middleOutFiltering to silently
+   * drop the user's actual messages.
    *
    * Rule of thumb:
-   * - LLM-facing / UI-facing callers → omit / false
-   * - recovery-bookkeeping callers that must see the raw rows (e.g. the
-   *   retrigger burst accounting in the worker) → true
+   * - LLM-facing callers (worker agent loop, orchestrator, take-over, etc.) → omit / false
+   * - UI-facing callers (webapp pages, API routes that render history, dump-history) → true
    */
   includeAll?: boolean;
 }
@@ -269,6 +374,8 @@ export const getConversationHistory = async (workerId: string, options: GetConve
     ? items
     : items.filter(
         (item) =>
+          item.messageType !== 'communicationLog' &&
+          item.messageType !== 'userDeliveryLog' &&
           item.messageType !== INTERNAL_ERROR_MESSAGE_TYPE &&
           item.messageType !== RETRIGGER_GIVEUP_MESSAGE_TYPE &&
           item.messageType !== CANCELLED_TURN_MESSAGE_TYPE
@@ -286,15 +393,17 @@ const searchForLastSlackUserId = (items: MessageItem[]) => {
 };
 
 export const middleOutFiltering = async (items: MessageItem[], maxInputToken = MAX_INPUT_TOKEN) => {
-  // Belt-and-suspenders guard: the internal-only markers (`internalError`,
-  // `retriggerGiveup`, `cancelledTurn`) must never enter an LLM context. They
-  // are already filtered out by `getConversationHistory` by default, but if a
-  // future caller accidentally passes `{ includeAll: true }` to a history
-  // fetch that feeds an LLM, the tokenCount=0 on these rows would silently
-  // inflate the real context and mislead this function. Drop them
+  // Belt-and-suspenders guard: `communicationLog` / `userDeliveryLog` are UI-only
+  // mirrors and the internal-only markers (`internalError`, `retriggerGiveup`)
+  // must never enter an LLM context. They are already filtered out by
+  // `getConversationHistory` by default, but if a future caller accidentally passes
+  // `{ includeAll: true }` to a history fetch that feeds an LLM, the tokenCount=0 on these
+  // rows would silently inflate the real context and mislead this function. Drop them
   // unconditionally here so the LLM path is safe by construction.
   items = items.filter(
     (item) =>
+      item.messageType !== 'communicationLog' &&
+      item.messageType !== 'userDeliveryLog' &&
       item.messageType !== INTERNAL_ERROR_MESSAGE_TYPE &&
       item.messageType !== RETRIGGER_GIVEUP_MESSAGE_TYPE &&
       item.messageType !== CANCELLED_TURN_MESSAGE_TYPE
@@ -362,16 +471,39 @@ export const middleOutFiltering = async (items: MessageItem[], maxInputToken = M
   return { items, totalTokenCount, messages: await itemsToMessages(items) };
 };
 
-export const noOpFiltering = async (items: MessageItem[]) => {
+/**
+ * Options for `noOpFiltering`.
+ *
+ * `forUi`: when true, `postProcessMessageContent` is invoked in UI mode, which
+ * preserves the original `image.source.s3Key` / `file.source.s3Key` blocks and
+ * does NOT download the referenced bytes from S3. This is what the webapp
+ * needs to render attachments — `<img>` and download links are produced from
+ * the s3Key via pre-signed URLs on the client side. Loading the bytes here is
+ * not just wasteful; for multi-GB attachments it can OOM the Lambda hosting
+ * the webapp (1.5 GiB ZIP + Node Buffer overhead → >3 GiB peak heap, killed
+ * by the 1769 MB Lambda memory cap, response stream truncated, browser shows
+ * `ERR_CONTENT_DECODING_FAILED`).
+ *
+ * The default (`forUi` omitted / false) preserves the legacy LLM-facing
+ * behaviour: image bytes are fetched, file paths are flattened to a `text`
+ * block referring to the local-FS copy. Worker callers (agent loop, take-over,
+ * etc.) MUST keep using the default; they need the bytes for Bedrock Converse
+ * and the local-FS path for shell tools.
+ */
+export interface NoOpFilteringOptions {
+  forUi?: boolean;
+}
+
+export const noOpFiltering = async (items: MessageItem[], options: NoOpFilteringOptions = {}) => {
   let totalTokenCount = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
-  return { items, totalTokenCount, messages: await itemsToMessages(items) };
+  return { items, totalTokenCount, messages: await itemsToMessages(items, options.forUi) };
 };
 
-const itemsToMessages = async (items: MessageItem[]) => {
+const itemsToMessages = async (items: MessageItem[], forUi = false) => {
   return (await Promise.all(
     items.map(async (item) => ({
       role: item.role,
-      content: await postProcessMessageContent(item.content),
+      content: await postProcessMessageContent(item.content, forUi),
     }))
   )) as Message[];
 };
@@ -388,6 +520,17 @@ const preProcessMessageContent = async (content: Message['content'], workerId: s
       for (const cc of c.toolResult.content) {
         if (cc.image?.source?.bytes != null) {
           const bytes = cc.image.source.bytes;
+          // W-1' guard: a zero-length image (e.g. an MCP tool returning empty image
+          // data) must be neutralized, not merely skipped. structuredClone +
+          // JSON.stringify turns an empty Uint8Array into `{}`, which survives a
+          // history load as a truthy image block and gets re-sent to the model on
+          // every subsequent turn (cascading "Could not process image"). Replace the
+          // whole image block with a benign text marker so nothing empty is persisted.
+          if ((bytes instanceof Uint8Array || Buffer.isBuffer(bytes)) && bytes.length === 0) {
+            delete (cc as { image?: unknown }).image;
+            (cc as { text?: string }).text = '[empty image result skipped]';
+            continue;
+          }
           const hash = Buffer.from(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes))).toString('hex');
           const s3Key = `${workerId}/${hash}.${cc.image.format}`;
           await writeBytesToKey(s3Key, bytes);
@@ -402,7 +545,6 @@ const preProcessMessageContent = async (content: Message['content'], workerId: s
   return JSON.stringify(content);
 };
 
-const imageCache: Record<string, { data: Uint8Array; localPath: string; format: string }> = {};
 const fileCache: Record<string, { localPath: string }> = {};
 let imageSeqNo = 0;
 let fileSeqNo = 0;
@@ -421,27 +563,6 @@ const ensureFilesDirectory = () => {
     mkdirSync(filesDir, { recursive: true });
   }
   return filesDir;
-};
-
-const saveImageToLocalFs = async (imageBuffer: Uint8Array): Promise<string> => {
-  const imagesDir = ensureImagesDirectory();
-
-  // Convert webp to jpeg for better compatibility with CLI tools
-  const jpegBuffer = await sharp(imageBuffer).jpeg({ quality: 85 }).toBuffer();
-  const extension = 'jpeg';
-
-  // Create path with sequence number
-  const fileName = `image${imageSeqNo}.${extension}`;
-  const filePath = path.join(imagesDir, fileName);
-
-  // Write image to file
-  writeFileSync(filePath, jpegBuffer);
-
-  // Increment sequence number for next image
-  imageSeqNo++;
-
-  // Return the path in the format specified in the issue
-  return filePath;
 };
 
 const saveFileToLocalFs = async (fileBuffer: Uint8Array, fileName: string): Promise<string> => {
@@ -488,13 +609,11 @@ export const materializeFileBlock = async (
 };
 
 const imageBlockCache: Record<string, { originalPath: string; previewPath: string; fileName: string }> = {};
+const toolResultImageCache: Record<string, { bytes: Uint8Array; format: string }> = {};
 
 /**
- * Resolve an `image` block's S3 key to files on the local filesystem for the
- * kiro-cli renderer. `originalPath` contains the resized (<=1568px) image,
- * not the raw S3 original — the full-size original is only in S3; local disk
- * always has the clamped version. A JPEG preview is additionally written so
- * CLI-side image tooling has a universally readable format.
+ * NOTE: originalPath now contains the resized (\<\=1568px) image, not the raw S3 original.
+ * The full-size original is only in S3; local disk always has the clamped version.
  */
 export const materializeImageBlock = async (
   s3Key: string
@@ -523,64 +642,150 @@ export const materializeImageBlock = async (
 };
 
 /**
- * process message content after getting it from DB
+ * Derive the Bedrock-compatible image `format` value from an S3 key's
+ * file extension (returned by `s3Key.split('.').pop()` — not including
+ * the leading dot). Used by `postProcessMessageContent` to normalise
+ * attached image uploads as they are rehydrated from DynamoDB.
+ *
+ * Bedrock Converse's `image.format` enum is `'png' | 'jpeg' | 'gif' |
+ * 'webp'`; `.jpg` uploads must be rewritten to `'jpeg'` or the Converse
+ * call fails validation. Extensions not in the whitelist fall back to
+ * `'webp'` — sharp can encode any decodable input to webp and Bedrock
+ * accepts it, so this prevents a permanent 400 from non-standard keys.
+ *
+ * Exported for unit testing.
  */
-const postProcessMessageContent = async (content: string) => {
-  const contentArray = JSON.parse(content);
+const VALID_IMAGE_FORMATS = new Set(['png', 'jpeg', 'gif', 'webp']);
+
+export const imageFormatFromExtension = (ext: string): string => {
+  const lower = ext.toLowerCase();
+  const normalised = lower === 'jpg' ? 'jpeg' : lower;
+  return VALID_IMAGE_FORMATS.has(normalised) ? normalised : 'webp';
+};
+
+/**
+ * Defensively parse a stored `content` string into an array of ContentBlocks.
+ *
+ * The normal write path (`preProcessMessageContent`) always persists a
+ * JSON-stringified ContentBlock array, so `JSON.parse` succeeds and returns an
+ * array in practice. This helper is defence in depth: a malformed legacy row,
+ * a future code path, or a hand-edited item could store plain text (or a
+ * non-array JSON value) in `content`. In that case `JSON.parse` would throw an
+ * unhandled server-side exception and tank the whole turn / page render.
+ *
+ * Instead we fall back to treating the raw string as a single `text` block,
+ * mirroring the tolerant parsing already used elsewhere (the dedup look-back in
+ * agent-messaging.ts and the webapp `extractUserMessage`). A parsed-but-non-
+ * array value (e.g. a bare JSON string/number) is likewise wrapped as a single
+ * text block so downstream `for (const c of ...)` iteration is always safe.
+ *
+ * Exported for unit testing.
+ */
+export const parseContentBlocks = (content: string): any[] => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return [{ text: content }];
+  }
+  if (!Array.isArray(parsed)) {
+    return [{ text: content }];
+  }
+  return parsed;
+};
+
+/**
+ * process message content after getting it from DB
+ *
+ * `forUi`: when true, image/file blocks that reference an S3 key are passed
+ * through unchanged instead of being rehydrated into bytes / local-FS paths.
+ * This is the path taken by webapp UI callers (`page.tsx`, `route.ts`) which
+ * only need the s3Key + fileName to render `<img>` previews and download
+ * links via pre-signed URLs. Skipping the S3 fetch is critical: a single
+ * multi-GB attachment in the history would otherwise be loaded into the
+ * Lambda's heap on every page render and OOM the function (1769 MB cap).
+ *
+ * The default (`forUi = false`) preserves the LLM/worker contract: bytes are
+ * fetched, images are normalised to a Bedrock-Converse-compatible format,
+ * non-image files are flattened to a `text` block pointing at a local-FS
+ * copy so shell tools can read them.
+ *
+ * `isTopLevel`: when true (the default), user-attached images are flattened to
+ * text blocks with S3 URI + local paths. When false (recursive toolResult
+ * processing), images are rehydrated as image bytes so Bedrock can render them
+ * inline (e.g. readLocalImage results, screenshots). This prevents the
+ * "infinite read loop" where flattened toolResult images produce another text
+ * instruction to "read the preview path".
+ */
+const postProcessMessageContent = async (content: string, forUi = false, isTopLevel = true) => {
+  const contentArray = parseContentBlocks(content);
   const flattenedArray = [];
 
   for (const c of contentArray) {
     if (typeof c.image?.source?.s3Key == 'string') {
+      if (forUi) {
+        flattenedArray.push(c);
+        continue;
+      }
       const s3Key = c.image.source.s3Key as string;
-      let imageBuffer: Uint8Array;
-      let localPath: string;
-      let imageFormat: string;
-
-      if (s3Key in imageCache) {
-        imageBuffer = imageCache[s3Key].data;
-        localPath = imageCache[s3Key].localPath;
-        imageFormat = imageCache[s3Key].format;
-      } else if (['png', 'jpeg', 'gif', 'webp'].some((ext) => s3Key.endsWith(ext))) {
-        imageBuffer = await getBytesFromKey(s3Key);
-        localPath = await saveImageToLocalFs(imageBuffer);
-        imageFormat = s3Key.split('.').pop()!;
+      if (isTopLevel) {
+        try {
+          const { previewPath, fileName, s3Uri } = await materializeImageBlock(s3Key);
+          flattenedArray.push({
+            text:
+              `the image "${fileName}" is available as a resized preview at ${previewPath} (original: ${s3Uri})\n` +
+              `to view this image, use the readLocalImage tool on the preview path`,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn(`[messages] Failed to process image ${s3Key}: ${msg}`);
+          flattenedArray.push({
+            text: `[image attachment, s3Key: ${s3Key}, s3Uri: s3://${BucketName}/${s3Key}, note: failed-to-fetch]`,
+          });
+        }
       } else {
-        const file = await getBytesFromKey(s3Key);
-        imageBuffer = await sharp(file).webp({ lossless: false, quality: 80 }).toBuffer();
-        localPath = await saveImageToLocalFs(imageBuffer);
-        imageFormat = 'webp';
+        try {
+          if (s3Key in toolResultImageCache) {
+            const cached = toolResultImageCache[s3Key]!;
+            flattenedArray.push({
+              image: {
+                format: cached.format,
+                source: { bytes: cached.bytes },
+              },
+            });
+          } else {
+            const bytes = await getBytesFromKey(s3Key);
+            const format = imageFormatFromExtension(s3Key.split('.').pop() || 'png');
+            const clamped = await ensureImageWithinBounds(bytes, { format });
+            toolResultImageCache[s3Key] = { bytes: clamped, format };
+            flattenedArray.push({
+              image: {
+                format,
+                source: { bytes: clamped },
+              },
+            });
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn(`[messages] Failed to rehydrate toolResult image ${s3Key}: ${msg}`);
+          flattenedArray.push({
+            text: `[image in tool result, s3Key: ${s3Key}, note: failed-to-fetch]`,
+          });
+        }
       }
-      imageCache[s3Key] = { data: imageBuffer, localPath, format: imageFormat };
-
-      flattenedArray.push({
-        image: {
-          format: imageFormat,
-          source: {
-            bytes: imageBuffer,
-          },
-        },
-      });
-      flattenedArray.push({
-        text: `the image is stored locally on ${localPath}`,
-      });
     } else if (typeof c.file?.source?.s3Key == 'string') {
-      const s3Key = c.file.source.s3Key as string;
-      const fileName = c.file.fileName || s3Key.split('/').pop() || 'file';
-      let localPath: string;
-
-      if (s3Key in fileCache) {
-        localPath = fileCache[s3Key].localPath;
-      } else {
-        const fileBuffer = await getBytesFromKey(s3Key);
-        localPath = await saveFileToLocalFs(fileBuffer, fileName);
-        fileCache[s3Key] = { localPath };
+      if (forUi) {
+        flattenedArray.push(c);
+        continue;
       }
+      const s3Key = c.file.source.s3Key as string;
+      const { localPath, fileName } = await materializeFileBlock(s3Key, c.file.fileName);
 
       flattenedArray.push({
         text: `the file "${fileName}" is stored locally on ${localPath}`,
       });
     } else if (c.toolResult?.content != null) {
-      c.toolResult.content = await postProcessMessageContent(JSON.stringify(c.toolResult.content));
+      c.toolResult.content = await postProcessMessageContent(JSON.stringify(c.toolResult.content), forUi, false);
       flattenedArray.push(c);
     } else {
       flattenedArray.push(c);
@@ -590,6 +795,21 @@ const postProcessMessageContent = async (content: string) => {
   return flattenedArray;
 };
 
+/**
+ * Deliver an assistant message to Slack and (optionally) the webapp real-time
+ * channel. When `messageSK` is provided the message is treated as a rendered,
+ * persisted bubble: the session's list-preview (`lastMessage`) and ordering
+ * timestamp (`lastMessageAt`) are updated in DDB and a `lastMessageUpdate`
+ * consistency signal is emitted so the webapp can self-recover from dropped
+ * real-time events.
+ *
+ * @param messageSK - Pass ONLY when the message has already been persisted to
+ *   DDB as a conversation-history item (i.e. it will appear as a chat bubble
+ *   after a page refresh). Omitting this parameter disables preview/ordering
+ *   updates and the drop-recovery signal — correct for transient lifecycle
+ *   notifications (sleep, termination, ack) that must NOT reorder the session
+ *   list.
+ */
 export const sendSystemMessage = async (
   workerId: string,
   message: string,
@@ -598,11 +818,15 @@ export const sendSystemMessage = async (
   messageSK?: string
 ) => {
   // Webapp message emit is gated on `skipWebappEmit` so callers that have
-  // already delivered the same text to the webapp through another channel can
-  // avoid creating a duplicate `type:'message'` bubble — the webapp's
+  // already delivered the same text to the webapp through another channel
+  // (e.g. the Kiro tool-boundary text flush in `kiroAgentLoop`) can avoid
+  // creating a duplicate `type:'message'` bubble — the webapp's
   // `SessionPageClient` does not deduplicate assistant messages by content,
-  // so a re-emit would surface as a visual duplicate. Slack delivery is NEVER
-  // gated by this flag.
+  // so a re-emit would surface as a visual duplicate. Slack delivery is
+  // NEVER gated by this flag; the Slack channel cannot dedup either, but
+  // it has only ONE producer (this function) and so cannot duplicate
+  // unless the caller has its own Slack send, which by convention they do
+  // not.
   if (!skipWebappEmit) {
     await sendWebappEvent(workerId, {
       type: 'message',
@@ -616,7 +840,10 @@ export const sendSystemMessage = async (
   // (lastMessageAt) ONLY when the message is persisted to DDB (indicated by
   // `messageSK`). Non-persisted messages (e.g. kill-timer "Going to sleep")
   // are transient real-time notifications that should NOT reorder the session
-  // list, and don't survive a page refresh.
+  // list — the user explicitly rejected sleep/lifecycle events pushing idle
+  // sessions above active ones. They also don't survive a page refresh, so
+  // the consistency signal (lastMessageUpdate) would find no matching bubble
+  // and trigger a useless router.refresh().
   if (messageSK) {
     try {
       const cleanMessage = message.replace(/^<@[A-Z0-9]+>\s*/, '');
@@ -644,80 +871,4 @@ export const sendSystemMessage = async (
   } else {
     await sendMessageToSlack(message);
   }
-};
-
-/**
- * Convert a timestamp (ms since epoch) into a zero-padded SK string matching the
- * DDB message table's sort key format. Used for range queries (e.g. "all messages
- * since X ms ago") that exploit DDB's lexicographic ordering of the zero-padded
- * 15-char SK.
- */
-export const messageSKFromTimestamp = (timestampMs: number): string => String(timestampMs).padStart(15, '0');
-
-/**
- * Retrieve all messages for a session created at or after `sinceMs` (epoch ms).
- * Uses pagination to collect all items from the DDB query. Useful for dedup
- * windows and recent-history lookups.
- */
-export const getRecentMessages = async (workerId: string, sinceMs: number): Promise<MessageItem[]> => {
-  const cutoff = messageSKFromTimestamp(Math.max(0, Math.floor(sinceMs)));
-  const items: MessageItem[] = [];
-  const paginator = paginateQuery(
-    {
-      client: ddb,
-    },
-    {
-      TableName,
-      KeyConditionExpression: 'PK = :pk AND SK >= :cutoff',
-      ExpressionAttributeValues: {
-        ':pk': `message-${workerId}`,
-        ':cutoff': cutoff,
-      },
-    }
-  );
-  for await (const page of paginator) {
-    if (page.Items == null) continue;
-    items.push(...(page.Items as MessageItem[]));
-  }
-  return items;
-};
-
-/**
- * Return the SK (sort key) of the most recent message for a worker/session,
- * or `undefined` when the session has no messages yet. SKs are zero-padded
- * fixed-width millisecond timestamps, so the largest SK is the newest message.
- */
-export const getLatestMessageSK = async (workerId: string): Promise<string | undefined> => {
-  const res = await ddb.send(
-    new QueryCommand({
-      TableName,
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': `message-${workerId}`,
-      },
-      ScanIndexForward: false, // newest (largest SK) first
-      Limit: 1,
-      ProjectionExpression: 'SK',
-    })
-  );
-  return res.Items?.[0]?.SK as string | undefined;
-};
-
-/**
- * Overwrite the `messageType` attribute of an already-persisted message.
- */
-export const updateMessageType = async (workerId: string, messageSK: string, messageType: string) => {
-  await ddb.send(
-    new UpdateCommand({
-      TableName,
-      Key: {
-        PK: `message-${workerId}`,
-        SK: messageSK,
-      },
-      UpdateExpression: 'SET messageType = :messageType',
-      ExpressionAttributeValues: {
-        ':messageType': messageType,
-      },
-    })
-  );
 };

@@ -12,7 +12,7 @@ export async function getTodoList(workerId: string): Promise<TodoList | null> {
   if (!metadata?.items) {
     return null;
   }
-  return metadata as TodoList;
+  return metadata as unknown as TodoList;
 }
 
 /**

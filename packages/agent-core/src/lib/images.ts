@@ -1,5 +1,13 @@
 import { basename, extname } from 'path';
 
+// Re-export the isomorphic attachment-sentinel helpers so server-side
+// callers that import from the `./lib` barrel keep working unchanged.
+// The helpers themselves live in `../attachments` (reachable via the
+// `./attachments` package export) because the webapp client bundle
+// cannot import the `./lib` barrel — its other members transitively
+// pull in Node-only deps (`child_process`, `sharp`).
+export { buildAttachmentSentinel, parseAttachmentSentinel, type AttachmentSentinelPayload } from '../attachments';
+
 export const getAttachedImageKey = (workerId: string, toolUseId: string, filePath: string) => {
   const ext = extname(filePath);
   return `${workerId}/${toolUseId}${ext}`;
@@ -18,7 +26,7 @@ export const isImageKey = (key: string): boolean => {
 /**
  * Supported Bedrock Image `format` values. Mirrors the set the
  * `@aws-sdk/client-bedrock-runtime` `ImageFormat` enum advertises AND the
- * MIME types Claude accepts on Bedrock `ContentBlock::Image`. SVG is
+ * MIME types kiro-cli / Claude accepts on ACP `ContentBlock::Image`. SVG is
  * intentionally excluded — neither Bedrock nor Claude image input accepts
  * `image/svg+xml`, so a webapp drop of an SVG asset has to be rejected at
  * the content-type layer upstream (see `imageContentTypes` in the upload
@@ -36,7 +44,7 @@ export type SupportedImageFormat = (typeof SUPPORTED_IMAGE_FORMATS)[number];
  * Returns `undefined` for unknown / missing extensions so callers can
  * decide whether to default to a safe value or reject the image. Do not
  * default to `'webp'` (the pre-2026-04-20 behaviour): DDB rows persisted
- * with an incorrect format caused the Bedrock Converse API to raise
+ * with an incorrect format caused kiro-cli `session/prompt` to raise
  * `ValidationException` on history replay because the base64 bytes (real
  * PNG) did not match the advertised `image/webp` MIME type.
  *
