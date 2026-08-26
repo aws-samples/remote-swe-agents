@@ -151,7 +151,11 @@
     "searchResultCount": "{count, plural, one {# result} other {# results}}",
     "searchTimedOut": "Results may be incomplete (search timed out).",
     "kiroModelSelector": "Kiro model",
-    "modelUpdateFailed": "Failed to save model selection"
+    "modelUpdateFailed": "Failed to save model selection",
+    "reloadedAfterUpdate": "The app was updated, so the page was reloaded.",
+    "messageRestoredAfterUpdate": "The app was updated. Your unsent message was restored — please press send again.",
+    "attachmentsPartiallyRestored": "Some attachments could not be restored.",
+    "settingsNotCarriedOver": "Some settings could not be carried over across the app update, so defaults were used."
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

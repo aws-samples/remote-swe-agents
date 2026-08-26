@@ -170,6 +170,14 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
             )
             .join('\n\n');
           toolUse.output = detail;
+
+          const toolResultImageKeys = results
+            .flatMap((block) => block.toolResult.content ?? [])
+            .filter((b: any) => b.image?.source?.s3Key)
+            .map((b: any) => b.image.source.s3Key as string);
+          if (toolResultImageKeys.length > 0) {
+            toolUse.imageKeys = [...(toolUse.imageKeys ?? []), ...toolResultImageKeys];
+          }
         }
         break;
       }

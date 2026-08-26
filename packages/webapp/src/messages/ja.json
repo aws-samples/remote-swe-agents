@@ -2,8 +2,8 @@
   "common": {
     "locale": "日本語",
     "deploymentRecovery": {
-      "appUpdated": "アプリが更新されました。続行するにはページを再読み込みしてください。",
-      "reload": "再読み込み"
+      "appUpdated": "アプリが更新されました。続けるにはページをリロードしてください。",
+      "reload": "リロード"
     }
   },
   "header": {
@@ -151,7 +151,11 @@
     "searchResultCount": "{count}件の結果",
     "searchTimedOut": "結果が不完全な可能性があります（検索がタイムアウトしました）。",
     "kiroModelSelector": "Kiro モデル",
-    "modelUpdateFailed": "モデル選択の保存に失敗しました"
+    "modelUpdateFailed": "モデル選択の保存に失敗しました",
+    "reloadedAfterUpdate": "アプリが更新されたため、ページを再読み込みしました。",
+    "messageRestoredAfterUpdate": "アプリが更新されました。未送信のメッセージを復元したので、もう一度送信してください。",
+    "attachmentsPartiallyRestored": "一部の添付ファイルを復元できませんでした。",
+    "settingsNotCarriedOver": "アプリ更新をまたいだため一部の設定を引き継げず、デフォルト値を使用しました。"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

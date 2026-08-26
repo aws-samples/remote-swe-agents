@@ -2,28 +2,35 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
+import { useAction } from 'next-safe-action/hooks';
 import { Button } from '@/components/ui/button';
 import { Paperclip, FileText } from 'lucide-react';
-import { createNewWorker } from './actions';
-import { getUserPreferencesAction, checkKiroApiKeyAction } from '../../preferences/actions';
-import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
+import { createNewWorker } from './actions';
 import { createNewWorkerSchema, PromptTemplate } from './schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import ImageUploader from '@/components/ImageUploader';
+import { useImageUploader } from '@/components/ImageUploader';
+import {
+  clearStaleDeploymentReloadGuard,
+  isChunkLoadError,
+  isStaleActionError,
+  reloadForStaleDeployment,
+} from '@/lib/deployment-recovery';
+import { extractStringArray, salvageOptionalFields, savePendingResend, takePendingResend } from '@/lib/pending-resend';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField } from '@/components/ui/form';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { getUserPreferencesAction, checkKiroApiKeyAction } from '../../preferences/actions';
 import TemplateModal from './TemplateModal';
 import {
   CustomAgent,
+  InferenceMode,
+  KiroModelId,
   getAvailableModelTypes,
   GlobalPreferences,
   modelConfigs,
-  InferenceMode,
-  KiroModelId,
   kiroModelConfigs,
   getKiroModelIds,
 } from '@remote-swe-agents/agent-core/schema';
@@ -33,16 +40,10 @@ interface NewSessionFormProps {
   customAgents: CustomAgent[];
   preferences: GlobalPreferences;
   agentIconUrls?: Record<string, string>;
-  /**
-   * Default Kiro model resolved server-side from the user's preferences
-   * (`kiroDefaultModel > kiroModel > 'auto'`).
-   */
   kiroModel: string;
 }
 
 // Map internal inference mode identifiers to i18n translation keys.
-// The mode value `'kiro-cli'` is an implementation detail; the user-facing
-// translation key is `'kiro'`.
 const inferenceModeI18nKey: Record<InferenceMode, string> = {
   bedrock: 'bedrock',
   'kiro-cli': 'kiro',
@@ -86,7 +87,37 @@ export default function NewSessionForm({
   } = useHookFormAction(createNewWorker, zodResolver(createNewWorkerSchema), {
     actionProps: {
       onSuccess: (args) => {},
+      // Successful creation ends in a redirect(), which surfaces as a
+      // navigation (onSuccess is not called) — reset the stale-deployment
+      // reload attempt counter here.
+      onNavigation: () => {
+        try {
+          clearStaleDeploymentReloadGuard(window.sessionStorage);
+        } catch {}
+      },
       onError: ({ error }) => {
+        // Stale build after a redeploy. UnrecognizedActionError means the
+        // Server Action was rejected before executing, so it is safe to
+        // reload and automatically re-submit (mode 'resend'). ChunkLoadError
+        // gives no such guarantee — resubmitting could create a second
+        // session — so the form content is only restored after the reload
+        // (mode 'restore'). Loop-guarded — see deployment-recovery.ts.
+        const staleAction = isStaleActionError(error.thrownError);
+        if (staleAction || isChunkLoadError(error.thrownError)) {
+          savePendingResend('new-session', {
+            mode: staleAction ? 'resend' : 'restore',
+            values: form.getValues(),
+          });
+          if (reloadForStaleDeployment()) {
+            return;
+          }
+          takePendingResend('new-session');
+        }
+        if (resendAttachmentsRef.current) {
+          const { imageKeys, fileKeys } = resendAttachmentsRef.current;
+          resendAttachmentsRef.current = null;
+          void restoreFromKeysRef.current(imageKeys, fileKeys);
+        }
         toast.error(typeof error === 'string' ? error : 'Failed to create session');
       },
     },
@@ -102,10 +133,64 @@ export default function NewSessionForm({
       },
     },
   });
-  const { register, formState, reset, setValue, watch, control } = form;
+  const { register, formState, setValue, watch, control } = form;
+
+  const resendAttachmentsRef = useRef<{ imageKeys: string[]; fileKeys: string[] } | null>(null);
+  const restoreFromKeysRef = useRef<
+    (imageKeys: string[], fileKeys: string[]) => Promise<{ imageKeys: string[]; fileKeys: string[] } | null>
+  >(async () => null);
+
+  // Consume a pending submission persisted by the stale-deployment handler
+  // above (one-shot: the payload is removed from sessionStorage before
+  // acting). Values crossing a deployment boundary are re-validated against
+  // the NEW build's schema field by field; only the fields that are actually
+  // invalid (model enums change between deploys) are dropped — with a toast —
+  // and if the payload cannot be auto-resent it degrades to restoring the
+  // form so the user's input is never lost.
+  const resendConsumedRef = useRef(false);
+  useEffect(() => {
+    if (resendConsumedRef.current) return;
+    resendConsumedRef.current = true;
+    const pending = takePendingResend<Record<string, unknown>>('new-session');
+    if (!pending) return;
+    const raw = pending.values;
+    const message = typeof raw.message === 'string' ? raw.message : '';
+    if (!message.trim()) return;
+    const imageKeys = extractStringArray(raw.imageKeys);
+    const fileKeys = extractStringArray(raw.fileKeys);
+    const { values: optionals, dropped } = salvageOptionalFields(createNewWorkerSchema.shape, raw, [
+      'modelOverride',
+      'customAgentId',
+      'inferenceMode',
+      'kiroModel',
+      'bedrockDefaultModel',
+      'kiroDefaultModel',
+    ]);
+    const parsed = createNewWorkerSchema.safeParse({ message, imageKeys, fileKeys, ...optionals });
+    const canResend = pending.mode === 'resend' && parsed.success;
+    const values = parsed.success ? parsed.data : { message, imageKeys, fileKeys };
+    resendAttachmentsRef.current = { imageKeys, fileKeys };
+    requestAnimationFrame(() => {
+      const defined = Object.fromEntries(Object.entries(values).filter(([, v]) => v !== undefined));
+      form.reset({ ...form.getValues(), ...defined });
+      if (dropped.length > 0) {
+        toast.warning(sessionsT('settingsNotCarriedOver'));
+      }
+      if (canResend) {
+        toast.info(sessionsT('reloadedAfterUpdate'));
+        handleSubmitWithAction();
+      } else {
+        resendAttachmentsRef.current = null;
+        void restoreFromKeysRef.current(imageKeys, fileKeys);
+        toast.info(sessionsT('messageRestoredAfterUpdate'));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedCustomAgentId = watch('customAgentId');
   const inferenceMode = watch('inferenceMode') ?? 'bedrock';
+  const kiroModel = watch('kiroModel') ?? 'auto';
 
   // Resolve the custom agent currently selected, if any.
   const selectedCustomAgent = useMemo(
@@ -143,6 +228,29 @@ export default function NewSessionForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inferenceMode]);
 
+  const {
+    uploadingImages,
+    uploadingFiles,
+    handleFileSelect,
+    handlePaste,
+    ImagePreviewList,
+    isUploading,
+    restoreFromKeys,
+  } = useImageUploader({
+    onImagesChange: (keys) => {
+      setValue('imageKeys', keys);
+    },
+    onFilesChange: (keys) => {
+      setValue('fileKeys', keys);
+    },
+  });
+  restoreFromKeysRef.current = restoreFromKeys;
+
+  const handleTemplateSelect = (template: PromptTemplate) => {
+    setValue('message', template.content, { shouldValidate: true });
+    setIsTemplateModalOpen(false);
+  };
+
   const handleSelectMode = (mode: InferenceMode) => {
     if (isModeLocked) return;
     if (mode === 'kiro-cli' && !hasApiKey) return;
@@ -150,21 +258,6 @@ export default function NewSessionForm({
     if (mode === 'kiro-cli') {
       setValue('kiroModel', form.getValues('kiroModel') || 'auto');
     }
-  };
-
-  const { uploadingImages, uploadingFiles, handleFileSelect, handlePaste, ImagePreviewList, isUploading } =
-    ImageUploader({
-      onImagesChange: (keys) => {
-        setValue('imageKeys', keys);
-      },
-      onFilesChange: (keys) => {
-        setValue('fileKeys', keys);
-      },
-    });
-
-  const handleTemplateSelect = (template: PromptTemplate) => {
-    setValue('message', template.content, { shouldValidate: true });
-    setIsTemplateModalOpen(false);
   };
 
   return (
@@ -389,6 +482,14 @@ export default function NewSessionForm({
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formState.errors.message.message}</p>
           )}
         </div>
+        {Object.entries(formState.errors).filter(([field]) => field !== 'message').length > 0 && (
+          <p className="mb-2 text-sm text-red-600 dark:text-red-400">
+            {Object.entries(formState.errors)
+              .filter(([field]) => field !== 'message')
+              .map(([field, error]) => `${field}: ${error?.message ?? 'invalid'}`)
+              .join(' / ')}
+          </p>
+        )}
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>

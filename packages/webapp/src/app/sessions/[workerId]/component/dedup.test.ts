@@ -192,11 +192,12 @@ describe('mergeDuplicateUserRebroadcast (attachment-merging dedup)', () => {
     const bubble: MessageView = {
       ...pendingUserBubble('img', cid),
       imageKeys: ['worker-1/img.png'],
+      localImageUrls: { 'worker-1/img.png': 'blob:https://example/xyz' },
     };
     const prev = [bubble];
     const result = mergeDuplicateUserRebroadcast(prev, cid, { imageKeys: ['worker-1/img.png'] });
-    // Same reference: nothing to merge, no re-render, and any in-flight
-    // client-side rendering state on the bubble is undisturbed.
+    // Same reference: nothing to merge, no re-render, localImageUrls (and
+    // therefore the in-progress blob → pre-signed swap) is undisturbed.
     expect(result).toBe(prev);
   });
 

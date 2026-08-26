@@ -18,6 +18,19 @@ export type MessageView = {
   type: 'message' | 'toolResult' | 'toolUse' | 'eventTrigger' | 'agentMessage';
   imageKeys?: string[];
   fileKeys?: string[];
+  /**
+   * Blob object URLs (`URL.createObjectURL`) for a just-submitted message's
+   * image attachments, keyed by S3 object key. Set ONLY on the submitter's
+   * own optimistic bubble so `ImageViewer` can paint the image instantly
+   * from local memory while the pre-signed GET URL is fetched in the
+   * background.
+   *
+   * Memory-only by construction: this field exists solely on the client
+   * `MessageView` type — the server action input (`sendMessageToAgentSchema`)
+   * strips it, nothing writes it to DynamoDB, and a page reload resolves the
+   * image through the normal `imageKeys` → pre-signed URL path.
+   */
+  localImageUrls?: Record<string, string>;
   thinkingBudget?: number;
   reasoningText?: string;
   modelOverride?: ModelType;
