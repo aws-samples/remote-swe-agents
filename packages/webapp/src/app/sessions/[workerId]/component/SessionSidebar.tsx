@@ -3,18 +3,21 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { MessageSquare, Plus, X, List, CheckCheck } from 'lucide-react';
-import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import type { SessionListItem } from '@/lib/session-list';
 import { getUnifiedStatus } from '@/utils/session-status';
 import { useTranslations } from 'next-intl';
 import { useEventBus } from '@/hooks/use-event-bus';
 import { useRouter } from 'next/navigation';
 import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getUnreadBadge } from '@/lib/unread-display';
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock';
 
 type SortKey = 'createdAt' | 'updatedAt' | 'lastMessageAt' | 'sessionCost';
 type SortOrder = 'desc' | 'asc';
 
-function hasWorkingDescendant(parentId: string, childrenMap: Record<string, SessionItem[]>): boolean {
+function hasWorkingDescendant(parentId: string, childrenMap: Record<string, SessionListItem[]>): boolean {
   const children = childrenMap[parentId];
   if (!children) return false;
   for (const child of children) {
@@ -26,7 +29,7 @@ function hasWorkingDescendant(parentId: string, childrenMap: Record<string, Sess
 
 interface SessionSidebarProps {
   currentWorkerId: string;
-  sessions: SessionItem[];
+  sessions: SessionListItem[];
   isOpen: boolean;
   onClose: () => void;
   unreadMap?: UnreadMap;
@@ -49,19 +52,22 @@ export default function SessionSidebar({
 }: SessionSidebarProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
-  const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
+  const [sessions, setSessions] = useState<SessionListItem[]>(initialSessions);
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState(0);
-  const scrollYRef = useRef(0);
   const [sortKey, setSortKey] = useState<SortKey>('lastMessageAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [sleepingChildren, setSleepingChildren] = useState<Record<string, { hasPendingTriggers: boolean }>>({});
 
   // Sync sort settings from localStorage (shared with session list page)
   useEffect(() => {
     const savedSortKey = localStorage.getItem('sessions-sort-key') as SortKey | null;
     const savedSortOrder = localStorage.getItem('sessions-sort-order') as SortOrder | null;
+    const savedHideCompleted = localStorage.getItem('sessions-hide-completed');
     if (savedSortKey) setSortKey(savedSortKey);
     if (savedSortOrder) setSortOrder(savedSortOrder);
+    if (savedHideCompleted !== null) setHideCompleted(savedHideCompleted === 'true');
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'sessions-sort-key' && e.newValue) {
@@ -69,6 +75,9 @@ export default function SessionSidebar({
       }
       if (e.key === 'sessions-sort-order' && e.newValue) {
         setSortOrder(e.newValue as SortOrder);
+      }
+      if (e.key === 'sessions-hide-completed' && e.newValue !== null) {
+        setHideCompleted(e.newValue === 'true');
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -89,30 +98,7 @@ export default function SessionSidebar({
     setSessions(initialSessions);
   }, [initialSessions]);
 
-  useEffect(() => {
-    if (isOpen) {
-      scrollYRef.current = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollYRef.current}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollYRef.current);
-    }
-    return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   useEventBus({
     channelName: 'webapp/worker/*',
@@ -121,6 +107,20 @@ export default function SessionSidebar({
         try {
           const event = webappEventSchema.parse(payload);
           if (event.type === 'agentStatusUpdate' || event.type === 'instanceStatusChanged') {
+            // Clear sleeping indicator only on wake signals:
+            // - agentStatusUpdate: always clear (only emitted by live workers)
+            // - instanceStatusChanged: only 'starting'/'running' indicate wake
+            const shouldClearSleep =
+              event.type === 'agentStatusUpdate' ||
+              (event.type === 'instanceStatusChanged' && (event.status === 'starting' || event.status === 'running'));
+            if (shouldClearSleep) {
+              setSleepingChildren((prev) => {
+                if (!prev[event.workerId]) return prev;
+                const next = { ...prev };
+                delete next[event.workerId];
+                return next;
+              });
+            }
             setSessions((prev) => {
               if (!prev.some((s) => s.workerId === event.workerId)) {
                 router.refresh();
@@ -175,17 +175,28 @@ export default function SessionSidebar({
             if (event.userId !== userId) return;
             onUnreadUpdate?.(event.workerId, { unreadCount: event.unreadCount, hasPending: event.hasPending });
           }
+          if (event.type === 'sessionReparented') {
+            router.refresh();
+          }
+          if (event.type === 'childSleeping' && event.workerId === currentWorkerId) {
+            setSleepingChildren((prev) => ({
+              ...prev,
+              [event.childSessionId]: { hasPendingTriggers: event.hasPendingTriggers },
+            }));
+          }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
       },
-      [router, currentWorkerId, userId, onUnreadUpdate]
+      [router, userId, onUnreadUpdate, currentWorkerId]
     ),
   });
 
   const sortedSessions = useMemo(() => {
     return [...sessions]
-      .filter((session) => session.agentStatus !== 'completed' || session.workerId === currentWorkerId)
+      .filter(
+        (session) => !hideCompleted || session.agentStatus !== 'completed' || session.workerId === currentWorkerId
+      )
       .sort((a, b) => {
         let aVal: number;
         let bVal: number;
@@ -198,11 +209,11 @@ export default function SessionSidebar({
         }
         return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
       });
-  }, [sessions, sortKey, sortOrder]);
+  }, [sessions, sortKey, sortOrder, hideCompleted, currentWorkerId]);
 
   // Build parent-child map for sidebar grouping
   const childrenMap = useMemo(() => {
-    const map: Record<string, SessionItem[]> = {};
+    const map: Record<string, SessionListItem[]> = {};
     for (const session of sortedSessions) {
       if (session.parentSessionId) {
         if (!map[session.parentSessionId]) {
@@ -244,7 +255,7 @@ export default function SessionSidebar({
     return set;
   }, [currentWorkerId, sortedSessions, childrenMap]);
 
-  const renderChildren = (children: SessionItem[], depth: number) => {
+  const renderChildren = (children: SessionListItem[], depth: number) => {
     const paddingLeft = 6 + depth * 4; // pl-10, pl-14, pl-18, etc.
     return children.map((child) => {
       const childStatus = getUnifiedStatus(child.agentStatus, child.instanceStatus);
@@ -274,11 +285,27 @@ export default function SessionSidebar({
             >
               {child.title || child.SK}
             </span>
-            {unreadMap[child.workerId]?.unreadCount > 0 && (
-              <span className="flex-shrink-0 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
-                {unreadMap[child.workerId].unreadCount}
+            {sleepingChildren[child.workerId] && (
+              <span
+                className="flex-shrink-0 text-[9px] text-gray-400 dark:text-gray-500"
+                title={
+                  sleepingChildren[child.workerId].hasPendingTriggers
+                    ? 'Sleeping (will auto-wake on trigger)'
+                    : 'Sleeping (idle)'
+                }
+              >
+                zzz
               </span>
             )}
+            {(() => {
+              const badge = getUnreadBadge(unreadMap[child.workerId]);
+              if (!badge.visible) return null;
+              return (
+                <span className="flex-shrink-0 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {badge.label}
+                </span>
+              );
+            })()}
           </Link>
           {hasGrandchildren && isChildExpanded && renderChildren(grandchildren, depth + 1)}
         </div>
@@ -365,11 +392,15 @@ export default function SessionSidebar({
                     >
                       <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.color}`} />
                       <span className="text-sm truncate flex-1">{session.title || session.SK}</span>
-                      {unreadMap[session.workerId]?.unreadCount > 0 && (
-                        <span className="flex-shrink-0 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
-                          {unreadMap[session.workerId].unreadCount}
-                        </span>
-                      )}
+                      {(() => {
+                        const badge = getUnreadBadge(unreadMap[session.workerId]);
+                        if (!badge.visible) return null;
+                        return (
+                          <span className="flex-shrink-0 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </Link>
                   </div>
                   {hasChildren && isExpanded && renderChildren(children, 1)}

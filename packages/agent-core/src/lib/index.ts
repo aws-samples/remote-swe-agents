@@ -9,6 +9,7 @@ export * from './kiro-api-key';
 export * from './kiro-error-classification';
 export * from './sessions';
 export * from './create-session';
+export * from './tool-name-utils';
 export * from './agent-messaging';
 export * from './worker-id';
 export * from './worker-manager';

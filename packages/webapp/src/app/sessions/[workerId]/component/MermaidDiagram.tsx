@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import mermaid from 'mermaid';
 import { useTheme } from 'next-themes';
 
@@ -29,8 +29,12 @@ export const MermaidDiagram = React.memo(function MermaidDiagram({ chart }: Merm
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
-  const idRef = useRef(getUniqueId());
-  const uniqueId = idRef.current;
+  // Lazy state initializer: `getUniqueId()` runs exactly once for the
+  // component's lifetime and the id stays stable across renders. (The
+  // previous `useRef(getUniqueId())` re-evaluated `getUniqueId()` — and
+  // thus incremented the module counter — on every render, and read the
+  // ref during render.)
+  const [uniqueId] = useState(getUniqueId);
   const mermaidTheme = resolvedTheme === 'dark' ? 'dark' : 'default';
 
   useEffect(() => {

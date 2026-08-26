@@ -11,6 +11,8 @@ import { useTheme } from 'next-themes';
 import type { PluggableList } from 'unified';
 import { MermaidDiagram } from './MermaidDiagram';
 import { KatexScrollContainer } from './KatexScrollContainer';
+import { usePortMapping } from './PortMappingContext';
+import { rewriteMdastLocalhostUrls, type MdastNode, type PortMapping } from '@/lib/port-url-transform';
 import { escapePriceDollars } from '@/lib/escape-price-dollars';
 
 type MarkdownRendererProps = {
@@ -27,6 +29,22 @@ type MarkdownRendererProps = {
 const REHYPE_KATEX_OPTIONS = {
   errorColor: 'currentColor',
 } as const;
+
+/**
+ * remark plugin that, when the given ref holds a mapping, rewrites
+ * localhost:PORT references inside text nodes into link nodes. The walker
+ * itself lives in `@/lib/port-url-transform` so it can be unit-tested with
+ * hand-written mdast fragments (no React / react-markdown needed).
+ *
+ * The mapping is read through a ref so a fresh plugin instance doesn't have
+ * to be built every time the port mapping updates — callers can keep a
+ * stable plugin array across renders.
+ */
+function remarkRewriteLocalhostUrls(mappingRef: React.RefObject<PortMapping | null>) {
+  return () => (tree: unknown) => {
+    rewriteMdastLocalhostUrls(tree as MdastNode, mappingRef.current);
+  };
+}
 
 function containsKatex(children: React.ReactNode): boolean {
   return React.Children.toArray(children).some((child) => {
@@ -48,6 +66,21 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
   React.useEffect(() => {
     setMounted(true);
   }, []);
+  const portMapping = usePortMapping();
+  const portMappingRef = React.useRef<PortMapping | null>(portMapping);
+  // Sync the ref DURING render (intentionally, not in an effect). This
+  // component reads `usePortMapping()` so it re-renders whenever the port
+  // mapping changes, and `react-markdown` re-parses `content` on that
+  // render, reading `portMappingRef.current` lazily via the stable plugin
+  // below. An effect-based sync would leave the ref one commit behind
+  // (effects run after render), and because no further render is scheduled
+  // — and `react-markdown` 10.x has no internal memo — the localhost links
+  // in already-rendered messages would never pick up a new preview URL
+  // after openPort. The alternative of memoizing the plugin array on
+  // [portMapping] would force a re-parse of every message on each mapping
+  // change, which is wasteful for long chat history.
+  // eslint-disable-next-line react-hooks/refs
+  portMappingRef.current = portMapping;
   const codeStyle =
     mounted && resolvedTheme === 'dark'
       ? oneDark
@@ -57,8 +90,20 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
           'code[class*="language-"]': { ...oneLight['code[class*="language-"]'], background: '#e5e7eb' },
         };
 
+  // Stable plugin array: the localhost-rewriter reads the current mapping
+  // through `portMappingRef`, so the array itself never needs to change.
   const remarkPlugins = React.useMemo<PluggableList>(
-    () => [remarkGfm, remarkCjkFriendly, remarkCjkFriendlyGfmStrikethrough, remarkMath],
+    () => [
+      remarkGfm,
+      remarkCjkFriendly,
+      remarkCjkFriendlyGfmStrikethrough,
+      remarkMath,
+      // Intentionally passing the ref itself (not its value): the plugin
+      // reads `.current` lazily so the stable plugin array can see the
+      // latest mapping without rebuilding (and re-parsing all messages).
+      // eslint-disable-next-line react-hooks/refs
+      remarkRewriteLocalhostUrls(portMappingRef),
+    ],
     []
   );
   const rehypePlugins = React.useMemo<PluggableList>(() => [[rehypeKatex, REHYPE_KATEX_OPTIONS]], []);
@@ -93,7 +138,6 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
           }
           return <p className="mb-2 overflow-x-auto">{children}</p>;
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         code(props: any) {
           const { className, children } = props;
           const match = /language-(\w+)/.exec(className || '');

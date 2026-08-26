@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { computeTotalUnread } from '@/lib/unread-display';
 import Header from '@/components/Header';
-import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square, ArrowRightLeft } from 'lucide-react';
+import { ListChecks, Check, Circle, Loader2, Menu, ChevronDown, Square, ArrowRightLeft } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
-import Link from 'next/link';
+import { useViewportState } from '@/hooks/use-viewport-state';
 import { useAction } from 'next-safe-action/hooks';
 import {
   updateAgentStatus,
@@ -17,10 +16,9 @@ import {
   undoRewindAction,
 } from '../actions';
 import { markAllReadAction } from '@/actions/badge/action';
-import { mergeDuplicateUserRebroadcast } from './dedup';
-import { isPreviewRendered } from './message-consistency';
-import { raiseMissedEvents, clearMissedEvents } from '@/lib/missed-events-signal';
+import { computeTotalUnread } from '@/lib/unread-display';
 import { useEventBus } from '@/hooks/use-event-bus';
+import { toolNameInSet } from '@remote-swe-agents/agent-core/tool-name-utils';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
 import {
@@ -35,9 +33,11 @@ import {
   AgentStatus,
   InstanceStatus,
   GlobalPreferences,
-  SessionItem,
   InferenceMode,
+  ModelType,
 } from '@remote-swe-agents/agent-core/schema';
+import type { SessionListItem } from '@/lib/session-list';
+import { parseAttachmentSentinel } from '@remote-swe-agents/agent-core/attachments';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
 import { getUnifiedStatus } from '@/utils/session-status';
@@ -45,47 +45,16 @@ import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
+import { mergeDuplicateUserRebroadcast } from './dedup';
 import HandoverModal from './HandoverModal';
 import SessionSidebar from './SessionSidebar';
 import SessionContentSearch from './SessionContentSearch';
 import { ArrowLeft } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/use-swipe-gesture';
-
-interface SessionPageClientProps {
-  workerId: string;
-  userId: string;
-  preferences: GlobalPreferences;
-  initialTitle: string | undefined;
-  initialMessages: MessageView[];
-  initialInstanceStatus?: InstanceStatus;
-  initialAgentStatus?: AgentStatus;
-  initialTodoList: TodoListType | null;
-  allSessions: SessionItem[];
-  agentIconUrl?: string;
-  agentName?: string;
-  unreadMap?: Record<string, { unreadCount: number; hasPending: boolean }>;
-  lastReadAt?: number;
-  childSessions?: { workerId: string; title?: string }[];
-  parentSessionId?: string;
-  /**
-   * Display name of the signed-in user, forwarded to `MessageForm` so the
-   * optimistic bubble is labelled with the submitter's own name.
-   */
-  currentUserDisplayName?: string;
-  /**
-   * Effective inference mode for this session, resolved server-side via the
-   * priority chain (session > customAgent > userPreferences > env > default).
-   * When `'kiro-cli'`, the chat input shows the Kiro model selector instead
-   * of the Bedrock model picker.
-   */
-  inferenceMode?: InferenceMode;
-  /**
-   * Kiro model baked into the session (or inherited from user preferences for
-   * legacy sessions). Only meaningful when `inferenceMode === 'kiro-cli'`.
-   */
-  kiroModel?: string;
-  initialRewindHiddenCount?: number;
-}
+import { PortMappingProvider, usePortMappingSetter } from './PortMappingContext';
+import type { PortMapping } from '@/lib/port-url-transform';
+import { isPreviewRendered } from './message-consistency';
+import { raiseMissedEvents, clearMissedEvents } from '@/lib/missed-events-signal';
 
 /**
  * Grace window after a `lastMessageUpdate` whose preview has no matching
@@ -103,9 +72,76 @@ const CONSISTENCY_REFRESH_DEBOUNCE_MS = 2500;
  */
 const CONSISTENCY_REFRESH_MIN_INTERVAL_MS = 3000;
 
+const SEND_MSG_TOOLS = new Set([
+  'sendMessageToUser',
+  'sendMessageToUserIfNecessary',
+  'Send Message To User',
+  'Send_Message_To_User',
+]);
+const SEND_FILE_TOOLS = new Set(['sendFileToUser', 'Send File To User']);
+const TODO_TOOLS = new Set(['todoInit', 'todoUpdate', 'Todo Init', 'Todo Update']);
+
+interface SessionPageClientProps {
+  workerId: string;
+  userId: string;
+  /**
+   * Display name of the currently signed-in user. Forwarded to
+   * `MessageForm` so the client-side optimistic bubble the submitter sees
+   * is labelled with their own name instead of the generic "User" — the
+   * server rebroadcast carries the same field and the dedupe path in
+   * `case 'message'` short-circuits so we never render it twice.
+   */
+  currentUserDisplayName?: string;
+  preferences: GlobalPreferences;
+  initialTitle: string | undefined;
+  initialMessages: MessageView[];
+  initialInstanceStatus?: InstanceStatus;
+  initialAgentStatus?: AgentStatus;
+  initialTodoList: TodoListType | null;
+  allSessions: SessionListItem[];
+  agentIconUrl?: string;
+  agentName?: string;
+  unreadMap?: Record<string, { unreadCount: number; hasPending: boolean }>;
+  lastReadAt?: number;
+  childSessions?: { workerId: string; title?: string }[];
+  parentSessionId?: string;
+  /**
+   * Effective inference mode for this session, resolved server-side using the
+   * same priority chain as the worker (session > customAgent > userPrefs >
+   * env > default). When `'kiro-cli'`, the chat input should show a read-only
+   * Kiro badge instead of the Bedrock model picker.
+   */
+  inferenceMode?: InferenceMode;
+  /**
+   * Kiro model baked into the session (or inherited from user preferences for
+   * legacy sessions). Only meaningful when `inferenceMode === 'kiro-cli'`.
+   */
+  kiroModel?: string;
+  /**
+   * Effective Bedrock model for this session, resolved server-side via the
+   * priority chain (session > customAgent > env > default). User preferences
+   * are deliberately excluded from the runtime chain for existing sessions.
+   */
+  bedrockModel?: ModelType;
+  /**
+   * Raw session.bedrockDefaultModel value (not resolved). When set, indicates
+   * an explicit model selection was persisted to this session and should take
+   * priority over message-history scan for the selector initial value.
+   */
+  sessionBedrockDefaultModel?: ModelType;
+  /**
+   * Opened-ports mapping (hostname + open ranges) persisted by the `openPort`
+   * tool. Used to rewrite localhost:PORT references in messages to clickable
+   * public preview URLs. `null` when no ports have ever been opened.
+   */
+  initialPortMapping?: PortMapping | null;
+  initialRewindHiddenCount?: number;
+}
+
 export default function SessionPageClient({
   workerId,
   userId,
+  currentUserDisplayName,
   preferences,
   initialTitle,
   initialMessages,
@@ -120,9 +156,62 @@ export default function SessionPageClient({
   parentSessionId,
   inferenceMode,
   kiroModel,
-  currentUserDisplayName,
+  bedrockModel,
+  sessionBedrockDefaultModel,
+  initialPortMapping,
   initialRewindHiddenCount,
 }: SessionPageClientProps) {
+  return (
+    <PortMappingProvider initialMapping={initialPortMapping ?? null}>
+      <SessionPageClientInner
+        workerId={workerId}
+        userId={userId}
+        currentUserDisplayName={currentUserDisplayName}
+        preferences={preferences}
+        initialTitle={initialTitle}
+        initialMessages={initialMessages}
+        initialInstanceStatus={initialInstanceStatus}
+        initialAgentStatus={initialAgentStatus}
+        initialTodoList={initialTodoList}
+        allSessions={allSessions}
+        agentIconUrl={agentIconUrl}
+        agentName={agentName}
+        unreadMap={unreadMap}
+        lastReadAt={lastReadAt}
+        parentSessionId={parentSessionId}
+        inferenceMode={inferenceMode}
+        kiroModel={kiroModel}
+        bedrockModel={bedrockModel}
+        sessionBedrockDefaultModel={sessionBedrockDefaultModel}
+        initialRewindHiddenCount={initialRewindHiddenCount}
+      />
+    </PortMappingProvider>
+  );
+}
+
+function SessionPageClientInner({
+  workerId,
+  userId,
+  currentUserDisplayName,
+  preferences,
+  initialTitle,
+  initialMessages,
+  initialInstanceStatus,
+  initialAgentStatus,
+  initialTodoList,
+  allSessions,
+  agentIconUrl,
+  agentName,
+  unreadMap,
+  lastReadAt,
+  parentSessionId,
+  inferenceMode,
+  kiroModel,
+  bedrockModel,
+  sessionBedrockDefaultModel,
+  initialRewindHiddenCount,
+}: Omit<SessionPageClientProps, 'initialPortMapping'>) {
+  const setPortMapping = usePortMappingSetter();
   const t = useTranslations('sessions');
   const router = useRouter();
   // Self-recovery bookkeeping for the `lastMessageUpdate` consistency
@@ -144,7 +233,8 @@ export default function SessionPageClient({
   }, [initialMessages]);
 
   // Mirror `messages` into a ref so the debounced consistency re-check
-  // reads the CURRENT bubbles, not the ones captured when the timer armed.
+  // reads the freshest bubbles without needing `messages` in the event
+  // handler's dependency array (which would re-subscribe the bus).
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -180,6 +270,7 @@ export default function SessionPageClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUnreadMap, setCurrentUnreadMap] = useState(unreadMap ?? {});
   const { isBottom, isHeaderVisible } = useScrollPosition();
+  const { isDisplaced: hideScrollButtons } = useViewportState();
 
   useSwipeGesture({
     onSwipeRight: useCallback(() => setSidebarOpen(true), []),
@@ -207,9 +298,13 @@ export default function SessionPageClient({
     },
   });
 
-  // Mark as read on mount
+  // Mark as read on mount / when the viewed session changes. Keyed on
+  // `workerId` only; `executeMarkRead` (a next-safe-action executor) is
+  // intentionally omitted so a change in its identity does not re-fire the
+  // mark-read.
   useEffect(() => {
     executeMarkRead({ workerId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workerId]);
 
   // Mark all sessions as read
@@ -249,6 +344,7 @@ export default function SessionPageClient({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (e.key === 'Escape') {
         handleInterrupt();
       }
@@ -315,6 +411,16 @@ export default function SessionPageClient({
     executeUndoRewind({ workerId });
   }, [workerId, executeUndoRewind]);
 
+  const handleCopyTitleAndId = useCallback(async () => {
+    const text = sessionTitle ? `${sessionTitle}(${workerId})` : workerId;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t('copiedToClipboard'));
+    } catch {
+      toast.error(t('copyFailed'));
+    }
+  }, [sessionTitle, workerId, t]);
+
   const getSessionStatus = () => {
     const status = getUnifiedStatus(agentStatus, instanceStatus);
     return {
@@ -335,252 +441,400 @@ export default function SessionPageClient({
   // Real-time communication via event bus
   useEventBus({
     channelName: `webapp/worker/${workerId}`,
+    // AppSync Events does not replay events published while the socket was
+    // down. When the connection recovers from a disruption (or while it is
+    // still unhealthy), re-fetch the server snapshot: the RSC re-render
+    // replaces `initialMessages` (and status/title/todo props) wholesale from
+    // DynamoDB, so missed events are recovered without any risk of duplicate
+    // bubbles.
+    onReconnected: useCallback(() => {
+      router.refresh();
+    }, [router]),
     onReceived: useCallback(
       (payload: unknown) => {
         console.log('Received event:', payload);
-        const event = webappEventSchema.parse(payload);
+        // Guard the whole handler: a single malformed event (or a throw
+        // from e.g. `JSON.parse(event.input)` below) must not kill the
+        // subscription callback and stop all future realtime updates.
+        // Matches the try/catch pattern in SessionSidebar / SessionsList.
+        try {
+          const event = webappEventSchema.parse(payload);
 
-        // Mark session as read since user is viewing it
-        if (event.type === 'message' || event.type === 'toolUse') {
-          executeMarkRead({ workerId });
-        }
-        if (event.type === 'agentStatusUpdate' && event.status === 'pending') {
-          executeMarkRead({ workerId });
-        }
+          // Mark session as read since user is viewing it
+          if (event.type === 'message' || event.type === 'toolUse') {
+            executeMarkRead({ workerId });
+          }
+          if (event.type === 'agentStatusUpdate' && event.status === 'pending') {
+            executeMarkRead({ workerId });
+          }
 
-        switch (event.type) {
-          case 'message':
-            if (event.message) {
-              const cleanedMessage = formatMessage(event.message);
-              // Only add message if it's not empty after removing mentions
-              if (cleanedMessage) {
-                setMessages((prev) => {
-                  // Dedup: see `mergeDuplicateUserRebroadcast`. The dedup
-                  // identifier is the per-submission UUID (`event.clientId`)
-                  // that `MessageForm` stamped on the optimistic bubble and
-                  // the server action forwarded back via the rebroadcast.
-                  // A match means "this echo IS my own submit" — but instead
-                  // of dropping the event wholesale, the event's attachment
-                  // keys are merged onto the existing bubble. The rebroadcast
-                  // is the only realtime carrier of imageKeys/fileKeys back
-                  // to the submitter's own tab, so a drop-only dedup would
-                  // leave the submitter unable to see their own attachments
-                  // until a full server re-render.
-                  if (event.role === 'user') {
-                    const merged = mergeDuplicateUserRebroadcast(prev, event.clientId, {
-                      imageKeys: event.imageKeys,
-                      fileKeys: event.fileKeys,
-                    });
-                    if (merged) {
-                      return merged;
+          switch (event.type) {
+            case 'message':
+              if (event.message) {
+                // Normalize the rebroadcast payload exactly as the optimistic
+                // bubble path will normalize its own content for display.
+                // `formatMessage` strips Slack mentions and pads URLs. We
+                // deliberately do NOT call `stripSenderPrefix` here:
+                // rebroadcast events carry the raw user-typed text (no
+                // `[from: ...]` envelope is ever attached server-side on
+                // this path), so applying the prefix-strip would silently
+                // delete a leading `[from: ...]` that the user actually
+                // typed. The DDB-read path in `page.tsx` keeps the strip
+                // because legacy items there may carry the LLM envelope
+                // wrapping.
+                const cleanedMessage = formatMessage(event.message);
+                // Only add message if it's not empty after removing mentions
+                if (cleanedMessage) {
+                  setMessages((prev) => {
+                    // Dedup: see `mergeDuplicateUserRebroadcast`. The dedup
+                    // identifier is the per-submission UUID (`event.clientId`)
+                    // that `MessageForm` stamped on the optimistic bubble and
+                    // the server action forwarded back via the rebroadcast.
+                    // A match means "this echo IS my own submit" — but instead
+                    // of dropping the event wholesale, the event's attachment
+                    // keys are merged onto the existing bubble. The rebroadcast
+                    // is the only realtime carrier of imageKeys/fileKeys back
+                    // to the submitter's own tab, so a drop-only dedup left the
+                    // submitter unable to see their own attachments until a
+                    // full server re-render (the bug this fixes).
+                    if (event.role === 'user') {
+                      const merged = mergeDuplicateUserRebroadcast(prev, event.clientId, {
+                        imageKeys: event.imageKeys,
+                        fileKeys: event.fileKeys,
+                      });
+                      if (merged) {
+                        return merged;
+                      }
+                    }
+                    const newMsgId = event.messageSK ? `${event.messageSK}-0` : Date.now().toString();
+                    if (event.messageSK && prev.some((m) => m.id === newMsgId)) return prev;
+                    return [
+                      ...prev,
+                      {
+                        id: newMsgId,
+                        role: event.role,
+                        content: cleanedMessage,
+                        timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
+                        type: 'message',
+                        thinkingBudget: event.thinkingBudget,
+                        reasoningText: event.reasoningText,
+                        ...(event.role === 'user' && event.senderDisplayName
+                          ? { userSenderDisplayName: event.senderDisplayName }
+                          : {}),
+                        ...(event.role === 'user' && event.senderType ? { userSenderType: event.senderType } : {}),
+                        ...(event.role === 'user' && event.senderUserId
+                          ? { userSenderUserId: event.senderUserId }
+                          : {}),
+                        // Carry the rebroadcast's clientId onto the new bubble
+                        // so a stray re-delivery of the same event (websocket
+                        // retry, listener double-fire) still dedups correctly
+                        // against the bubble we just added.
+                        ...(event.role === 'user' && event.clientId ? { clientId: event.clientId } : {}),
+                        ...(event.imageKeys && event.imageKeys.length > 0 ? { imageKeys: event.imageKeys } : {}),
+                        ...(event.fileKeys && event.fileKeys.length > 0 ? { fileKeys: event.fileKeys } : {}),
+                      },
+                    ];
+                  });
+                }
+              }
+              break;
+            case 'instanceStatusChanged':
+              setInstanceStatus(event.status);
+              break;
+            case 'agentStatusUpdate':
+              setAgentStatus(event.status);
+              break;
+            case 'eventTriggerFired':
+              setMessages((prev) => {
+                const msgId = event.id ? `${event.id}-0` : Date.now().toString();
+                if (prev.some((m) => m.id === msgId)) return prev;
+                return [
+                  ...prev,
+                  {
+                    id: msgId,
+                    role: 'assistant',
+                    content: event.message,
+                    detail: event.name,
+                    timestamp: new Date(event.timestamp),
+                    type: 'eventTrigger',
+                  },
+                ];
+              });
+              break;
+            case 'sessionTitleUpdate':
+              setSessionTitle(event.newTitle);
+              break;
+            case 'toolResult':
+              setMessages((prev) => {
+                // Immutable update: mutating the existing bubble in place and
+                // returning the same array reference makes React bail out of
+                // re-rendering (the previously-shipped bug where tool output
+                // never appeared until a full refresh). Copy the target bubble
+                // into a new array instead.
+                let next = prev;
+                const toolUseIdx = prev.findLastIndex((msg) => msg.type == 'toolUse');
+                if (toolUseIdx >= 0 && prev[toolUseIdx].output == undefined) {
+                  next = [...prev];
+                  next[toolUseIdx] = { ...next[toolUseIdx], output: event.output };
+                }
+                if (event.imageKeys && event.imageKeys.length > 0 && toolUseIdx >= 0) {
+                  const existing = new Set(next[toolUseIdx].imageKeys ?? []);
+                  const deduped = event.imageKeys.filter((k: string) => !existing.has(k));
+                  if (deduped.length > 0) {
+                    if (next === prev) next = [...prev];
+                    next[toolUseIdx] = {
+                      ...next[toolUseIdx],
+                      imageKeys: [...(next[toolUseIdx].imageKeys ?? []), ...deduped],
+                    };
+                  }
+                }
+                // For `sendFileToUser`, the backend embeds the uploaded S3 key
+                // in the tool output as a sentinel. Find the placeholder bubble
+                // we pushed on the matching `toolUse` event and attach the
+                // image/file keys now that we know them.
+                if (toolNameInSet(event.toolName, SEND_FILE_TOOLS)) {
+                  const sentinel = parseAttachmentSentinel(event.output);
+                  if (sentinel) {
+                    const bubbleId = `sendFileToUser-${event.toolUseId}`;
+                    const idx = next.findIndex((m) => m.id === bubbleId);
+                    if (idx >= 0) {
+                      if (next === prev) next = [...prev];
+                      next[idx] = sentinel.isImage
+                        ? { ...next[idx], imageKeys: [sentinel.key] }
+                        : { ...next[idx], fileKeys: [sentinel.key] };
                     }
                   }
-                  const newMsgId = event.messageSK ? `${event.messageSK}-0` : Date.now().toString();
-                  if (event.messageSK && prev.some((m) => m.id === newMsgId)) return prev;
-                  return [
+                }
+                return next;
+              });
+
+              // Check if the tool was todoInit or todoUpdate and refetch the todo list
+              if (toolNameInSet(event.toolName, TODO_TOOLS)) {
+                refetchTodoList({ workerId });
+              }
+              break;
+            case 'toolUse':
+              if (toolNameInSet(event.toolName, SEND_MSG_TOOLS)) {
+                const message = JSON.parse(event.input).message;
+                const cleanedMessage = formatMessage(message);
+
+                // Only add message if it's not empty after removing mentions
+                if (cleanedMessage) {
+                  setMessages((prev) => [
                     ...prev,
                     {
-                      id: newMsgId,
-                      role: event.role,
+                      id: event.messageSK ? `${event.messageSK}-${event.toolUseId}` : Date.now().toString(),
+                      role: 'assistant',
                       content: cleanedMessage,
                       timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
                       type: 'message',
                       thinkingBudget: event.thinkingBudget,
                       reasoningText: event.reasoningText,
-                      // Sender attribution for realtime user messages (Slack /
-                      // other webapp viewers / REST API), so the bubble renders
-                      // the sender name without a page reload.
-                      ...(event.role === 'user' && event.senderDisplayName
-                        ? { userSenderDisplayName: event.senderDisplayName }
-                        : {}),
-                      ...(event.role === 'user' && event.senderType ? { userSenderType: event.senderType } : {}),
-                      ...(event.role === 'user' && event.senderUserId ? { userSenderUserId: event.senderUserId } : {}),
-                      // Carry the rebroadcast's clientId onto the new bubble
-                      // so a stray re-delivery of the same event (websocket
-                      // retry, listener double-fire) still dedups correctly
-                      // against the bubble we just added.
-                      ...(event.role === 'user' && event.clientId ? { clientId: event.clientId } : {}),
-                      ...(event.imageKeys && event.imageKeys.length > 0 ? { imageKeys: event.imageKeys } : {}),
-                      ...(event.fileKeys && event.fileKeys.length > 0 ? { fileKeys: event.fileKeys } : {}),
                     },
-                  ];
-                });
-              }
-            }
-            break;
-          case 'instanceStatusChanged':
-            setInstanceStatus(event.status);
-            break;
-          case 'agentStatusUpdate':
-            setAgentStatus(event.status);
-            break;
-          case 'eventTriggerFired':
-            setMessages((prev) => {
-              const msgId = event.id ? `${event.id}-0` : Date.now().toString();
-              if (prev.some((m) => m.id === msgId)) return prev;
-              return [
-                ...prev,
-                {
-                  id: msgId,
-                  role: 'assistant',
-                  content: event.message,
-                  detail: event.name,
-                  timestamp: new Date(event.timestamp),
-                  type: 'eventTrigger',
-                },
-              ];
-            });
-            break;
-          case 'sessionTitleUpdate':
-            setSessionTitle(event.newTitle);
-            break;
-          case 'toolResult':
-            setMessages((prev) => {
-              const toolUse = prev.findLast((msg) => msg.type == 'toolUse');
-              if (toolUse && toolUse.output == undefined) {
-                toolUse.output = event.output;
-              }
-              return prev;
-            });
+                  ]);
+                }
+              } else if (toolNameInSet(event.toolName, new Set(['sendImageToUser', 'Send Image To User']))) {
+                const input = JSON.parse(event.input);
+                const messageText = input.message;
+                // TODO: share the same logic with backend
+                const ext = '.' + input.imagePath.split('.').at(-1);
+                const key = `${workerId}/${event.toolUseId}${ext}`;
 
-            // Check if the tool was todoInit or todoUpdate and refetch the todo list
-            if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-              refetchTodoList({ workerId });
-            }
-            break;
-          case 'toolUse':
-            if (['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(event.toolName)) {
-              const message = JSON.parse(event.input).message;
-              const cleanedMessage = formatMessage(message);
-
-              // Only add message if it's not empty after removing mentions
-              if (cleanedMessage) {
                 setMessages((prev) => [
                   ...prev,
                   {
-                    id: Date.now().toString(),
+                    id: event.messageSK ? `${event.messageSK}-${event.toolUseId}` : Date.now().toString(),
                     role: 'assistant',
-                    content: cleanedMessage,
-                    timestamp: new Date(event.timestamp),
+                    content: messageText,
+                    timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
+                    type: 'message',
+                    imageKeys: [key],
+                    thinkingBudget: event.thinkingBudget,
+                  },
+                ]);
+              } else if (toolNameInSet(event.toolName, SEND_FILE_TOOLS)) {
+                const input = JSON.parse(event.input);
+                const messageText = input.message;
+                // Render the chat bubble immediately with just the text. The
+                // backend embeds the canonical S3 key in the tool result as a
+                // `<!--remote-swe-attachment:...-->` sentinel, so we wait for
+                // the matching `toolResult` event below to attach image/file
+                // keys. This avoids the earlier bug where the key was
+                // predicted from `event.toolUseId` + filename, which broke for
+                // kiro-cli sessions because the MCP server uploads under a
+                // different (random) id than the ACP toolCallId.
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: `sendFileToUser-${event.toolUseId}`,
+                    role: 'assistant',
+                    content: messageText,
+                    timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
                     type: 'message',
                     thinkingBudget: event.thinkingBudget,
-                    reasoningText: event.reasoningText,
+                  },
+                ]);
+              } else if (
+                toolNameInSet(
+                  event.toolName,
+                  new Set([
+                    'sendMessageToAgent',
+                    'acknowledgeAgent',
+                    'confirmSendToUser',
+                    'confirmCompleteSession',
+                    'Send Message To Agent',
+                    'Acknowledge Agent',
+                    'Confirm Send To User',
+                    'Confirm Complete Session',
+                  ])
+                )
+              ) {
+                // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
+              } else {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: event.messageSK ? `${event.messageSK}-${event.toolUseId}` : Date.now().toString(),
+                    role: 'assistant',
+                    content: event.toolName,
+                    detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
+                    timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
+                    type: 'toolUse',
+                    thinkingBudget: event.thinkingBudget,
                   },
                 ]);
               }
-            } else if (['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(event.toolName)) {
-              // Agent-to-agent tools are silent in local view; shown via agentMessage events on parent
-            } else {
+
+              // Pre-fetch todoList when todoInit or todoUpdate tool is used
+              if (toolNameInSet(event.toolName, TODO_TOOLS)) {
+                refetchTodoList({ workerId });
+              }
+
+              break;
+            case 'agentMessage':
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: Date.now().toString(),
-                  role: 'assistant',
-                  content: event.toolName,
-                  detail: `${event.toolName}\n${JSON.stringify(JSON.parse(event.input), undefined, 2)}`,
+                  id: `agent-msg-${event.timestamp}`,
+                  role: 'user',
+                  content: event.message,
                   timestamp: new Date(event.timestamp),
-                  type: 'toolUse',
-                  thinkingBudget: event.thinkingBudget,
+                  type: 'agentMessage',
+                  senderSessionId: event.senderSessionId,
+                  senderAgentName: event.senderName,
+                  targetSessionId: event.targetSessionId,
+                  targetAgentName: event.targetName,
+                  isAcknowledge: event.acknowledge,
                 },
               ]);
-            }
-
-            // Pre-fetch todoList when todoInit or todoUpdate tool is used
-            if (['todoInit', 'todoUpdate'].includes(event.toolName)) {
-              refetchTodoList({ workerId });
-            }
-
-            break;
-          case 'agentMessage':
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `agent-msg-${event.timestamp}`,
-                role: 'user',
-                content: event.message,
-                timestamp: new Date(event.timestamp),
-                type: 'agentMessage',
-                senderSessionId: event.senderSessionId,
-                senderAgentName: event.senderName,
-                targetSessionId: event.targetSessionId,
-                targetAgentName: event.targetName,
-                isAcknowledge: event.acknowledge,
-              },
-            ]);
-            break;
-          case 'lastMessageUpdate': {
-            // `lastMessageUpdate` is emitted on a separate path from the
-            // bubble-drawing events (`message` / `toolUse`). AppSync
-            // Events has no replay, so if a drawing event was dropped
-            // while the socket was briefly down, this update can still
-            // arrive while the corresponding bubble is missing. When the
-            // preview text has no match on screen, self-recover with a
-            // full RSC refresh — crucially this works even on a hidden
-            // tab, unlike the focus/visibility-gated recovery paths.
-            if (event.workerId !== workerId) break;
-            const preview = event.lastMessage;
-            if (!preview || isPreviewRendered(messagesRef.current, preview)) break;
-            // Debounce before acting: the drawing event may simply be
-            // in-flight and arrive a beat later (normal ordering race).
-            // Re-check after a short grace window and cancel if it shows
-            // up, so the happy path never triggers a wasted refresh.
-            if (consistencyTimerRef.current) {
-              clearTimeout(consistencyTimerRef.current);
-            }
-            const runConsistencyCheck = () => {
-              consistencyTimerRef.current = null;
-              if (isPreviewRendered(messagesRef.current, preview)) return;
-              // Same-preview suppression: we already refreshed for this
-              // exact preview, so the bubble is either in the incoming
-              // snapshot or genuinely gone; either way stop here.
-              if (recoveredPreviewRef.current === preview) return;
-              const now = Date.now();
-              const sinceLast = now - lastConsistencyRefreshAtRef.current;
-              if (sinceLast < CONSISTENCY_REFRESH_MIN_INTERVAL_MS) {
-                // Throttled by a very recent refresh (e.g. a preceding
-                // preview's refresh). Do NOT drop the recovery — a
-                // `lastMessageUpdate` fires only once per message, so a
-                // silent return would lose this message forever. Re-arm for
-                // the remaining throttle window and re-check then.
-                consistencyTimerRef.current = setTimeout(
-                  runConsistencyCheck,
-                  CONSISTENCY_REFRESH_MIN_INTERVAL_MS - sinceLast
-                );
-                return;
+              break;
+            case 'portsUpdate':
+              // Refresh the port mapping so localhost:PORT rewrites reflect the
+              // latest openPort/closePort invocation in real time.
+              // When hostname starts with https://, it's a CloudFront preview URL
+              // (from MicroVM-based preview) rather than an EC2 hostname.
+              if (event.hostname?.startsWith('https://')) {
+                setPortMapping({
+                  previewBaseUrl: event.hostname,
+                  openedPorts: event.openedPorts,
+                });
+              } else {
+                setPortMapping({
+                  hostname: event.hostname,
+                  openedPorts: event.openedPorts,
+                });
               }
-              lastConsistencyRefreshAtRef.current = now;
-              recoveredPreviewRef.current = preview;
-              router.refresh();
-            };
-            consistencyTimerRef.current = setTimeout(runConsistencyCheck, CONSISTENCY_REFRESH_DEBOUNCE_MS);
-            break;
+              break;
+            case 'lastMessageUpdate': {
+              // `lastMessageUpdate` is emitted on a separate path from the
+              // bubble-drawing events (`message` / `toolUse`). AppSync
+              // Events has no replay, so if a drawing event was dropped
+              // while the socket was briefly down, this update can still
+              // arrive while the corresponding bubble is missing. When the
+              // preview text has no match on screen, self-recover with a
+              // full RSC refresh -- crucially this works even on a hidden
+              // tab, unlike the focus/visibility-gated recovery paths.
+              if (event.workerId !== workerId) break;
+              const preview = event.lastMessage;
+              if (!preview || isPreviewRendered(messagesRef.current, preview)) break;
+              // Debounce before acting: the drawing event may simply be
+              // in-flight and arrive a beat later (normal ordering race).
+              // Re-check after a short grace window and cancel if it shows
+              // up, so the happy path never triggers a wasted refresh.
+              if (consistencyTimerRef.current) {
+                clearTimeout(consistencyTimerRef.current);
+              }
+              const runConsistencyCheck = () => {
+                consistencyTimerRef.current = null;
+                if (isPreviewRendered(messagesRef.current, preview)) return;
+                // Same-preview suppression: we already refreshed for this
+                // exact preview, so the bubble is either in the incoming
+                // snapshot or genuinely gone; either way stop here.
+                if (recoveredPreviewRef.current === preview) return;
+                const now = Date.now();
+                const sinceLast = now - lastConsistencyRefreshAtRef.current;
+                if (sinceLast < CONSISTENCY_REFRESH_MIN_INTERVAL_MS) {
+                  // Throttled by a very recent refresh (e.g. a preceding
+                  // preview's refresh). Do NOT drop the recovery -- a
+                  // `lastMessageUpdate` fires only once per message, so a
+                  // silent return would lose this message forever. Re-arm for
+                  // the remaining throttle window and re-check then.
+                  consistencyTimerRef.current = setTimeout(
+                    runConsistencyCheck,
+                    CONSISTENCY_REFRESH_MIN_INTERVAL_MS - sinceLast
+                  );
+                  return;
+                }
+                lastConsistencyRefreshAtRef.current = now;
+                recoveredPreviewRef.current = preview;
+                router.refresh();
+              };
+              consistencyTimerRef.current = setTimeout(runConsistencyCheck, CONSISTENCY_REFRESH_DEBOUNCE_MS);
+              break;
+            }
+            case 'agentError':
+              if (event.willRetry) {
+                toast.warning(t('agentErrorRetrying', { errorType: event.errorType }));
+              } else {
+                toast.error(t('agentErrorStopped', { errorType: event.errorType }));
+              }
+              break;
+            case 'unreadUpdate':
+              // Focus-side safety net for the case where the
+              // `lastMessageUpdate` above was ALSO lost in the same socket
+              // disruption. The server emits `unreadUpdate(count > 0)` on
+              // EVERY delivery, which almost always beats the client's async
+              // mark-as-read round-trip -- so a positive count on its own is
+              // NOT proof of a miss and must not force a throttle bypass on
+              // every focus. Instead:
+              //   - count > 0 while hidden: tentatively raise the signal.
+              //   - count === 0 (the echo of a completed mark-as-read):
+              //     clear it. In the happy path the drawing event WAS
+              //     received, mark-as-read runs, and this echo cancels the
+              //     tentative raise. In a real miss the drawing event never
+              //     arrived, mark-as-read never runs, no count===0 echo
+              //     follows, and the raise survives to the next focus.
+              if (event.userId === userId) {
+                if (event.unreadCount === 0) {
+                  clearMissedEvents();
+                } else if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                  raiseMissedEvents();
+                }
+              }
+              break;
           }
-          case 'unreadUpdate':
-            // Focus-side safety net for the case where the
-            // `lastMessageUpdate` above was ALSO lost in the same socket
-            // disruption. The server emits `unreadUpdate(count > 0)` on
-            // EVERY delivery, which almost always beats the client's async
-            // mark-as-read round-trip — so a positive count on its own is
-            // NOT proof of a miss and must not force a throttle bypass on
-            // every focus. Instead:
-            //   - count > 0 while hidden: tentatively raise the signal.
-            //   - count === 0 (the echo of a completed mark-as-read):
-            //     clear it. In the happy path the drawing event WAS
-            //     received, mark-as-read runs, and this echo cancels the
-            //     tentative raise. In a real miss the drawing event never
-            //     arrived, mark-as-read never runs, no count===0 echo
-            //     follows, and the raise survives to the next focus.
-            if (event.userId === userId) {
-              if (event.unreadCount === 0) {
-                clearMissedEvents();
-              } else if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
-                raiseMissedEvents();
-              }
-            }
-            break;
+        } catch (error) {
+          console.error('Failed to handle webapp event:', error);
         }
       },
-      [refetchTodoList]
+      // `executeMarkRead` is intentionally omitted from the deps:
+      // `useEventBus` re-subscribes the AppSync Events socket whenever
+      // `onReceived` changes identity, so this callback must stay stable.
+      // The mark-read executor is only invoked, never compared; the other
+      // referenced values (workerId/userId/router and the two setters) are
+      // included.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [refetchTodoList, setPortMapping, workerId, userId, router]
     ),
   });
 
@@ -674,7 +928,7 @@ export default function SessionPageClient({
           <Header hasCustomIcon={!!preferences.defaultAgentIconKey} hasSidebar />
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 sm:px-4 sm:py-2">
             <div className="max-w-4xl mx-auto flex items-center justify-between min-w-0">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                 {/* Sidebar toggle (hamburger on mobile, hidden on lg) */}
                 <button
                   onClick={() => setSidebarOpen(true)}
@@ -692,8 +946,16 @@ export default function SessionPageClient({
                     );
                   })()}
                 </button>
-                <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white truncate min-w-0">
-                  {sessionTitle || workerId}
+                <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white min-w-0 flex-1 w-full">
+                  <button
+                    type="button"
+                    onClick={handleCopyTitleAndId}
+                    title={t('copySessionId')}
+                    aria-label={t('copySessionId')}
+                    className="block max-w-full truncate text-left cursor-pointer rounded-md px-1 -mx-1 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+                  >
+                    {sessionTitle || workerId}
+                  </button>
                 </h1>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -766,22 +1028,13 @@ export default function SessionPageClient({
                     </span>
                   </button>
                 )}
-                <Link
-                  href="/sessions/new"
-                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 h-8 sm:h-10 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline truncate">{t('newSession')}</span>
-                </Link>
+                <SessionContentSearch workerId={workerId} sidebarOpen={sidebarOpen} />
               </div>
             </div>
           </div>
         </div>
 
         <main className="flex-grow flex flex-col relative pt-18">
-          {/* Session Content Search */}
-          <SessionContentSearch workerId={workerId} />
-
           {/* Todo List Popup */}
           {todoList && showTodoModal && (
             <div className="fixed top-32 right-6 z-50 max-w-sm w-full animate-in slide-in-from-right-5 duration-200">
@@ -832,7 +1085,6 @@ export default function SessionPageClient({
             messages={messages}
             instanceStatus={instanceStatus}
             agentStatus={agentStatus}
-            onInterrupt={handleInterrupt}
             agentIconUrl={agentIconUrl}
             agentName={agentName}
             lastReadAt={lastReadAt}
@@ -847,27 +1099,33 @@ export default function SessionPageClient({
             currentUserDisplayName={currentUserDisplayName}
             currentUserId={userId}
             // For Kiro sessions, do NOT seed the Bedrock model selector from
-            // message history: Kiro sessions can carry non-Bedrock
-            // `modelOverride` values on their messages that would fail the
-            // strict `ModelType` zod schema on the client and permanently
-            // disable the submit button. The Kiro branch of the form uses its
-            // own `kiroModelOverride` selector instead, so seeding
-            // `defaultModelOverride` from preferences here is purely
+            // message history: legacy Kiro sessions (created before Phase 2b)
+            // carry non-Bedrock `modelOverride` values on their messages that
+            // would fail the strict `ModelType` zod schema on the client and
+            // permanently disable the submit button. The Kiro branch of the
+            // form uses its own `kiroModelOverride` selector instead, so
+            // seeding `defaultModelOverride` from preferences here is purely
             // defensive and never user-visible on Kiro sessions.
             defaultModelOverride={
               inferenceMode === 'kiro-cli'
                 ? preferences.modelOverride
-                : (messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride)
+                : (sessionBedrockDefaultModel ??
+                  messages.findLast((m) => m.modelOverride)?.modelOverride ??
+                  bedrockModel ??
+                  preferences.modelOverride)
             }
             inferenceMode={inferenceMode}
             kiroModel={kiroModel}
+            agentStatus={agentStatus}
+            onInterrupt={handleInterrupt}
           />
 
-          {/* Scroll buttons - hidden when scrolled to bottom */}
+          {/* Scroll buttons - hidden when scrolled to bottom or viewport is displaced */}
           <div
             className={`fixed bottom-24 right-6 flex flex-col gap-2 z-10 transition-opacity duration-300 ${
-              isBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              isBottom || hideScrollButtons ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
+            style={{ willChange: 'transform' }}
           >
             <button
               onClick={scrollToTop}

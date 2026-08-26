@@ -4,6 +4,7 @@ import React from 'react';
 import { TodoItem, TodoList as TodoListType } from '@remote-swe-agents/agent-core/schema';
 import { CheckCircle, Circle, XCircle, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import LocalDateTime from '@/components/LocalDateTime';
 
 interface TodoListProps {
   todoList: TodoListType | null;
@@ -70,7 +71,7 @@ export default function TodoList({ todoList, isRefreshing = false }: TodoListPro
             {t('refreshing')}
           </span>
         )}
-        {t('lastUpdated')}: {new Date(todoList.lastUpdated).toLocaleString()}
+        {t('lastUpdated')}: <LocalDateTime timestamp={todoList.lastUpdated} />
       </div>
     </>
   );

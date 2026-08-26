@@ -47,6 +47,8 @@ export const SEARCHABLE_MESSAGE_TYPES = new Set([
   'communicationLog',
 ]);
 
+import { toolNameInSet } from './tool-name-utils';
+
 export const MSG_TOOLS = new Set([
   'Send Message To User',
   'Send Image To User',
@@ -62,7 +64,7 @@ export function extractTextFromContent(content: any[], messageType: string): str
   if (messageType === 'toolUse') {
     return content
       .map((block: any) => {
-        if (block.toolUse && MSG_TOOLS.has(block.toolUse.name)) {
+        if (block.toolUse && toolNameInSet(block.toolUse.name, MSG_TOOLS)) {
           return block.toolUse.input?.message ?? '';
         }
         return '';

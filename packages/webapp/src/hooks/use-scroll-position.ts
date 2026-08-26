@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/**
+ * Default pixel threshold for "is the user at the bottom of the page?" checks
+ * used by the scroll-to-bottom button visibility logic.
+ */
+export const DEFAULT_BOTTOM_PIXEL_THRESHOLD = 150;
+
 interface ScrollPositionOptions {
   threshold?: number;
   bottomPixelThreshold?: number;
 }
 
 export function useScrollPosition(options: ScrollPositionOptions = {}) {
-  const { threshold = 80, bottomPixelThreshold = 150 } = options;
+  const { threshold = 80, bottomPixelThreshold = DEFAULT_BOTTOM_PIXEL_THRESHOLD } = options;
   const [isBottom, setIsBottom] = useState(true);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);

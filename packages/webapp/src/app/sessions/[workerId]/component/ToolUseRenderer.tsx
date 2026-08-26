@@ -1,19 +1,58 @@
 import React, { useState } from 'react';
-import { Settings, Code, Terminal, Bell, ChevronRight, ChevronDown, Pause } from 'lucide-react';
+import { Settings, Code, Terminal, Bell, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { usePortMapping } from './PortMappingContext';
+import { findPortMatches } from '@/lib/port-url-transform';
+import { prettifyToolName } from '@remote-swe-agents/agent-core/tool-name-utils';
 
 type ToolUseRendererProps = {
   content: string;
   input: string | undefined;
   output: string | undefined;
   messageId: string;
-  onInterrupt?: () => void;
 };
 
-export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt }: ToolUseRendererProps) => {
+/**
+ * Render a plain-text block while turning any `localhost:PORT` / `127.0.0.1:PORT`
+ * references that point at currently opened ports into clickable links.
+ */
+const LinkifiedText = ({ text }: { text: string }) => {
+  const mapping = usePortMapping();
+  const matches = React.useMemo(() => findPortMatches(text, mapping).filter((m) => m.replacement), [text, mapping]);
+
+  if (matches.length === 0) {
+    return <>{text}</>;
+  }
+
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  matches.forEach((m, idx) => {
+    if (m.start > cursor) {
+      nodes.push(text.slice(cursor, m.start));
+    }
+    nodes.push(
+      <a
+        key={`port-link-${idx}-${m.start}`}
+        href={m.replacement}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+      >
+        {m.replacement}
+      </a>
+    );
+    cursor = m.end;
+  });
+  if (cursor < text.length) {
+    nodes.push(text.slice(cursor));
+  }
+  return <>{nodes}</>;
+};
+
+export const ToolUseRenderer = ({ content, input, output, messageId }: ToolUseRendererProps) => {
   const t = useTranslations('sessions');
   const [isExpanded, setIsExpanded] = useState(false);
-  const toolName = content;
+  const toolName = content.split(' + ').map(prettifyToolName).join(' + ');
   const isExecuting = output === undefined;
 
   const getToolIcon = (name: string) => {
@@ -52,18 +91,6 @@ export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt
             )}
           </span>
         </button>
-        {isExecuting && onInterrupt && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onInterrupt();
-            }}
-            className="flex-shrink-0 flex items-center px-4 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            <Pause className="w-4 h-4 mr-2" />
-            {t('interrupt')}
-          </button>
-        )}
       </div>
 
       {isExpanded && (
@@ -77,7 +104,17 @@ export const ToolUseRenderer = ({ content, input, output, messageId, onInterrupt
           {output && (
             <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-60">
               <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('output')}:</div>
-              <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">{output}</pre>
+              <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">
+                {/*
+                 * Linkify only the output: dev-server stdout like
+                 * "Listening on http://localhost:3000" shows up here, and
+                 * turning those into clickable links is the whole point of
+                 * Phase 2. Tool input is usually a JSON.stringify of the
+                 * arguments — rewriting inside a JSON string is noisy and
+                 * rarely useful, so we render it verbatim.
+                 */}
+                <LinkifiedText text={output} />
+              </pre>
             </div>
           )}
         </div>

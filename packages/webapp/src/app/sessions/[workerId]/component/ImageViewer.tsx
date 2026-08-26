@@ -186,6 +186,10 @@ export const ImageViewer = ({ imageKeys: inputKeys, localImageUrls }: ImageViewe
     return () => {
       cancelled = true;
     };
+    // `imageCache` is a mutable Map used as a cross-render cache; it is
+    // intentionally not a dependency (re-running on cache mutation would
+    // defeat the cache and re-fetch every image).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageKeys]);
 
   const handleKeyDown = useCallback(
@@ -229,6 +233,9 @@ export const ImageViewer = ({ imageKeys: inputKeys, localImageUrls }: ImageViewe
                 </div>
               ) : (
                 <button onClick={() => setPreviewImage(image)} className="block">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- src is a
+                      dynamic pre-signed S3 / blob URL; next/image's loader and
+                      domain allow-list do not apply. */}
                   <img
                     src={image.url}
                     alt={`Image ${image.key}`}
@@ -265,6 +272,8 @@ export const ImageViewer = ({ imageKeys: inputKeys, localImageUrls }: ImageViewe
               <X className="w-5 h-5" />
             </button>
           </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- dynamic
+              pre-signed S3 / blob URL, see above. */}
           <img
             src={previewImage.url}
             alt={`Preview ${previewImage.key}`}

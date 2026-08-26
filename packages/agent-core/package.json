@@ -24,6 +24,10 @@
       "types": "./dist/tools/index.d.ts",
       "default": "./dist/tools/index.js"
     },
+    "./tool-name-utils": {
+      "types": "./dist/tool-name-utils/index.d.ts",
+      "default": "./dist/tool-name-utils/index.js"
+    },
     "./mcp-server": {
       "types": "./dist/mcp-server/index.d.ts",
       "default": "./dist/mcp-server/index.js"

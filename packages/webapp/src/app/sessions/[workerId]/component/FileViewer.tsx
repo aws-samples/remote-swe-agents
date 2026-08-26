@@ -42,6 +42,22 @@ const getFileName = (key: string): string => {
   return parts[parts.length - 1] || key;
 };
 
+const TAIL_CHARS = 8;
+
+const MiddleEllipsisFileName = ({ name, className }: { name: string; className?: string }) => {
+  if (name.length <= TAIL_CHARS * 2) {
+    return <span className={`truncate min-w-0 ${className ?? ''}`}>{name}</span>;
+  }
+  const tail = name.slice(-TAIL_CHARS);
+  const head = name.slice(0, -TAIL_CHARS);
+  return (
+    <span className={`flex min-w-0 ${className ?? ''}`}>
+      <span className="truncate min-w-0">{head}</span>
+      <span className="flex-shrink-0">{tail}</span>
+    </span>
+  );
+};
+
 export const FileViewer = ({ fileKeys }: FileViewerProps) => {
   const [files, setFiles] = useState<FileData[]>([]);
   const [fileCache, setFileCache] = useState<Map<string, FileData>>(new Map());
@@ -99,6 +115,9 @@ export const FileViewer = ({ fileKeys }: FileViewerProps) => {
     if (fileKeys.length > 0) {
       loadFiles();
     }
+    // `fileCache` is a mutable cross-render cache Map; intentionally not a
+    // dependency (re-running on mutation would defeat the cache).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileKeys]);
 
   if (fileKeys.length === 0) {
@@ -111,25 +130,33 @@ export const FileViewer = ({ fileKeys }: FileViewerProps) => {
         {files.map((file) => (
           <div key={file.key}>
             {file.loading ? (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                <span className="text-sm text-gray-500">{file.fileName}</span>
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md max-w-full"
+                title={file.fileName}
+              >
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />
+                <MiddleEllipsisFileName name={file.fileName} className="text-sm text-gray-500" />
               </div>
             ) : file.error ? (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md max-w-full"
+                title={file.fileName}
+              >
                 {getFileIcon(file.fileName)}
-                <span className="text-sm text-gray-500">{file.fileName} (Error)</span>
+                <MiddleEllipsisFileName name={`${file.fileName} (Error)`} className="text-sm text-gray-500" />
               </div>
             ) : (
               <a
                 href={file.url}
                 download={file.fileName}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group max-w-full"
+                title={file.fileName}
               >
                 {getFileIcon(file.fileName)}
-                <span className="text-sm text-blue-600 dark:text-blue-400 group-hover:underline truncate max-w-xs">
-                  {file.fileName}
-                </span>
+                <MiddleEllipsisFileName
+                  name={file.fileName}
+                  className="text-sm text-blue-600 dark:text-blue-400 group-hover:underline"
+                />
                 <FileDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
               </a>
             )}
