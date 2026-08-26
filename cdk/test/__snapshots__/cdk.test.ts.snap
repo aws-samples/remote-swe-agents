@@ -5049,6 +5049,7 @@ exports.handler = async (event) => {
             },
             {
               "Action": [
+                "bedrock:InvokeModel",
                 "ec2:CreateTags",
                 "ec2:DescribeInstances",
                 "ec2:RunInstances",

@@ -29,6 +29,7 @@ export * from './search-sessions';
 export * from './export-session-diagnostics';
 export * from './manage-skill';
 export * from './preview';
+export * from './manage-memory';
 
 import { ciTool } from './ci';
 import { commandExecutionTool } from './command-execution';
@@ -59,6 +60,7 @@ import { searchSessionsTool } from './search-sessions';
 import { exportSessionDiagnosticsTool } from './export-session-diagnostics';
 import { listSkillsTool, getSkillTool, createSkillTool, updateSkillTool, deleteSkillTool } from './manage-skill';
 import { openPreviewTool, closePreviewTool, registerPreviewExitHandlers } from './preview';
+import { listLessonsTool, getLessonTool, createLessonTool, updateLessonTool, deleteLessonTool } from './manage-memory';
 
 /**
  * Preview tools that are only available on AgentCore runtime with
@@ -137,6 +139,11 @@ export const optionalTools = [
   updateSkillTool,
   deleteSkillTool,
   ...previewTools,
+  listLessonsTool,
+  getLessonTool,
+  createLessonTool,
+  updateLessonTool,
+  deleteLessonTool,
 ];
 
 /**

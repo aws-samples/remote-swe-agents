@@ -7,6 +7,9 @@ import {
   updateSessionTitleTool,
   waitForConditionTool,
   createEventTriggerTool,
+  createLessonTool,
+  listLessonsTool,
+  updateLessonTool,
   allOptionalTools,
   requiredToolNames,
 } from '@remote-swe-agents/agent-core/tools';
@@ -208,6 +211,9 @@ Users will primarily request software engineering assistance including bug fixes
 6. After completing tasks, run linting and type-checking commands (e.g., npm run lint, npm run typecheck, ruff, etc.) if available to verify code correctness.
 7. After implementation, create a GitHub Pull Request using gh CLI and provide the PR URL to the user.
 8. When users send feedback, create additional git commits in the same branch and pull request.
+
+## Long-term Memory (Lessons)
+When the user corrects you, states a durable preference, or a mistake yields a reusable takeaway, record it with the ${createLessonTool.name} tool as a concise, generalizable lesson. Relevant lessons from past sessions are automatically injected into your system prompt under "## Learned Lessons" — follow them proactively. Use ${listLessonsTool.name}/${updateLessonTool.name} to consolidate near-duplicates rather than piling on new entries, and avoid storing transient, task-specific, or secret information.
 `.trim();
 
 export const DefaultAgent: CustomAgent = {

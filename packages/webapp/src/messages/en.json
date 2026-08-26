@@ -21,7 +21,8 @@
     "apiKeys": "API Keys",
     "costAnalysis": "Cost Analysis",
     "customAgent": "Custom Agents",
-    "skills": "Skills"
+    "skills": "Skills",
+    "lessons": "Lessons"
   },
   "sessions": {
     "title": "Sessions",
@@ -555,5 +556,47 @@
       "FRONTMATTER_INVALID": "SKILL.md frontmatter is invalid",
       "UPLOAD_FAILED": "Failed to upload file to storage"
     }
+  },
+  "lessons": {
+    "title": "Lessons",
+    "description": "View and manage the lessons your agents have learned from past sessions",
+    "create": {
+      "title": "Add Lesson",
+      "description": "Manually add a lesson to inject into future sessions",
+      "button": "Add Lesson"
+    },
+    "list": {
+      "title": "Learned Lessons",
+      "description": "Durable memories injected into future sessions via semantic retrieval"
+    },
+    "fields": {
+      "content": "Content",
+      "category": "Category",
+      "sourceSession": "Source Session"
+    },
+    "contentPlaceholder": "What should the agent remember?",
+    "categoryPlaceholder": "Optional category label",
+    "status": {
+      "active": "Active",
+      "archived": "Disabled"
+    },
+    "createdBy": {
+      "agent": "Agent",
+      "user": "You"
+    },
+    "creating": "Adding...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "enable": "Enable",
+    "disable": "Disable",
+    "noLessons": "No lessons yet",
+    "confirmDelete": "Are you sure you want to delete this lesson?",
+    "createSuccess": "Lesson added successfully",
+    "createError": "Failed to add lesson",
+    "updateSuccess": "Lesson updated successfully",
+    "updateError": "Failed to update lesson",
+    "deleteError": "Failed to delete lesson"
   }
 }

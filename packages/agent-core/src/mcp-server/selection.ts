@@ -7,6 +7,13 @@ import { ciTool } from '../tools/ci';
 import { getPRCommentsTool, replyPRCommentTool, addIssueCommentTool } from '../tools/github-comments';
 import { listAgentsTool, getAgentTool, createAgentTool, updateAgentTool, deleteAgentTool } from '../tools/manage-agent';
 import { listSkillsTool, getSkillTool, createSkillTool, updateSkillTool, deleteSkillTool } from '../tools/manage-skill';
+import {
+  listLessonsTool,
+  getLessonTool,
+  createLessonTool,
+  updateLessonTool,
+  deleteLessonTool,
+} from '../tools/manage-memory';
 import { cloneRepositoryTool } from '../tools/repo';
 import { reportProgressTool } from '../tools/report-progress';
 import { sendFileTool } from '../tools/send-file';
@@ -70,6 +77,12 @@ export const kiroExportedTools: ToolDefinition<unknown>[] = [
   createSkillTool,
   updateSkillTool,
   deleteSkillTool,
+  // lesson (memory) management
+  listLessonsTool,
+  getLessonTool,
+  createLessonTool,
+  updateLessonTool,
+  deleteLessonTool,
   // event triggers
   createEventTriggerTool,
   listEventTriggersTool,
