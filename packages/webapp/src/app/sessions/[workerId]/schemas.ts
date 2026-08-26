@@ -28,6 +28,22 @@ export const sendMessageToAgentSchema = z.object({
     .regex(/^[a-zA-Z0-9._-]+$/, 'invalid kiro model id')
     .max(64)
     .optional(),
+  /**
+   * Client-side submission UUID (`crypto.randomUUID()` in `MessageForm`).
+   * Forwarded verbatim onto the realtime rebroadcast event so the originating
+   * tab can recognize its own echo and skip it (see `dedup.ts`). Optional so
+   * non-webapp callers and older clients still pass schema validation.
+   *
+   * Restricted to a UUID-shaped string (length-bounded, character-bounded)
+   * to keep the comparison key cheap and prevent a client from sending an
+   * arbitrarily large header that would be echoed back through the
+   * websocket payload.
+   */
+  clientId: z
+    .string()
+    .regex(/^[a-zA-Z0-9-]+$/, 'invalid client id')
+    .max(64)
+    .optional(),
 });
 
 export const fetchTodoListSchema = z.object({

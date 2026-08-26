@@ -131,7 +131,15 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
             message.type === 'toolUse' && message.output === undefined && index === group.messages.length - 1;
           return (
             <MessageItem
-              key={message.id}
+              // Prefer the per-submission clientId as the reconciliation key
+              // for user message bubbles: the optimistic bubble's `id`
+              // changes from `pending-*` to the confirmed DynamoDB SK in
+              // onConfirm, and keying by `id` would remount the subtree.
+              // The clientId is unique per submission and stable across that
+              // transition. Bubbles without a clientId (history reads,
+              // Slack/API senders, assistant messages) keep the id key —
+              // their ids never mutate in place.
+              key={message.clientId ?? message.id}
               message={message}
               showTimestamp={showTimestamp}
               onInterrupt={isLastExecutingTool ? onInterrupt : undefined}

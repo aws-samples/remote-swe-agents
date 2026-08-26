@@ -42,6 +42,18 @@ export type MessageView = {
    * when display names happen to collide.
    */
   userSenderUserId?: string;
+  /**
+   * Submission UUID stamped on the optimistic bubble at submit time
+   * (`crypto.randomUUID()` in `MessageForm.handleOptimisticSubmit`).
+   *
+   * Forwarded to the server action and back via the realtime rebroadcast,
+   * so the originating tab can recognize its own echo and skip rendering
+   * a duplicate bubble (see `dedup.ts`). Replaces the older body-content-
+   * plus-time-window heuristic with a stable id match.
+   *
+   * Memory-only; never persisted to DynamoDB.
+   */
+  clientId?: string;
 };
 
 /**

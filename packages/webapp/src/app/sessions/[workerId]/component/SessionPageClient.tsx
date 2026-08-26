@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { computeTotalUnread } from '@/lib/unread-display';
 import Header from '@/components/Header';
 import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
@@ -9,6 +9,9 @@ import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
 import { updateAgentStatus, sendEventToAgent, stopSession, markSessionReadAction } from '../actions';
 import { markAllReadAction } from '@/actions/badge/action';
+import { mergeDuplicateUserRebroadcast } from './dedup';
+import { isPreviewRendered } from './message-consistency';
+import { raiseMissedEvents, clearMissedEvents } from '@/lib/missed-events-signal';
 import { useEventBus } from '@/hooks/use-event-bus';
 import MessageForm from './MessageForm';
 import MessageList, { MessageView } from './MessageList';
@@ -75,6 +78,22 @@ interface SessionPageClientProps {
   kiroModel?: string;
 }
 
+/**
+ * Grace window after a `lastMessageUpdate` whose preview has no matching
+ * bubble, before assuming the drawing event was truly dropped. Covers the
+ * normal ordering race where the bubble event arrives a beat later on a
+ * separate emit path; if it shows up within this window the refresh is
+ * cancelled.
+ */
+const CONSISTENCY_REFRESH_DEBOUNCE_MS = 2500;
+
+/**
+ * Minimum spacing between consistency-triggered `router.refresh()` calls.
+ * Combined with same-preview suppression, prevents any chance of a refresh
+ * loop if the server snapshot somehow keeps lacking the previewed message.
+ */
+const CONSISTENCY_REFRESH_MIN_INTERVAL_MS = 3000;
+
 export default function SessionPageClient({
   workerId,
   userId,
@@ -96,6 +115,13 @@ export default function SessionPageClient({
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
+  // Self-recovery bookkeeping for the `lastMessageUpdate` consistency
+  // check (see the `lastMessageUpdate` case below). Refs, not state, so
+  // updating them never triggers a re-render.
+  const lastConsistencyRefreshAtRef = useRef(0);
+  const recoveredPreviewRef = useRef<string | null>(null);
+  const consistencyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messagesRef = useRef<MessageView[]>(initialMessages);
   const [messages, setMessages] = useState<MessageView[]>(initialMessages);
   const [instanceStatus, setInstanceStatus] = useState<InstanceStatus | undefined>(initialInstanceStatus);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(initialAgentStatus);
@@ -106,6 +132,26 @@ export default function SessionPageClient({
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
+
+  // Mirror `messages` into a ref so the debounced consistency re-check
+  // reads the CURRENT bubbles, not the ones captured when the timer armed.
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Clear any pending consistency timer on unmount, and drop any pending
+  // missed-events signal so it cannot leak across a client-side navigation
+  // (the signal is tab-global; a different page must not inherit this
+  // session's raise).
+  useEffect(() => {
+    return () => {
+      if (consistencyTimerRef.current) {
+        clearTimeout(consistencyTimerRef.current);
+        consistencyTimerRef.current = null;
+      }
+      clearMissedEvents();
+    };
+  }, []);
 
   useEffect(() => {
     setInstanceStatus(initialInstanceStatus);
@@ -247,26 +293,57 @@ export default function SessionPageClient({
               const cleanedMessage = formatMessage(event.message);
               // Only add message if it's not empty after removing mentions
               if (cleanedMessage) {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: Date.now().toString(),
-                    role: event.role,
-                    content: cleanedMessage,
-                    timestamp: new Date(event.timestamp),
-                    type: 'message',
-                    thinkingBudget: event.thinkingBudget,
-                    reasoningText: event.reasoningText,
-                    // Sender attribution for realtime user messages (Slack /
-                    // other webapp viewers / REST API), so the bubble renders
-                    // the sender name without a page reload.
-                    ...(event.role === 'user' && event.senderDisplayName
-                      ? { userSenderDisplayName: event.senderDisplayName }
-                      : {}),
-                    ...(event.role === 'user' && event.senderType ? { userSenderType: event.senderType } : {}),
-                    ...(event.role === 'user' && event.senderUserId ? { userSenderUserId: event.senderUserId } : {}),
-                  },
-                ]);
+                setMessages((prev) => {
+                  // Dedup: see `mergeDuplicateUserRebroadcast`. The dedup
+                  // identifier is the per-submission UUID (`event.clientId`)
+                  // that `MessageForm` stamped on the optimistic bubble and
+                  // the server action forwarded back via the rebroadcast.
+                  // A match means "this echo IS my own submit" — but instead
+                  // of dropping the event wholesale, the event's attachment
+                  // keys are merged onto the existing bubble. The rebroadcast
+                  // is the only realtime carrier of imageKeys/fileKeys back
+                  // to the submitter's own tab, so a drop-only dedup would
+                  // leave the submitter unable to see their own attachments
+                  // until a full server re-render.
+                  if (event.role === 'user') {
+                    const merged = mergeDuplicateUserRebroadcast(prev, event.clientId, {
+                      imageKeys: event.imageKeys,
+                      fileKeys: event.fileKeys,
+                    });
+                    if (merged) {
+                      return merged;
+                    }
+                  }
+                  const newMsgId = event.messageSK ? `${event.messageSK}-0` : Date.now().toString();
+                  if (event.messageSK && prev.some((m) => m.id === newMsgId)) return prev;
+                  return [
+                    ...prev,
+                    {
+                      id: newMsgId,
+                      role: event.role,
+                      content: cleanedMessage,
+                      timestamp: event.messageSK ? new Date(parseInt(event.messageSK)) : new Date(event.timestamp),
+                      type: 'message',
+                      thinkingBudget: event.thinkingBudget,
+                      reasoningText: event.reasoningText,
+                      // Sender attribution for realtime user messages (Slack /
+                      // other webapp viewers / REST API), so the bubble renders
+                      // the sender name without a page reload.
+                      ...(event.role === 'user' && event.senderDisplayName
+                        ? { userSenderDisplayName: event.senderDisplayName }
+                        : {}),
+                      ...(event.role === 'user' && event.senderType ? { userSenderType: event.senderType } : {}),
+                      ...(event.role === 'user' && event.senderUserId ? { userSenderUserId: event.senderUserId } : {}),
+                      // Carry the rebroadcast's clientId onto the new bubble
+                      // so a stray re-delivery of the same event (websocket
+                      // retry, listener double-fire) still dedups correctly
+                      // against the bubble we just added.
+                      ...(event.role === 'user' && event.clientId ? { clientId: event.clientId } : {}),
+                      ...(event.imageKeys && event.imageKeys.length > 0 ? { imageKeys: event.imageKeys } : {}),
+                      ...(event.fileKeys && event.fileKeys.length > 0 ? { fileKeys: event.fileKeys } : {}),
+                    },
+                  ];
+                });
               }
             }
             break;
@@ -369,6 +446,76 @@ export default function SessionPageClient({
                 isAcknowledge: event.acknowledge,
               },
             ]);
+            break;
+          case 'lastMessageUpdate': {
+            // `lastMessageUpdate` is emitted on a separate path from the
+            // bubble-drawing events (`message` / `toolUse`). AppSync
+            // Events has no replay, so if a drawing event was dropped
+            // while the socket was briefly down, this update can still
+            // arrive while the corresponding bubble is missing. When the
+            // preview text has no match on screen, self-recover with a
+            // full RSC refresh — crucially this works even on a hidden
+            // tab, unlike the focus/visibility-gated recovery paths.
+            if (event.workerId !== workerId) break;
+            const preview = event.lastMessage;
+            if (!preview || isPreviewRendered(messagesRef.current, preview)) break;
+            // Debounce before acting: the drawing event may simply be
+            // in-flight and arrive a beat later (normal ordering race).
+            // Re-check after a short grace window and cancel if it shows
+            // up, so the happy path never triggers a wasted refresh.
+            if (consistencyTimerRef.current) {
+              clearTimeout(consistencyTimerRef.current);
+            }
+            const runConsistencyCheck = () => {
+              consistencyTimerRef.current = null;
+              if (isPreviewRendered(messagesRef.current, preview)) return;
+              // Same-preview suppression: we already refreshed for this
+              // exact preview, so the bubble is either in the incoming
+              // snapshot or genuinely gone; either way stop here.
+              if (recoveredPreviewRef.current === preview) return;
+              const now = Date.now();
+              const sinceLast = now - lastConsistencyRefreshAtRef.current;
+              if (sinceLast < CONSISTENCY_REFRESH_MIN_INTERVAL_MS) {
+                // Throttled by a very recent refresh (e.g. a preceding
+                // preview's refresh). Do NOT drop the recovery — a
+                // `lastMessageUpdate` fires only once per message, so a
+                // silent return would lose this message forever. Re-arm for
+                // the remaining throttle window and re-check then.
+                consistencyTimerRef.current = setTimeout(
+                  runConsistencyCheck,
+                  CONSISTENCY_REFRESH_MIN_INTERVAL_MS - sinceLast
+                );
+                return;
+              }
+              lastConsistencyRefreshAtRef.current = now;
+              recoveredPreviewRef.current = preview;
+              router.refresh();
+            };
+            consistencyTimerRef.current = setTimeout(runConsistencyCheck, CONSISTENCY_REFRESH_DEBOUNCE_MS);
+            break;
+          }
+          case 'unreadUpdate':
+            // Focus-side safety net for the case where the
+            // `lastMessageUpdate` above was ALSO lost in the same socket
+            // disruption. The server emits `unreadUpdate(count > 0)` on
+            // EVERY delivery, which almost always beats the client's async
+            // mark-as-read round-trip — so a positive count on its own is
+            // NOT proof of a miss and must not force a throttle bypass on
+            // every focus. Instead:
+            //   - count > 0 while hidden: tentatively raise the signal.
+            //   - count === 0 (the echo of a completed mark-as-read):
+            //     clear it. In the happy path the drawing event WAS
+            //     received, mark-as-read runs, and this echo cancels the
+            //     tentative raise. In a real miss the drawing event never
+            //     arrived, mark-as-read never runs, no count===0 echo
+            //     follows, and the raise survives to the next focus.
+            if (event.userId === userId) {
+              if (event.unreadCount === 0) {
+                clearMissedEvents();
+              } else if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                raiseMissedEvents();
+              }
+            }
             break;
         }
       },

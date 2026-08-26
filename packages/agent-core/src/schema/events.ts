@@ -21,6 +21,21 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     senderUserId: z.string().optional(),
     senderDisplayName: z.string().optional(),
     senderType: z.union([z.literal('slack'), z.literal('webapp'), z.literal('apikey')]).optional(),
+    /**
+     * Submission-specific identifier generated client-side (`crypto.randomUUID()`)
+     * when the user types a message in the webapp. The server action receives
+     * the id as part of the action input and forwards it verbatim on the
+     * rebroadcast event so the originating tab can recognize the echo and
+     * collapse it into its existing optimistic bubble (see `dedup.ts`).
+     *
+     * Transient: NEVER persisted to DynamoDB. Only meaningful on the
+     * realtime event payload. Other producers (Slack, REST API key) leave
+     * this field undefined; their messages are never echoed back to a
+     * pending bubble, so they never need a clientId.
+     */
+    clientId: z.string().optional(),
+    imageKeys: z.array(z.string()).optional(),
+    fileKeys: z.array(z.string()).optional(),
   }),
   z.object({
     type: z.literal('toolUse'),
