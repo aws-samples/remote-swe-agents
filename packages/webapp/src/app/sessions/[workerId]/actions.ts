@@ -48,7 +48,12 @@ export const sendMessageToAgent = authActionClient
     }
 
     const content = [];
-    content.push({ text: renderUserMessage({ message }) });
+    content.push({
+      text: renderUserMessage({
+        message,
+        sender: { type: 'webapp', id: ctx.userId, displayName: ctx.displayName },
+      }),
+    });
     imageKeys.forEach((key) => {
       content.push({
         image: {
@@ -81,6 +86,9 @@ export const sendMessageToAgent = authActionClient
       // Per-message model overrides are deprecated — model selection is now
       // session-level only (bedrockDefaultModel / kiroDefaultModel).
       // Legacy read-side fallbacks remain for pre-migration sessions.
+      senderUserId: ctx.userId,
+      ...(ctx.displayName ? { senderDisplayName: ctx.displayName } : {}),
+      senderType: 'webapp',
     };
 
     await ddb.send(

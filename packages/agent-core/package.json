@@ -8,6 +8,10 @@
       "types": "./dist/lib/index.d.ts",
       "default": "./dist/lib/index.js"
     },
+    "./types/sender": {
+      "types": "./dist/types/sender.d.ts",
+      "default": "./dist/types/sender.js"
+    },
     "./aws": {
       "types": "./dist/lib/aws/index.d.ts",
       "default": "./dist/lib/aws/index.js"

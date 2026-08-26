@@ -56,6 +56,11 @@ interface SessionPageClientProps {
   childSessions?: { workerId: string; title?: string }[];
   parentSessionId?: string;
   /**
+   * Display name of the signed-in user, forwarded to `MessageForm` so the
+   * optimistic bubble is labelled with the submitter's own name.
+   */
+  currentUserDisplayName?: string;
+  /**
    * Effective inference mode for this session, resolved server-side via the
    * priority chain (session > customAgent > userPreferences > env > default).
    * When `'kiro-cli'`, the chat input shows the Kiro model selector instead
@@ -86,6 +91,7 @@ export default function SessionPageClient({
   parentSessionId,
   inferenceMode,
   kiroModel,
+  currentUserDisplayName,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -251,6 +257,14 @@ export default function SessionPageClient({
                     type: 'message',
                     thinkingBudget: event.thinkingBudget,
                     reasoningText: event.reasoningText,
+                    // Sender attribution for realtime user messages (Slack /
+                    // other webapp viewers / REST API), so the bubble renders
+                    // the sender name without a page reload.
+                    ...(event.role === 'user' && event.senderDisplayName
+                      ? { userSenderDisplayName: event.senderDisplayName }
+                      : {}),
+                    ...(event.role === 'user' && event.senderType ? { userSenderType: event.senderType } : {}),
+                    ...(event.role === 'user' && event.senderUserId ? { userSenderUserId: event.senderUserId } : {}),
                   },
                 ]);
               }
@@ -574,6 +588,8 @@ export default function SessionPageClient({
             onConfirm={onConfirmMessage}
             onRollback={onRollbackMessage}
             workerId={workerId}
+            currentUserDisplayName={currentUserDisplayName}
+            currentUserId={userId}
             onShareSession={() => setShowShareModal(true)}
             // For Kiro sessions, do NOT seed the Bedrock model selector from
             // message history: Kiro sessions can carry non-Bedrock

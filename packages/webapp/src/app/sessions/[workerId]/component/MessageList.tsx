@@ -32,7 +32,41 @@ export type MessageView = {
   targetAgentName?: string;
   /** Whether this is an acknowledge (non-waking) message */
   isAcknowledge?: boolean;
+  /** For user messages (type === 'message' && role === 'user'): sender identity */
+  userSenderDisplayName?: string;
+  userSenderType?: 'slack' | 'webapp' | 'apikey';
+  /**
+   * Stable per-user identifier for the sender (Cognito sub, Slack user id,
+   * API key id, etc.). Used by `getMessageSenderKey` to ensure consecutive
+   * user bubbles from DIFFERENT humans are placed in separate groups even
+   * when display names happen to collide.
+   */
+  userSenderUserId?: string;
 };
+
+/**
+ * Derive a stable key that identifies the *sender* of a message for the
+ * purpose of grouping consecutive bubbles in `MessageList`. Two messages with
+ * the same key are considered to come from the same source and may share a
+ * group; different keys force a new group.
+ *
+ * Rules:
+ *   - assistant / tool / event messages collapse onto a single 'assistant'
+ *     bucket per `agentName`; the existing role+agentName check covers this.
+ *   - user messages are keyed by `userSenderType + userSenderUserId`. If the
+ *     stable id is missing we fall back to the displayName so legacy items
+ *     (without sender metadata) still group sensibly. Falling all the way
+ *     through yields a single 'user:legacy' bucket which preserves the
+ *     pre-feature behaviour.
+ */
+export function getMessageSenderKey(message: MessageView): string {
+  if (message.role !== 'user' || message.type !== 'message') {
+    return `${message.role}:${message.agentName ?? ''}`;
+  }
+  const type = message.userSenderType ?? 'unknown';
+  const id = message.userSenderUserId ?? message.userSenderDisplayName ?? 'legacy';
+  return `user:${type}:${id}`;
+}
 
 export type MessageGroup = {
   role: 'user' | 'assistant';
@@ -75,12 +109,21 @@ export default function MessageList({
       const isAgentMsg = message.type === 'agentMessage';
       const prevIsAgentMsg = currentGroup?.messages[0]?.type === 'agentMessage';
 
-      // Start a new group if: different role, different agentName, or agent message boundary
+      // Start a new group when any of the following changes:
+      //   - role (user/assistant)
+      //   - agentName (assistant identity)
+      //   - sender key for user messages (so Alice → Bob in consecutive
+      //     user messages renders as two separate Alice / Bob groups
+      //     instead of clobbering Bob's bubble with Alice's name).
+      //   - agent message boundary (agent-to-agent messages are never merged)
       const currentAgentName = currentGroup?.messages[0]?.agentName;
+      const currentSenderKey = currentGroup ? getMessageSenderKey(currentGroup.messages[0]) : undefined;
+      const messageSenderKey = getMessageSenderKey(message);
       const isSameSource =
         currentGroup &&
         currentGroup.role === message.role &&
         currentAgentName === message.agentName &&
+        currentSenderKey === messageSenderKey &&
         !isAgentMsg &&
         !prevIsAgentMsg;
 

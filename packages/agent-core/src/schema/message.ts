@@ -34,6 +34,25 @@ export type MessageItem = {
    */
   senderUserId?: string;
   /**
+   * Human-readable display name of the user who sent this message. Populated
+   * on `userMessage` items so the webapp UI can render "Alice" instead of
+   * the generic "User" label. Optional to keep backward compatibility with
+   * messages persisted before this field was introduced.
+   *
+   * - Slack: resolved via `users.info` display_name / real_name.
+   * - Webapp: local part of the Cognito email (see `deriveDisplayName`).
+   */
+  senderDisplayName?: string;
+  /**
+   * Origin of the user message: "slack", "webapp", or "apikey". Mirrors the
+   * `sender.type` embedded in the LLM prompt envelope so the UI can pick a
+   * suitable icon without re-parsing the message text. `apikey` indicates
+   * the message came in via the REST API (`/api/sessions/[sessionId]`)
+   * authenticated with an API key, in which case `senderUserId` holds the
+   * key id and `senderDisplayName` holds the key description.
+   */
+  senderType?: 'slack' | 'webapp' | 'apikey';
+  /**
    * Session ID of the agent that sent this message (for agent-to-agent communication)
    */
   senderSessionId?: string;

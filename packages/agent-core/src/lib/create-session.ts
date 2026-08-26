@@ -13,7 +13,7 @@ import {
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
-import { renderUserMessage, renderAgentMessage, renderSystemNotification } from './prompt';
+import { renderUserMessage, renderAgentMessage, renderSystemNotification, sanitizeSenderLabel } from './prompt';
 import { postNewSlackThread } from './slack';
 import { getWebappSessionUrl } from './webapp-origin';
 import { getChildSessions, getSession } from './sessions';
@@ -45,6 +45,26 @@ export interface CreateSessionParams {
    * this simply records who created the session so it can send messages back.
    */
   creatorSessionId?: string;
+  /**
+   * Cognito user ID of the message sender (for per-user inference mode / API key lookup).
+   */
+  senderUserId?: string;
+  /**
+   * Origin of the user message: "slack" or "webapp". When set, it is both
+   * persisted on the initial message item and embedded in the LLM prompt
+   * envelope (`[from: ... (<type>)]\n`), matching the behaviour of subsequent
+   * messages added via the webapp/Slack message actions. Only meaningful for
+   * root (user-initiated) sessions — child sessions always use the
+   * `[Message from <parent>...]` prefix instead.
+   */
+  senderType?: 'slack' | 'webapp';
+  /**
+   * Human-readable display name of the user who seeded this session. Used
+   * alongside `senderType` for the `[from: <displayName> (<type>)]` envelope
+   * header and persisted on the initial message item so the webapp UI can
+   * render the sender.
+   */
+  senderDisplayName?: string;
   /**
    * Inference mode to bake into the session at creation time.
    * Once set, the session uses this backend for its entire lifetime regardless of
@@ -85,6 +105,9 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     slackChannelId,
     slackMentionUserId,
     creatorSessionId,
+    senderUserId,
+    senderType,
+    senderDisplayName,
     inferenceMode,
     kiroModel,
     bedrockDefaultModel,
@@ -102,11 +125,57 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   }
 
   const now = Date.now();
+  // Resolve parent agent name upfront so we can stamp the child's seed message
+  // with the same `[Message from <name> (<sessionId>)]: ...` prefix that
+  // subsequent inter-agent messages use (see `sendAgentMessage` in
+  // agent-messaging.ts). Without this prefix, the very first message the child
+  // receives is missing the sender attribution, while all following messages
+  // have it — leading to confusing first-turn reasoning.
+  let parentAgentName: string | undefined;
+  if (parentSessionId) {
+    try {
+      const parentSession = await getSession(parentSessionId);
+      if (parentSession) {
+        parentAgentName = await resolveAgentDisplayName(parentSession);
+      }
+    } catch (e) {
+      console.error('Failed to resolve parent agent name:', e);
+    }
+  }
+
   const content: any[] = [
     {
       text: parentSessionId
-        ? renderAgentMessage({ message, senderSessionId: parentSessionId })
-        : renderUserMessage({ message }),
+        ? renderAgentMessage({
+            // Sanitise the sender label for the same reasons documented in
+            // `sendAgentMessage` — `parentAgentName` is resolved from
+            // session metadata today, but a future code path could seed that
+            // field with attacker-controlled text, and a stray newline /
+            // envelope character in the `[Message from ... (...)]:` prefix
+            // would allow prompt injection inside the child's first turn.
+            message: `[Message from ${sanitizeSenderLabel(parentAgentName ?? 'parent') || 'parent'} (${
+              sanitizeSenderLabel(parentSessionId) || 'unknown'
+            })]: ${message}`,
+            senderSessionId: parentSessionId,
+          })
+        : renderUserMessage({
+            message,
+            // Mirror the per-message behaviour of the webapp/Slack send
+            // actions: when the initial message carries sender info, embed
+            // it in the LLM envelope as `[from: <displayName> (<type>)]`.
+            // Without this, the very first turn of a session has no sender
+            // attribution even though every following turn does — the LLM
+            // then cannot tell who started the conversation.
+            ...(senderType
+              ? {
+                  sender: {
+                    type: senderType,
+                    id: senderUserId ?? 'unknown',
+                    displayName: senderDisplayName,
+                  },
+                }
+              : {}),
+          }),
     },
   ];
   for (const key of imageKeys) {
@@ -145,18 +214,8 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     }
   }
 
-  // Resolve parent agent name for child sessions
-  let parentAgentName: string | undefined;
-  if (parentSessionId) {
-    try {
-      const parentSession = await getSession(parentSessionId);
-      if (parentSession) {
-        parentAgentName = await resolveAgentDisplayName(parentSession);
-      }
-    } catch (e) {
-      console.error('Failed to resolve parent agent name:', e);
-    }
-  }
+  // parentAgentName was resolved earlier (before content rendering) so the
+  // child's seed message carries the sender prefix. Reuse that value here.
 
   await ddb.send(
     new TransactWriteCommand({
@@ -204,6 +263,13 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               ...(modelOverride ? { modelOverride } : {}),
               ...(parentSessionId ? { senderSessionId: parentSessionId } : {}),
               ...(parentAgentName ? { senderAgentName: parentAgentName } : {}),
+              ...(senderUserId ? { senderUserId } : {}),
+              // Persist the human sender attributes on root (user-seeded)
+              // sessions so the webapp UI can render "<displayName>" on the
+              // first bubble — matching the second-and-later-message path
+              // served by the webapp/Slack send actions.
+              ...(!parentSessionId && senderDisplayName ? { senderDisplayName } : {}),
+              ...(!parentSessionId && senderType ? { senderType } : {}),
             } satisfies MessageItem,
           },
         },
