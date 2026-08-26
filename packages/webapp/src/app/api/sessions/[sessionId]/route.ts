@@ -8,6 +8,8 @@ import {
   noOpFiltering,
   getOrCreateWorkerInstance,
   renderUserMessage,
+  notifyOtherParticipants,
+  addSessionParticipant,
 } from '@remote-swe-agents/agent-core/lib';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
@@ -108,6 +110,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     senderDisplayName: sender.displayName,
     senderType: 'apikey',
   });
+
+  // Notify other session participants about this new message
+  try {
+    const participantUserId = sender.ownerId ?? sender.id;
+    // Only register as participant when ownerId is known (a real Cognito user).
+    // Legacy API keys without ownerId would pollute the participant list with
+    // 'apikey-xxx' IDs that accumulate unread counts nobody ever reads.
+    if (sender.ownerId) {
+      await addSessionParticipant(sessionId, sender.ownerId);
+    }
+    const senderLabel = sender.displayName || 'API';
+    const sessionLabel = session.title || sessionId;
+    await notifyOtherParticipants(sessionId, participantUserId, {
+      title: senderLabel,
+      body: `${sessionLabel}\n${message.slice(0, 200)}`,
+    });
+  } catch (e) {
+    console.error('[session-participants] Failed to notify participants from API route:', e);
+  }
 
   return NextResponse.json({ success: true }, { status: 200 });
 }

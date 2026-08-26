@@ -9,6 +9,7 @@ import { getWebappSessionUrl, sendWebappEvent, updateSessionLastMessage } from '
 import { saveSessionInfo } from '../util/session';
 import { getSessionIdFromSlack } from '../util/session-map';
 import { resolveSlackDisplayName } from '../util/slack-user-cache';
+import { notifyOtherParticipants, getSession } from '@remote-swe-agents/agent-core/lib';
 
 const BotToken = process.env.BOT_TOKEN!;
 const lambda = new LambdaClient();
@@ -212,4 +213,19 @@ export async function handleMessage(
           timestamp: event.ts,
         }),
   ]);
+
+  // Notify webapp participants about the new Slack message.
+  // Slack user IDs are not Cognito IDs, so the sender won't match any
+  // webapp participant — all webapp participants will be notified.
+  try {
+    const session = await getSession(workerId);
+    const senderLabel = slackDisplayName || 'Slack user';
+    const sessionLabel = session?.title || workerId;
+    await notifyOtherParticipants(workerId, userId, {
+      title: senderLabel,
+      body: `${sessionLabel}\n${message.slice(0, 200)}`,
+    });
+  } catch (e) {
+    console.error('[session-participants] Failed to notify participants from Slack handler:', e);
+  }
 }
