@@ -8,16 +8,30 @@ import { redirect } from 'next/navigation';
 export const createNewWorker = authActionClient
   .inputSchema(createNewWorkerSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { message, imageKeys = [], fileKeys = [], modelOverride, customAgentId = '' } = parsedInput;
+    const {
+      message,
+      imageKeys = [],
+      fileKeys = [],
+      modelOverride,
+      customAgentId = '',
+      inferenceMode,
+      kiroModel,
+      bedrockDefaultModel,
+      kiroDefaultModel,
+    } = parsedInput;
     const { userId } = ctx;
 
+    const effectiveBedrockDefault = bedrockDefaultModel ?? modelOverride;
     const workerId = await createSession({
       message,
       initiator: `webapp#${userId}`,
       customAgentId: customAgentId || undefined,
-      modelOverride,
       imageKeys,
       fileKeys,
+      inferenceMode,
+      kiroModel: kiroDefaultModel ?? kiroModel,
+      bedrockDefaultModel: effectiveBedrockDefault,
+      kiroDefaultModel,
     });
 
     redirect(`/sessions/${workerId}`);

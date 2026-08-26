@@ -149,7 +149,9 @@
     "searchNoResults": "一致するメッセージが見つかりません。",
     "searchResults": "検索結果",
     "searchResultCount": "{count}件の結果",
-    "searchTimedOut": "結果が不完全な可能性があります（検索がタイムアウトしました）。"
+    "searchTimedOut": "結果が不完全な可能性があります（検索がタイムアウトしました）。",
+    "kiroModelSelector": "Kiro モデル",
+    "modelUpdateFailed": "モデル選択の保存に失敗しました"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",
@@ -254,7 +256,15 @@
       "updateError": "テンプレートの更新に失敗しました",
       "deleteSuccess": "テンプレートが正常に削除されました",
       "deleteError": "テンプレートの削除に失敗しました"
-    }
+    },
+    "inferenceMode": "推論バックエンド",
+    "inferenceModes": {
+      "bedrock": "Bedrock",
+      "kiro": "Kiro"
+    },
+    "kiroApiKeyRequired": "Kiro モードを使うには、Preferences で Kiro API キーを設定してください。",
+    "goToPreferences": "Preferences を開く",
+    "customAgentForcesMode": "このカスタムエージェントは常に {mode} を使う設定です。"
   },
   "preferences": {
     "title": "設定",
@@ -291,7 +301,26 @@
       "enabled": "プッシュ通知は有効です",
       "disabled": "プッシュ通知は無効です",
       "notSupported": "このブラウザではプッシュ通知はサポートされていません"
-    }
+    },
+    "inferenceMode": "デフォルト推論モード",
+    "inferenceModeDescription": "新しいセッションのデフォルトの推論バックエンドです。セッション作成時に個別に上書きできます。",
+    "inferenceModes": {
+      "bedrock": "Bedrock",
+      "kiro": "Kiro"
+    },
+    "inferenceModeUpdateSuccess": "推論モードを更新しました",
+    "inferenceModeUpdateError": "推論モードの更新に失敗しました",
+    "kiroApiKey": "Kiro API キー",
+    "kiroApiKeyPlaceholder": "Kiro API キーを入力してください",
+    "kiroApiKeyConfigured": "API キーが設定されています",
+    "kiroApiKeyRequired": "Kiro モードを有効にするには、先に Kiro API キーを設定してください",
+    "kiroApiKeySaveSuccess": "Kiro API キーを保存しました",
+    "kiroApiKeySaveError": "API キーの保存に失敗しました",
+    "kiroApiKeyDeleteSuccess": "Kiro API キーを削除しました",
+    "kiroApiKeyDeleteError": "API キーの削除に失敗しました",
+    "kiroApiKeyDeleteConfirm": "Kiro API キーを削除してもよろしいですか？",
+    "kiroModel": "Kiro モデル",
+    "kiroModelDescription": "Kiro 推論に使用するAIモデルを選択してください"
   },
   "api_settings": {
     "title": "APIキー",

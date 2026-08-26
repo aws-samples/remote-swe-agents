@@ -24,6 +24,7 @@ import {
   InstanceStatus,
   GlobalPreferences,
   SessionItem,
+  InferenceMode,
 } from '@remote-swe-agents/agent-core/schema';
 import { useTranslations } from 'next-intl';
 import TodoList from './TodoList';
@@ -54,6 +55,18 @@ interface SessionPageClientProps {
   lastReadAt?: number;
   childSessions?: { workerId: string; title?: string }[];
   parentSessionId?: string;
+  /**
+   * Effective inference mode for this session, resolved server-side via the
+   * priority chain (session > customAgent > userPreferences > env > default).
+   * When `'kiro-cli'`, the chat input shows the Kiro model selector instead
+   * of the Bedrock model picker.
+   */
+  inferenceMode?: InferenceMode;
+  /**
+   * Kiro model baked into the session (or inherited from user preferences for
+   * legacy sessions). Only meaningful when `inferenceMode === 'kiro-cli'`.
+   */
+  kiroModel?: string;
 }
 
 export default function SessionPageClient({
@@ -71,6 +84,8 @@ export default function SessionPageClient({
   unreadMap,
   lastReadAt,
   parentSessionId,
+  inferenceMode,
+  kiroModel,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -560,7 +575,21 @@ export default function SessionPageClient({
             onRollback={onRollbackMessage}
             workerId={workerId}
             onShareSession={() => setShowShareModal(true)}
-            defaultModelOverride={messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride}
+            // For Kiro sessions, do NOT seed the Bedrock model selector from
+            // message history: Kiro sessions can carry non-Bedrock
+            // `modelOverride` values on their messages that would fail the
+            // strict `ModelType` zod schema on the client and permanently
+            // disable the submit button. The Kiro branch of the form uses its
+            // own `kiroModelOverride` selector instead, so seeding
+            // `defaultModelOverride` from preferences here is purely
+            // defensive and never user-visible on Kiro sessions.
+            defaultModelOverride={
+              inferenceMode === 'kiro-cli'
+                ? preferences.modelOverride
+                : (messages.findLast((m) => m.modelOverride)?.modelOverride ?? preferences.modelOverride)
+            }
+            inferenceMode={inferenceMode}
+            kiroModel={kiroModel}
           />
 
           {/* Scroll buttons - hidden when scrolled to bottom */}
