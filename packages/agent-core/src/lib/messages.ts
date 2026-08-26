@@ -5,12 +5,18 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from '
 import path from 'path';
 import { tmpdir } from 'os';
 import { ddb, TableName } from './aws/ddb';
-import { writeBytesToKey, getBytesFromKey } from './aws/s3';
+import { writeBytesToKey, getBytesFromKey, BucketName } from './aws/s3';
+import { ensureImageWithinBounds } from './image-resize';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
 import { updateSessionLastMessage } from './sessions';
 import { getWebappSessionUrl } from './webapp-origin';
-import { MessageItem } from '../schema';
+import {
+  MessageItem,
+  INTERNAL_ERROR_MESSAGE_TYPE,
+  RETRIGGER_GIVEUP_MESSAGE_TYPE,
+  CANCELLED_TURN_MESSAGE_TYPE,
+} from '../schema';
 
 // Maximum input token count before applying middle-out strategy
 export const MAX_INPUT_TOKEN = 80_000;
@@ -222,7 +228,23 @@ export const updateMessageTokenCount = async (workerId: string, messageSK: strin
   );
 };
 
-export const getConversationHistory = async (workerId: string) => {
+export interface GetConversationHistoryOptions {
+  /**
+   * When true, return all messages without filtering.
+   * When false/omitted, internal-only bookkeeping rows (`internalError`,
+   * `retriggerGiveup`, `cancelledTurn`) are excluded. These rows are written
+   * by the kiro-cli backend for debugging / recovery bookkeeping and must
+   * never enter an LLM context or reach the UX.
+   *
+   * Rule of thumb:
+   * - LLM-facing / UI-facing callers → omit / false
+   * - recovery-bookkeeping callers that must see the raw rows (e.g. the
+   *   retrigger burst accounting in the worker) → true
+   */
+  includeAll?: boolean;
+}
+
+export const getConversationHistory = async (workerId: string, options: GetConversationHistoryOptions = {}) => {
   const paginator = paginateQuery(
     {
       client: ddb,
@@ -243,7 +265,16 @@ export const getConversationHistory = async (workerId: string) => {
     items.push(...(page.Items as any));
   }
 
-  return { items, slackUserId: searchForLastSlackUserId(items) };
+  const filteredItems = options.includeAll
+    ? items
+    : items.filter(
+        (item) =>
+          item.messageType !== INTERNAL_ERROR_MESSAGE_TYPE &&
+          item.messageType !== RETRIGGER_GIVEUP_MESSAGE_TYPE &&
+          item.messageType !== CANCELLED_TURN_MESSAGE_TYPE
+      );
+
+  return { items: filteredItems, slackUserId: searchForLastSlackUserId(filteredItems) };
 };
 
 const searchForLastSlackUserId = (items: MessageItem[]) => {
@@ -255,6 +286,20 @@ const searchForLastSlackUserId = (items: MessageItem[]) => {
 };
 
 export const middleOutFiltering = async (items: MessageItem[], maxInputToken = MAX_INPUT_TOKEN) => {
+  // Belt-and-suspenders guard: the internal-only markers (`internalError`,
+  // `retriggerGiveup`, `cancelledTurn`) must never enter an LLM context. They
+  // are already filtered out by `getConversationHistory` by default, but if a
+  // future caller accidentally passes `{ includeAll: true }` to a history
+  // fetch that feeds an LLM, the tokenCount=0 on these rows would silently
+  // inflate the real context and mislead this function. Drop them
+  // unconditionally here so the LLM path is safe by construction.
+  items = items.filter(
+    (item) =>
+      item.messageType !== INTERNAL_ERROR_MESSAGE_TYPE &&
+      item.messageType !== RETRIGGER_GIVEUP_MESSAGE_TYPE &&
+      item.messageType !== CANCELLED_TURN_MESSAGE_TYPE
+  );
+
   // Calculate total token count to determine if we need middle-out filtering
   let totalTokenCount = items.reduce((sum: number, item) => sum + item.tokenCount, 0);
   const headRatio = 0.6;
@@ -407,6 +452,74 @@ const saveFileToLocalFs = async (fileBuffer: Uint8Array, fileName: string): Prom
   fileSeqNo++;
 
   return filePath;
+};
+
+/**
+ * Resolve a `file` block's S3 key to a path on the local filesystem so a
+ * downstream tool (Bedrock Converse text-block fallback, or kiro-cli's
+ * native `read` / `shell`) can open the bytes without going through S3.
+ *
+ * Memoised on `s3Key` via the module-level `fileCache` so the same
+ * attachment is downloaded at most once per worker process — the same
+ * contract `postProcessMessageContent` has historically relied on for
+ * the Bedrock path. The kiro-cli current-turn renderer reuses this
+ * helper so both backends produce a byte-identical local-FS layout for
+ * the agent (`/tmp/.remote-swe-files/${seq}_${fileName}`).
+ *
+ * Returns `localPath` plus the resolved `fileName` (falling back to the
+ * tail of the s3Key when the original DDB block omitted it). The caller
+ * is responsible for emitting the user-visible
+ * `the file "${fileName}" is stored locally on ${localPath}` text — that
+ * exact wording is part of the LLM-facing contract and is duplicated
+ * verbatim by both backends to keep prompts identical.
+ */
+export const materializeFileBlock = async (
+  s3Key: string,
+  fileName?: string
+): Promise<{ localPath: string; fileName: string }> => {
+  const resolvedFileName = fileName || s3Key.split('/').pop() || 'file';
+  if (s3Key in fileCache) {
+    return { localPath: fileCache[s3Key]!.localPath, fileName: resolvedFileName };
+  }
+  const fileBuffer = await getBytesFromKey(s3Key);
+  const localPath = await saveFileToLocalFs(fileBuffer, resolvedFileName);
+  fileCache[s3Key] = { localPath };
+  return { localPath, fileName: resolvedFileName };
+};
+
+const imageBlockCache: Record<string, { originalPath: string; previewPath: string; fileName: string }> = {};
+
+/**
+ * Resolve an `image` block's S3 key to files on the local filesystem for the
+ * kiro-cli renderer. `originalPath` contains the resized (<=1568px) image,
+ * not the raw S3 original — the full-size original is only in S3; local disk
+ * always has the clamped version. A JPEG preview is additionally written so
+ * CLI-side image tooling has a universally readable format.
+ */
+export const materializeImageBlock = async (
+  s3Key: string
+): Promise<{ originalPath: string; previewPath: string; fileName: string; s3Uri: string }> => {
+  const fileName = s3Key.split('/').pop() || 'image.png';
+  const s3Uri = `s3://${BucketName}/${s3Key}`;
+
+  if (s3Key in imageBlockCache) {
+    return { ...imageBlockCache[s3Key]!, s3Uri };
+  }
+
+  const raw = await getBytesFromKey(s3Key);
+
+  const resized = await ensureImageWithinBounds(raw);
+  const originalPath = await saveFileToLocalFs(resized, fileName);
+
+  const jpegPreview = await sharp(resized).jpeg({ quality: 85 }).toBuffer();
+  const imagesDir = ensureImagesDirectory();
+  const previewFileName = `image${imageSeqNo}.jpeg`;
+  const previewPath = path.join(imagesDir, previewFileName);
+  writeFileSync(previewPath, jpegPreview);
+  imageSeqNo++;
+
+  imageBlockCache[s3Key] = { originalPath, previewPath, fileName };
+  return { originalPath, previewPath, fileName, s3Uri };
 };
 
 /**

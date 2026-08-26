@@ -59,3 +59,64 @@ export type MessageItem = {
    */
   TTL?: number;
 };
+
+/**
+ * The set of `messageType` values that represent real user-originated input
+ * eligible for re-delivery to the LLM (typed by a human, delivered by a
+ * parent agent, fired by an EventBridge trigger, or emitted by the worker
+ * itself when a tool error feedback turn must be inserted).
+ *
+ * `toolUse` and `toolResult` are intentionally excluded because they are
+ * synthesised by the agent loop and must not be treated as fresh input
+ * across a turn boundary.
+ *
+ * Shared between the worker's tail aggregation and the kiro-cli session
+ * synthesiser (`packages/worker/src/agent/kiro-session-synth.ts`) so the
+ * two paths can never drift apart.
+ */
+export const USER_INPUT_MESSAGE_TYPES = new Set<string>([
+  'userMessage',
+  'eventTrigger',
+  'agentMessage',
+  'errorFeedback',
+  'systemRetrigger',
+  'mermaidFeedback',
+]);
+
+/**
+ * Internal-only `messageType` for a turn-level failure record (e.g. a Kiro
+ * prompt that failed after the in-turn retry while the child self-recovers via
+ * auto-retrigger). The full raw error is persisted under this type for
+ * debugging, but it is deliberately:
+ *   - excluded from `getConversationHistory` by default (does not enter the
+ *     LLM context),
+ *   - skipped by the kiro-cli session synthesiser (unknown type → skipped),
+ *   - and NOT rendered by the webapp (no `case` for it),
+ * so a transient infrastructure hiccup never leaks to the UX.
+ */
+export const INTERNAL_ERROR_MESSAGE_TYPE = 'internalError';
+
+/**
+ * Internal-only `messageType` marker written when the Kiro auto-recovery budget
+ * is exhausted and the turn gives up. It CLOSES the active retrigger burst so a
+ * subsequent failure starts a fresh time budget (see `getRetriggerBurstStats`
+ * in the worker). Like {@link INTERNAL_ERROR_MESSAGE_TYPE} it is excluded from
+ * the default `getConversationHistory` view, skipped by the kiro-cli session
+ * synthesiser, and not rendered by the webapp, so it never reaches the UX or
+ * the LLM context. It is read back only via `{ includeAll: true }`.
+ */
+export const RETRIGGER_GIVEUP_MESSAGE_TYPE = 'retriggerGiveup';
+
+/**
+ * Internal-only `messageType` marker for assistant text produced when kiro-cli
+ * responds to a `session/cancel` request (stopReason `cancelled`). The text is
+ * typically a placeholder like "Response was interrupted by the user" injected
+ * by the inference backend — it carries no user-facing value and would confuse
+ * the user because the cancel was triggered by the orchestrator, not by them.
+ *
+ * Same filtering contract as {@link INTERNAL_ERROR_MESSAGE_TYPE}: excluded from
+ * the default conversation history view, skipped by the kiro-cli session
+ * synthesiser, and not rendered in the webapp. Preserved in DynamoDB for
+ * debugging / audit.
+ */
+export const CANCELLED_TURN_MESSAGE_TYPE = 'cancelledTurn';
