@@ -45,6 +45,16 @@ export interface WorkerProps {
   userPool: UserPool;
   cognitoDomainName: string;
   vapidKeys: VapidKeys;
+  /**
+   * SSM parameter holding the stack-wide Kiro CLI API key. When set, workers
+   * can run sessions in kiro-cli inference mode. Omit for Bedrock-only.
+   */
+  kiroApiKeyParameter?: IStringParameter;
+  /**
+   * Default inference mode for workers ('bedrock' or 'kiro-cli').
+   * @default 'bedrock'
+   */
+  inferenceMode?: string;
 }
 
 export class Worker extends Construct {
@@ -121,6 +131,8 @@ export class Worker extends Construct {
       additionalManagedPolicies: props.additionalManagedPolicies,
       vapidKeys: props.vapidKeys,
       eventTrigger,
+      kiroApiKeyParameter: props.kiroApiKeyParameter,
+      inferenceMode: props.inferenceMode,
     });
     this.agentCoreRuntime = agentCoreRuntime;
 
@@ -226,6 +238,18 @@ export class Worker extends Construct {
       }),
     });
     const userData = launchTemplate.userData!;
+
+    // Kiro CLI inference mode wiring. Fully inert unless the stack opts in:
+    // when neither a Kiro API key parameter nor an inference mode is
+    // configured, no env line and no install step is added, keeping the
+    // rendered user data identical to a stack without this feature.
+    const kiroEnabled = !!(props.kiroApiKeyParameter || props.inferenceMode);
+    const kiroEnvironmentLines = kiroEnabled
+      ? `\nEnvironment=STACK_NAME=${Stack.of(this).stackName}\nEnvironment=INFERENCE_MODE=${props.inferenceMode ?? ''}`
+      : '';
+    const kiroInstallCommands = kiroEnabled
+      ? `\n\n# Install kiro-cli\nsudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'`
+      : '';
 
     userData.addCommands(
       `
@@ -451,7 +475,7 @@ Environment=EVENT_TRIGGER_SFN_ARN=${eventTrigger.handlerStateMachine.stateMachin
 Environment=EVENT_TRIGGER_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
 Environment=EVENT_TRIGGER_TTL_SFN_ARN=${eventTrigger.ttlStateMachine.stateMachineArn}
 Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=${eventTrigger.schedulerRole.roleArn}
-Environment=EVENT_TRIGGER_RESOURCE_PREFIX=${eventTrigger.resourcePrefix}
+Environment=EVENT_TRIGGER_RESOURCE_PREFIX=${eventTrigger.resourcePrefix}${kiroEnvironmentLines}
 
 [Install]
 WantedBy=multi-user.target
@@ -522,7 +546,7 @@ EOF
 
 systemctl daemon-reload
 systemctl enable fluent-bit
-systemctl enable myapp
+systemctl enable myapp${kiroInstallCommands}
       `);
 
     const installDependenciesCommand = userData.render();
