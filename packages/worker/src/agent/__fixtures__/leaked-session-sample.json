@@ -1,0 +1,170 @@
+[
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000001",
+    "role": "user",
+    "messageType": "toolResult",
+    "content": "[{\"toolResult\": {\"toolUseId\": \"tooluse_synthetic0000000000000\", \"content\": [{\"text\": \"Successfully sent a message.\"}]}}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000002",
+    "role": "user",
+    "messageType": "communicationLog",
+    "content": "[{\"text\": \"Verification passed, thanks for backing it up with screenshots. Waiting for the final go-ahead. Cleanup confirmed.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000003",
+    "role": "assistant",
+    "messageType": "toolUse",
+    "content": "[{\"toolUse\": {\"toolUseId\": \"tooluse_synthetic0000000000001\", \"name\": \"acknowledgeAgent\", \"input\": {\"__tool_use_purpose\": \"silent ack for spot check pass\", \"message\": \"Verification passed, thanks for backing it up with screenshots. Waiting for the final go-ahead. Cleanup confirmed.\", \"targetSessionIds\": [\"session-0000000000001-fixture00001\"]}}}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000004",
+    "role": "user",
+    "messageType": "toolResult",
+    "content": "[{\"toolResult\": {\"toolUseId\": \"tooluse_synthetic0000000000001\", \"content\": [{\"text\": \"Acknowledged to: session-0000000000001-fixture00001 (message saved, agent NOT woken up)\"}]}}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000005",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"Waiting for the final go-ahead.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000006",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nokay, please deploy to the staging environment\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000007",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000001, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\": \\\"confirm the deploy request\\\", \\\"message\\\": \\\"Got the new task. Quick check before I start:\\\\n- deploy target is the staging stack, right?\\\\n- deploy from the latest main branch, or a specific commit?\\\\nOnce you confirm, I will spin up a deploy worker.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000001, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\n<|ASSISTANT|>\\nWaiting for the reply. The investigation worker keeps running while I confirm the deploy details.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000008",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\n? I was answering your question, not filing a new task\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000009",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000002, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\": \\\"clear up the misunderstanding\\\", \\\"message\\\": \\\"Ah, sorry - I read your reply as a brand-new deploy request. So your last message was the answer to my earlier question. Let me re-sync: the investigation continues and no deploy worker is created yet.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000002, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\n<|ASSISTANT|>\\nRe-synced with the user. No deploy yet.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000010",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nI only said go to your earlier question, you know?\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000011",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"Understood - your \\\"go\\\" was for the investigation worker, and the deploy request is a separate new task. Shall I keep waiting on the investigation report while starting a deploy worker as well?\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000012",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nwhat do you mean? our conversation feels out of sync\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000013",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000003, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\": \\\"explain the current state plainly\\\", \\\"message\\\": \\\"Let me lay out the current state plainly:\\\\n1. investigation worker: running, report pending\\\\n2. deploy: not started, waiting for your confirmation\\\\nIf that matches your understanding we are back in sync.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000003, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\n<|ASSISTANT|>\\nSent a plain state summary to resolve the confusion.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000014",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nok that matches. go ahead with the deploy\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000015",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"Deploy confirmed. Spinning up a deploy worker for the staging stack now.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000016",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nhow is the deploy going?\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000017",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000004, name: sendMessageToAgent, input: {\\\"__tool_use_purpose\\\": \\\"ask the deploy worker for progress\\\", \\\"message\\\": \\\"Progress check: how far along is the staging deploy? Please report:\\\\n1. PR merge status\\\\n2. stack deployment status\\\\n3. any blockers\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000004, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\nAsked the deploy worker for a progress report.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000018",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nyour last message looks like raw tool logs to me\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000019",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000005, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\": \\\"acknowledge the rendering issue\\\", \\\"message\\\": \\\"You are right, that was my internal tool-use log leaking into the chat. The actual content was just a progress request to the deploy worker. I will flag this rendering issue.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000005, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\n<|ASSISTANT|>\\nAcknowledged the leak symptom to the user.\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000020",
+    "role": "user",
+    "messageType": "userMessage",
+    "content": "[{\"text\": \"<user_message>\\nid: tooluse_leak_sample_000006, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\":\\\"confirm the fix plan\\\",\\\"message\\\":\\\"Understood - I will make sure the deploy worker uses its tools properly. Waiting for its progress report.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000006, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\n<|TOOL_USE|>id: tooluse_leak_sample_000007, name: sendMessageToAgent, input: {\\\"__tool_use_purpose\\\":\\\"progress check\\\",\\\"targetSessionIds\\\":[\\\"session-0000000000001-fixture00001\\\"],\\\"message\\\":\\\"Any progress? Are you using your tools properly?\\\\n\\\\n1. PR merge status\\\\n2. stack deployment...[truncated for fixture]\\n</user_message>\\n<command>\\nUser sent you a message. Please use sendMessageToUser tool to send a response asap.\\n</command>\"}]",
+    "tokenCount": 0
+  },
+  {
+    "PK": "message-session-0000000000000-fixture00000",
+    "SK": "001000000000021",
+    "role": "assistant",
+    "messageType": "assistant",
+    "content": "[{\"text\": \"<|TOOL_USE|>id: tooluse_leak_sample_000008, name: sendMessageToUser, input: {\\\"__tool_use_purpose\\\": \\\"resolve the confusion about leaked logs\\\", \\\"message\\\": \\\"What you pasted is my internal tool-use log leaking through. On your side you should have received a normal chat message saying I asked the deploy worker for progress.\\\"}<|/TOOL_USE|>\\n\\n<|USER|>\\n<|TOOL_RESULT|>id: tooluse_leak_sample_000008, output: Successfully sent a message.<|/TOOL_RESULT|>\\n<|/USER|>\\n\\nThe user should have received the normal message. Waiting for the deploy worker to reply.\"}]",
+    "tokenCount": 0
+  }
+]
