@@ -18,6 +18,7 @@ import { thinkTool } from '../tools/think';
 import { waitForConditionTool } from '../tools/wait-for';
 import { completeSessionTool } from '../tools/complete-session';
 import { confirmCompleteSessionTool } from '../tools/confirm-complete-session';
+import { confirmCreateAgentTool } from '../tools/confirm-create-agent';
 import { listSessionsTool } from '../tools/list-sessions';
 import { reparentSessionTool } from '../tools/reparent-session';
 import { exportSessionDiagnosticsTool } from '../tools/export-session-diagnostics';
@@ -73,6 +74,7 @@ export const kiroExportedTools: ToolDefinition<unknown>[] = [
   // session lifecycle
   completeSessionTool,
   confirmCompleteSessionTool,
+  confirmCreateAgentTool,
   listSessionsTool,
   reparentSessionTool,
   exportSessionDiagnosticsTool,
