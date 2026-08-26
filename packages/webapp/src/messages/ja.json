@@ -4,6 +4,12 @@
     "deploymentRecovery": {
       "appUpdated": "アプリが更新されました。続けるにはページをリロードしてください。",
       "reload": "リロード"
+    },
+    "errorPage": {
+      "title": "問題が発生しました",
+      "description": "ページの表示中に予期しないエラーが発生しました。リロードすると直ることがほとんどです。",
+      "reload": "ページをリロード",
+      "backToHome": "ホームに戻る"
     }
   },
   "header": {
@@ -104,7 +110,6 @@
     "copiedToClipboard": "クリップボードにコピーしました",
     "deleteSession": "セッションを削除",
     "deleteSessionConfirm": "このセッションを削除しますか？この操作は元に戻せません。",
-    "deleteSessionSuccess": "セッションを削除しました",
     "deleteSessionError": "セッションの削除に失敗しました",
     "selectMode": "選択",
     "selectAll": "すべて選択",
@@ -112,7 +117,6 @@
     "deleteSelected": "{count}件を削除",
     "batchDeleteTitle": "選択したセッションを削除",
     "batchDeleteConfirm": "{count}件のセッションを削除しますか？この操作は元に戻せません。",
-    "batchDeleteSuccess": "{count}件のセッションを削除しました",
     "batchDeleteError": "セッションの削除に失敗しました",
     "cancel": "キャンセル",
     "sessionActions": "操作",
@@ -166,7 +170,10 @@
     "forceStopEscape": "停止 (Escape)",
     "copySessionId": "セッションタイトルとIDをコピー",
     "agentErrorRetrying": "エラーが発生しました。リトライ中... ({errorType})",
-    "agentErrorStopped": "エラーによりエージェントが停止しました: {errorType}"
+    "agentErrorStopped": "エラーによりエージェントが停止しました: {errorType}",
+    "batchDeleteAccepted": "{count, plural, other {#件のセッション}}をバックグラウンドで削除中...",
+    "batchDeleteItemError": "一部のセッションの削除に失敗しました。選択中の残りを再試行してください。",
+    "filterByTitle": "タイトルで絞り込み..."
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

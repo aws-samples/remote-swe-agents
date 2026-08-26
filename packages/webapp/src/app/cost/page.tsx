@@ -7,6 +7,7 @@ import CostSummary from './components/CostSummary';
 import CostBreakdown from './components/CostBreakdown';
 import DateSelector from './components/DateSelector';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
+import { toInitialMessagePreview } from '@/lib/session-list';
 
 export default async function CostAnalysisPage({
   searchParams,
@@ -99,7 +100,7 @@ export default async function CostAnalysisPage({
 
       return {
         workerId: session.workerId,
-        initialMessage: session.initialMessage,
+        initialMessagePreview: toInitialMessagePreview(session.initialMessage),
         sessionCost: session.sessionCost || 0,
         createdAt: session.createdAt,
         repoName: repoMetadata?.repoName,

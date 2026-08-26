@@ -7,6 +7,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { getPreferences } from '@remote-swe-agents/agent-core/lib';
 import BadgeSyncer from '@/components/BadgeSyncer';
 import PushNotificationBanner from '@/components/PushNotificationBanner';
+import DeploymentRecoveryListener from '@/components/DeploymentRecoveryListener';
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Get the locale from the request
@@ -37,6 +39,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <Toaster position="top-right" closeButton={true} />
             <BadgeSyncer />
             <PushNotificationBanner />
+            <DeploymentRecoveryListener />
+            <ServiceWorkerRegistrar />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

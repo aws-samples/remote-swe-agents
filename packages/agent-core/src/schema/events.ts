@@ -119,6 +119,12 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     workerId: z.string(),
   }),
   z.object({
+    type: z.literal('sessionDeleted'),
+    workerId: z.string(),
+    success: z.boolean(),
+    timestamp: z.number(),
+  }),
+  z.object({
     type: z.literal('portsUpdate'),
     workerId: z.string(),
     hostname: z.string().optional(),

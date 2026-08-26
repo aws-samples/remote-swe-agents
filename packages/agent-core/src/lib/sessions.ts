@@ -75,7 +75,7 @@ export const getSessions = async (
         items.push(...(page.Items as SessionItem[]));
       }
     }
-    return items.filter((session) => !session.isHidden);
+    return items;
   }
 
   // Otherwise, use the specified limit
@@ -83,7 +83,7 @@ export const getSessions = async (
   const res = await ddb.send(new QueryCommand(queryParams));
 
   const items = (res.Items ?? []) as SessionItem[];
-  return items.filter((session) => !session.isHidden);
+  return items;
 };
 
 /**
@@ -152,10 +152,6 @@ export const clearSessionKiroSessionId = async (workerId: string): Promise<void>
  * @param workerId Worker ID of the session being handed over
  * @param successorWorkerId Worker ID of the successor session
  */
-export const updateSessionVisibility = async (workerId: string, isHidden: boolean): Promise<void> => {
-  await updateSession(workerId, { isHidden });
-};
-
 export const markSessionHandedOver = async (workerId: string, successorWorkerId: string): Promise<void> => {
   await ddb.send(
     new UpdateCommand({
