@@ -412,7 +412,37 @@
         "label": "エージェントアイコン",
         "description": "エージェントのカスタムアイコンをアップロード（PNG、JPEG、WebP）"
       }
-    }
+    },
+    "duplicate": "複製",
+    "duplicateSuccess": "カスタムエージェントを複製しました",
+    "duplicateError": "カスタムエージェントの複製に失敗しました",
+    "detail": {
+      "backToList": "カスタムエージェント一覧に戻る",
+      "title": "エージェント詳細",
+      "description": "このカスタムエージェントの設定",
+      "edit": "編集",
+      "activeModel": "有効",
+      "allToolsEnabled": "全ツール有効",
+      "toolsSelected": "{count} 個のツールを選択中",
+      "mcpConfigured": "{count} 件設定済み",
+      "mcpNone": "なし",
+      "included": "含む",
+      "excluded": "含まない",
+      "createdAt": "作成日",
+      "usage": {
+        "title": "使用状況",
+        "description": "このエージェントが実行したセッション",
+        "recentSessionCount": "セッション（直近 {limit} 件中）",
+        "recentSessions": "最近のセッション",
+        "noSessions": "このエージェントの最近のセッションはありません。"
+      },
+      "subAgents": {
+        "title": "サブエージェント",
+        "description": "{name} の配下で動作するエージェント",
+        "empty": "このエージェントにサブエージェントはありません。"
+      }
+    },
+    "copySuffix": "(コピー)"
   },
   "notifications": {
     "enable": "プッシュ通知を有効にする",

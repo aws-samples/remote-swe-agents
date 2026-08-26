@@ -37,7 +37,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const isMsg = (toolName: string | undefined) =>
     ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendFileToUser'].includes(toolName ?? '');
   const isHiddenTool = (toolName: string | undefined) =>
-    isMsg(toolName) || ['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser'].includes(toolName ?? '');
+    isMsg(toolName) ||
+    ['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser', 'confirmCompleteSession'].includes(toolName ?? '');
 
   // Collect all completed toolUseIds from toolResult messages
   const completedToolUseIds = new Set<string>();

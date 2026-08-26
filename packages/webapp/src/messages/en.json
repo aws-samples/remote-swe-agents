@@ -413,7 +413,37 @@
         "label": "Agent Icon",
         "description": "Upload a custom icon for this agent (PNG, JPEG, or WebP)"
       }
-    }
+    },
+    "duplicate": "Duplicate",
+    "duplicateSuccess": "Custom agent duplicated successfully",
+    "duplicateError": "Failed to duplicate custom agent",
+    "detail": {
+      "backToList": "Back to Custom Agents",
+      "title": "Agent Details",
+      "description": "Configuration of this custom agent",
+      "edit": "Edit",
+      "activeModel": "Active",
+      "allToolsEnabled": "All tools enabled",
+      "toolsSelected": "{count} tools selected",
+      "mcpConfigured": "{count} configured",
+      "mcpNone": "None",
+      "included": "Included",
+      "excluded": "Excluded",
+      "createdAt": "Created",
+      "usage": {
+        "title": "Usage",
+        "description": "Sessions run by this agent",
+        "recentSessionCount": "sessions among the {limit} most recent",
+        "recentSessions": "Recent sessions",
+        "noSessions": "No recent sessions for this agent."
+      },
+      "subAgents": {
+        "title": "Sub-agents",
+        "description": "Agents that work under {name}",
+        "empty": "This agent has no sub-agents."
+      }
+    },
+    "copySuffix": "(copy)"
   },
   "notifications": {
     "enable": "Enable push notifications",
