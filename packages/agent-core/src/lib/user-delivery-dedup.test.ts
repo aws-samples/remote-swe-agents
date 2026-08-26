@@ -21,8 +21,12 @@ import {
   shouldSuppressToolUseRedelivery,
 } from './user-delivery-dedup';
 
+// Synthetic Japanese fixture: the dedup heuristic is character-bigram based
+// because production traffic is Japanese, so CJK inputs are a functional
+// requirement of the calibration ("Starting the deployment. I will check the
+// CDK stack first, ...").
 const LONG =
-  'Starting the deploy now. First I will check the CDK stacks, enumerate the changes, and apply them in order. I will report on every diff as it comes up, so no need to worry.';
+  'デプロイを開始します。まずはCDKのスタックを確認して、変更点を洗い出してから順番に適用していきます。差分が出たら都度報告しますので安心してください。';
 
 const deliveryLogItem = (text: string, sk: number): MessageItem =>
   ({
@@ -53,14 +57,14 @@ describe('shouldSuppressUserDelivery', () => {
 
   test('never suppresses a short message even if identical', async () => {
     const now = 1_000_000;
-    const short = 'got it';
+    const short = '了解です';
     mockGetRecentMessages.mockResolvedValue([deliveryLogItem(short, now - 1000)]);
     expect(await shouldSuppressUserDelivery('w1', short, now)).toBe(false);
   });
 
   test('short-circuits BEFORE the DynamoDB lookup for short messages', async () => {
     const now = 1_000_000;
-    expect(await shouldSuppressUserDelivery('w1', 'got it', now)).toBe(false);
+    expect(await shouldSuppressUserDelivery('w1', '了解です', now)).toBe(false);
     // The DDB read must be skipped entirely for sub-MIN_DEDUP_LENGTH messages.
     expect(mockGetRecentMessages).not.toHaveBeenCalled();
   });
@@ -69,7 +73,7 @@ describe('shouldSuppressUserDelivery', () => {
     const now = 1_000_000;
     mockGetRecentMessages.mockResolvedValue([deliveryLogItem(LONG, now - 1000)]);
     const different =
-      'Investigation finished: root cause was an expired auth token during the nightly sync. Patched the refresh logic, added a regression case, and reran the full pipeline.';
+      'テストが全部通りました。型チェックも問題なし。これからPRを作成して、レビューに回す準備を進めます。完了したらまた連絡します。';
     expect(await shouldSuppressUserDelivery('w1', different, now)).toBe(false);
   });
 
@@ -138,13 +142,14 @@ const toolUseItem = (toolName: string, message: string | undefined, sk: number):
 
 describe('isMessageDeliveryToolName', () => {
   test('matches the user-facing message-delivery tools', () => {
-    expect(isMessageDeliveryToolName('sendMessageToUser')).toBe(true);
+    expect(isMessageDeliveryToolName('Send Message To User')).toBe(true);
     expect(isMessageDeliveryToolName('sendMessageToUserIfNecessary')).toBe(true);
-    expect(isMessageDeliveryToolName('sendFileToUser')).toBe(true);
+    expect(isMessageDeliveryToolName('Send Image To User')).toBe(true);
+    expect(isMessageDeliveryToolName('Send File To User')).toBe(true);
   });
 
   test('does NOT match other tools (no friendly fire)', () => {
-    expect(isMessageDeliveryToolName('sendMessageToAgent')).toBe(false);
+    expect(isMessageDeliveryToolName('Send Message To Agent')).toBe(false);
     expect(isMessageDeliveryToolName('fs_read')).toBe(false);
     expect(isMessageDeliveryToolName('executeCommand')).toBe(false);
     expect(isMessageDeliveryToolName('think')).toBe(false);
@@ -160,7 +165,7 @@ describe('shouldSuppressToolUseRedelivery', () => {
 
   test('suppresses a re-delivery matching a prior sendMessageToUser toolUse', async () => {
     const now = 1_000_000;
-    mockGetRecentMessages.mockResolvedValue([toolUseItem('sendMessageToUser', LONG, now - 1000)]);
+    mockGetRecentMessages.mockResolvedValue([toolUseItem('Send Message To User', LONG, now - 1000)]);
     expect(await shouldSuppressToolUseRedelivery('w1', LONG, now)).toBe(true);
   });
 
@@ -180,22 +185,22 @@ describe('shouldSuppressToolUseRedelivery', () => {
 
   test('does NOT suppress a genuinely different delivery message', async () => {
     const now = 1_000_000;
-    mockGetRecentMessages.mockResolvedValue([toolUseItem('sendMessageToUser', LONG, now - 1000)]);
+    mockGetRecentMessages.mockResolvedValue([toolUseItem('Send Message To User', LONG, now - 1000)]);
     const different =
-      'Investigation finished: root cause was an expired auth token during the nightly sync. Patched the refresh logic, added a regression case, and reran the full pipeline.';
+      'テストが全部通りました。型チェックも問題なし。これからPRを作成して、レビューに回す準備を進めます。完了したらまた連絡します。';
     expect(await shouldSuppressToolUseRedelivery('w1', different, now)).toBe(false);
   });
 
   test('never suppresses a short message + short-circuits the DDB lookup', async () => {
     const now = 1_000_000;
-    expect(await shouldSuppressToolUseRedelivery('w1', 'got it', now)).toBe(false);
+    expect(await shouldSuppressToolUseRedelivery('w1', '了解です', now)).toBe(false);
     expect(mockGetRecentMessages).not.toHaveBeenCalled();
   });
 
   test('ignores delivery toolUse older than the window', async () => {
     const now = 10_000_000;
     const windowMs = 5 * 60 * 1000;
-    mockGetRecentMessages.mockResolvedValue([toolUseItem('sendMessageToUser', LONG, now - windowMs - 1)]);
+    mockGetRecentMessages.mockResolvedValue([toolUseItem('Send Message To User', LONG, now - windowMs - 1)]);
     expect(await shouldSuppressToolUseRedelivery('w1', LONG, now, windowMs)).toBe(false);
   });
 

@@ -2,19 +2,18 @@
  * Near-duplicate message detection for the agent-to-agent / parent-redirect
  * delivery path.
  *
- * ## Why this exists (B4 in the "child runtime error leaking to UX" report)
+ * ## Why this exists
  *
- * When a child turn is interrupted mid-flight (a wedged subprocess, a
+ * When a child turn is interrupted mid-flight (a wedged kiro-cli subprocess, a
  * cancellation, or an idle/wall-clock watchdog) the turn ends with
- * `skipFinalize` and never persists its closing text — but the inference backend
+ * `skipFinalize` and never persists its closing text — but the kiro-cli ACP
  * subprocess has already produced that text in its own session memory. On the
  * auto-retrigger / resurrection turn, `session/load` restores that memory and
  * the model, prompted with the re-aggregated user tail, RE-EMITS essentially
  * the same opening message it already sent before the interruption.
  *
- * Observed in practice: two "starting the deploy ..." intros sent about a
- * minute apart, near-identical but not byte-identical (the model rephrased the
- * second). A naive exact-match dedup would miss them, so we normalise and use a
+ * Observed live: two "starting the deployment now …" intros sent ~62s apart,
+ * near-identical but not byte-identical (the model rephrased the second). A naive exact-match dedup would miss them, so we normalise and use a
  * conservative prefix/length heuristic.
  *
  * ## Conservatism contract
@@ -26,7 +25,7 @@
  *   - the previous message was sent within `windowMs`, and
  *   - the normalised texts are either identical OR share a long identical
  *     leading prefix (>= PREFIX_MATCH_LENGTH chars).
- * Short messages ("ack", "got it", "progress update:") are intentionally NEVER
+ * Short messages ("ack", "了解です", "status update:") are intentionally NEVER
  * deduped — legitimate repeats of those are common and harmless.
  */
 
@@ -34,23 +33,61 @@
 export const MIN_DEDUP_LENGTH = 60;
 
 /**
- * Character-bigram Jaccard similarity threshold above which two long messages
- * are treated as near-duplicates.
+ * Character-bigram Jaccard similarity threshold: a candidate must score AT
+ * LEAST this against a prior to even be *considered* a near-duplicate. It is a
+ * necessary (not sufficient) condition — {@link isNearDuplicateMessage} also
+ * applies the {@link NOVELTY_VETO_THRESHOLD} veto on top, so clearing this bar
+ * alone does NOT mean a fold.
  *
- * Calibrated against observed re-emit incidents: two rephrased "starting the
- * deploy ..." intros score ~0.32, while genuinely different reports /
- * intro-vs-status pairs from the same session score <= 0.15. 0.30 sits
- * comfortably in that gap — it catches the real re-emit while leaving a wide
- * margin against false positives. We use character bigrams (not word tokens)
- * because messages may be in languages (e.g. CJK) where whitespace tokenisation
- * is unreliable without a morphological analyser.
+ * 0.30 was chosen against genuinely-different report / intro-vs-status pairs
+ * from a live incident, which score ≤ 0.15, leaving a wide margin below it. We use character bigrams (not word tokens) because the messages are
+ * Japanese, where whitespace tokenisation is unreliable without a
+ * morphological analyser.
+ *
+ * NOTE on the shared-preamble effect (why the novelty veto exists): two
+ * messages that share only a fixed preamble/closer but differ in the middle
+ * can still clear this bar purely on the shared boilerplate. e.g. the older
+ * "starting the deployment now …" intro pair scores ~0.32–0.41 here yet carries
+ * genuinely different specifics (branch/stack names) — novelty ~0.49 — so it is
+ * now (correctly) NOT folded. Only messages that clear this similarity bar AND
+ * are below the novelty veto (identical / lightly-rephrased re-emits) are
+ * treated as duplicates.
  *
  * Conservatism note: the cost of a FALSE POSITIVE (dropping a genuinely new
  * message) is higher than a FALSE NEGATIVE, so this is deliberately combined
- * with the MIN_DEDUP_LENGTH gate (short messages — "ack", "got it" — are never
- * deduped) and the time window in `shouldSuppressDuplicateMessage`.
+ * with the MIN_DEDUP_LENGTH gate (short messages are never deduped), the
+ * novelty veto, and the time window in
+ * `shouldSuppressDuplicateMessage`.
  */
 export const SIMILARITY_THRESHOLD = 0.3;
+
+/**
+ * Novelty veto threshold (fraction of the CANDIDATE's character bigrams that
+ * do NOT appear in the prior message). Even when overall similarity clears
+ * {@link SIMILARITY_THRESHOLD}, the candidate is NOT treated as a duplicate
+ * when this much of it is genuinely new content — this is what distinguishes a
+ * true re-emit (the model resending the same message, possibly rephrased) from
+ * a legitimately new reply that merely reuses a fixed preamble.
+ *
+ * ## Why this exists (dedup false positive found in E2E testing)
+ *
+ * The observed incident: two consecutive `sendMessageToUser` bodies shared a
+ * long fixed preamble (a memorised passphrase / project / model line and a
+ * fixed closing line), but the SECOND carried genuinely new substance in
+ * the middle — a user-requested calculation result (`17 + 25 = 42`) and a
+ * newly-learned fact. Whole-string bigram Jaccard was dominated by the shared
+ * boilerplate (~0.61), so the near-duplicate heuristic fired and the legitimate
+ * reply was suppressed (never rendered / never persisted). That reply was NOT
+ * an auto-retrigger re-emit at all — the dedup simply matched a similar prior.
+ *
+ * ## Calibration (measured on the real incident texts + re-emit fixtures)
+ *   - false-positive (legit new reply w/ shared preamble): novelty ≈ 0.32
+ *   - rephrased re-emit (the live intro pair above):     novelty ≈ 0.17
+ *   - exact re-emit:                                        novelty = 0.00
+ * 0.25 sits in the gap: it vetoes the false positive while still folding
+ * exact + rephrased re-emits (the heuristic's actual target).
+ */
+export const NOVELTY_VETO_THRESHOLD = 0.25;
 
 /** Default look-back window for treating a prior message as a possible re-emit. */
 export const DEFAULT_DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 min
@@ -102,6 +139,29 @@ export const bigramSimilarity = (a: string, b: string): number =>
   bigramSimilarityFromNormalised(normalizeForDedup(a), normalizeForDedup(b));
 
 /**
+ * Fraction of `candidate`'s character bigrams that do NOT appear in `prior`
+ * (both ALREADY-NORMALISED), in [0, 1]. High when the candidate introduces a
+ * lot of content the prior lacked — i.e. it is a genuinely new message rather
+ * than a re-emit. Returns 0 for an empty candidate (no bigrams → nothing new).
+ */
+const candidateNoveltyFromNormalised = (candidate: string, prior: string): number => {
+  const C = characterBigrams(candidate);
+  if (C.size === 0) return 0;
+  const P = characterBigrams(prior);
+  let novel = 0;
+  for (const g of C) if (!P.has(g)) novel++;
+  return novel / C.size;
+};
+
+/**
+ * Fraction of `candidate`'s character bigrams absent from `prior`, in [0, 1].
+ * Normalises each input once. Exported for unit testing / threshold
+ * calibration. See {@link NOVELTY_VETO_THRESHOLD}.
+ */
+export const candidateNovelty = (candidate: string, prior: string): number =>
+  candidateNoveltyFromNormalised(normalizeForDedup(candidate), normalizeForDedup(prior));
+
+/**
  * Returns true when `candidate` is a conservative near-duplicate of
  * `previous` (e.g. a resurrection re-emit of the same intro). Pure + exported
  * so the dedup decision is unit-testable in isolation from DynamoDB.
@@ -116,7 +176,15 @@ export const isNearDuplicateMessage = (candidate: string, previous: string): boo
   // Never dedup trivial / short messages — legitimate repeats are common.
   if (a.length < MIN_DEDUP_LENGTH || b.length < MIN_DEDUP_LENGTH) return false;
   if (a === b) return true;
-  return bigramSimilarityFromNormalised(a, b) >= SIMILARITY_THRESHOLD;
+  if (bigramSimilarityFromNormalised(a, b) < SIMILARITY_THRESHOLD) return false;
+  // Similarity cleared the bar, but a shared fixed preamble can inflate it
+  // while the candidate actually carries substantial NEW content (the observed
+  // false positive: a memorised preamble + a fresh calculation result). If the
+  // candidate is meaningfully novel relative to the prior, treat it as a new
+  // message, not a re-emit. A true re-emit (identical or merely rephrased) has
+  // low novelty and still folds. See {@link NOVELTY_VETO_THRESHOLD}.
+  if (candidateNoveltyFromNormalised(a, b) >= NOVELTY_VETO_THRESHOLD) return false;
+  return true;
 };
 
 /** A prior message considered for dedup: its raw text and write timestamp (ms). */
@@ -151,7 +219,7 @@ export const shouldSuppressDuplicateMessage = (
  * intentionally NEVER dedups messages shorter than {@link MIN_DEDUP_LENGTH},
  * because legitimate short repeats are common and the bigram similarity is
  * unreliable on tiny strings. But an auto-retrigger re-runs a turn and re-emits
- * the SAME short acknowledgement ("ack", "Got it, working on it.") to the
+ * the SAME short acknowledgement ("了解です", "Got it, working on it.") to the
  * SAME peer, which slips straight through that short-message gate — the
  * observed "agent keeps sending the same ack" symptom.
  *
@@ -159,7 +227,7 @@ export const shouldSuppressDuplicateMessage = (
  * only when a normalised-IDENTICAL message was already sent (to the same
  * sender→target pair — the caller scopes `recent`) within the window. Requiring
  * an EXACT normalised match (not similarity) keeps the false-positive risk
- * minimal: "got it" vs "on it" are different strings and both pass, so a
+ * minimal: "了解です" vs "進めます" are different strings and both pass, so a
  * genuinely different ack is never dropped. Only a verbatim repeat inside the
  * window — the retrigger signature — is folded.
  *

@@ -13,6 +13,10 @@ import {
 //   - agent-core `sendMessageToUser` tool (imports sanitiseForDelivery)
 // The worker orchestrator.test.ts keeps its own tests asserting the
 // re-export flow; this file asserts the underlying semantics.
+//
+// Japanese inputs (e.g. "<続きは以下のツール呼び出しで>" ≈ "<continued in the
+// following tool call>") are intentional: the scaffolding-artifact detector
+// matches CJK keywords, so CJK fixtures validate that functional behaviour.
 
 describe('isEndOfTurnPlaceholder', () => {
   test('undefined / null / empty / whitespace are placeholders', () => {
@@ -66,10 +70,6 @@ describe('isEndOfTurnPlaceholder', () => {
   });
 });
 
-// Some cases use Japanese scaffolding tags (e.g. "<続きは以下のツール呼び出しで>",
-// meaning "<continued in the following tool call>") on purpose: the backend
-// emits such tags in the agent's working language, so detecting the non-ASCII
-// form is part of the system-under-test, not incidental example text.
 describe('isScaffoldingArtifact', () => {
   test('whole-message single <...> block is an artifact', () => {
     expect(isScaffoldingArtifact('<続きは以下のツール呼び出しで>')).toBe(true);
@@ -100,11 +100,13 @@ describe('isScaffoldingArtifact', () => {
 
 describe('stripScaffoldingPrefix', () => {
   test('strips a keyword-matching leading <...> block and delivers the remainder', () => {
-    expect(stripScaffoldingPrefix('<続きは以下のツール呼び出しで>中間報告です')).toBe('中間報告です');
+    expect(stripScaffoldingPrefix('<続きは以下のツール呼び出しで>調査結果を中間報告します')).toBe(
+      '調査結果を中間報告します'
+    );
     expect(stripScaffoldingPrefix('<continue with more info>some message')).toBe('some message');
     expect(stripScaffoldingPrefix('<next step> hello')).toBe('hello');
     expect(stripScaffoldingPrefix('<続き> Summary: done.')).toBe('Summary: done.');
-    expect(stripScaffoldingPrefix('<続き>報告します')).toBe('報告します');
+    expect(stripScaffoldingPrefix('<続き>結果を報告します')).toBe('結果を報告します');
   });
 
   test('does NOT strip legitimate markup (keyword gate)', () => {
@@ -155,9 +157,9 @@ describe('sanitiseForDelivery', () => {
   });
 
   test('returns stripped body when scaffolding prefix wraps a real message', () => {
-    expect(sanitiseForDelivery('<続きは以下のツール呼び出しで>中間報告です')).toEqual({
+    expect(sanitiseForDelivery('<続きは以下のツール呼び出しで>調査結果を中間報告します')).toEqual({
       shouldSend: true,
-      message: '中間報告です',
+      message: '調査結果を中間報告します',
     });
     expect(sanitiseForDelivery('<continue with more info>some message')).toEqual({
       shouldSend: true,
@@ -184,7 +186,7 @@ describe('sanitiseForDelivery', () => {
 });
 
 describe('isInterruptPlaceholder', () => {
-  test('detects the canonical inference cancel placeholder', () => {
+  test('detects the canonical kiro-cli cancel placeholder', () => {
     expect(isInterruptPlaceholder('Response was interrupted by the user')).toBe(true);
     expect(isInterruptPlaceholder('Response was interrupted by the user.')).toBe(true);
   });
@@ -224,5 +226,25 @@ describe('sanitiseForDelivery — interrupt placeholder integration', () => {
   test('returns shouldSend:false for interrupt placeholders', () => {
     expect(sanitiseForDelivery('Response was interrupted by the user')).toEqual({ shouldSend: false });
     expect(sanitiseForDelivery('Response was interrupted by the user.')).toEqual({ shouldSend: false });
+  });
+});
+
+describe('sanitiseForDelivery — "understood" unconditional suppression', () => {
+  test('returns shouldSend:false for "understood" (kiro-cli ACP padding echo)', () => {
+    expect(sanitiseForDelivery('understood')).toEqual({ shouldSend: false });
+    expect(sanitiseForDelivery('Understood')).toEqual({ shouldSend: false });
+    expect(sanitiseForDelivery('understood.')).toEqual({ shouldSend: false });
+    expect(sanitiseForDelivery('UNDERSTOOD')).toEqual({ shouldSend: false });
+  });
+
+  test('does NOT suppress "understood" embedded in a longer message', () => {
+    expect(sanitiseForDelivery('understood, I will proceed')).toEqual({
+      shouldSend: true,
+      message: 'understood, I will proceed',
+    });
+    expect(sanitiseForDelivery('I understood the task')).toEqual({
+      shouldSend: true,
+      message: 'I understood the task',
+    });
   });
 });

@@ -2,10 +2,10 @@
  * Context-window self-awareness (model-driven handover).
  *
  * The worker measures each turn's context-window utilisation (a single
- * normalised `contextUsagePercentage` populated by the inference backend
+ * normalised `contextUsagePercentage` populated by both the Bedrock and Kiro
  * backends — see `TurnResult`) and surfaces it back to the MODEL via a dynamic
  * per-turn "environment" block. The model can then decide, on its own, to hand
- * its work over to a fresh successor session (by calling the `createNewSession`
+ * its work over to a fresh successor session (by calling the `Create New Session`
  * tool with `role: 'successor'`) before its context fills up.
  *
  * There is intentionally NO orchestrator-side mechanical auto-fire: handover is
@@ -19,7 +19,7 @@
  * It is NOT a hard trigger — the model decides when to hand over. Presented as
  * a rule-of-thumb so the agent has time to wrap up (persist state, summarise,
  * reach a clean stopping point) and spin up a successor before it runs into
- * middle-out truncation or a context-overflow error.
+ * middle-out truncation (Bedrock) or a context-overflow error (Kiro).
  *
  * ~80% leaves roughly a fifth of the window (~40k tokens on a 200k model) as
  * head-room to compose a handover message and let the successor start cleanly.
@@ -54,7 +54,7 @@ export const buildContextUsageEnvironmentBlock = (
     `Your conversation is currently using ~${pct.toFixed(0)}% of the available context window.`,
     `As a rule of thumb, once usage climbs past ~${guideline}% you should hand your work over to a fresh successor session ` +
       'rather than pushing on until the window overflows (which forces lossy truncation of earlier context). ' +
-      'To hand over, call the `createNewSession` tool with `role: "successor"` and pass a thorough handover message that ' +
+      'To hand over, call the `Create New Session` tool with `role: "successor"` and pass a thorough handover message that ' +
       'captures the task, everything done so far, current state, and the concrete next steps — the successor starts from ' +
       'that message, so include enough detail for it to continue seamlessly without re-reading this conversation. ' +
       'Before handing over, make sure important state is durably persisted (commit/push code, write notes to files, open the PR). ' +

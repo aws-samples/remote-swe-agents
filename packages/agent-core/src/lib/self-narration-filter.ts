@@ -1,7 +1,7 @@
 /**
  * Deterministic output-layer filters for three categories of low-value
  * end-of-turn text that the model keeps emitting despite repeated prompt
- * guidance (the prompt approach failed across ~21 PRs, so this is a
+ * guidance (the prompt approach repeatedly failed, so this is a
  * mechanical, prompt-independent backstop applied at the single delivery
  * choke-point — `orchestrator.finalizeTurn`):
  *
@@ -11,12 +11,12 @@
  *       turn's send-tool `toolUse`).
  *   A-2 (self-narration after send): this turn called a send/report tool and
  *       the end-of-turn text near-duplicates that tool's `message` argument
- *       ("I sent …", "I reported X to them").
+ *       ("I sent …", "Xを送りました").
  *   A-3 (no-information wake-up monologue): a turn woken by a timer /
  *       agentMessage / systemRetrigger (NOT a real user message) that ran NO
  *       new work tool, whose end-of-turn text is internal monologue / meta
  *       scaffolding ("Silent terminate.", "Routine progress …",
- *       "Already acknowledged …", "(no new information, so silent terminate)").
+ *       "Already acknowledged …", "(無情報なので silent terminate)").
  *
  * ## Conservatism contract (shared with message-dedup.ts)
  *
@@ -30,8 +30,8 @@
  *     activity. The text-pattern match is a secondary, subordinate condition.
  *     A normal report — which is produced on a turn that ran real work tools —
  *     is excluded by the structural gate regardless of vocabulary overlap, so
- *     legitimate progress reports are never dropped even if they share words
- *     with the (deliberately minimal) monologue marker set.
+ *     legitimate Japanese progress reports are never dropped even if they share
+ *     words with the (deliberately minimal) Japanese marker set.
  *
  * The module is side-effect-free, has no IO, and does not depend on any AWS
  * SDK, so the decision logic is unit-testable in isolation from DynamoDB and
@@ -80,14 +80,14 @@ export const REHASH_CONTAINMENT_THRESHOLD = 0.65;
  * self-narration path.
  *
  * The general near-duplicate gate (`isNearDuplicateMessage`) requires BOTH
- * sides to be ≥ `MIN_DEDUP_LENGTH` (60). But A-2 self-narration ("I sent that …")
+ * sides to be ≥ `MIN_DEDUP_LENGTH` (60). But A-2 self-narration ("…と送りました")
  * is frequently a SAME-LENGTH restatement well under 60 chars — too short for
  * that gate, and too long-ratio for the containment path (it is not a
  * condensation). It is, however, strongly symmetrically similar to the text it
  * narrates. So we add a relaxed symmetric path: both sides only need to clear
  * `MIN_REHASH_LENGTH` (20) and the Jaccard similarity must be high.
  *
- * Set to 0.70: calibration shows A-2 narration pairs at ~0.79, while the W-1
+ * Set to 0.70: calibration shows A-2 narration pairs at ~0.79, while the
  * "conditional → similarly-long achievement report" false positives sit at
  * 0.53–0.59. 0.70 separates them with margin — it catches the narration while
  * leaving genuine same-length achievement reports through.
@@ -103,11 +103,10 @@ export const REHASH_SIMILARITY_THRESHOLD = 0.7;
  * score is coincidental rather than a restatement.
  *
  * This guards the "conditional statement → similarly-long achievement report"
- * false positive: prior "will deploy to prod once all E2E tests pass" vs
- * candidate "deployed to prod because all E2E tests passed" scores ~0.76
- * containment but the candidate is a genuine NEW achievement (the condition was
- * met), almost the same length as the condition — dropping it would silence a
- * real report, the
+ * false positive: prior "E2E が全部通ったら本番にデプロイする予定です" vs candidate
+ * "E2E テストが全部通ったので本番にデプロイしました" scores ~0.76 containment but the
+ * candidate is a genuine NEW achievement (the condition was met), almost the
+ * same length as the condition — dropping it would silence a real report, the
  * single worst failure mode. Requiring the candidate to be meaningfully shorter
  * (≤ 85% of the prior) lets such same-length achievement reports through while
  * still catching true condensed restatements (which run 0.5–0.6 of the source
@@ -207,13 +206,11 @@ export const isRehashOrSelfNarration = (candidate: string, priorMessages: Recent
  * pattern condition ON THEIR OWN (still subject to the structural gate).
  *
  * Predominantly English meta phrases observed leaking on send-zero wake-up
- * turns, plus a deliberately MINIMAL set of high-confidence self-memo markers
- * in other languages (e.g. Japanese) — these are FUNCTIONAL detection literals,
- * not example text: the filter must recognise monologue emitted in the agent's
- * working language, so the non-ASCII markers below are intentionally retained.
+ * turns (from a live incident), plus a deliberately MINIMAL set
+ * of high-confidence Japanese self-memo markers.
  */
 export const STRONG_MONOLOGUE_RE =
-  /silent terminate|no new information|already acknowledg|routine progress|monitor re-?armed|duplicate (?:of|with).*(?:no new|in-flight)|wake-?up turn|ターン終了|無情報|報告済み[^。]*待ち|既に対応済み[—-]|(?<![がの])待機中にゃ(?![けが])|待機してて|スコープ[^。]*待ち|レビュー[^。]*待[ちつ]|指摘[^。]*待[ちつ]|それまで待機/i;
+  /silent terminate|no new information|already acknowledg|routine progress|monitor re-?armed|duplicate (?:of|with).*(?:no new|in-flight)|wake-?up turn|ターン終了|無情報|報告済み[^。]*待ち|既に対応済み[—-]|(?<![がの])待機中です(?![がけ])|待機して(?:て|いて|います)|スコープ[^。]*待ち|レビュー[^。]*待[ちつ]|指摘[^。]*待[ちつ]|それまで待機/i;
 
 /**
  * WEAK internal-monologue markers — phrases that DO occur in genuine reports
@@ -309,7 +306,7 @@ export const shouldSuppressWakeupMonologue = (opts: {
  *
  * `think` is the critical entry here: an agent almost always calls `think`
  * before emitting a wake-up monologue, and `think` IS persisted as a `toolUse`
- * history item (see the agent loop — "every other tool (shell / file /
+ * history item (see `kiro-agent-loop.ts` — "every other tool (shell / file /
  * think / ...) always persists+emits unchanged"). If `think` counted as work,
  * the A-3 structural gate would stand down on essentially every real monologue
  * turn and the filter would never fire in production. The title/todo
@@ -321,8 +318,20 @@ export const shouldSuppressWakeupMonologue = (opts: {
  * the wake-up monologue filter must stand down.
  */
 export const NON_WORK_TOOL_NAMES = new Set<string>([
+  'Send Message To User',
+  'Send Image To User',
+  'Send File To User',
+  'Send Message To Agent',
+  'Acknowledge Agent',
+  'Complete Session',
+  'Think',
+  'Update Session Title',
+  'Todo Init',
+  'Todo Update',
+  // Legacy camelCase names still present in persisted conversation history
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
+  'sendImageToUser',
   'sendFileToUser',
   'sendMessageToAgent',
   'acknowledgeAgent',

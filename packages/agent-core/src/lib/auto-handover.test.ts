@@ -17,7 +17,7 @@ describe('buildContextUsageEnvironmentBlock', () => {
 
   test('is model-driven: instructs the model to hand over itself via createNewSession role=successor', () => {
     const block = buildContextUsageEnvironmentBlock(85)!;
-    expect(block).toContain('createNewSession');
+    expect(block).toContain('Create New Session');
     expect(block).toContain('successor');
     // must NOT describe a mechanical/automatic trigger anymore
     expect(block.toLowerCase()).not.toContain('automatic handover');
