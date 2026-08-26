@@ -207,7 +207,7 @@ export class MainStack extends cdk.Stack {
 
     worker.bus.addUserPoolProvider(auth.userPool);
 
-    const asyncJob = new AsyncJob(this, 'AsyncJob', { storage });
+    const asyncJob = new AsyncJob(this, 'AsyncJob', { storage, workerBus: worker.bus });
 
     const webapp = new Webapp(this, 'Webapp', {
       storage,
@@ -224,6 +224,7 @@ export class MainStack extends cdk.Stack {
       workerAmiIdParameter,
       originNameParameter,
       agentCoreRuntime: worker.agentCoreRuntime,
+      workerInstanceRole: worker.ec2Role,
       bedrockCriRegionOverride: props.bedrockCriRegionOverride,
       vapidKeys,
     });
@@ -241,6 +242,7 @@ export class MainStack extends cdk.Stack {
         workerAmiIdParameter,
         webappOriginNameParameter: originNameParameter,
         agentCoreRuntime: worker.agentCoreRuntime,
+        workerInstanceRole: worker.ec2Role,
       });
     }
 

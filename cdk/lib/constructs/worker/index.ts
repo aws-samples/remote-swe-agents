@@ -113,32 +113,6 @@ export class Worker extends Construct {
     });
     this.eventTrigger = eventTrigger;
 
-    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
-      storageTable: props.storageTable,
-      imageBucket: props.imageBucket,
-      skillBucket: props.skillBucket,
-      previewMicrovmImageArn: props.previewMicrovmImageArn,
-      bus: bus,
-      slackBotTokenParameter: props.slackBotTokenParameter,
-      gitHubApp: props.gitHubApp,
-      gitHubAppPrivateKeyParameter: privateKey,
-      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
-      loadBalancing: props.loadBalancing,
-      accessLogBucket: props.accessLogBucket,
-      amiIdParameterName: props.amiIdParameterName,
-      webappOriginSourceParameter: props.webappOriginSourceParameter,
-      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
-      additionalManagedPolicies: props.additionalManagedPolicies,
-      vapidKeys: props.vapidKeys,
-      eventTrigger,
-      kiroApiKeyParameter: props.kiroApiKeyParameter,
-      inferenceMode: props.inferenceMode,
-    });
-    this.agentCoreRuntime = agentCoreRuntime;
-
-    // Grant event trigger management to AgentCore role
-    eventTrigger.grantManage(agentCoreRuntime);
-
     const assetProps: AssetProps = {
       // we set dummy directory here because all the files are included in the build image.
       path: join('..', 'resources'),
@@ -554,6 +528,38 @@ systemctl start myapp
     );
 
     this.launchTemplate = launchTemplate;
+
+    // Constructed after the launch template and instance role so that the
+    // runtime can be granted the capability to launch EC2 workers for child
+    // sessions targeting ec2 runtime agents.
+    const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
+      storageTable: props.storageTable,
+      imageBucket: props.imageBucket,
+      skillBucket: props.skillBucket,
+      bus: bus,
+      slackBotTokenParameter: props.slackBotTokenParameter,
+      gitHubApp: props.gitHubApp,
+      gitHubAppPrivateKeyParameter: privateKey,
+      githubPersonalAccessTokenParameter: props.githubPersonalAccessTokenParameter,
+      loadBalancing: props.loadBalancing,
+      accessLogBucket: props.accessLogBucket,
+      previewMicrovmImageArn: props.previewMicrovmImageArn,
+      amiIdParameter: props.amiIdParameter,
+      launchTemplateId: launchTemplate.launchTemplateId!,
+      subnetIdListForWorkers: vpc.publicSubnets.map((s) => s.subnetId).join(','),
+      workerInstanceRole: role,
+      webappOriginSourceParameter: props.webappOriginSourceParameter,
+      bedrockCriRegionOverride: props.bedrockCriRegionOverride,
+      additionalManagedPolicies: props.additionalManagedPolicies,
+      vapidKeys: props.vapidKeys,
+      eventTrigger,
+      kiroApiKeyParameter: props.kiroApiKeyParameter,
+      inferenceMode: props.inferenceMode,
+    });
+    this.agentCoreRuntime = agentCoreRuntime;
+
+    // Grant event trigger management to AgentCore role
+    eventTrigger.grantManage(agentCoreRuntime);
 
     this.imageBuilder = new WorkerImageBuilder(this, 'ImageBuilder', {
       vpc,

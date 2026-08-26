@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   sendAgentMessage: vi.fn(async () => undefined),
   incrementUnread: vi.fn(async () => undefined),
   sendPushNotificationToUser: vi.fn(async () => undefined),
+  listEventTriggers: vi.fn(async () => [] as unknown[]),
+  sendWebappEvent: vi.fn(async () => undefined),
 }));
 
 vi.mock('@remote-swe-agents/agent-core/lib', async () => {
@@ -17,6 +19,8 @@ vi.mock('@remote-swe-agents/agent-core/lib', async () => {
     sendAgentMessage: mocks.sendAgentMessage,
     incrementUnread: mocks.incrementUnread,
     sendPushNotificationToUser: mocks.sendPushNotificationToUser,
+    listEventTriggers: mocks.listEventTriggers,
+    sendWebappEvent: mocks.sendWebappEvent,
   };
 });
 
@@ -47,21 +51,51 @@ describe('notifyTermination', () => {
       expect(mocks.sendPushNotificationToUser).not.toHaveBeenCalled();
     });
 
-    test('sleeping → sendAgentMessage to parent with [Child sleeping] tag and acknowledge=true', async () => {
+    test('sleeping → suppresses sendAgentMessage, emits childSleeping webapp event to parent', async () => {
+      mocks.getSession.mockResolvedValue({
+        workerId: 'w1',
+        parentSessionId: 'p1',
+        initiator: 'webapp#user-x',
+        title: 'My Child',
+      });
+      mocks.listEventTriggers.mockResolvedValue([]);
+      await notifyTermination('w1', 'sleeping', '');
+
+      expect(mocks.sendAgentMessage).not.toHaveBeenCalled();
+      expect(mocks.sendWebappEvent).toHaveBeenCalledTimes(1);
+      const [targetId, event] = mocks.sendWebappEvent.mock.calls[0] as unknown as [string, Record<string, unknown>];
+      expect(targetId).toBe('p1');
+      expect(event.type).toBe('childSleeping');
+      expect(event.childSessionId).toBe('w1');
+      expect(event.hasPendingTriggers).toBe(false);
+    });
+
+    test('sleeping with pending triggers → hasPendingTriggers=true', async () => {
       mocks.getSession.mockResolvedValue({
         workerId: 'w1',
         parentSessionId: 'p1',
         initiator: 'webapp#user-x',
       });
+      mocks.listEventTriggers.mockResolvedValue([{ SK: 'trigger-1' }]);
       await notifyTermination('w1', 'sleeping', '');
 
-      expect(mocks.sendAgentMessage).toHaveBeenCalledTimes(1);
-      const call = (mocks.sendAgentMessage.mock.calls[0] as unknown as [Record<string, unknown>])[0];
-      expect(call.message).toContain('[Child sleeping]');
-      expect(call.acknowledge).toBe(true);
+      const [, event] = mocks.sendWebappEvent.mock.calls[0] as unknown as [string, Record<string, unknown>];
+      expect(event.hasPendingTriggers).toBe(true);
+    });
 
-      expect(mocks.incrementUnread).not.toHaveBeenCalled();
-      expect(mocks.sendPushNotificationToUser).not.toHaveBeenCalled();
+    test('sleeping with listEventTriggers failure → hasPendingTriggers defaults to false', async () => {
+      mocks.getSession.mockResolvedValue({
+        workerId: 'w1',
+        parentSessionId: 'p1',
+        initiator: 'webapp#user-x',
+      });
+      mocks.listEventTriggers.mockRejectedValue(new Error('ddb error'));
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await notifyTermination('w1', 'sleeping', '');
+
+      const [, event] = mocks.sendWebappEvent.mock.calls[0] as unknown as [string, Record<string, unknown>];
+      expect(event.hasPendingTriggers).toBe(false);
+      warnSpy.mockRestore();
     });
 
     test('error → sendAgentMessage with acknowledge falsy (wakes parent)', async () => {

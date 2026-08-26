@@ -3,7 +3,15 @@ import { CfnRuntime } from 'aws-cdk-lib/aws-bedrockagentcore';
 import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
-import { IGrantable, IPrincipal, ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import {
+  IGrantable,
+  IPrincipal,
+  IRole,
+  ManagedPolicy,
+  PolicyStatement,
+  Role,
+  ServicePrincipal,
+} from 'aws-cdk-lib/aws-iam';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
@@ -12,6 +20,7 @@ import { join } from 'path';
 import { WorkerBus } from './bus';
 import { VapidKeys } from '../vapid-keys';
 import { EventTrigger } from './event-trigger';
+import { grantWorkerLaunchCapability } from './grant-worker-launch';
 
 export interface AgentCoreRuntimeProps {
   storageTable: ITableV2;
@@ -31,7 +40,10 @@ export interface AgentCoreRuntimeProps {
     roleName: string;
   };
   accessLogBucket: IBucket;
-  amiIdParameterName: string;
+  amiIdParameter: IStringParameter;
+  launchTemplateId: string;
+  subnetIdListForWorkers: string;
+  workerInstanceRole: IRole;
   webappOriginSourceParameter: IStringParameter;
   bedrockCriRegionOverride?: string;
   additionalManagedPolicies?: string[];
@@ -180,6 +192,16 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
       })
     );
 
+    // Grant the runtime everything it needs to launch EC2 worker instances
+    // for child sessions targeting ec2 runtime agents.
+    const workerLaunchEnv = grantWorkerLaunchCapability({
+      grantee: role,
+      amiIdParameter: props.amiIdParameter,
+      launchTemplateId: props.launchTemplateId,
+      subnetIdListForWorkers: props.subnetIdListForWorkers,
+      workerInstanceRole: props.workerInstanceRole,
+    });
+
     const runtime = new CfnRuntime(this, 'Runtime', {
       agentRuntimeName: Names.uniqueResourceName(this, { maxLength: 40 }),
       agentRuntimeArtifact: {
@@ -219,6 +241,7 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
         // STACK_NAME is what the worker uses to resolve per-user Kiro API key
         // parameter paths (`/${STACK_NAME}/users/<id>/kiro-api-key`).
         STACK_NAME: Stack.of(this).stackName,
+        ...workerLaunchEnv,
         ...(props.kiroApiKeyParameter ? { KIRO_API_KEY_SSM_PARAM: props.kiroApiKeyParameter.parameterName } : {}),
         ...(props.inferenceMode ? { INFERENCE_MODE: props.inferenceMode } : {}),
       },
@@ -253,6 +276,15 @@ export class AgentCoreRuntime extends Construct implements IGrantable {
     grantee.grantPrincipal.addToPrincipalPolicy(
       new PolicyStatement({
         actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [this.runtimeArn, `${this.runtimeArn}/runtime-endpoint/DEFAULT`],
+      })
+    );
+  }
+
+  public grantStop(grantee: IGrantable) {
+    grantee.grantPrincipal.addToPrincipalPolicy(
+      new PolicyStatement({
+        actions: ['bedrock-agentcore:StopRuntimeSession'],
         resources: [this.runtimeArn, `${this.runtimeArn}/runtime-endpoint/DEFAULT`],
       })
     );

@@ -1,18 +1,19 @@
 import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { IRole, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { WorkerBus } from '../worker/bus';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
-import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Storage } from '../storage';
 import { AgentCoreRuntime } from '../worker/agent-core-runtime';
 import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
+import { grantWorkerLaunchCapability } from '../worker/grant-worker-launch';
 
 export interface SlackBoltProps {
   signingSecretParameter: IStringParameter;
@@ -26,6 +27,7 @@ export interface SlackBoltProps {
   workerAmiIdParameter: IStringParameter;
   webappOriginNameParameter: IStringParameter;
   agentCoreRuntime: AgentCoreRuntime;
+  workerInstanceRole: IRole;
 }
 
 export class SlackBolt extends Construct {
@@ -45,9 +47,6 @@ export class SlackBolt extends Construct {
       code: slackImage.toLambdaDockerImageCode({ cmd: ['async-handler.handler'] }),
       timeout: Duration.minutes(10),
       environment: {
-        WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
-        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameter.parameterName,
-        SUBNET_ID_LIST: props.subnetIdListForWorkers,
         BOT_TOKEN: botTokenParameter.stringValue,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: props.storage.table.tableName,
@@ -56,7 +55,16 @@ export class SlackBolt extends Construct {
       },
       architecture: Architecture.ARM_64,
     });
-    props.workerAmiIdParameter.grantRead(asyncHandler);
+    const workerLaunchEnv = grantWorkerLaunchCapability({
+      grantee: asyncHandler,
+      amiIdParameter: props.workerAmiIdParameter,
+      launchTemplateId: props.launchTemplateId,
+      subnetIdListForWorkers: props.subnetIdListForWorkers,
+      workerInstanceRole: props.workerInstanceRole,
+    });
+    for (const [key, value] of Object.entries(workerLaunchEnv)) {
+      asyncHandler.addEnvironment(key, value);
+    }
     props.storage.table.grantReadWriteData(asyncHandler);
     props.storage.bucket.grantReadWrite(asyncHandler);
     props.workerBus.api.grantPublish(asyncHandler);
@@ -112,15 +120,7 @@ export class SlackBolt extends Construct {
 
     asyncHandler.addToRolePolicy(
       new PolicyStatement({
-        actions: [
-          'bedrock:InvokeModel',
-          // required to run instances from launch template
-          'ec2:RunInstances',
-          'ec2:DescribeInstances',
-          'iam:PassRole',
-          'ec2:CreateTags',
-          'ec2:StartInstances',
-        ],
+        actions: ['bedrock:InvokeModel'],
         resources: ['*'],
       })
     );

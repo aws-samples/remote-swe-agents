@@ -123,7 +123,8 @@
       },
       "Assign": {
         "runtimeType": "{% $lookup($states.result.Item, 'runtimeType') ? $states.result.Item.runtimeType.S : 'ec2' %}",
-        "sessionExists": "{% $exists($states.result.Item) %}"
+        "sessionExists": "{% $exists($states.result.Item) %}",
+        "agentStatus": "{% $lookup($states.result.Item, 'agentStatus') ? $states.result.Item.agentStatus.S : '' %}"
       },
       "Next": "CheckSessionExists"
     },
@@ -133,9 +134,17 @@
         {
           "Condition": "{% $sessionExists = false %}",
           "Next": "SessionNotFound"
+        },
+        {
+          "Condition": "{% $agentStatus = 'completed' %}",
+          "Next": "SessionCompleted"
         }
       ],
       "Default": "ChooseRuntime"
+    },
+    "SessionCompleted": {
+      "Type": "Succeed",
+      "Comment": "Session is completed; do not wake it via event trigger"
     },
     "SessionNotFound": {
       "Type": "Succeed",
