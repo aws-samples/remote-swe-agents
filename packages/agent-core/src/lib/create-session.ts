@@ -1,7 +1,15 @@
 import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from './aws';
-import { MessageItem, ModelType, RuntimeType, SessionItem, defaultAgentConfig } from '../schema';
+import {
+  InferenceMode,
+  KiroModelId,
+  MessageItem,
+  ModelType,
+  RuntimeType,
+  SessionItem,
+  defaultAgentConfig,
+} from '../schema';
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
@@ -37,6 +45,25 @@ export interface CreateSessionParams {
    * this simply records who created the session so it can send messages back.
    */
   creatorSessionId?: string;
+  /**
+   * Inference mode to bake into the session at creation time.
+   * Once set, the session uses this backend for its entire lifetime regardless of
+   * user/custom-agent preference changes. If omitted, the worker falls back to the
+   * dynamic resolution chain (customAgent > userPreferences > env > default).
+   */
+  inferenceMode?: InferenceMode;
+  /**
+   * Model selection for kiro-cli mode. Only used when inferenceMode === 'kiro-cli'.
+   */
+  kiroModel?: string;
+  /**
+   * New symmetric Bedrock model field. Takes priority over legacy `defaultModel`.
+   */
+  bedrockDefaultModel?: ModelType;
+  /**
+   * New symmetric Kiro model field. Takes priority over legacy `kiroModel`.
+   */
+  kiroDefaultModel?: KiroModelId;
 }
 
 /**
@@ -58,6 +85,10 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     slackChannelId,
     slackMentionUserId,
     creatorSessionId,
+    inferenceMode,
+    kiroModel,
+    bedrockDefaultModel,
+    kiroDefaultModel,
   } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
@@ -153,6 +184,10 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               ...(creatorSessionId ? { creatorSessionId } : {}),
               ...(slackChannelId ? { slackChannelId } : {}),
               ...(slackThreadTs ? { slackThreadTs } : {}),
+              ...(inferenceMode ? { inferenceMode } : {}),
+              ...(inferenceMode === 'kiro-cli' && kiroModel ? { kiroModel } : {}),
+              ...(bedrockDefaultModel ? { bedrockDefaultModel } : {}),
+              ...(kiroDefaultModel ? { kiroDefaultModel } : {}),
             } satisfies SessionItem,
           },
         },
