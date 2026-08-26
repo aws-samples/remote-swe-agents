@@ -52,6 +52,7 @@ async function exportSingleSession(session: SessionItem, outputDir: string): Pro
     lastMessage: session.lastMessage,
     lastMessageAt: session.lastMessageAt,
     handedOverTo: session.handedOverTo,
+    handoverSourceSessionId: session.handoverSourceSessionId,
     rewindState: session.rewindState,
   };
 

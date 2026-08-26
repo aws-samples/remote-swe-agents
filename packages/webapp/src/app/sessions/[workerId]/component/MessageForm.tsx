@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
 import { useAction } from 'next-safe-action/hooks';
-import { Loader2, Send, Paperclip, Share } from 'lucide-react';
+import { Loader2, Send, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent, updateSessionModel } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
@@ -80,7 +80,6 @@ type MessageFormProps = {
   onConfirm: (pendingId: string, confirmedId: string) => void;
   onRollback: (pendingId: string) => void;
   workerId: string;
-  onShareSession: () => void;
   defaultModelOverride: ModelType;
   /**
    * Display name of the currently signed-in user. When set, the optimistic
@@ -119,7 +118,6 @@ export default function MessageForm({
   onConfirm,
   onRollback,
   workerId,
-  onShareSession,
   defaultModelOverride,
   currentUserDisplayName,
   currentUserId,
@@ -742,25 +740,6 @@ export default function MessageForm({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{t('attachFile')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        onClick={onShareSession}
-                        disabled={isExecuting}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-600"
-                      >
-                        <Share className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('shareSession')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

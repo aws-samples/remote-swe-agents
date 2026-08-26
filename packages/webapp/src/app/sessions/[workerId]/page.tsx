@@ -11,6 +11,8 @@ import {
   getUnreadMap,
   noOpFiltering,
   resolveModelConfig,
+  applyRewindFilter,
+  countRewoundMessages,
 } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
@@ -32,7 +34,9 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const preferences = await getPreferences();
   // Load conversation history from DynamoDB
   const { items: historyItems } = await getConversationHistory(workerId);
-  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
+  const rewindedCount = countRewoundMessages(historyItems, session.rewindState);
+  const visibleItems = applyRewindFilter(historyItems, session.rewindState);
+  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(visibleItems);
 
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) =>
@@ -355,6 +359,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         inferenceMode={effectiveInferenceMode}
         kiroModel={effectiveKiroModel}
         currentUserDisplayName={currentUserDisplayName}
+        initialRewindHiddenCount={rewindedCount}
       />
       <RefreshOnFocus />
     </>

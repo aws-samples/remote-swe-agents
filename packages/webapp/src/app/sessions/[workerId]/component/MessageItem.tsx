@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Copy, ChevronDown, ChevronUp, ChevronRight, MoreHorizontal, RotateCcw } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { MessageView } from './MessageList';
@@ -9,6 +9,22 @@ import { EventTriggerRenderer } from './EventTriggerRenderer';
 import { AgentMessageRenderer } from './AgentMessageRenderer';
 import { ImageViewer } from './ImageViewer';
 import { FileViewer } from './FileViewer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatTime } from '@/lib/utils';
 
 type MessageItemProps = {
@@ -16,6 +32,8 @@ type MessageItemProps = {
   showTimestamp: boolean;
   onInterrupt?: () => void;
   agentName?: string;
+  onRewind?: (messageSK: string) => void;
+  isRewindDisabled?: boolean;
 };
 
 export const MessageItem = React.memo(function MessageItem({
@@ -23,11 +41,14 @@ export const MessageItem = React.memo(function MessageItem({
   showTimestamp,
   onInterrupt,
   agentName,
+  onRewind,
+  isRewindDisabled,
 }: MessageItemProps) {
   const t = useTranslations('sessions');
   const locale = useLocale();
   const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [showReasoning, setShowReasoning] = useState(false);
+  const [isRewindDialogOpen, setIsRewindDialogOpen] = useState(false);
 
   const copyMessageToClipboard = (content: string) => {
     navigator.clipboard
@@ -39,6 +60,17 @@ export const MessageItem = React.memo(function MessageItem({
         console.error('Could not copy text: ', err);
         toast.error(t('copyFailed'));
       });
+  };
+
+  const handleRewindClick = () => {
+    setIsRewindDialogOpen(true);
+  };
+
+  const handleRewindConfirm = () => {
+    if (onRewind) {
+      onRewind(message.id);
+    }
+    setIsRewindDialogOpen(false);
   };
 
   return (
@@ -98,16 +130,77 @@ export const MessageItem = React.memo(function MessageItem({
                 )}
                 {message.fileKeys && message.fileKeys.length > 0 && <FileViewer fileKeys={message.fileKeys} />}
               </div>
-              {message.type === 'message' && message.role === 'assistant' && (
+              {message.type === 'message' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 hidden md:block"
+                      title={t('messageOptions')}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => copyMessageToClipboard(message.content)}
+                      className="cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      {t('copyToClipboard')}
+                    </DropdownMenuItem>
+                    {onRewind && (
+                      <DropdownMenuItem
+                        onClick={handleRewindClick}
+                        disabled={isRewindDisabled}
+                        className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        {t('revertToHere')}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            {message.type === 'message' && (
+              <div className="flex items-center gap-1 -mt-0.5 md:hidden">
                 <button
+                  type="button"
                   onClick={() => copyMessageToClipboard(message.content)}
-                  className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 hidden md:block"
-                  title={t('copyMessage')}
+                  className="p-2 text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 dark:hover:text-gray-200 rounded"
+                  aria-label={t('copyToClipboard')}
                 >
                   <Copy className="w-4 h-4" />
                 </button>
-              )}
-            </div>
+                {onRewind && (
+                  <button
+                    type="button"
+                    onClick={handleRewindClick}
+                    disabled={isRewindDisabled}
+                    className="p-2 text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 dark:hover:text-gray-200 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label={t('revertToHere')}
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+            {onRewind && (
+              <AlertDialog open={isRewindDialogOpen} onOpenChange={setIsRewindDialogOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t('rewindConfirmTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>{t('rewindConfirmDescription')}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRewindConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+                      {t('rewindConfirmAction')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         )}
       </div>

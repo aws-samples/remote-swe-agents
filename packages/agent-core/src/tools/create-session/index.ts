@@ -68,6 +68,7 @@ export const createNewSessionTool: ToolDefinition<z.infer<typeof inputSchema>> =
       creatorSessionId,
       slackChannelId: currentSession.slackChannelId,
       slackMentionUserId,
+      ...(input.role === 'successor' ? { handoverSourceSessionId: context.workerId } : {}),
     });
 
     if (input.role === 'successor') {

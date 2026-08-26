@@ -3,11 +3,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { computeTotalUnread } from '@/lib/unread-display';
 import Header from '@/components/Header';
-import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
+import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square, ArrowRightLeft } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
 import Link from 'next/link';
 import { useAction } from 'next-safe-action/hooks';
-import { updateAgentStatus, sendEventToAgent, stopSession, markSessionReadAction } from '../actions';
+import {
+  updateAgentStatus,
+  sendEventToAgent,
+  stopSession,
+  handoverSession,
+  markSessionReadAction,
+  rewindSessionAction,
+  undoRewindAction,
+} from '../actions';
 import { markAllReadAction } from '@/actions/badge/action';
 import { mergeDuplicateUserRebroadcast } from './dedup';
 import { isPreviewRendered } from './message-consistency';
@@ -37,7 +45,7 @@ import { fetchLatestTodoList } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { formatMessage } from '@/lib/message-formatter';
-import TakeOverModal from './TakeOverModal';
+import HandoverModal from './HandoverModal';
 import SessionSidebar from './SessionSidebar';
 import SessionContentSearch from './SessionContentSearch';
 import { ArrowLeft } from 'lucide-react';
@@ -76,6 +84,7 @@ interface SessionPageClientProps {
    * legacy sessions). Only meaningful when `inferenceMode === 'kiro-cli'`.
    */
   kiroModel?: string;
+  initialRewindHiddenCount?: number;
 }
 
 /**
@@ -112,6 +121,7 @@ export default function SessionPageClient({
   inferenceMode,
   kiroModel,
   currentUserDisplayName,
+  initialRewindHiddenCount,
 }: SessionPageClientProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
@@ -166,7 +176,7 @@ export default function SessionPageClient({
   }, [initialTodoList]);
 
   const [showTodoModal, setShowTodoModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUnreadMap, setCurrentUnreadMap] = useState(unreadMap ?? {});
   const { isBottom, isHeaderVisible } = useScrollPosition();
@@ -253,6 +263,57 @@ export default function SessionPageClient({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  // Rewind state: tracks how many messages are hidden
+  const [rewindHiddenCount, setRewindHiddenCount] = useState(initialRewindHiddenCount ?? 0);
+
+  const { execute: executeRewind } = useAction(rewindSessionAction, {
+    onSuccess: () => {
+      toast.success(t('revertSuccess'));
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(t('revertFailed'));
+    },
+  });
+
+  const { execute: executeUndoRewind } = useAction(undoRewindAction, {
+    onSuccess: () => {
+      toast.success(t('undoRewindSuccess'));
+      setRewindHiddenCount(0);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(t('undoRewindFailed'));
+    },
+  });
+
+  const handleRewind = useCallback(
+    (messageId: string) => {
+      if (agentStatus === 'working') {
+        toast.error(t('rewindDisabledWorking'));
+        return;
+      }
+      // Extract SK from message id (format: `${SK}-${index}` or `${SK}-${i}-${toolUseId}`)
+      const skMatch = messageId.match(/^(\d{15})/);
+      if (!skMatch) return;
+      const cutoffSK = skMatch[1];
+
+      // Count how many messages will be hidden (those after the cutoff)
+      const hiddenMessages = messages.filter((m) => {
+        const msgSK = m.id.match(/^(\d{15})/)?.[1];
+        return msgSK && msgSK > cutoffSK;
+      });
+      setRewindHiddenCount(hiddenMessages.length);
+
+      executeRewind({ workerId, cutoffSK });
+    },
+    [workerId, agentStatus, messages, executeRewind, t]
+  );
+
+  const handleUndoRewind = useCallback(() => {
+    executeUndoRewind({ workerId });
+  }, [workerId, executeUndoRewind]);
 
   const getSessionStatus = () => {
     const status = getUnifiedStatus(agentStatus, instanceStatus);
@@ -569,6 +630,24 @@ export default function SessionPageClient({
     },
   });
 
+  const { execute: executeHandover, isExecuting: isHandoverExecuting } = useAction(handoverSession, {
+    onSuccess: ({ data }) => {
+      setShowHandoverModal(false);
+      if (data?.alreadyHandedOver) {
+        toast.info(t('handoverAlreadyDone'));
+      } else {
+        toast.success(t('handoverSuccess'));
+      }
+      if (data?.workerId) {
+        router.push(`/sessions/${data.workerId}`);
+      }
+    },
+    onError: (error) => {
+      const detail = error?.error?.serverError;
+      toast.error(detail ? `${t('handoverError')}: ${detail}` : t('handoverError'));
+    },
+  });
+
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
@@ -662,6 +741,12 @@ export default function SessionPageClient({
                           {t('stopSession')}
                         </DropdownMenuItem>
                       )}
+                      {agentStatus !== 'completed' && (
+                        <DropdownMenuItem onClick={() => setShowHandoverModal(true)} className="cursor-pointer">
+                          <ArrowRightLeft className="w-4 h-4 mr-2" />
+                          {t('handoverSession')}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -720,7 +805,28 @@ export default function SessionPageClient({
             </div>
           )}
 
-          <TakeOverModal workerId={workerId} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+          <HandoverModal
+            isOpen={showHandoverModal}
+            isExecuting={isHandoverExecuting}
+            onClose={() => setShowHandoverModal(false)}
+            onConfirm={() => executeHandover({ workerId })}
+          />
+
+          {rewindHiddenCount > 0 && (
+            <div className="max-w-4xl mx-auto px-4 py-2">
+              <div className="flex items-center justify-between gap-3 py-2 px-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                <span className="text-sm text-amber-700 dark:text-amber-300">
+                  {t('messagesHidden', { count: rewindHiddenCount })}
+                </span>
+                <button
+                  onClick={handleUndoRewind}
+                  className="text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline cursor-pointer"
+                >
+                  {t('undoRewind')}
+                </button>
+              </div>
+            </div>
+          )}
 
           <MessageList
             messages={messages}
@@ -730,6 +836,7 @@ export default function SessionPageClient({
             agentIconUrl={agentIconUrl}
             agentName={agentName}
             lastReadAt={lastReadAt}
+            onRewind={handleRewind}
           />
 
           <MessageForm
@@ -739,7 +846,6 @@ export default function SessionPageClient({
             workerId={workerId}
             currentUserDisplayName={currentUserDisplayName}
             currentUserId={userId}
-            onShareSession={() => setShowShareModal(true)}
             // For Kiro sessions, do NOT seed the Bedrock model selector from
             // message history: Kiro sessions can carry non-Bedrock
             // `modelOverride` values on their messages that would fail the

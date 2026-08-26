@@ -62,7 +62,11 @@ const takeOverSessionToSlack = async (
   slackThreadTs: string,
   slackUserId: string
 ) => {
-  const { items } = await getConversationHistory(workerId);
+  // Fetch full history (including communicationLog) so that behaviour is unchanged
+  // regardless of how getConversationHistory's default filtering evolves. We only
+  // scan for the last 'userMessage' here, so the flag is not semantically significant,
+  // but we set it explicitly to preserve historical behaviour.
+  const { items } = await getConversationHistory(workerId, { includeAll: true });
   const lastUserMessage = items.findLast((i) => i.messageType == 'userMessage');
 
   const transactItems: TransactWriteCommandInput['TransactItems'] = [

@@ -30,6 +30,7 @@ export * from './inference-mode';
 export * from './inference';
 export * from './model-resolver';
 export * from './auto-handover';
+export * from './handover-context';
 export * from './user-preferences';
 export * from './session-participants';
 export * from './skills';
