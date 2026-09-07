@@ -7,7 +7,7 @@ const inputSchema = z.object({
   newParentSessionId: z.string().describe('The session ID of the new parent.'),
 });
 
-const name = 'Reparent Session';
+const name = 'reparentSession';
 
 export const reparentSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

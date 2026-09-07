@@ -27,7 +27,7 @@ export const loadAndDeletePendingCompleteSession = (workerId: string): boolean =
 
 const inputSchema = z.object({});
 
-const name = 'Confirm Complete Session';
+const name = 'confirmCompleteSession';
 
 export const confirmCompleteSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

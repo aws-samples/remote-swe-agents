@@ -23,7 +23,7 @@ const inputSchema = z.object({
     .describe('Maximum number of sessions to export in tree mode. Default: 50.'),
 });
 
-const name = 'Export Session Diagnostics';
+const name = 'exportSessionDiagnostics';
 
 interface ExportResult {
   sessionId: string;
