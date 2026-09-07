@@ -11,7 +11,7 @@ const inputSchema = z.object({
     .describe('The session ID to complete. Defaults to the current session if not specified.'),
 });
 
-const name = 'Complete Session';
+const name = 'completeSession';
 
 export const completeSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
