@@ -128,6 +128,7 @@ export class MainStack extends cdk.Stack {
       vpc,
       storageTable: storage.table,
       imageBucket: storage.bucket,
+      skillBucket: storage.skillBucket,
       slackBotTokenParameter: botToken,
       ...(props.github && 'appId' in props.github
         ? {

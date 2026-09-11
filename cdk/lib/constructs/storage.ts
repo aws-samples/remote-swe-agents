@@ -1,4 +1,4 @@
-import { CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { AttributeType, Billing, TableV2, ProjectionType } from 'aws-cdk-lib/aws-dynamodb';
 import { BlockPublicAccess, Bucket, HttpMethods, IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
@@ -10,6 +10,7 @@ export interface StorageProps {
 export class Storage extends Construct {
   public readonly table: TableV2;
   public readonly bucket: Bucket;
+  public readonly skillBucket: Bucket;
 
   constructor(scope: Construct, id: string, props: StorageProps) {
     super(scope, id);
@@ -54,10 +55,38 @@ export class Storage extends Construct {
       ],
     });
 
+    // Dedicated bucket for skill packages. Non-prod defaults to DESTROY +
+    // autoDeleteObjects; production stacks override to RETAIN via
+    // RemovalPolicies.of(stack).retain() in bin/cdk.ts.
+    const skillBucket = new Bucket(this, 'SkillBucket', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      enforceSSL: true,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      versioned: true,
+      lifecycleRules: [
+        {
+          noncurrentVersionExpiration: Duration.days(90),
+        },
+      ],
+      serverAccessLogsBucket: props.accessLogBucket,
+      serverAccessLogsPrefix: 's3AccessLog/SkillBucket/',
+      cors: [
+        {
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          allowedMethods: [HttpMethods.GET, HttpMethods.HEAD, HttpMethods.PUT, HttpMethods.POST],
+          maxAge: 3000,
+        },
+      ],
+    });
+
     this.table = table;
     this.bucket = bucket;
+    this.skillBucket = skillBucket;
 
     new CfnOutput(this, 'TableName', { value: table.tableName });
     new CfnOutput(this, 'BucketName', { value: bucket.bucketName });
+    new CfnOutput(this, 'SkillBucketName', { value: skillBucket.bucketName });
   }
 }

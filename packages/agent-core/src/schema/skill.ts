@@ -1,16 +1,16 @@
 import { z } from 'zod';
 
+export const MAX_SKILL_FILE_COUNT = 500;
+export const MAX_SKILLS_PER_USER = 100;
+export const MAX_TOTAL_STORAGE_PER_USER = 100 * 1024 * 1024; // 100 MB
 export const MAX_SKILL_NAME_LENGTH = 64;
 export const MAX_SKILL_DESCRIPTION_LENGTH = 1536;
 export const SKILL_NAME_PATTERN = /^[a-z0-9-]+$/;
+export const ZIP_BOMB_THRESHOLD = 200 * 1024 * 1024; // 200 MB streaming defense-in-depth
+export const CATALOGUE_MAX_BYTES = 4096;
+export const CATALOGUE_MAX_SKILLS = 20;
+export const CATALOGUE_TRUNCATED_DESC_LENGTH = 256;
 
-/**
- * A user-registered skill. The inference backend receives the user's skills so
- * a backend can detect skill activation for the current turn (see
- * `TurnContext.userSkills`). The full skill-management surface (storage limits,
- * S3 layout, zip handling, catalogue) is intentionally out of scope here — this
- * schema carries only the fields the inference seam depends on.
- */
 export const skillSchema = z.object({
   PK: z.string(),
   SK: z.string(),

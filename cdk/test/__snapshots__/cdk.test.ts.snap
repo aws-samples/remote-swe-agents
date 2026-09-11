@@ -51,6 +51,11 @@ exports[`Snapshot test: MainStack 1`] = `
         "Ref": "StorageImageBucket99BA9550",
       },
     },
+    "StorageSkillBucketName6C18558D": {
+      "Value": {
+        "Ref": "StorageSkillBucket76CA6B72",
+      },
+    },
     "StorageTableNameB6E3E5D6": {
       "Value": {
         "Ref": "StorageHistory251A3AE8",
@@ -298,6 +303,40 @@ exports[`Snapshot test: MainStack 1`] = `
                       ],
                     },
                     "/s3AccessLog/ImageBucket/*",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "s3:PutObject",
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::GetAtt": [
+                      "StorageSkillBucket76CA6B72",
+                      "Arn",
+                    ],
+                  },
+                },
+                "StringEquals": {
+                  "aws:SourceAccount": "123456789012",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "logging.s3.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "AccessLogD598EBE9",
+                        "Arn",
+                      ],
+                    },
+                    "/s3AccessLog/SkillBucket/*",
                   ],
                 ],
               },
@@ -3561,6 +3600,168 @@ exports.handler = async (event) => {
       },
       "Type": "AWS::S3::BucketPolicy",
     },
+    "StorageSkillBucket76CA6B72": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*",
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "PUT",
+                "POST",
+              ],
+              "AllowedOrigins": [
+                "*",
+              ],
+              "MaxAge": 3000,
+            },
+          ],
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 90,
+              },
+              "Status": "Enabled",
+            },
+          ],
+        },
+        "LoggingConfiguration": {
+          "DestinationBucketName": {
+            "Ref": "AccessLogD598EBE9",
+          },
+          "LogFilePrefix": "s3AccessLog/SkillBucket/",
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true,
+        },
+        "Tags": [
+          {
+            "Key": "aws-cdk:auto-delete-objects",
+            "Value": "true",
+          },
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled",
+        },
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "StorageSkillBucketAutoDeleteObjectsCustomResource07E45C3D": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "StorageSkillBucketPolicy179CD63D",
+      ],
+      "Properties": {
+        "BucketName": {
+          "Ref": "StorageSkillBucket76CA6B72",
+        },
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "Custom::S3AutoDeleteObjects",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "StorageSkillBucketPolicy179CD63D": {
+      "Properties": {
+        "Bucket": {
+          "Ref": "StorageSkillBucket76CA6B72",
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageSkillBucket76CA6B72",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageSkillBucket76CA6B72",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:DeleteObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:PutBucketPolicy",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::GetAtt": [
+                    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+                    "Arn",
+                  ],
+                },
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StorageSkillBucket76CA6B72",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageSkillBucket76CA6B72",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::S3::BucketPolicy",
+    },
     "VapidKeysD8C7EC6E": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -4348,6 +4549,9 @@ exports.handler = async (event) => {
                 ],
               ],
             },
+            "SKILL_BUCKET_NAME": {
+              "Ref": "StorageSkillBucket76CA6B72",
+            },
             "SUBNET_ID_LIST": {
               "Fn::Join": [
                 "",
@@ -4617,12 +4821,32 @@ exports.handler = async (event) => {
                   ],
                 },
                 {
+                  "Fn::GetAtt": [
+                    "StorageSkillBucket76CA6B72",
+                    "Arn",
+                  ],
+                },
+                {
                   "Fn::Join": [
                     "",
                     [
                       {
                         "Fn::GetAtt": [
                           "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageSkillBucket76CA6B72",
                           "Arn",
                         ],
                       },
@@ -5020,12 +5244,32 @@ exports.handler = async (event) => {
                   ],
                 },
                 {
+                  "Fn::GetAtt": [
+                    "StorageSkillBucket76CA6B72",
+                    "Arn",
+                  ],
+                },
+                {
                   "Fn::Join": [
                     "",
                     [
                       {
                         "Fn::GetAtt": [
                           "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageSkillBucket76CA6B72",
                           "Arn",
                         ],
                       },
@@ -5289,6 +5533,9 @@ exports.handler = async (event) => {
           "GITHUB_APP_INSTALLATION_ID": "9876543",
           "GITHUB_APP_PRIVATE_KEY_PARAMETER_NAME": "/remote-swe/github/app-private-key",
           "GITHUB_PERSONAL_ACCESS_TOKEN_PARAMETER_NAME": "",
+          "SKILL_BUCKET_NAME": {
+            "Ref": "StorageSkillBucket76CA6B72",
+          },
           "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
           "TABLE_NAME": {
             "Ref": "StorageHistory251A3AE8",
@@ -6654,6 +6901,12 @@ phases:
               },
               "
 
+              Environment=SKILL_BUCKET_NAME=",
+              {
+                "Ref": "StorageSkillBucket76CA6B72",
+              },
+              "
+
               Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
               {
                 "Ref": "WebappOriginNameParameterBBAD7F85",
@@ -7477,6 +7730,12 @@ phases:
               },
               "
 
+              Environment=SKILL_BUCKET_NAME=",
+              {
+                "Ref": "StorageSkillBucket76CA6B72",
+              },
+              "
+
               Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
               {
                 "Ref": "WebappOriginNameParameterBBAD7F85",
@@ -7959,6 +8218,11 @@ Environment=BUCKET_NAME=",
                     "Ref": "StorageImageBucket99BA9550",
                   },
                   "
+Environment=SKILL_BUCKET_NAME=",
+                  {
+                    "Ref": "StorageSkillBucket76CA6B72",
+                  },
+                  "
 Environment=WEBAPP_ORIGIN_NAME_PARAMETER=",
                   {
                     "Ref": "WebappOriginNameParameterBBAD7F85",
@@ -8332,12 +8596,32 @@ systemctl start myapp",
                   ],
                 },
                 {
+                  "Fn::GetAtt": [
+                    "StorageSkillBucket76CA6B72",
+                    "Arn",
+                  ],
+                },
+                {
                   "Fn::Join": [
                     "",
                     [
                       {
                         "Fn::GetAtt": [
                           "StorageImageBucket99BA9550",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StorageSkillBucket76CA6B72",
                           "Arn",
                         ],
                       },

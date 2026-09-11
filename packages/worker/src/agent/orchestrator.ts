@@ -19,6 +19,10 @@ import {
   stripScaffoldingPrefix,
   isInterruptPlaceholder,
   isAckWordPlaceholder,
+  listSkills,
+  buildSkillCatalogue,
+  downloadSkillFiles,
+  deployKiroWorkspaceFiles,
   incrementUnread,
   sendPushNotificationToUser,
   notifyOtherParticipants,
@@ -181,11 +185,24 @@ const buildSystemPrompt = async (opts: {
     console.error('[orchestrator] Error retrieving common prompt:', error);
   }
 
-  // Skills (progressive-disclosure catalogue injection + file download) are
-  // not wired in this build; the turn runs without any user skills. When the
-  // skills feature is added, this is where the catalogue is injected into the
-  // system prompt and skill files are downloaded for Read-tool access.
-  const userSkills: import('@remote-swe-agents/agent-core/schema').Skill[] = [];
+  // Progressive disclosure: inject skill catalogue (name + description only)
+  // and download skill files to /tmp/skills/{skillId}/ for Read tool access
+  let userSkills: import('@remote-swe-agents/agent-core/schema').Skill[] = [];
+  if (session?.initiator) {
+    try {
+      const userId = session.initiator.includes('#') ? session.initiator.split('#').pop()! : session.initiator;
+      userSkills = await listSkills(userId);
+      if (userSkills.length > 0) {
+        const catalogue = buildSkillCatalogue(userSkills);
+        if (catalogue) {
+          systemPrompt = `${systemPrompt}\n\n${catalogue}`;
+        }
+        await downloadSkillFiles(userSkills);
+      }
+    } catch (error) {
+      console.error('[orchestrator] Error loading skills:', error);
+    }
+  }
 
   const defaultCwd = join(homedir(), '.remote-swe-workspace');
   mkdirSync(defaultCwd, { recursive: true });
@@ -211,16 +228,27 @@ const buildSystemPrompt = async (opts: {
     console.error('[orchestrator] Error retrieving repository metadata:', error);
   }
 
-  // Resolve inference mode once for the runtime env block.
+  // Resolve inference mode once for both deploy gating and runtime env block.
   const inferenceMode = resolveModelConfig({
     session: session ? { inferenceMode: session.inferenceMode } : undefined,
     customAgent: { inferenceMode: customAgent.inferenceMode },
     env: { inferenceMode: process.env.INFERENCE_MODE },
   }).inferenceMode;
 
-  // Kiro workspace deployment (skill-defined hooks/agents/tools) is not wired
-  // in this build; `kiroAgentName` stays undefined so no `--agent` is passed.
-  const kiroAgentName: string | undefined = undefined;
+  // Deploy kiro-native workspace files (hooks, agents, tools) from skills to a
+  // directory OUTSIDE the repo so kiro-cli can discover them via symlink. Only
+  // deploy when the session runs in kiro-cli inference mode — the hooks
+  // mechanism is a kiro-cli-native feature with no effect on Bedrock sessions.
+  let kiroAgentName: string | undefined;
+  if (userSkills.length > 0 && inferenceMode === 'kiro-cli') {
+    try {
+      kiroAgentName = deployKiroWorkspaceFiles(userSkills, cwd, workerId);
+    } catch (error) {
+      // Deploy failed — kiroAgentName stays undefined so the kiro agent loop
+      // will NOT pass --agent, preventing a launch against a missing agent JSON.
+      console.error('[orchestrator] kiro workspace deployment failed:', error);
+    }
+  }
 
   const runtimeEnvBlock = await (async () => {
     const lastUserMsg = history.filter((i) => i.role === 'user').at(-1);

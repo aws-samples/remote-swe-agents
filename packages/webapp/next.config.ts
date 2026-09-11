@@ -5,6 +5,9 @@ import path from 'path';
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  // Native/server-only packages used by the skill zip handling; keep them out
+  // of the client/edge bundle so Next does not try to bundle native binaries.
+  serverExternalPackages: ['@node-rs/crc32', 'yauzl-promise'],
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,

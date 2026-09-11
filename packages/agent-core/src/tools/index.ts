@@ -22,6 +22,7 @@ export * from './confirm-complete-session';
 export * from './list-sessions';
 export * from './reparent-session';
 export * from './export-session-diagnostics';
+export * from './manage-skill';
 
 import { ciTool } from './ci';
 import { commandExecutionTool } from './command-execution';
@@ -46,6 +47,7 @@ import { confirmCompleteSessionTool } from './confirm-complete-session';
 import { listSessionsTool } from './list-sessions';
 import { reparentSessionTool } from './reparent-session';
 import { exportSessionDiagnosticsTool } from './export-session-diagnostics';
+import { listSkillsTool, getSkillTool, createSkillTool, updateSkillTool, deleteSkillTool } from './manage-skill';
 
 /**
  * Tools that require GitHub configuration.
@@ -104,6 +106,11 @@ export const optionalTools = [
   listSessionsTool,
   reparentSessionTool,
   exportSessionDiagnosticsTool,
+  listSkillsTool,
+  getSkillTool,
+  createSkillTool,
+  updateSkillTool,
+  deleteSkillTool,
 ];
 
 /**

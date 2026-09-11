@@ -23,6 +23,7 @@ export interface WorkerProps {
   vpc: ec2.IVpc;
   storageTable: ITableV2;
   imageBucket: IBucket;
+  skillBucket: IBucket;
   slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
@@ -104,6 +105,7 @@ export class Worker extends Construct {
     const agentCoreRuntime = new AgentCoreRuntime(this, 'AgentCore', {
       storageTable: props.storageTable,
       imageBucket: props.imageBucket,
+      skillBucket: props.skillBucket,
       bus: bus,
       slackBotTokenParameter: props.slackBotTokenParameter,
       gitHubApp: props.gitHubApp,
@@ -436,6 +438,7 @@ Environment=GITHUB_APP_ID=${props.gitHubApp?.appId ?? ''}
 Environment=GITHUB_APP_INSTALLATION_ID=${props.gitHubApp?.installationId ?? ''}
 Environment=TABLE_NAME=${props.storageTable.tableName}
 Environment=BUCKET_NAME=${props.imageBucket.bucketName}
+Environment=SKILL_BUCKET_NAME=${props.skillBucket.bucketName}
 Environment=WEBAPP_ORIGIN_NAME_PARAMETER=${props.webappOriginSourceParameter.parameterName}
 Environment=BEDROCK_AWS_ACCOUNTS=${props.loadBalancing?.awsAccounts.join(',') ?? ''}
 Environment=BEDROCK_AWS_ROLE_NAME=${props.loadBalancing?.roleName ?? ''}
@@ -570,6 +573,7 @@ systemctl start myapp
     sourceBucket.grantRead(role);
     props.storageTable.grantReadWriteData(role);
     props.imageBucket.grantReadWrite(role);
+    props.skillBucket.grantReadWrite(role);
     privateKey?.grantRead(role);
     props.githubPersonalAccessTokenParameter?.grantRead(role);
     props.slackBotTokenParameter?.grantRead(role);

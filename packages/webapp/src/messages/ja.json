@@ -14,7 +14,8 @@
     "preferences": "設定",
     "apiKeys": "APIキー",
     "costAnalysis": "コスト分析",
-    "customAgent": "カスタムエージェント"
+    "customAgent": "カスタムエージェント",
+    "skills": "スキル"
   },
   "sessions": {
     "title": "セッション一覧",
@@ -437,6 +438,40 @@
       "description": "プッシュ通知を有効にすると、エージェントが応答した時にお知らせします。",
       "enable": "有効にする",
       "later": "あとで"
+    }
+  },
+  "skills": {
+    "title": "スキル",
+    "description": "エージェントの能力を拡張するスキルパッケージを管理します",
+    "list": {
+      "title": "登録済みスキル",
+      "description": "エージェントで利用可能なスキル"
+    },
+    "upload": {
+      "title": "スキルをアップロード",
+      "description": "SKILL.mdを含むzipファイルまたはディレクトリを選択してください"
+    },
+    "uploadZip": "Zipアップロード",
+    "importDir": "ディレクトリ読込",
+    "uploading": "アップロード中...",
+    "registering": "登録中...",
+    "uploadSuccess": "スキルを登録しました",
+    "uploadError": "スキルの登録に失敗しました",
+    "deleteSuccess": "スキルを削除しました",
+    "deleteError": "スキルの削除に失敗しました",
+    "confirmDelete": "このスキルを削除しますか?",
+    "confirmReplace": "同名のスキルが既に存在します。置き換えますか?",
+    "noSkills": "スキルが登録されていません",
+    "files": "ファイル",
+    "errors": {
+      "SKILL_SIZE_EXCEEDED": "ストレージ上限を超えています (100 MB)",
+      "INVALID_SKILL": "無効なスキルパッケージ: SKILL.mdが見つからないか不正です",
+      "INVALID_PATH": "不正なファイルパスが検出されました",
+      "PACKAGE_TOO_LARGE": "Zipファイルが最大サイズを超えています (1 MB)",
+      "INVALID_EXTENSION": "許可されていない拡張子のファイルが含まれています",
+      "TOO_MANY_FILES": "ファイル数が多すぎます (最大50)",
+      "FRONTMATTER_INVALID": "SKILL.mdのfrontmatterが不正です",
+      "UPLOAD_FAILED": "ストレージへのアップロードに失敗しました"
     }
   }
 }
