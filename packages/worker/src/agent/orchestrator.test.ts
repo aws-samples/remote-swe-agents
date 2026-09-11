@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   shouldSuppressWakeupMonologueDelivery: vi.fn(async () => false),
   updateSession: vi.fn(async () => undefined),
   getPreferences: vi.fn(async () => ({ defaultAgentName: '' })),
+  getLatestMessageSK: vi.fn(async () => undefined),
   existsSync: vi.fn((_path: string) => true),
 }));
 
@@ -67,6 +68,10 @@ vi.mock('@remote-swe-agents/agent-core/lib', async () => {
     shouldSuppressWakeupMonologueDelivery: mocks.shouldSuppressWakeupMonologueDelivery,
     updateSession: mocks.updateSession,
     getPreferences: mocks.getPreferences,
+    // finalizeTurn reads the latest message SK before persisting; without a
+    // mock this hits real DynamoDB, which only fails visibly in CI where no
+    // AWS region/credentials are configured (Error: Region is missing).
+    getLatestMessageSK: mocks.getLatestMessageSK,
   };
 });
 
