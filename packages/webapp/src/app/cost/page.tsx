@@ -93,7 +93,9 @@ export default async function CostAnalysisPage({
   const sessionCosts = await Promise.all(
     filteredSessions.map(async (session) => {
       // Get repository metadata for this session
-      const repoMetadata = await readMetadata('repo', session.workerId);
+      const repoMetadata = (await readMetadata('repo', session.workerId)) as
+        | { repoName?: string; repoOrg?: string }
+        | undefined;
 
       return {
         workerId: session.workerId,

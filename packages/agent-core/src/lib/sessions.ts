@@ -4,12 +4,11 @@ import {
   QueryCommandInput,
   UpdateCommand,
   DeleteCommand,
-  BatchWriteCommand,
   TransactWriteCommand,
   paginateQuery,
 } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
-import { ddb, TableName } from './aws';
+import { ddb, TableName, batchWriteWithRetry } from './aws';
 import { AgentStatus, SessionItem, sessionItemSchema } from '../schema';
 import { deleteAllEventTriggers } from './event-triggers';
 import { deleteUnreadByWorkerId } from './unread';
@@ -97,15 +96,6 @@ export const updateSessionAgentStatus = async (workerId: string, agentStatus: Ag
 };
 
 /**
- * Update isHidden field for a session
- * @param workerId Worker ID of the session to update
- * @param isHidden Whether the session should be hidden
- */
-export const updateSessionVisibility = async (workerId: string, isHidden: boolean): Promise<void> => {
-  await updateSession(workerId, { isHidden });
-};
-
-/**
  * Update title for a session
  * @param workerId Worker ID of the session to update
  * @param title The title to set for the session
@@ -135,7 +125,7 @@ export const updateSessionKiroSessionId = async (workerId: string, kiroSessionId
 
 /**
  * Remove the persisted kiroSessionId so the next turn creates a fresh session.
- * Used for self-healing when session/load fails (stale-ID recovery).
+ * Used for self-healing when session/load fails (D5: stale-ID recovery).
  */
 export const clearSessionKiroSessionId = async (workerId: string): Promise<void> => {
   await ddb.send(
@@ -150,6 +140,45 @@ export const clearSessionKiroSessionId = async (workerId: string): Promise<void>
 };
 
 /**
+ * Atomically claim a session handover by recording the successor's worker ID.
+ *
+ * The conditional write is the single serialisation point of the webapp
+ * handover flow: it succeeds at most once per session (and only while the
+ * session is not completed), so concurrent or repeated handover attempts
+ * cannot each spawn their own successor. Callers should catch
+ * `ConditionalCheckFailedException` and re-read the session — if
+ * `handedOverTo` is set, converge on that existing successor.
+ *
+ * @param workerId Worker ID of the session being handed over
+ * @param successorWorkerId Worker ID of the successor session
+ */
+export const updateSessionVisibility = async (workerId: string, isHidden: boolean): Promise<void> => {
+  await updateSession(workerId, { isHidden });
+};
+
+export const markSessionHandedOver = async (workerId: string, successorWorkerId: string): Promise<void> => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: { PK: 'sessions', SK: workerId },
+      ConditionExpression:
+        'attribute_exists(SK) AND attribute_not_exists(#handedOverTo) AND #agentStatus <> :completed',
+      UpdateExpression: 'SET #handedOverTo = :successor, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#handedOverTo': 'handedOverTo',
+        '#agentStatus': 'agentStatus',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':successor': successorWorkerId,
+        ':completed': 'completed',
+        ':updatedAt': Date.now(),
+      },
+    })
+  );
+};
+
+/**
  * Get direct child sessions of a parent session
  * @param parentWorkerId Worker ID of the parent session
  * @returns Array of child SessionItems
@@ -157,6 +186,79 @@ export const clearSessionKiroSessionId = async (workerId: string): Promise<void>
 export const getChildSessions = async (parentWorkerId: string): Promise<SessionItem[]> => {
   const allSessions = await getSessions(0);
   return allSessions.filter((s) => s.parentSessionId === parentWorkerId);
+};
+
+/**
+ * Atomically re-parent one or more sessions under a new parent session.
+ * Used by the "parent handover" flow: a fresh root parent P' is created, then
+ * the former parent P and its existing children are all moved under P'.
+ *
+ * Guards (minimal by design):
+ *  - self-parent: a session cannot become its own parent.
+ *  - cycle: the new parent must not already be a descendant of any session
+ *    being re-parented (which would make a session its own ancestor). A
+ *    visited-set bounds the ancestor walk so a pre-existing corrupt cycle
+ *    cannot loop forever.
+ *
+ * All updates are applied in a single TransactWrite so the hierarchy never
+ * ends up partially re-parented. TransactWrite supports up to 100 items.
+ * @param newParentId Worker ID of the new parent session
+ * @param childWorkerIds Worker IDs to re-parent under newParentId
+ */
+export const reparentSessions = async (newParentId: string, childWorkerIds: string[]): Promise<void> => {
+  if (childWorkerIds.length === 0) return;
+
+  if (childWorkerIds.length > 100) {
+    throw new Error(
+      `Cannot reparent more than 100 sessions in a single transaction (got ${childWorkerIds.length}); TransactWrite supports at most 100 items.`
+    );
+  }
+
+  const childIdSet = new Set(childWorkerIds);
+  if (childIdSet.has(newParentId)) {
+    throw new Error(`Cannot set session ${newParentId} as its own parent`);
+  }
+
+  // Walk the new parent's ancestor chain. If any session being re-parented is
+  // already an ancestor of the new parent, the move would create a cycle.
+  const visited = new Set<string>([newParentId]);
+  let cursor = (await getSession(newParentId))?.parentSessionId;
+  while (cursor && !visited.has(cursor)) {
+    if (childIdSet.has(cursor)) {
+      throw new Error(`Reparenting would create a cycle: ${cursor} is an ancestor of ${newParentId}`);
+    }
+    visited.add(cursor);
+    cursor = (await getSession(cursor))?.parentSessionId;
+  }
+
+  const now = Date.now();
+  await ddb.send(
+    new TransactWriteCommand({
+      TransactItems: childWorkerIds.map((childId) => ({
+        Update: {
+          TableName,
+          Key: { PK: 'sessions', SK: childId },
+          ConditionExpression: 'attribute_exists(SK)',
+          UpdateExpression: 'SET #parentSessionId = :parentSessionId, #updatedAt = :updatedAt',
+          ExpressionAttributeNames: { '#parentSessionId': 'parentSessionId', '#updatedAt': 'updatedAt' },
+          ExpressionAttributeValues: { ':parentSessionId': newParentId, ':updatedAt': now },
+        },
+      })),
+    })
+  );
+
+  // Notify webapp of hierarchy change so the sidebar can update in real time.
+  for (const childId of childWorkerIds) {
+    try {
+      await sendWebappEvent(childId, {
+        type: 'sessionReparented',
+        newParentSessionId: newParentId,
+        oldParentSessionId: null,
+      });
+    } catch {
+      // Non-critical: webapp event failure does not affect the reparent
+    }
+  }
 };
 
 /**
@@ -179,7 +281,7 @@ export const getDescendantSessions = async (parentWorkerId: string): Promise<Ses
 };
 
 /**
- * Get all sessions including those with parentSessionId (no isHidden filter)
+ * Get all sessions including those with parentSessionId
  */
 export const getAllSessionsIncludingChildren = async (): Promise<SessionItem[]> => {
   const paginator = paginateQuery(
@@ -263,14 +365,10 @@ const deleteSingleSession = async (workerId: string): Promise<void> => {
     // BatchWrite supports max 25 items per request
     for (let i = 0; i < keysToDelete.length; i += 25) {
       const batch = keysToDelete.slice(i, i + 25);
-      await ddb.send(
-        new BatchWriteCommand({
-          RequestItems: {
-            [TableName]: batch.map((key) => ({
-              DeleteRequest: { Key: key },
-            })),
-          },
-        })
+      await batchWriteWithRetry(
+        batch.map((key) => ({
+          DeleteRequest: { Key: key },
+        }))
       );
     }
   }
@@ -320,71 +418,60 @@ export const updateSession = async (workerId: string, params: UpdateSessionParam
 };
 
 /**
- * Move one or more sessions under a new parent (atomically via TransactWrite).
- * Used by the `createNewSession` tool's `role=successor` path to re-parent
- * the current session and its children under the newly-created successor.
+ * Non-destructive rewind: set the session's rewindState so that messages after
+ * cutoffSK are hidden from both the UI and the agent's LLM context. No messages
+ * are deleted — the operation is fully reversible via `undoRewind`.
  *
- * Safety:
- * - Cycle detection: walks the new parent's ancestor chain to ensure no child
- *   being moved is already an ancestor.
- * - Self-parent guard: rejects `newParentId` appearing in `childWorkerIds`.
- * - Bounded at 100 items (DDB TransactWrite limit).
+ * For kiro-cli sessions, also clears `kiroSessionId` so the next turn creates a
+ * fresh ACP session built from the (now shorter) visible history, using the
+ * existing "no kiroSessionId → session/new" path in kiro-agent-loop.
  *
- * @param newParentId Worker ID of the session that will become the new parent
- * @param childWorkerIds Worker IDs to re-parent under newParentId
+ * @param workerId Worker ID of the session
+ * @param cutoffSK The SK of the last message that should remain visible
  */
-export const reparentSessions = async (newParentId: string, childWorkerIds: string[]): Promise<void> => {
-  if (childWorkerIds.length === 0) return;
-
-  if (childWorkerIds.length > 100) {
-    throw new Error(
-      `Cannot reparent more than 100 sessions in a single transaction (got ${childWorkerIds.length}); TransactWrite supports at most 100 items.`
-    );
-  }
-
-  const childIdSet = new Set(childWorkerIds);
-  if (childIdSet.has(newParentId)) {
-    throw new Error(`Cannot set session ${newParentId} as its own parent`);
-  }
-
-  // Walk the new parent's ancestor chain. If any session being re-parented is
-  // already an ancestor of the new parent, the move would create a cycle.
-  const visited = new Set<string>([newParentId]);
-  let cursor = (await getSession(newParentId))?.parentSessionId;
-  while (cursor && !visited.has(cursor)) {
-    if (childIdSet.has(cursor)) {
-      throw new Error(`Reparenting would create a cycle: ${cursor} is an ancestor of ${newParentId}`);
-    }
-    visited.add(cursor);
-    cursor = (await getSession(cursor))?.parentSessionId;
-  }
-
+export const rewindSession = async (workerId: string, cutoffSK: string): Promise<void> => {
   const now = Date.now();
   await ddb.send(
-    new TransactWriteCommand({
-      TransactItems: childWorkerIds.map((childId) => ({
-        Update: {
-          TableName,
-          Key: { PK: 'sessions', SK: childId },
-          ConditionExpression: 'attribute_exists(SK)',
-          UpdateExpression: 'SET #parentSessionId = :parentSessionId, #updatedAt = :updatedAt',
-          ExpressionAttributeNames: { '#parentSessionId': 'parentSessionId', '#updatedAt': 'updatedAt' },
-          ExpressionAttributeValues: { ':parentSessionId': newParentId, ':updatedAt': now },
-        },
-      })),
+    new UpdateCommand({
+      TableName,
+      Key: { PK: 'sessions', SK: workerId },
+      UpdateExpression: 'SET #rewindState = :rewindState, #updatedAt = :updatedAt REMOVE #kiroSessionId',
+      ExpressionAttributeNames: {
+        '#rewindState': 'rewindState',
+        '#updatedAt': 'updatedAt',
+        '#kiroSessionId': 'kiroSessionId',
+      },
+      ExpressionAttributeValues: {
+        ':rewindState': { cutoffSK, rewindedAt: now },
+        ':updatedAt': now,
+      },
     })
   );
+};
 
-  // Notify webapp of hierarchy change so the sidebar can update in real time.
-  for (const childId of childWorkerIds) {
-    try {
-      await sendWebappEvent(childId, {
-        type: 'sessionReparented',
-        newParentSessionId: newParentId,
-        oldParentSessionId: null,
-      });
-    } catch {
-      // Non-critical: webapp event failure does not affect the reparent
-    }
-  }
+/**
+ * Undo a rewind: remove the rewindState from the session, making all messages
+ * visible again. This is the inverse of `rewindSession`.
+ *
+ * Does NOT restore kiroSessionId — the next kiro turn will synthesize from the
+ * full (now unfiltered) history, which is correct because the ACP session was
+ * invalidated by the rewind and any post-rewind turns may have diverged.
+ *
+ * @param workerId Worker ID of the session
+ */
+export const undoRewind = async (workerId: string): Promise<void> => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: { PK: 'sessions', SK: workerId },
+      UpdateExpression: 'REMOVE #rewindState SET #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#rewindState': 'rewindState',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':updatedAt': Date.now(),
+      },
+    })
+  );
 };

@@ -26,6 +26,10 @@
     },
     "./mcp-server/bin": {
       "default": "./dist/mcp-server/bin.js"
+    },
+    "./attachments": {
+      "types": "./dist/attachments/index.d.ts",
+      "default": "./dist/attachments/index.js"
     }
   },
   "scripts": {
