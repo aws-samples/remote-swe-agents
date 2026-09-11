@@ -60,6 +60,17 @@ export interface MainStackProps extends cdk.StackProps {
    * @default 'us' (Use US CRI profile)
    */
   readonly bedrockCriRegionOverride?: string;
+
+  /**
+   * SSM parameter name for Kiro CLI API key. When set, enables Kiro CLI mode support.
+   */
+  readonly kiroApiKeyParameterName?: string;
+
+  /**
+   * Inference mode for the worker. 'bedrock' (default) or 'kiro-cli'.
+   * @default 'bedrock'
+   */
+  readonly inferenceMode?: string;
 }
 
 export class MainStack extends cdk.Stack {
@@ -140,6 +151,13 @@ export class MainStack extends cdk.Stack {
         })
       : undefined;
 
+    const kiroApiKeyParameter = props.kiroApiKeyParameterName
+      ? StringParameter.fromStringParameterAttributes(this, 'KiroApiKey', {
+          parameterName: props.kiroApiKeyParameterName,
+          forceDynamicReference: true,
+        })
+      : undefined;
+
     const worker = new Worker(this, 'Worker', {
       vpc,
       storageTable: storage.table,
@@ -177,6 +195,8 @@ export class MainStack extends cdk.Stack {
       userPool: auth.userPool,
       cognitoDomainName: auth.domainName,
       vapidKeys,
+      kiroApiKeyParameter,
+      inferenceMode: props.inferenceMode,
     });
 
     worker.bus.addUserPoolProvider(auth.userPool);

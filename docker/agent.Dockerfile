@@ -40,6 +40,9 @@ RUN curl -L "https://github.com/Link-/gh-token/releases/download/v2.0.5/linux-ar
   chmod +x gh-token && \
   mv gh-token /usr/bin
 
+# Install Kiro CLI
+RUN curl -fsSL https://cli.kiro.dev/install | bash
+
 WORKDIR /app
 COPY package*.json ./
 COPY packages/agent-core/package*.json ./packages/agent-core/

@@ -85,6 +85,8 @@ const props: MainStackProps = {
   ...(process.env.VPC_ID ? { vpcId: process.env.VPC_ID } : {}),
   initialWebappUserEmail: process.env.INITIAL_WEBAPP_USER_EMAIL,
   bedrockCriRegionOverride: process.env.BEDROCK_CRI_REGION_OVERRIDE,
+  ...(process.env.KIRO_API_KEY_PARAM_NAME ? { kiroApiKeyParameterName: process.env.KIRO_API_KEY_PARAM_NAME } : {}),
+  ...(process.env.INFERENCE_MODE ? { inferenceMode: process.env.INFERENCE_MODE } : {}),
 };
 
 new MainStack(app, `RemoteSweStack-${targetEnv}`, {

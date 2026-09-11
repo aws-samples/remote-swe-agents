@@ -43,6 +43,7 @@ export const sessionItemSchema = z.object({
   kiroModel: z.string().optional(),
   bedrockDefaultModel: modelTypeSchema.optional(),
   kiroDefaultModel: kiroModelSchema.optional(),
+  kiroSessionId: z.string().optional(),
   // Most recent normalised context-window utilisation (%) measured at the end
   // of a turn. Persisted so the NEXT turn can show the model its own context
   // usage via a dynamic environment block so the agent can decide, on its own,

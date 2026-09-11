@@ -124,6 +124,32 @@ export const updateSessionLastMessage = async (workerId: string, lastMessage: st
 };
 
 /**
+ * Persist the ACP session ID issued by kiro-cli.
+ * Called once after a new ACP session is created so subsequent turns can resume via session/load.
+ * @param workerId Worker ID of the session
+ * @param kiroSessionId The ACP session ID returned by kiro-cli
+ */
+export const updateSessionKiroSessionId = async (workerId: string, kiroSessionId: string): Promise<void> => {
+  await updateSession(workerId, { kiroSessionId });
+};
+
+/**
+ * Remove the persisted kiroSessionId so the next turn creates a fresh session.
+ * Used for self-healing when session/load fails (stale-ID recovery).
+ */
+export const clearSessionKiroSessionId = async (workerId: string): Promise<void> => {
+  await ddb.send(
+    new UpdateCommand({
+      TableName,
+      Key: { PK: 'sessions', SK: workerId } satisfies z.infer<typeof keySchema>,
+      UpdateExpression: 'REMOVE #kiroSessionId SET #updatedAt = :updatedAt',
+      ExpressionAttributeNames: { '#kiroSessionId': 'kiroSessionId', '#updatedAt': 'updatedAt' },
+      ExpressionAttributeValues: { ':updatedAt': Date.now() },
+    })
+  );
+};
+
+/**
  * Get direct child sessions of a parent session
  * @param parentWorkerId Worker ID of the parent session
  * @returns Array of child SessionItems

@@ -32,6 +32,7 @@ import {
   validateMermaidInText,
   buildMermaidFeedback,
   updateMessageType,
+  toUserFacingTurnError,
   shouldSuppressUserDelivery,
   recordUserDelivery,
   shouldSuppressRehashOrSelfNarration,
@@ -708,10 +709,12 @@ export const handleTurnError = async (
   const message = error instanceof Error ? error.message : String(error);
   // Always log the RAW error to CloudWatch for internal observability.
   console.error(`[orchestrator] Turn failed: ${message}`);
-  // Backend-specific infrastructure-error sanitisation (collapsing recognised
-  // internal failures to a canonical phrase) is applied by the backend layer;
-  // the shared orchestrator forwards the message as-is.
-  const userFacing = message;
+  // ...but never leak a recognised Kiro infrastructure error (wedged
+  // subprocess / idle / wall-clock watchdog / -32603 "Internal error" /
+  // "Kiro failed to generate a response" / "process died") verbatim to the
+  // UX. Collapse it to the canonical phrase; genuinely actionable errors
+  // pass through unchanged.
+  const userFacing = toUserFacingTurnError(message);
   const errorText = slackUserId
     ? `<@${slackUserId}> An error occurred: ${userFacing}`
     : `An error occurred: ${userFacing}`;
