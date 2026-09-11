@@ -3,6 +3,7 @@ import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { getSession, updateSessionAgentStatus, stopWorkerInstance } from '../../lib';
 import { sendWebappEvent } from '../../lib/events';
 import { savePendingCompleteSession } from '../confirm-complete-session';
+import { terminatePreview } from '../preview';
 
 const inputSchema = z.object({
   sessionId: z
@@ -53,6 +54,12 @@ export const completeSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = 
 
     await updateSessionAgentStatus(targetSessionId, 'completed');
     await sendWebappEvent(targetSessionId, { type: 'agentStatusUpdate', status: 'completed' });
+
+    try {
+      await terminatePreview(targetSessionId);
+    } catch (e: any) {
+      console.error(`[completeSession] Preview cleanup failed for ${targetSessionId}:`, e.message);
+    }
 
     const runtimeType = targetSession.runtimeType ?? 'ec2';
     await stopWorkerInstance(targetSessionId, runtimeType);

@@ -3,6 +3,7 @@ import { stopMyself } from './ec2';
 import { notifyTermination } from './notify-termination';
 import { randomBytes } from 'crypto';
 import { getProcessRuntimeType } from '../runtime-type';
+import { terminatePreview } from '@remote-swe-agents/agent-core/tools';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
@@ -43,6 +44,11 @@ export const setKillTimer = (workerId: string) => {
       console.log(
         `[kill-timer] Firing for workerId=${workerId} after ${elapsedMin}min (armed at ${new Date(timerArmedAt).toISOString()})`
       );
+      try {
+        await terminatePreview(workerId);
+      } catch (e: any) {
+        console.error(`[kill-timer] Preview cleanup failed for ${workerId}:`, e.message);
+      }
       await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
       await notifyTermination(workerId, 'sleeping', '');
       // Update instance status to stopped in DynamoDB before stopping the instance

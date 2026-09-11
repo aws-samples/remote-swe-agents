@@ -101,4 +101,18 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     oldParentSessionId: z.string().nullable(),
     timestamp: z.number(),
   }),
+  z.object({
+    type: z.literal('portsUpdate'),
+    workerId: z.string(),
+    hostname: z.string().optional(),
+    openedPorts: z.array(
+      z.object({
+        fromPort: z.number(),
+        toPort: z.number(),
+        cidr: z.string(),
+        openedAt: z.number(),
+      })
+    ),
+    timestamp: z.number(),
+  }),
 ]);

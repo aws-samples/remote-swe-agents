@@ -24,6 +24,7 @@ export interface WorkerProps {
   storageTable: ITableV2;
   imageBucket: IBucket;
   skillBucket: IBucket;
+  previewMicrovmImageArn?: string;
   slackBotTokenParameter?: IStringParameter;
   gitHubApp?: {
     privateKeyParameterName: string;
@@ -106,6 +107,7 @@ export class Worker extends Construct {
       storageTable: props.storageTable,
       imageBucket: props.imageBucket,
       skillBucket: props.skillBucket,
+      previewMicrovmImageArn: props.previewMicrovmImageArn,
       bus: bus,
       slackBotTokenParameter: props.slackBotTokenParameter,
       gitHubApp: props.gitHubApp,

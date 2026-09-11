@@ -5,13 +5,13 @@ import { Construct } from 'constructs';
 import { EdgeFunction } from './constructs/cf-lambda-furl-service/edge-function';
 import { CommonWebAcl } from './constructs/web-acl';
 import { join } from 'path';
-import { IRepository, Repository } from 'aws-cdk-lib/aws-ecr';
 
 interface UsEast1StackProps extends cdk.StackProps {
   domainName?: string;
   allowedIpV4AddressRanges?: string[];
   allowedIpV6AddressRanges?: string[];
   allowedCountryCodes?: string[];
+  previewConfigParameterName?: string;
 }
 
 export class UsEast1Stack extends cdk.Stack {
@@ -25,13 +25,24 @@ export class UsEast1Stack extends cdk.Stack {
    */
   public readonly signPayloadHandler: EdgeFunction;
   /**
+   * the preview origin-request L@E function (it must be deployed in us-east-1).
+   */
+  public readonly previewOriginRequestHandler: EdgeFunction;
+  /**
    * the WAF Web ACL ARN for CloudFront (it must be deployed in us-east-1).
    * undefined if no IP restrictions are set.
    */
   public readonly webAclArn: string | undefined = undefined;
 
+  /**
+   * SSM parameter name in us-east-1 for preview config.
+   */
+  public readonly previewConfigParameterName: string;
+
   constructor(scope: Construct, id: string, props: UsEast1StackProps) {
     super(scope, id, props);
+
+    this.previewConfigParameterName = props.previewConfigParameterName || `/${this.stackName}/preview-config`;
 
     if (props.domainName) {
       const hostedZone = HostedZone.fromLookup(this, 'HostedZone', {
@@ -59,6 +70,15 @@ export class UsEast1Stack extends cdk.Stack {
     });
 
     this.signPayloadHandler = signPayloadHandler;
+
+    const previewOriginRequestHandler = new EdgeFunction(this, 'PreviewOriginRequestHandler', {
+      entryPath: join(__dirname, 'constructs', 'preview', 'lambda', 'origin-request.ts'),
+      bundlingDefine: {
+        'process.env.__PREVIEW_CONFIG_PARAM__': JSON.stringify(this.previewConfigParameterName),
+      },
+    });
+
+    this.previewOriginRequestHandler = previewOriginRequestHandler;
 
     if (props.allowedIpV4AddressRanges || props.allowedIpV6AddressRanges || props.allowedCountryCodes) {
       const webAcl = new CommonWebAcl(this, 'WebAcl', {

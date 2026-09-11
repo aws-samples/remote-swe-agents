@@ -14,7 +14,6 @@ import {
   SecurityPolicyProtocol,
 } from 'aws-cdk-lib/aws-cloudfront';
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ARecord, IHostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
@@ -51,7 +50,6 @@ export interface CloudFrontLambdaFunctionUrlServiceProps {
 }
 
 export class CloudFrontLambdaFunctionUrlService extends Construct {
-  public readonly urlParameter: StringParameter;
   public readonly url: string;
   public readonly domainName: string;
 
