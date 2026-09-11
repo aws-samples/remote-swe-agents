@@ -9,7 +9,6 @@ import { getTranslations } from 'next-intl/server';
 export const dynamic = 'force-dynamic';
 
 export default async function PreferencesPage() {
-  // Get the current prompt and preferences directly in server component
   const promptData = await readCommonPrompt();
   const additionalSystemPrompt = promptData?.additionalSystemPrompt || '';
   const globalPreferences = await getPreferences();

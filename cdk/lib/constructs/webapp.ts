@@ -1,4 +1,4 @@
-import { IgnoreMode, Duration, CfnOutput, Stack } from 'aws-cdk-lib';
+import { IgnoreMode, Duration, CfnOutput, Stack, Arn, ArnFormat } from 'aws-cdk-lib';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { DockerImageFunction, DockerImageCode, Architecture } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -102,11 +102,30 @@ export class Webapp extends Construct {
               VAPID_PRIVATE_KEY_PARAMETER_NAME: props.vapidKeys.privateKeyParameter.parameterName,
             }
           : {}),
+        STACK_NAME: Stack.of(this).stackName,
       },
       memorySize: 1769,
       architecture: Architecture.ARM_64,
     });
     props.workerAmiIdParameter.grantRead(handler);
+
+    // Grant SSM access for per-user Kiro API keys
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ssm:GetParameter', 'ssm:PutParameter', 'ssm:DeleteParameter'],
+        resources: [
+          Arn.format(
+            {
+              service: 'ssm',
+              resource: 'parameter',
+              resourceName: `${Stack.of(this).stackName}/users/*/kiro-api-key`,
+              arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+            },
+            Stack.of(this)
+          ),
+        ],
+      })
+    );
     asyncJob.handler.grantInvoke(handler);
     storage.table.grantReadWriteData(handler);
     storage.bucket.grantReadWrite(handler);

@@ -149,7 +149,9 @@
     "searchNoResults": "No matching messages found.",
     "searchResults": "Search results",
     "searchResultCount": "{count, plural, one {# result} other {# results}}",
-    "searchTimedOut": "Results may be incomplete (search timed out)."
+    "searchTimedOut": "Results may be incomplete (search timed out).",
+    "kiroModelSelector": "Kiro model",
+    "modelUpdateFailed": "Failed to save model selection"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",
@@ -255,7 +257,15 @@
       "updateError": "Failed to update template",
       "deleteSuccess": "Template deleted successfully",
       "deleteError": "Failed to delete template"
-    }
+    },
+    "inferenceMode": "Inference Backend",
+    "inferenceModes": {
+      "bedrock": "Bedrock",
+      "kiro": "Kiro"
+    },
+    "kiroApiKeyRequired": "Set your Kiro API key in Preferences to use Kiro mode.",
+    "goToPreferences": "Open Preferences",
+    "customAgentForcesMode": "This custom agent is configured to always use {mode}."
   },
   "preferences": {
     "title": "Preferences",
@@ -292,7 +302,26 @@
       "enabled": "Push notifications are enabled",
       "disabled": "Push notifications are disabled",
       "notSupported": "Push notifications are not supported in this browser"
-    }
+    },
+    "inferenceMode": "Default Inference Mode",
+    "inferenceModeDescription": "Default inference backend for new sessions. You can override per-session when creating one.",
+    "inferenceModes": {
+      "bedrock": "Bedrock",
+      "kiro": "Kiro"
+    },
+    "inferenceModeUpdateSuccess": "Inference mode updated",
+    "inferenceModeUpdateError": "Failed to update inference mode",
+    "kiroApiKey": "Kiro API Key",
+    "kiroApiKeyPlaceholder": "Enter your Kiro API key",
+    "kiroApiKeyConfigured": "API key is configured",
+    "kiroApiKeyRequired": "Set your Kiro API key first to enable Kiro mode",
+    "kiroApiKeySaveSuccess": "Kiro API key saved",
+    "kiroApiKeySaveError": "Failed to save API key",
+    "kiroApiKeyDeleteSuccess": "Kiro API key deleted",
+    "kiroApiKeyDeleteError": "Failed to delete API key",
+    "kiroApiKeyDeleteConfirm": "Are you sure you want to delete your Kiro API key?",
+    "kiroModel": "Kiro Model",
+    "kiroModelDescription": "Choose the AI model for Kiro inference"
   },
   "api_settings": {
     "title": "API Keys",

@@ -10,6 +10,7 @@ import {
   getTodoList,
   getUnreadMap,
   noOpFiltering,
+  resolveModelConfig,
 } from '@remote-swe-agents/agent-core/lib';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
@@ -271,6 +272,36 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   let agentIconUrl: string | undefined;
   const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
   const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
+
+  // Resolve the effective inference mode / models for this session
+  // server-side, via the shared priority chain (session > customAgent > env >
+  // default).
+  //
+  // User preferences are DELIBERATELY not consulted here. They are only
+  // the default used at session creation time; flipping them must not
+  // retroactively reinterpret existing / legacy sessions. Sessions created
+  // before `inferenceMode` was persisted therefore fall through to
+  // Bedrock, matching the single-backend world they originally ran in.
+  const resolvedModel = resolveModelConfig({
+    session: {
+      inferenceMode: session.inferenceMode,
+      bedrockDefaultModel: session.bedrockDefaultModel,
+      kiroDefaultModel: session.kiroDefaultModel,
+      kiroModel: session.kiroModel,
+    },
+    customAgent: customAgent
+      ? {
+          inferenceMode: customAgent.inferenceMode,
+          bedrockDefaultModel: customAgent.bedrockDefaultModel,
+          defaultModel: customAgent.defaultModel,
+          kiroDefaultModel: customAgent.kiroDefaultModel,
+          kiroModel: customAgent.kiroModel,
+        }
+      : undefined,
+    env: { inferenceMode: process.env.INFERENCE_MODE },
+  });
+  const effectiveInferenceMode = resolvedModel.inferenceMode;
+  const effectiveKiroModel = effectiveInferenceMode === 'kiro-cli' ? resolvedModel.kiroModel : undefined;
   if (iconKey) {
     agentIconUrl = `/api/agent-icon?key=${encodeURIComponent(iconKey)}`;
   }
@@ -292,6 +323,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         unreadMap={unreadMap}
         lastReadAt={lastReadAt}
         parentSessionId={session.parentSessionId}
+        inferenceMode={effectiveInferenceMode}
+        kiroModel={effectiveKiroModel}
       />
       <RefreshOnFocus />
     </>

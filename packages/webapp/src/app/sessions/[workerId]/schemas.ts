@@ -1,4 +1,9 @@
-import { agentStatusSchema, modelTypeSchema, runtimeTypeSchema } from '@remote-swe-agents/agent-core/schema';
+import {
+  agentStatusSchema,
+  kiroModelSchema,
+  modelTypeSchema,
+  runtimeTypeSchema,
+} from '@remote-swe-agents/agent-core/schema';
 import { z } from 'zod';
 
 export const sendMessageToAgentSchema = z.object({
@@ -7,6 +12,22 @@ export const sendMessageToAgentSchema = z.object({
   imageKeys: z.array(z.string()).optional(),
   fileKeys: z.array(z.string()).optional(),
   modelOverride: modelTypeSchema.optional(),
+  /**
+   * Per-message Kiro model override. Only honoured on Kiro sessions.
+   * Ignored on Bedrock sessions.
+   *
+   * The string is interpolated into a `/model <id>` slash command prompt
+   * that kiro-cli parses as a command. Restricting it to model-id-safe
+   * characters is a defence-in-depth guard against a malicious or
+   * DevTools-tampered request injecting additional slash commands via
+   * newline / whitespace / control characters. Authorised catalog model
+   * ids match [a-zA-Z0-9._-]+ (see kiroModelConfigs).
+   */
+  kiroModelOverride: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]+$/, 'invalid kiro model id')
+    .max(64)
+    .optional(),
 });
 
 export const fetchTodoListSchema = z.object({
@@ -36,4 +57,10 @@ export const markSessionReadSchema = z.object({
 export const searchSessionContentSchema = z.object({
   workerId: z.string(),
   query: z.string().min(1).max(200),
+});
+
+export const updateSessionModelSchema = z.object({
+  workerId: z.string(),
+  bedrockDefaultModel: modelTypeSchema.optional(),
+  kiroDefaultModel: kiroModelSchema.optional(),
 });
