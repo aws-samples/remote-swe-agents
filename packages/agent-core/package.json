@@ -18,6 +18,13 @@
     "./tools": {
       "types": "./dist/tools/index.d.ts",
       "default": "./dist/tools/index.js"
+    },
+    "./mcp-server": {
+      "types": "./dist/mcp-server/index.d.ts",
+      "default": "./dist/mcp-server/index.js"
+    },
+    "./mcp-server/bin": {
+      "default": "./dist/mcp-server/bin.js"
     }
   },
   "scripts": {
