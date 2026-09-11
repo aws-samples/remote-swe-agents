@@ -1,5 +1,5 @@
 import { getPreferences } from '../lib/preferences';
-import type { GlobalPreferences } from '../schema';
+import { globalPreferencesSchema, type GlobalPreferences } from '../schema';
 
 /**
  * Minimal env-driven context shared by every MCP tool handler invocation.
@@ -23,11 +23,25 @@ export const readEnvContext = (): McpContextEnv => {
   return { workerId };
 };
 
-/** Lazy, cached accessor for global preferences so we don't hit DynamoDB for every tool call. */
+/**
+ * Lazy, cached accessor for global preferences so we don't hit DynamoDB for
+ * every tool call.
+ *
+ * Fail-open: preferences are advisory (default agent name, language, ...) and
+ * a DynamoDB failure must not turn every `tools/call` into an MCP internal
+ * error. On failure we fall back to the schema defaults (the same shape
+ * `getPreferences` returns when the item does not exist) and leave the cache
+ * empty so a later call can retry.
+ */
 let cachedPreferences: Promise<GlobalPreferences> | null = null;
 export const resolveGlobalPreferences = (): Promise<GlobalPreferences> => {
   if (!cachedPreferences) {
-    cachedPreferences = getPreferences();
+    cachedPreferences = getPreferences().catch((e) => {
+      cachedPreferences = null;
+      // stderr only: stdout is the MCP protocol channel for stdio transport.
+      console.error('[mcp-server] Failed to load global preferences; using defaults:', e);
+      return globalPreferencesSchema.parse({ PK: 'global-config', SK: 'general' });
+    });
   }
   return cachedPreferences;
 };
