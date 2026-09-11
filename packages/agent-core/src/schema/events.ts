@@ -19,6 +19,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     toolUseId: z.string(),
     input: z.string(),
     timestamp: z.number(),
+    messageSK: z.string().optional(),
     thinkingBudget: z.number().optional(),
     reasoningText: z.string().optional(),
   }),
@@ -28,6 +29,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     workerId: z.string(),
     toolUseId: z.string(),
     output: z.string(),
+    imageKeys: z.array(z.string()).optional(),
     timestamp: z.number(),
   }),
   z.object({

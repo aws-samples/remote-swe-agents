@@ -1,5 +1,32 @@
 import { z } from 'zod';
 
+export const inferenceModeSchema = z.enum(['bedrock', 'kiro-cli']);
+export type InferenceMode = z.infer<typeof inferenceModeSchema>;
+
+export const kiroModelConfigs = {
+  auto: { name: 'Auto (recommended)' },
+  'claude-opus-5': { name: 'Claude Opus 5' },
+  'claude-opus-4.8': { name: 'Claude Opus 4.8' },
+  'claude-opus-4.7': { name: 'Claude Opus 4.7' },
+  'claude-opus-4.6': { name: 'Claude Opus 4.6' },
+  'claude-sonnet-5': { name: 'Claude Sonnet 5' },
+  'claude-sonnet-4.6': { name: 'Claude Sonnet 4.6' },
+  'claude-haiku-4.5': { name: 'Claude Haiku 4.5' },
+  'gpt-5.6-sol': { name: 'GPT 5.6 Sol' },
+  'gpt-5.6-terra': { name: 'GPT 5.6 Terra' },
+  'gpt-5.6-luna': { name: 'GPT 5.6 Luna' },
+  'deepseek-3.2': { name: 'DeepSeek 3.2' },
+  'minimax-m2.5': { name: 'MiniMax M2.5' },
+  'glm-5': { name: 'GLM 5' },
+  'qwen3-coder-next': { name: 'Qwen3 Coder Next' },
+} as const satisfies Record<string, { name: string }>;
+
+export type KiroModelId = keyof typeof kiroModelConfigs;
+
+export const getKiroModelIds = (): KiroModelId[] => Object.keys(kiroModelConfigs) as KiroModelId[];
+
+export const kiroModelSchema = z.enum(Object.keys(kiroModelConfigs) as [KiroModelId, ...KiroModelId[]]);
+
 export const modelTypeList = [
   'opus5',
   'sonnet5',

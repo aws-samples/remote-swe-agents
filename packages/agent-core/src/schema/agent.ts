@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ModelType, modelTypeSchema } from './model';
+import { inferenceModeSchema, kiroModelSchema, ModelType, modelTypeSchema } from './model';
 
 export const agentStatusSchema = z.union([z.literal('working'), z.literal('pending'), z.literal('completed')]);
 export const runtimeTypeSchema = z.union([z.literal('ec2'), z.literal('agent-core')]);
@@ -13,10 +13,12 @@ export type RuntimeType = z.infer<typeof runtimeTypeSchema>;
  * Used by createSession (when no custom agent is specified) and by the worker's DefaultAgent definition.
  * This is the single source of truth for default runtime type and model.
  */
-export const defaultAgentConfig: { runtimeType: RuntimeType; defaultModel: ModelType } = {
-  runtimeType: 'agent-core',
-  defaultModel: 'sonnet4.6',
-};
+export const defaultAgentConfig: { runtimeType: RuntimeType; defaultModel: ModelType; bedrockDefaultModel: ModelType } =
+  {
+    runtimeType: 'agent-core',
+    defaultModel: 'sonnet4.6',
+    bedrockDefaultModel: 'sonnet4.6',
+  };
 
 export const customAgentSchema = z.object({
   PK: z.literal('custom-agent'),
@@ -31,6 +33,10 @@ export const customAgentSchema = z.object({
   runtimeType: runtimeTypeSchema,
   iconKey: z.string().optional(),
   includeDefaultKnowledge: z.boolean().optional(),
+  inferenceMode: inferenceModeSchema.optional(),
+  kiroModel: z.string().optional(),
+  bedrockDefaultModel: modelTypeSchema.optional(),
+  kiroDefaultModel: kiroModelSchema.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

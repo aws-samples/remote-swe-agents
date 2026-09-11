@@ -11,3 +11,4 @@ export * from './model';
 export * from './preferences';
 export * from './push-subscription';
 export * from './unread';
+export * from './skill';
