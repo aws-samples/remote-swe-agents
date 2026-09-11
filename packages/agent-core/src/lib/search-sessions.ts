@@ -47,7 +47,16 @@ export const SEARCHABLE_MESSAGE_TYPES = new Set([
   'communicationLog',
 ]);
 
-export const MSG_TOOLS = new Set(['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendFileToUser']);
+export const MSG_TOOLS = new Set([
+  'Send Message To User',
+  'Send Image To User',
+  'Send File To User',
+  // Legacy camelCase names still present in persisted conversation history
+  'sendMessageToUser',
+  'sendMessageToUserIfNecessary',
+  'sendImageToUser',
+  'sendFileToUser',
+]);
 
 export function extractTextFromContent(content: any[], messageType: string): string {
   if (messageType === 'toolUse') {
@@ -106,7 +115,7 @@ async function searchSingleSession(
   query: string,
   snippetRadius: number
 ): Promise<SearchHit[]> {
-  const { items } = await getConversationHistory(sid);
+  const { items } = await getConversationHistory(sid, { includeAll: true });
   const localResults: SearchHit[] = [];
 
   for (const item of items) {

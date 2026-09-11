@@ -77,7 +77,7 @@ const removeOrphanToolUse = (items: MessageItem[]): MessageItem[] => {
  * This filter is designed to be applied at the history level and shared by:
  *   - The webapp UI (display filtering)
  *   - The agent loop / orchestrator (LLM context construction)
- *   - The session synthesiser
+ *   - The kiro-cli session synthesiser
  *
  * O(n) single pass, no writes to DDB, fully reversible by clearing rewindState.
  */

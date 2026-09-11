@@ -42,7 +42,7 @@ describe('extractTextFromContent', () => {
   });
 
   test('extracts toolUse.input.message for MSG_TOOLS only when messageType is toolUse', () => {
-    const content = [{ toolUse: { name: 'sendMessageToUser', input: { message: 'Hi user' }, toolUseId: '1' } }];
+    const content = [{ toolUse: { name: 'Send Message To User', input: { message: 'Hi user' }, toolUseId: '1' } }];
     expect(extractTextFromContent(content, 'toolUse')).toBe('Hi user');
   });
 

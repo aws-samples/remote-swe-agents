@@ -19,10 +19,10 @@ import { MessageItem } from '../schema';
  *
  * ## Why this exists
  *
- * When a turn fails at the inference stage (the inference backend `-32603` "Internal error"
+ * When a turn fails at the inference stage (kiro-cli `-32603` "Internal error"
  * / prompt timeout) AFTER it has already delivered a user-facing message, the
  * orchestrator schedules an auto-retrigger (`systemRetrigger`) and re-runs the
- * turn from the top. the inference backend resumes its own session memory via
+ * turn from the top. kiro-cli resumes its own session memory via
  * `session/load`, so the model re-decides to call `sendMessageToUser` and/or
  * re-emits the same end-of-turn text. The user-facing delivery functions had
  * NO duplicate suppression (unlike the agent-messaging path), so the user
@@ -136,8 +136,13 @@ export const recordUserDelivery = async (
  * it today.
  */
 export const MESSAGE_DELIVERY_TOOL_NAMES = [
+  'Send Message To User',
+  'Send Image To User',
+  'Send File To User',
+  // Legacy camelCase names still present in persisted conversation history
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
+  'sendImageToUser',
   'sendFileToUser',
 ] as const;
 
@@ -182,8 +187,8 @@ const extractDeliveryToolMessages = (items: MessageItem[]): RecentMessageForDedu
  * ## Why this is separate from {@link shouldSuppressUserDelivery}
  *
  * The Slack/push delivery path (the MCP `sendMessageToUser` handler) and the
- * webapp `toolUse` persist+emit path (the worker's inference backend `onEvent`) run
- * in DIFFERENT processes for external inference sessions. If both deduped against — and
+ * webapp `toolUse` persist+emit path (the worker's kiro-cli ACP `onEvent`) run
+ * in DIFFERENT processes for kiro-cli sessions. If both deduped against — and
  * wrote to — the same `userDeliveryLog`, the handler's same-turn record could
  * race ahead of the `onEvent` check and falsely suppress the FIRST persist
  * (the worst regression: nothing rendered in the webapp).
