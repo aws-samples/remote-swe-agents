@@ -1,14 +1,14 @@
 import { ec2 } from '@remote-swe-agents/agent-core/aws';
 import { StopInstancesCommand } from '@aws-sdk/client-ec2';
 import { BedrockAgentCoreClient, StopRuntimeSessionCommand } from '@aws-sdk/client-bedrock-agentcore';
+import { getProcessRuntimeType } from '../runtime-type';
 
-const workerRuntime = process.env.WORKER_RUNTIME ?? 'ec2';
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
 
 const agentCore = new BedrockAgentCoreClient();
 
 export const stopMyself = async (workerId?: string) => {
-  if (workerRuntime === 'agent-core') {
+  if (getProcessRuntimeType() === 'agent-core') {
     if (!agentRuntimeArn || !workerId) {
       console.error('Cannot stop agent-core session: missing AGENT_RUNTIME_ARN or workerId');
       return;

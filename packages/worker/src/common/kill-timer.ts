@@ -1,12 +1,11 @@
 import { sendSystemMessage, updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
 import { stopMyself } from './ec2';
+import { notifyTermination } from './notify-termination';
 import { randomBytes } from 'crypto';
+import { getProcessRuntimeType } from '../runtime-type';
 
 let killTimer: NodeJS.Timeout | undefined = undefined;
 let paused = false;
-
-const workerRuntime = process.env.WORKER_RUNTIME ?? 'ec2';
-const isAgentCore = workerRuntime === 'agent-core';
 
 // You can use setKillTimer to kill the process after 30 minutes.
 // If setKillTimer is called before 30 minutes elapsed, the timer count is reset and another
@@ -33,13 +32,19 @@ export const setKillTimer = (workerId: string) => {
   if (paused) return;
   // On agent-core, skip the initial timer set on startup.
   // The timer will be started by restartKillTimer when the agent becomes idle.
-  if (isAgentCore && !hasWorkedBefore) return;
+  if (getProcessRuntimeType() === 'agent-core' && !hasWorkedBefore) return;
   if (killTimer) {
     clearTimeout(killTimer);
   }
+  const timerArmedAt = Date.now();
   killTimer = setTimeout(
     async () => {
+      const elapsedMin = ((Date.now() - timerArmedAt) / 60_000).toFixed(1);
+      console.log(
+        `[kill-timer] Firing for workerId=${workerId} after ${elapsedMin}min (armed at ${new Date(timerArmedAt).toISOString()})`
+      );
       await sendSystemMessage(workerId, 'Going to sleep mode. You can wake me up at any time.');
+      await notifyTermination(workerId, 'sleeping', '');
       // Update instance status to stopped in DynamoDB before stopping the instance
       await updateInstanceStatus(workerId, 'stopped');
       await stopMyself(workerId);

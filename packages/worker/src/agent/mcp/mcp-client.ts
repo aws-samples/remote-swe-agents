@@ -12,6 +12,7 @@ export class MCPClient {
   private mcp: Client;
   private transport: Transport | null = null;
   private _tools: Tool[] = [];
+  private _toolNameMap: Map<string, string> = new Map();
 
   private constructor() {
     this.mcp = new Client(
@@ -62,9 +63,11 @@ export class MCPClient {
 
     const toolsResult = await this.mcp.listTools();
     this._tools = toolsResult.tools.map((tool) => {
+      const sanitizedName = tool.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+      this._toolNameMap.set(sanitizedName, tool.name);
       return {
         toolSpec: {
-          name: tool.name,
+          name: sanitizedName,
           description: tool.description,
           inputSchema: { json: JSON.parse(JSON.stringify(tool.inputSchema)) },
         },
@@ -77,8 +80,9 @@ export class MCPClient {
   }
 
   async callTool(toolName: string, input: any) {
+    const originalName = this._toolNameMap.get(toolName) ?? toolName;
     const result = await this.mcp.callTool({
-      name: toolName,
+      name: originalName,
       arguments: input,
     });
     // https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/#tool-result

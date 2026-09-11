@@ -9,6 +9,7 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     workerId: z.string(),
     message: z.string(),
     timestamp: z.number(),
+    messageSK: z.string().optional(),
     thinkingBudget: z.number().optional(),
     reasoningText: z.string().optional(),
   }),

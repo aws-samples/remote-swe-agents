@@ -91,7 +91,7 @@ async function getSubscriptionsForUser(userId: string): Promise<PushSubscription
 
 export async function sendPushNotificationToUser(
   userId: string,
-  payload: { title: string; body: string; url?: string; workerId?: string }
+  payload: { title: string; body: string; url?: string; workerId?: string; icon?: string }
 ): Promise<void> {
   const vapidPublicKey = await getVapidPublicKey();
   const vapidPrivateKey = await getVapidPrivateKey();
@@ -132,4 +132,26 @@ export async function sendPushNotificationToUser(
       }
     }
   }
+}
+
+/**
+ * Resolve the agent display name for push notification titles.
+ *
+ * In the worker orchestrator, `customAgent` is always non-null because it
+ * falls back to `DefaultAgent` (name: 'default agent'). Naively using
+ * `customAgent.name` therefore always yields 'default agent' for sessions
+ * without a real custom agent, shadowing the more appropriate
+ * `session.agentName` and the 'Agent' fallback.
+ *
+ * This helper checks whether the session actually has a customAgentId
+ * configured before trusting the custom agent's name.
+ */
+export function resolveNotificationAgentName(opts: {
+  customAgentId?: string;
+  customAgentName?: string;
+  sessionAgentName?: string;
+  defaultAgentName?: string;
+}): string {
+  if (opts.customAgentId && opts.customAgentName) return opts.customAgentName;
+  return opts.sessionAgentName || opts.defaultAgentName || 'Agent';
 }

@@ -4,6 +4,25 @@
 import express from 'express';
 import { main } from './entry';
 import { updateInstanceStatus } from '@remote-swe-agents/agent-core/lib';
+import { setProcessRuntimeType } from './runtime-type';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+setProcessRuntimeType('agent-core');
+
+const workerVersion = (() => {
+  try {
+    return readFileSync(join(__dirname, '../.build-version'), 'utf-8').trim();
+  } catch {
+    try {
+      const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+      return `pkg-${pkg.version}`;
+    } catch {
+      return 'unknown';
+    }
+  }
+})();
+console.log(`[agent-core] starting (version=${workerVersion}, pid=${process.pid})`);
 
 let getCurrentStatus: () => 'busy' | 'idle' | undefined;
 const app = express();

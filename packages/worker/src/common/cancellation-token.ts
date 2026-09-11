@@ -18,7 +18,7 @@ export class CancellationToken {
 
   /**
    * Register a listener that fires synchronously when cancel() is called.
-   * Used by long-running backends to immediately tear down
+   * Used by long-running backends (e.g. kiro-cli) to immediately tear down
    * child processes without waiting for the next streaming chunk.
    * Returns an unsubscribe function.
    *
