@@ -2377,6 +2377,141 @@ exports.handler = async function (event, context) {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "SingletonLambdauserparamscleanersingleton2877582C": {
+      "DependsOn": [
+        "SingletonLambdauserparamscleanersingletonServiceRoleDefaultPolicy3C002D1B",
+        "SingletonLambdauserparamscleanersingletonServiceRole4DDAEC8D",
+      ],
+      "Properties": {
+        "Code": {
+          "ZipFile": "
+const { SSMClient, GetParametersByPathCommand, DeleteParametersCommand } = require('@aws-sdk/client-ssm');
+
+exports.handler = async (event) => {
+  const physicalResourceId = event.PhysicalResourceId || 'user-params-cleaner';
+
+  // Create and Update are no-ops. Cleanup runs only on stack deletion.
+  if (event.RequestType !== 'Delete') {
+    return { PhysicalResourceId: physicalResourceId };
+  }
+
+  const pathPrefix = event.ResourceProperties.PathPrefix;
+  const ssm = new SSMClient({});
+
+  console.log('Starting cleanup under path: ' + pathPrefix);
+
+  const names = [];
+  let nextToken;
+  try {
+    do {
+      const resp = await ssm.send(new GetParametersByPathCommand({
+        Path: pathPrefix,
+        Recursive: true,
+        MaxResults: 10,
+        NextToken: nextToken,
+      }));
+      for (const p of resp.Parameters || []) {
+        if (p.Name) names.push(p.Name);
+      }
+      nextToken = resp.NextToken;
+    } while (nextToken);
+  } catch (err) {
+    // Best-effort cleanup: never block stack deletion.
+    console.error('Failed to list parameters. Skipping cleanup.', err);
+    return { PhysicalResourceId: physicalResourceId };
+  }
+
+  console.log('Found ' + names.length + ' parameter(s) to delete');
+
+  // DeleteParameters accepts at most 10 names per request.
+  for (let i = 0; i < names.length; i += 10) {
+    const batch = names.slice(i, i + 10);
+    try {
+      const resp = await ssm.send(new DeleteParametersCommand({ Names: batch }));
+      if (resp.DeletedParameters && resp.DeletedParameters.length > 0) {
+        console.log('Deleted: ' + resp.DeletedParameters.join(', '));
+      }
+      if (resp.InvalidParameters && resp.InvalidParameters.length > 0) {
+        // Already gone or inaccessible. Treated as expected.
+        console.warn('Skipped (not found or invalid): ' + resp.InvalidParameters.join(', '));
+      }
+    } catch (err) {
+      // Continue with remaining batches even if one fails.
+      console.error('Failed to delete batch: ' + batch.join(', '), err);
+    }
+  }
+
+  return { PhysicalResourceId: physicalResourceId };
+};
+      ",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "SingletonLambdauserparamscleanersingletonServiceRole4DDAEC8D",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 300,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "SingletonLambdauserparamscleanersingletonServiceRole4DDAEC8D": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "SingletonLambdauserparamscleanersingletonServiceRoleDefaultPolicy3C002D1B": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ssm:DeleteParameters",
+                "ssm:GetParametersByPath",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/TestMainStack/users/*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "SingletonLambdauserparamscleanersingletonServiceRoleDefaultPolicy3C002D1B",
+        "Roles": [
+          {
+            "Ref": "SingletonLambdauserparamscleanersingletonServiceRole4DDAEC8D",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "SingletonLambdavapidkeygeneratorsingleton2607D629": {
       "DependsOn": [
         "SingletonLambdavapidkeygeneratorsingletonServiceRoleDefaultPolicy61E91644",
@@ -3762,6 +3897,140 @@ exports.handler = async (event) => {
       },
       "Type": "AWS::S3::BucketPolicy",
     },
+    "UserParamsCleaner47C9605B": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "PathPrefix": "/TestMainStack/users/",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "UserParamsCleanerProviderframeworkonEvent690A113C",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::CloudFormation::CustomResource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "UserParamsCleanerProviderframeworkonEvent690A113C": {
+      "DependsOn": [
+        "UserParamsCleanerProviderframeworkonEventServiceRoleDefaultPolicy41FBD0E0",
+        "UserParamsCleanerProviderframeworkonEventServiceRole761092D2",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "REDACTED",
+        },
+        "Description": "AWS CDK resource provider framework - onEvent (TestMainStack/UserParamsCleaner/Provider)",
+        "Environment": {
+          "Variables": {
+            "USER_ON_EVENT_FUNCTION_ARN": {
+              "Fn::GetAtt": [
+                "SingletonLambdauserparamscleanersingleton2877582C",
+                "Arn",
+              ],
+            },
+          },
+        },
+        "Handler": "framework.onEvent",
+        "LoggingConfig": {
+          "ApplicationLogLevel": "FATAL",
+          "LogFormat": "JSON",
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "UserParamsCleanerProviderframeworkonEventServiceRole761092D2",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "UserParamsCleanerProviderframeworkonEventServiceRole761092D2": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "UserParamsCleanerProviderframeworkonEventServiceRoleDefaultPolicy41FBD0E0": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "SingletonLambdauserparamscleanersingleton2877582C",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "SingletonLambdauserparamscleanersingleton2877582C",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "lambda:GetFunction",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "SingletonLambdauserparamscleanersingleton2877582C",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "UserParamsCleanerProviderframeworkonEventServiceRoleDefaultPolicy41FBD0E0",
+        "Roles": [
+          {
+            "Ref": "UserParamsCleanerProviderframeworkonEventServiceRole761092D2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "VapidKeysD8C7EC6E": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -4552,6 +4821,7 @@ exports.handler = async (event) => {
             "SKILL_BUCKET_NAME": {
               "Ref": "StorageSkillBucket76CA6B72",
             },
+            "STACK_NAME": "TestMainStack",
             "SUBNET_ID_LIST": {
               "Fn::Join": [
                 "",
@@ -4733,6 +5003,15 @@ exports.handler = async (event) => {
                   ],
                 },
               ],
+            },
+            {
+              "Action": [
+                "ssm:DeleteParameter",
+                "ssm:GetParameter",
+                "ssm:PutParameter",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/TestMainStack/users/*/kiro-api-key",
             },
             {
               "Action": "lambda:InvokeFunction",
@@ -5366,6 +5645,11 @@ exports.handler = async (event) => {
               },
             },
             {
+              "Action": "ssm:GetParameter",
+              "Effect": "Allow",
+              "Resource": "arn:aws:ssm:us-east-1:123456789012:parameter/TestMainStack/users/*/kiro-api-key",
+            },
+            {
               "Action": [
                 "lambda-microvms:CreateMicrovmAuthToken",
                 "lambda-microvms:GetMicrovm",
@@ -5553,6 +5837,7 @@ exports.handler = async (event) => {
             "Ref": "StorageSkillBucket76CA6B72",
           },
           "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
+          "STACK_NAME": "TestMainStack",
           "TABLE_NAME": {
             "Ref": "StorageHistory251A3AE8",
           },
@@ -6979,6 +7264,10 @@ phases:
 
               Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
 
+              Environment=STACK_NAME=TestMainStack
+
+              Environment=INFERENCE_MODE=
+
 
               [Install]
 
@@ -7104,6 +7393,11 @@ phases:
               systemctl enable fluent-bit
 
               systemctl enable myapp
+
+
+              # Install kiro-cli
+
+              sudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'
 
               \\      "
   - name: validate
@@ -7808,6 +8102,10 @@ phases:
 
               Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
 
+              Environment=STACK_NAME=TestMainStack
+
+              Environment=INFERENCE_MODE=
+
 
               [Install]
 
@@ -7933,6 +8231,11 @@ phases:
               systemctl enable fluent-bit
 
               systemctl enable myapp
+
+
+              # Install kiro-cli
+
+              sudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'
 
               \\      "
   - name: validate
@@ -8284,6 +8587,8 @@ Environment=EVENT_TRIGGER_TTL_SFN_ROLE_ARN=",
                   },
                   "
 Environment=EVENT_TRIGGER_RESOURCE_PREFIX=tesger3a47e907
+Environment=STACK_NAME=TestMainStack
+Environment=INFERENCE_MODE=
 
 [Install]
 WantedBy=multi-user.target
@@ -8356,6 +8661,9 @@ EOF
 systemctl daemon-reload
 systemctl enable fluent-bit
 systemctl enable myapp
+
+# Install kiro-cli
+sudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'
       
 systemctl start fluent-bit
 systemctl start myapp",

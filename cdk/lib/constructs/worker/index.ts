@@ -239,17 +239,12 @@ export class Worker extends Construct {
     });
     const userData = launchTemplate.userData!;
 
-    // Kiro CLI inference mode wiring. Fully inert unless the stack opts in:
-    // when neither a Kiro API key parameter nor an inference mode is
-    // configured, no env line and no install step is added, keeping the
-    // rendered user data identical to a stack without this feature.
-    const kiroEnabled = !!(props.kiroApiKeyParameter || props.inferenceMode);
-    const kiroEnvironmentLines = kiroEnabled
-      ? `\nEnvironment=STACK_NAME=${Stack.of(this).stackName}\nEnvironment=INFERENCE_MODE=${props.inferenceMode ?? ''}`
-      : '';
-    const kiroInstallCommands = kiroEnabled
-      ? `\n\n# Install kiro-cli\nsudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'`
-      : '';
+    // Kiro CLI inference mode wiring. Users can enable Kiro CLI mode per
+    // session from the webapp (with a per-user API key) regardless of the
+    // stack-level opt-in props, so the CLI install and the env plumbing are
+    // always present; only the stack-wide defaults remain prop-driven.
+    const kiroEnvironmentLines = `\nEnvironment=STACK_NAME=${Stack.of(this).stackName}\nEnvironment=INFERENCE_MODE=${props.inferenceMode ?? ''}`;
+    const kiroInstallCommands = `\n\n# Install kiro-cli\nsudo -u ubuntu bash -c 'curl -fsSL https://cli.kiro.dev/install | bash'`;
 
     userData.addCommands(
       `
