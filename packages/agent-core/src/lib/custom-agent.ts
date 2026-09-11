@@ -2,7 +2,6 @@ import { QueryCommand, PutCommand, UpdateCommand, GetCommand, DeleteCommand } fr
 import { CustomAgent, EmptyMcpConfig, mcpConfigSchema } from '../schema';
 import { ddb, TableName } from './aws';
 import { randomBytes } from 'crypto';
-import z from 'zod';
 
 const validateMcpConfig = (mcpConfig: string): void => {
   try {
@@ -76,22 +75,47 @@ export const createCustomAgent = async (
   return customAgent;
 };
 
+/**
+ * Partially update a custom agent. Only keys whose value is not `undefined` are
+ * written; omitted or `undefined` fields keep their existing values in DynamoDB.
+ * `inferenceMode` additionally accepts an explicit `null`, which REMOVEs the
+ * attribute from the item (reset to "inherit from Preferences"). Other fields
+ * intentionally do not accept `null` so required attributes cannot be removed
+ * by accident.
+ *
+ * Behavior notes:
+ * - `updatedAt` is always bumped, even when `updates` is an empty object.
+ * - `mcpConfig` is validated only when explicitly provided. In particular,
+ *   passing an empty string `""` will throw (previously it was silently
+ *   replaced with the default `{"mcpServers":{}}`). Callers that want to
+ *   reset mcpConfig must pass a valid JSON string such as `{"mcpServers":{}}`.
+ * - The caller is expected to have validated the keys of `updates` (e.g. via
+ *   a zod schema); this function does not apply an allowlist of its own.
+ */
 export const updateCustomAgent = async (
   sk: string,
-  updates: Omit<CustomAgent, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>
-): Promise<CustomAgent> => {
-  if (!updates.mcpConfig) {
-    updates.mcpConfig = JSON.stringify({ mcpServers: {} } satisfies z.infer<typeof mcpConfigSchema>);
+  updates: Partial<Omit<CustomAgent, 'PK' | 'SK' | 'createdAt' | 'updatedAt' | 'inferenceMode'>> & {
+    inferenceMode?: CustomAgent['inferenceMode'] | null;
   }
-  validateMcpConfig(updates.mcpConfig);
+): Promise<CustomAgent> => {
+  if (updates.mcpConfig != null) {
+    validateMcpConfig(updates.mcpConfig);
+  }
 
   const now = Date.now();
 
   const updateExpression = [];
+  const removeExpression = [];
   const expressionAttributeNames: Record<string, string> = {};
   const expressionAttributeValues: Record<string, string | number | boolean | string[]> = {};
 
   for (const [key, value] of Object.entries(updates)) {
+    if (value === undefined) continue;
+    if (value === null) {
+      removeExpression.push(`#${key}`);
+      expressionAttributeNames[`#${key}`] = key;
+      continue;
+    }
     updateExpression.push(`#${key} = :${key}`);
     expressionAttributeNames[`#${key}`] = key;
     expressionAttributeValues[`:${key}`] = value;
@@ -108,7 +132,10 @@ export const updateCustomAgent = async (
         PK: 'custom-agent',
         SK: sk,
       },
-      UpdateExpression: `SET ${updateExpression.join(', ')}`,
+      UpdateExpression: [
+        `SET ${updateExpression.join(', ')}`,
+        ...(removeExpression.length > 0 ? [`REMOVE ${removeExpression.join(', ')}`] : []),
+      ].join(' '),
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW',

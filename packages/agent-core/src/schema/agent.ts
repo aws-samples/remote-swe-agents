@@ -37,6 +37,7 @@ export const customAgentSchema = z.object({
   kiroModel: z.string().optional(),
   bedrockDefaultModel: modelTypeSchema.optional(),
   kiroDefaultModel: kiroModelSchema.optional(),
+  parentAgentId: z.string().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

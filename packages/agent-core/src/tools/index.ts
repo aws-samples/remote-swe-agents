@@ -19,6 +19,7 @@ export * from './todo';
 export * from './session-title';
 export * from './complete-session';
 export * from './confirm-complete-session';
+export * from './confirm-create-agent';
 export * from './list-sessions';
 export * from './reparent-session';
 export * from './export-session-diagnostics';
@@ -45,6 +46,7 @@ import { updateSessionTitleTool } from './session-title';
 import { waitForConditionTool } from './wait-for';
 import { completeSessionTool } from './complete-session';
 import { confirmCompleteSessionTool } from './confirm-complete-session';
+import { confirmCreateAgentTool } from './confirm-create-agent';
 import { listSessionsTool } from './list-sessions';
 import { reparentSessionTool } from './reparent-session';
 import { exportSessionDiagnosticsTool } from './export-session-diagnostics';
@@ -86,6 +88,7 @@ export const requiredTools = [
   updateSessionTitleTool,
   confirmSendToUserTool,
   confirmCompleteSessionTool,
+  confirmCreateAgentTool,
 ];
 
 /**

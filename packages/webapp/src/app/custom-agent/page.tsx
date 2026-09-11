@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import HeaderWithPreferences from '@/components/HeaderWithPreferences';
 import { getTranslations } from 'next-intl/server';
 import CustomAgentForm from './components/CustomAgentForm';
 import CustomAgentList from './components/CustomAgentList';
+import DeleteSuccessToast from './components/DeleteSuccessToast';
 import PreferenceSection from '../preferences/components/PreferenceSection';
 import { optionalTools } from '@remote-swe-agents/agent-core/tools';
 import { getCustomAgents } from '@remote-swe-agents/agent-core/lib';
@@ -20,9 +22,17 @@ export default async function CustomAgentPage() {
     getCustomAgents(),
   ]);
 
+  const topLevelAgents = customAgents.filter((agent) => !agent.parentAgentId);
+  const subAgentCounts = Object.fromEntries(
+    topLevelAgents.map((agent) => [agent.SK, customAgents.filter((a) => a.parentAgentId === agent.SK).length])
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <HeaderWithPreferences />
+      <Suspense fallback={null}>
+        <DeleteSuccessToast />
+      </Suspense>
 
       <main className="flex-grow container max-w-6xl mx-auto px-4 py-6 pt-20">
         <div className="mb-6">
@@ -31,9 +41,9 @@ export default async function CustomAgentPage() {
         </div>
 
         <div className="space-y-6">
-          {customAgents.length > 0 && (
+          {topLevelAgents.length > 0 && (
             <PreferenceSection title={t('list.title')} description={t('list.description')}>
-              <CustomAgentList initialAgents={customAgents} availableTools={availableTools} />
+              <CustomAgentList agents={topLevelAgents} subAgentCounts={subAgentCounts} />
             </PreferenceSection>
           )}
 
