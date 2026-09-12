@@ -16,7 +16,7 @@ import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
-import { extractUserMessage, formatMessage, stripAgentMessagePrefix } from '@/lib/message-formatter';
+import { extractUserMessage, formatMessage, stripAgentMessagePrefix, stripSenderPrefix } from '@/lib/message-formatter';
 import { getSession as getAuthSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -175,7 +175,12 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
       }
       case 'userMessage': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
-        const extracted = extractUserMessage(text);
+        // Strip the envelope tags first (`extractUserMessage`) and then the
+        // `[from: ... (webapp|slack)]` sender prefix. The prefix exists for
+        // LLM-side sender attribution only; the UI renders the sender name
+        // separately via `userSenderDisplayName` so showing the literal
+        // `[from: ...]` line inside the bubble is redundant.
+        const extracted = stripSenderPrefix(extractUserMessage(text));
 
         // Extract image keys from user message content
         const userImageKeys = (message.content ?? [])
@@ -187,6 +192,19 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           .filter((c: any) => c.file?.source?.s3Key)
           .map((c: any) => c.file.source.s3Key as string);
 
+        // Derive sender info for the UI. Priority:
+        //   1. explicit `senderDisplayName` persisted on the item
+        //   2. for Slack messages without a resolved display name, fall back
+        //      to `<@slackUserId>` so viewers still see a hint of who wrote
+        //      it (rather than the generic "User").
+        // Older messages persisted before this feature have neither and
+        // correctly fall back to "User" via MessageGroup's default.
+        const userSenderType: 'slack' | 'webapp' | 'apikey' | undefined =
+          item.senderType ?? (item.slackUserId ? 'slack' : undefined);
+        const userSenderDisplayName =
+          item.senderDisplayName ?? (item.slackUserId ? `<@${item.slackUserId}>` : undefined);
+        const userSenderUserId: string | undefined = item.senderUserId ?? item.slackUserId ?? undefined;
+
         messages.push({
           id: `${item.SK}-${i}`,
           role: 'user',
@@ -196,6 +214,9 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           modelOverride: item.modelOverride,
           ...(userImageKeys.length > 0 ? { imageKeys: userImageKeys } : {}),
           ...(userFileKeys.length > 0 ? { fileKeys: userFileKeys } : {}),
+          ...(userSenderDisplayName ? { userSenderDisplayName } : {}),
+          ...(userSenderType ? { userSenderType } : {}),
+          ...(userSenderUserId ? { userSenderUserId } : {}),
         });
         break;
       }
@@ -265,7 +286,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   const allSessions = await getSessions(100);
 
   // Get unread data
-  const { userId } = await getAuthSession();
+  const { userId, displayName: currentUserDisplayName } = await getAuthSession();
   const [unreadMap, lastReadAt] = await Promise.all([getUnreadMap(userId), getLastReadAt(userId, workerId)]);
 
   // Resolve agent icon URL via /api/agent-icon route (cached by CloudFront)
@@ -325,6 +346,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         parentSessionId={session.parentSessionId}
         inferenceMode={effectiveInferenceMode}
         kiroModel={effectiveKiroModel}
+        currentUserDisplayName={currentUserDisplayName}
       />
       <RefreshOnFocus />
     </>

@@ -12,6 +12,15 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     messageSK: z.string().optional(),
     thinkingBudget: z.number().optional(),
     reasoningText: z.string().optional(),
+    /**
+     * For user messages: identifies the human who sent the message so other
+     * viewers of the same session (webapp/Slack) can render the sender name.
+     * All fields are optional to preserve backward compatibility with events
+     * emitted before this schema addition.
+     */
+    senderUserId: z.string().optional(),
+    senderDisplayName: z.string().optional(),
+    senderType: z.union([z.literal('slack'), z.literal('webapp'), z.literal('apikey')]).optional(),
   }),
   z.object({
     type: z.literal('toolUse'),

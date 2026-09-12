@@ -50,7 +50,7 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
     ? firstMessage.agentName
     : group.role === 'assistant'
       ? agentName || 'Assistant'
-      : 'User';
+      : (firstMessage.userSenderDisplayName ?? 'User');
 
   // Determine icon and styling for agent messages
   const getIcon = () => {

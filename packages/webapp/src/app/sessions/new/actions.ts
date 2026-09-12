@@ -19,7 +19,7 @@ export const createNewWorker = authActionClient
       bedrockDefaultModel,
       kiroDefaultModel,
     } = parsedInput;
-    const { userId } = ctx;
+    const { userId, displayName } = ctx;
 
     const effectiveBedrockDefault = bedrockDefaultModel ?? modelOverride;
     const workerId = await createSession({
@@ -28,6 +28,9 @@ export const createNewWorker = authActionClient
       customAgentId: customAgentId || undefined,
       imageKeys,
       fileKeys,
+      senderUserId: userId,
+      senderType: 'webapp',
+      ...(displayName ? { senderDisplayName: displayName } : {}),
       inferenceMode,
       kiroModel: kiroDefaultModel ?? kiroModel,
       bedrockDefaultModel: effectiveBedrockDefault,

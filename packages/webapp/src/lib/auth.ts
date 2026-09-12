@@ -6,6 +6,24 @@ export class UserNotCreatedError {
   constructor(public readonly userId: string) {}
 }
 
+/**
+ * Derive a human-readable display name from a Cognito email.
+ *
+ * Policy: use the local part of the email (everything before `@`).
+ * If the email has no `@`, use the email as-is. If the email is empty,
+ * fall back to the userId. Mirrors `deriveDisplayName` in safe-action.ts
+ * so server-page-rendered bubbles and server-action submissions agree on
+ * the same display name for the same user.
+ */
+function deriveDisplayName(email: string | undefined, userId: string): string {
+  if (email) {
+    const at = email.indexOf('@');
+    if (at > 0) return email.slice(0, at);
+    return email;
+  }
+  return userId;
+}
+
 export async function getSession() {
   const session = await runWithAmplifyServerContext({
     nextServerContext: { cookies },
@@ -22,6 +40,7 @@ export async function getSession() {
   return {
     userId,
     email,
+    displayName: deriveDisplayName(email, userId),
     accessToken: session.tokens.accessToken.toString(),
   };
 }

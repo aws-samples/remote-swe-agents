@@ -1,4 +1,4 @@
-import { validateApiKeyMiddleware } from '../../auth/api-key';
+import { authenticateApiKey, validateApiKeyMiddleware } from '../../auth/api-key';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getSession,
@@ -7,6 +7,7 @@ import {
   getConversationHistory,
   noOpFiltering,
   getOrCreateWorkerInstance,
+  renderUserMessage,
 } from '@remote-swe-agents/agent-core/lib';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
@@ -27,11 +28,18 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  // Validate API key
-  const apiKeyValidation = await validateApiKeyMiddleware(request);
-  if (apiKeyValidation) {
-    return apiKeyValidation;
+  // Validate API key and resolve sender attribution. We use
+  // `authenticateApiKey` (not the boolean-only `validateApiKeyMiddleware`)
+  // here so we can persist `senderType: 'apikey'`, the key's stable id
+  // (`apikey-xxxxxxxxxxxx`) and its human-readable description on the
+  // resulting message item. Without this, REST API messages would render
+  // as the generic "User" in the webapp and as a header-less envelope to
+  // the LLM, breaking sender disambiguation in mixed-source sessions.
+  const auth = await authenticateApiKey(request);
+  if (!auth.ok) {
+    return auth.response;
   }
+  const { sender } = auth;
 
   // Get session ID from the URL params
   const { sessionId } = await params;
@@ -53,8 +61,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 });
   }
 
-  // Create content for the message
-  const content = [{ text: message }];
+  // Wrap with the LLM-side `[from: ... (apikey)]` envelope so the recipient
+  // model can attribute the message correctly when multiple sources (Slack,
+  // webapp, API) contribute to the same session.
+  const content = [
+    {
+      text: renderUserMessage({
+        message,
+        sender: { type: 'apikey', id: sender.id, displayName: sender.displayName },
+      }),
+    },
+  ];
 
   // Save the message
   await ddb.send(
@@ -68,6 +85,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         tokenCount: 0,
         messageType: 'userMessage',
         modelOverride,
+        // Persist sender attribution so the webapp UI can render the API
+        // key's name on the bubble and so subsequent reads round-trip
+        // identically through `page.tsx` and `MessageList` grouping.
+        senderType: 'apikey',
+        senderUserId: sender.id,
+        senderDisplayName: sender.displayName,
       } satisfies MessageItem,
     })
   );
@@ -77,7 +100,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // Send worker event to notify message received
   await sendWorkerEvent(sessionId, { type: 'onMessageReceived' });
-  await sendWebappEvent(sessionId, { type: 'message', role: 'user', message });
+  await sendWebappEvent(sessionId, {
+    type: 'message',
+    role: 'user',
+    message,
+    senderUserId: sender.id,
+    senderDisplayName: sender.displayName,
+    senderType: 'apikey',
+  });
 
   return NextResponse.json({ success: true }, { status: 200 });
 }

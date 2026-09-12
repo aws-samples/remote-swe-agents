@@ -39,6 +39,8 @@ export const saveConversationHistory = async (
         tokenCount: 0,
         messageType: 'userMessage',
         slackUserId,
+        ...(slackDisplayName ? { senderDisplayName: slackDisplayName } : {}),
+        senderType: 'slack',
       } satisfies MessageItem,
     })
   );

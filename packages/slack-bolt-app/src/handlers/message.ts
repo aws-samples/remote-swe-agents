@@ -71,14 +71,22 @@ export async function handleMessage(
 
   const sessionUrl = await getWebappSessionUrl(workerId);
 
-  // Resolve Slack display name so we can attribute the message to its sender
-  // in the LLM conversation history.
+  // Resolve Slack display name up-front so we can pass it to both the LLM
+  // conversation history (sender prefix) and the realtime webapp event
+  // (so the webui can show "Alice" instead of falling back to "User").
   const slackDisplayName = userId ? await resolveSlackDisplayName(client, userId) : undefined;
 
   const promises = [
     saveConversationHistory(workerId, message, userId, imageKeys, slackDisplayName),
     sendWorkerEvent(workerId, { type: 'onMessageReceived' }),
-    sendWebappEvent(workerId, { type: 'message', role: 'user', message }),
+    sendWebappEvent(workerId, {
+      type: 'message',
+      role: 'user',
+      message,
+      senderUserId: userId || undefined,
+      senderDisplayName: slackDisplayName,
+      senderType: 'slack',
+    }),
     updateSessionLastMessage(workerId, message.slice(0, 500)),
     sendWebappEvent(workerId, { type: 'lastMessageUpdate', lastMessage: message.slice(0, 500) }),
     lambda.send(

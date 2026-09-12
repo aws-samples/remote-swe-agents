@@ -1,6 +1,17 @@
 /**
- * Utility functions for formatting and cleaning message content
+ * Utility functions for formatting and cleaning message content.
+ *
+ * IMPORTANT: this file is imported by client components
+ * (`SessionPageClient.tsx` → `dedup.ts` → here). Imports MUST be
+ * client-safe — pulling from `@remote-swe-agents/agent-core/lib`
+ * transitively drags `fs`, `child_process`, `net` etc. into the browser
+ * bundle and breaks `next build`. The dedicated
+ * `@remote-swe-agents/agent-core/types/sender` subpath exists exactly for
+ * this case: a leaf module with NO runtime imports, safe to ship to the
+ * browser.
  */
+
+import { USER_MESSAGE_SENDER_TYPES } from '@remote-swe-agents/agent-core/types/sender';
 
 /**
  * Removes Slack mention strings (e.g. <@U07UDD582EA>) from a message
@@ -66,4 +77,32 @@ export function extractUserMessage(message: string | undefined): string {
  */
 export function stripAgentMessagePrefix(message: string): string {
   return message.replace(/^\[Message from [^\]]+\]:\s*/, '');
+}
+
+/**
+ * Strips the leading `[from: <displayName> (<slack|webapp|apikey|...>)]`
+ * header that `renderUserMessage` injects into user-message envelopes for
+ * LLM-side sender attribution.
+ *
+ * The prefix is purely a hint to the model — the webapp renders the sender
+ * separately via `MessageView.userSenderDisplayName` (see `MessageGroup`),
+ * so showing the raw `[from: ...]` line inside the chat bubble is
+ * redundant and was reported as visually noisy during E2E.
+ *
+ * Scope: matches ONLY the sender types declared in
+ * `USER_MESSAGE_SENDER_TYPES` (currently slack/webapp/apikey), and ONLY at
+ * the start of the string followed by an optional newline. The regex is
+ * derived from the same const tuple that `UserMessageSender['type']` is
+ * derived from, so adding a new sender type to that tuple automatically
+ * extends this strip without a manual edit here. We deliberately do NOT
+ * match arbitrary `(...)` content so that a real user message that happens
+ * to start with "[from: ...(something else)" is not corrupted.
+ *
+ * Idempotent: multiple applications return the same result.
+ */
+const SENDER_TYPE_PATTERN = USER_MESSAGE_SENDER_TYPES.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+const STRIP_SENDER_PREFIX_REGEX = new RegExp(`^\\[from:[^\\]]*\\((?:${SENDER_TYPE_PATTERN})\\)\\]\\n?`);
+
+export function stripSenderPrefix(message: string): string {
+  return message.replace(STRIP_SENDER_PREFIX_REGEX, '');
 }

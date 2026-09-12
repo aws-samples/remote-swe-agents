@@ -1,5 +1,5 @@
 import { runWithAmplifyServerContext } from '@/lib/amplifyServerUtils';
-import { getCurrentUser } from 'aws-amplify/auth/server';
+import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth/server';
 import { createSafeActionClient, DEFAULT_SERVER_ERROR_MESSAGE } from 'next-safe-action';
 import { cookies } from 'next/headers';
 
@@ -26,15 +26,42 @@ const actionClient = createSafeActionClient({
   },
 });
 
+/**
+ * Derive a human-readable display name from a Cognito email.
+ *
+ * Policy: use the local part of the email (everything
+ * before `@`). If the email is missing / falsy, fall back to the full email,
+ * and finally the Cognito sub. This keeps the display short and recognisable
+ * without pulling additional IdP attributes.
+ */
+function deriveDisplayName(email: string | undefined, userId: string): string {
+  if (email) {
+    const at = email.indexOf('@');
+    if (at > 0) return email.slice(0, at);
+    return email;
+  }
+  return userId;
+}
+
 export const authActionClient = actionClient.use(async ({ next }) => {
-  const currentUser = await runWithAmplifyServerContext({
-    nextServerContext: { cookies },
-    operation: (contextSpec) => getCurrentUser(contextSpec),
-  });
+  const [currentUser, authSession] = await Promise.all([
+    runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: (contextSpec) => getCurrentUser(contextSpec),
+    }),
+    runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: (contextSpec) => fetchAuthSession(contextSpec),
+    }),
+  ]);
 
   if (!currentUser) {
     throw new Error('Session is not valid!');
   }
 
-  return next({ ctx: { userId: currentUser.userId } });
+  const emailClaim = authSession.tokens?.idToken?.payload?.email;
+  const email = typeof emailClaim === 'string' ? emailClaim : undefined;
+  const displayName = deriveDisplayName(email, currentUser.userId);
+
+  return next({ ctx: { userId: currentUser.userId, email, displayName } });
 });

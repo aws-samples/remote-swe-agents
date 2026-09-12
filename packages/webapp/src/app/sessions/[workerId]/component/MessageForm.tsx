@@ -31,6 +31,21 @@ type MessageFormProps = {
   onShareSession: () => void;
   defaultModelOverride: ModelType;
   /**
+   * Display name of the currently signed-in user. When set, the optimistic
+   * pending bubble the submitter sees carries
+   * `userSenderDisplayName = currentUserDisplayName`, so their own message
+   * is labelled with their name instead of the generic "User".
+   */
+  currentUserDisplayName?: string;
+  /**
+   * Stable Cognito user id of the currently signed-in user. Mirrors
+   * `senderUserId` on the persisted message item so that the optimistic
+   * bubble carries the same `userSenderUserId` as the server-rendered
+   * variant — important for `MessageList` grouping (see
+   * `getMessageSenderKey`).
+   */
+  currentUserId?: string;
+  /**
    * Effective inference mode for this session. When `'kiro-cli'` the Bedrock
    * model selector is replaced with a Kiro model selector that lets the user
    * swap the model per message via the `/model` slash command in kiro-cli.
@@ -51,6 +66,8 @@ export default function MessageForm({
   workerId,
   onShareSession,
   defaultModelOverride,
+  currentUserDisplayName,
+  currentUserId,
   inferenceMode,
   kiroModel,
 }: MessageFormProps) {
@@ -300,6 +317,12 @@ export default function MessageForm({
           type: 'message',
           modelOverride,
           pending: true,
+          // Label the optimistic bubble with the submitter's own display
+          // name so they see "<displayName>" instead of the generic
+          // "User" while the server action is in flight.
+          ...(currentUserDisplayName ? { userSenderDisplayName: currentUserDisplayName } : {}),
+          ...(currentUserId ? { userSenderUserId: currentUserId } : {}),
+          userSenderType: 'webapp',
         });
       }
       handleSubmitWithAction(e);
@@ -309,7 +332,7 @@ export default function MessageForm({
         textareaRef.current.style.overflowY = 'hidden';
       }
     },
-    [getValues, onSubmit, handleSubmitWithAction, setValue]
+    [getValues, onSubmit, handleSubmitWithAction, setValue, currentUserDisplayName, currentUserId]
   );
 
   return (

@@ -53,6 +53,58 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
 };
 
 /**
+ * Stable, non-secret id for an API key. We never want to surface the raw
+ * 64-char hex secret anywhere it might leak (LLM prompt envelopes, DDB
+ * sender-id columns, broadcast events, UI tooltips), so we derive a short
+ * SHA-256-prefix fingerprint of the key. The id is deterministic, so the
+ * same API key always renders as the same sender across messages, but it
+ * cannot be reversed back into the secret.
+ *
+ * Format: `apikey-<12-hex-chars>`. The fingerprint length is intentionally
+ * generous (48 bits) so accidental collisions are astronomically unlikely
+ * across the realistic key population (a few hundred keys per deployment).
+ */
+export const deriveApiKeyId = (apiKey: string): string => {
+  const fingerprint = crypto.createHash('sha256').update(apiKey).digest('hex').slice(0, 12);
+  return `apikey-${fingerprint}`;
+};
+
+/**
+ * Resolve an API key to its identification info for sender attribution.
+ * Returns `null` if the key does not exist (caller should reject the request
+ * before reaching this function — `validateApiKey` is the auth check).
+ *
+ * `displayName` priority:
+ *   1. the user-provided `description` (set when creating the key)
+ *   2. the derived stable id (`apikey-xxxxxxxxxxxx`) so we never fall back
+ *      to the raw secret.
+ */
+export const getApiKeySenderInfo = async (
+  apiKey: string
+): Promise<{ id: string; displayName: string; ownerId?: string } | null> => {
+  const result = await ddb.send(
+    new GetCommand({
+      TableName,
+      Key: {
+        PK: 'api-key',
+        SK: apiKey,
+      },
+    })
+  );
+
+  if (!result.Item) return null;
+
+  const item = result.Item as ApiKeyItem;
+  const id = deriveApiKeyId(apiKey);
+  const displayName = (item.description && item.description.trim()) || id;
+  return {
+    id,
+    displayName,
+    ownerId: item.ownerId,
+  };
+};
+
+/**
  * Get all API keys
  * @param limit Maximum number of keys to return
  * @returns Array of API key items

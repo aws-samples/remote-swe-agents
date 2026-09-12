@@ -11,9 +11,9 @@
  * `@remote-swe-agents/agent-core/lib` pulls in the whole barrel
  * (`src/lib/index.ts`), which transitively re-exports server-only modules
  * (`messages.ts` uses `fs`, `slack.ts` uses `fs.readFileSync`,
- * `kiro-acp-client.ts` uses `child_process.spawn`, `confirm-send-to-user`
- * uses `fs`). Next.js's client bundler then tries to resolve `child_process`
- * / `fs` / `net` / `tls` for the browser and `npm run build` fails.
+ * `confirm-send-to-user` uses `fs`). Next.js's client bundler then tries to
+ * resolve `child_process` / `fs` / `net` / `tls` for the browser and
+ * `npm run build` fails.
  *
  * To keep client bundles clean, anything client-safe MUST live in a leaf
  * module that does NOT import from `lib/`. This file fits that contract:
