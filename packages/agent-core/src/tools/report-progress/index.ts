@@ -1,10 +1,13 @@
 import { z } from 'zod';
 import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { sendMessageToSlack } from '../../lib/slack';
-import { sendPushNotificationToUser } from '../../lib/push-notification';
+import { sendPushNotificationToUser, resolveNotificationAgentName } from '../../lib/push-notification';
 import { incrementUnread } from '../../lib/unread';
 import { getSession, updateSessionLastMessage } from '../../lib/sessions';
+import { getCustomAgent } from '../../lib/custom-agent';
+import { getPreferences } from '../../lib/preferences';
 import { sendWebappEvent } from '../../lib/events';
+import { notifyOtherParticipants } from '../../lib/session-participants';
 import { getConversationHistory } from '../../lib/messages';
 import { savePendingUserMessage } from '../confirm-send-to-user';
 
@@ -25,21 +28,35 @@ export const sendMessageToUser = async (workerId: string, message: string) => {
     lastMessageAt: Date.now(),
   });
 
-  // Send push notification
   try {
     const session = await getSession(workerId);
+    const customAgent = await getCustomAgent(session?.customAgentId);
+    const prefs = await getPreferences();
+    const agentDisplayName = resolveNotificationAgentName({
+      customAgentId: session?.customAgentId,
+      customAgentName: customAgent?.name,
+      sessionAgentName: session?.agentName,
+      defaultAgentName: prefs.defaultAgentName || undefined,
+    });
+    const sessionLabel = (session?.title || workerId).slice(0, 80);
+    const title = agentDisplayName;
+    const body = `${sessionLabel}\n${message.slice(0, 200)}`;
+
     if (session?.initiator?.startsWith('webapp#')) {
       const userId = session.initiator.replace('webapp#', '');
-      const title = session.title || 'Agent Message';
 
       await incrementUnread(userId, workerId);
 
       await sendPushNotificationToUser(userId, {
         title,
-        body: message.slice(0, 200),
+        body,
         url: `/sessions/${workerId}`,
         workerId,
       });
+
+      await notifyOtherParticipants(workerId, userId, { title, body });
+    } else {
+      await notifyOtherParticipants(workerId, undefined, { title, body });
     }
   } catch (e) {
     console.error('[push] Failed to send push from sendMessageToUser:', e);

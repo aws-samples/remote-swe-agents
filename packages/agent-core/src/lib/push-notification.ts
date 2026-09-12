@@ -111,6 +111,7 @@ export async function sendPushNotificationToUser(
     badge: {
       pendingCount: unreadSummary.pendingCount,
       hasOtherUnread: unreadSummary.hasOtherUnread,
+      totalUnread: unreadSummary.totalUnread,
     },
   };
 

@@ -1,5 +1,5 @@
-import { UpdateCommand, QueryCommand, GetCommand, BatchWriteCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
-import { ddb, TableName } from './aws';
+import { UpdateCommand, QueryCommand, GetCommand, paginateQuery } from '@aws-sdk/lib-dynamodb';
+import { ddb, TableName, batchWriteWithRetry } from './aws';
 import { UnreadItem } from '../schema/unread';
 
 const pk = (userId: string) => `unread-${userId}`;
@@ -119,7 +119,28 @@ export const getLastReadAt = async (userId: string, workerId: string): Promise<n
 export interface UnreadSummary {
   pendingCount: number;
   hasOtherUnread: boolean;
+  /**
+   * Total unread count used by both the in-app bell badge and the PWA OS badge.
+   * Computed as `sum(unreadCount)` across all unread items. Pending sessions
+   * are no longer counted toward the badge — only delivered messages increment
+   * the count.
+   *
+   * Consumers (NotificationCenter, sw.js, push-notification payload) MUST use
+   * this field rather than recomputing locally to keep the in-app and OS PWA
+   * badges in sync. The legacy `pendingCount` / `hasOtherUnread` fields are
+   * retained for backward compatibility with cached service workers.
+   */
+  totalUnread: number;
 }
+
+/**
+ * Compute the total unread count from a list of unread items using the
+ * canonical formula. Exported so that any client-side aggregation (e.g.
+ * `NotificationCenter` summing per-session details) stays consistent with the
+ * server-computed `UnreadSummary.totalUnread`.
+ */
+export const computeTotalUnread = (items: ReadonlyArray<{ unreadCount: number; hasPending: boolean }>): number =>
+  items.reduce((sum, item) => sum + item.unreadCount, 0);
 
 export const getUnreadSummary = async (userId: string): Promise<UnreadSummary> => {
   const items = await getUnreadItems(userId);
@@ -134,7 +155,7 @@ export const getUnreadSummary = async (userId: string): Promise<UnreadSummary> =
     }
   }
 
-  return { pendingCount, hasOtherUnread };
+  return { pendingCount, hasOtherUnread, totalUnread: computeTotalUnread(items) };
 };
 
 export const getUnreadItems = async (userId: string): Promise<UnreadItem[]> => {
@@ -196,7 +217,9 @@ export const markAllSessionsRead = async (userId: string): Promise<void> => {
   const items = await getUnreadItems(userId);
   const unreadItems = items.filter((item) => item.unreadCount > 0 || item.hasPending);
 
-  await Promise.all(unreadItems.map((item) => markSessionRead(userId, item.SK)));
+  for (const item of unreadItems) {
+    await markSessionRead(userId, item.SK);
+  }
 };
 
 export type UnreadMap = Record<string, { unreadCount: number; hasPending: boolean }>;
@@ -239,14 +262,10 @@ export const deleteUnreadByWorkerId = async (workerId: string): Promise<void> =>
 
   for (let i = 0; i < keysToDelete.length; i += 25) {
     const batch = keysToDelete.slice(i, i + 25);
-    await ddb.send(
-      new BatchWriteCommand({
-        RequestItems: {
-          [TableName]: batch.map((key) => ({
-            DeleteRequest: { Key: key },
-          })),
-        },
-      })
+    await batchWriteWithRetry(
+      batch.map((key) => ({
+        DeleteRequest: { Key: key },
+      }))
     );
   }
 };

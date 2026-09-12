@@ -21,6 +21,8 @@ import {
   stopWorkerInstance,
   markSessionRead as markSessionReadLib,
   getUnreadSummary,
+  addSessionParticipant,
+  notifyOtherParticipants,
   updateSessionLastMessage,
   searchSessionContent,
   updateSession,
@@ -109,6 +111,21 @@ export const sendMessageToAgent = authActionClient
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
 
     await getOrCreateWorkerInstance(workerId, session.runtimeType ?? 'ec2');
+
+    // Track this user as a session participant and notify other participants
+    try {
+      await addSessionParticipant(workerId, ctx.userId);
+      const senderLabel = ctx.displayName || 'User';
+      const sessionLabel = session.title || workerId;
+      const title = senderLabel;
+      const body = `${sessionLabel}\n${message.slice(0, 200)}`;
+      await notifyOtherParticipants(workerId, ctx.userId, {
+        title,
+        body,
+      });
+    } catch (e) {
+      console.error('[session-participants] Failed to track/notify participants:', e);
+    }
 
     return { success: true, item };
   });

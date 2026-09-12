@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getUnreadBadge } from '@/lib/unread-display';
 import { Button } from '@/components/ui/button';
 import {
   Plus,
@@ -416,11 +417,15 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
                     <div className="flex items-center gap-2 mb-3">
                       <div className="relative flex-shrink-0">
                         <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        {unreadMap[session.workerId]?.unreadCount > 0 && (
-                          <span className="absolute -top-1.5 -right-1.5 min-w-3.5 h-3.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                            {unreadMap[session.workerId].unreadCount}
-                          </span>
-                        )}
+                        {(() => {
+                          const badge = getUnreadBadge(unreadMap[session.workerId]);
+                          if (!badge.visible) return null;
+                          return (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-3.5 h-3.5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate flex-1">
                         {session.title || session.SK}

@@ -3,6 +3,7 @@ import { ToolDefinition, zodToJsonSchemaBody } from '../../private/common/lib';
 import { getSession, getChildSessions, reparentSessions } from '../../lib/sessions';
 import { createSession } from '../../lib/create-session';
 import { getWebappSessionUrl } from '../../lib/webapp-origin';
+import { copySessionParticipants } from '../../lib/session-participants';
 
 const inputSchema = z.object({
   message: z
@@ -73,6 +74,12 @@ export const createNewSessionTool: ToolDefinition<z.infer<typeof inputSchema>> =
       const children = await getChildSessions(context.workerId);
       const reparentIds = [context.workerId, ...children.map((c) => c.workerId)];
       await reparentSessions(workerId, reparentIds);
+
+      try {
+        await copySessionParticipants(context.workerId, workerId);
+      } catch (e) {
+        console.error('[create-session] Failed to copy participants to successor:', e);
+      }
 
       const sessionUrl = await getWebappSessionUrl(workerId);
       const urlInfo = sessionUrl ? `\n- Web UI: ${sessionUrl}` : '';

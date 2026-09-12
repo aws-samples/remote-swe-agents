@@ -19,6 +19,7 @@ import { getWebappSessionUrl } from './webapp-origin';
 import { getChildSessions, getSession } from './sessions';
 import { resolveAgentDisplayName } from './agent-messaging';
 import { randomBytes } from 'crypto';
+import { addSessionParticipant } from './session-participants';
 
 export interface CreateSessionParams {
   message: string;
@@ -278,6 +279,15 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   );
 
   try {
+    // Track the session creator as a participant (webapp users only)
+    if (senderUserId && !parentSessionId) {
+      try {
+        await addSessionParticipant(workerId, senderUserId);
+      } catch (e) {
+        console.error('Failed to add session creator as participant:', e);
+      }
+    }
+
     await getOrCreateWorkerInstance(workerId, runtimeType);
     await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
   } catch (e) {

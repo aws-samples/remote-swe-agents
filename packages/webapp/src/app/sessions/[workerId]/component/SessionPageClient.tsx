@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { computeTotalUnread } from '@/lib/unread-display';
 import Header from '@/components/Header';
 import { ListChecks, Check, Circle, Plus, Loader2, Menu, ChevronDown, Square } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
@@ -146,7 +147,6 @@ export default function SessionPageClient({
         });
       }
 
-      // Notify NotificationCenter to re-fetch
       window.dispatchEvent(new CustomEvent('session-read'));
     },
   });
@@ -456,13 +456,15 @@ export default function SessionPageClient({
                   title={t('toggleSidebar')}
                 >
                   <Menu className="w-5 h-5" />
-                  {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                      {Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0) > 99
-                        ? '99+'
-                        : Object.values(currentUnreadMap).reduce((sum, v) => sum + v.unreadCount, 0)}
-                    </span>
-                  )}
+                  {(() => {
+                    const total = computeTotalUnread(Object.values(currentUnreadMap));
+                    if (total <= 0) return null;
+                    return (
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {total > 99 ? '99+' : total}
+                      </span>
+                    );
+                  })()}
                 </button>
                 <h1 className="text-base sm:text-lg font-medium sm:font-semibold text-gray-900 dark:text-white truncate min-w-0">
                   {sessionTitle || workerId}
