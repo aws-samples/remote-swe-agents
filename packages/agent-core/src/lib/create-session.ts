@@ -85,6 +85,21 @@ export interface CreateSessionParams {
    * New symmetric Kiro model field. Takes priority over legacy `kiroModel`.
    */
   kiroDefaultModel?: KiroModelId;
+  /**
+   * When true, the session row and seed message are persisted but the worker
+   * is NOT started (no `getOrCreateWorkerInstance` / `onMessageReceived`).
+   * The caller is responsible for booting the worker later. Used by the
+   * webapp handover flow, which must finish re-parenting the old session
+   * under the new one BEFORE the new worker reads its seed message (the seed
+   * states the re-parenting has already happened).
+   */
+  deferWorkerStart?: boolean;
+  /**
+   * Source session ID whose full conversation history should be dumped to the
+   * worker's local filesystem on first turn. Set during successor (handover)
+   * session creation.
+   */
+  handoverSourceSessionId?: string;
 }
 
 /**
@@ -113,6 +128,8 @@ export const createSession = async (params: CreateSessionParams): Promise<string
     kiroModel,
     bedrockDefaultModel,
     kiroDefaultModel,
+    deferWorkerStart,
+    handoverSourceSessionId,
   } = params;
   const agent = await getCustomAgent(customAgentId);
   const runtimeType: RuntimeType = agent?.runtimeType ?? defaultAgentConfig.runtimeType;
@@ -248,6 +265,7 @@ export const createSession = async (params: CreateSessionParams): Promise<string
               ...(inferenceMode === 'kiro-cli' && kiroModel ? { kiroModel } : {}),
               ...(bedrockDefaultModel ? { bedrockDefaultModel } : {}),
               ...(kiroDefaultModel ? { kiroDefaultModel } : {}),
+              ...(handoverSourceSessionId ? { handoverSourceSessionId } : {}),
             } satisfies SessionItem,
           },
         },
@@ -288,8 +306,10 @@ export const createSession = async (params: CreateSessionParams): Promise<string
       }
     }
 
-    await getOrCreateWorkerInstance(workerId, runtimeType);
-    await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
+    if (!deferWorkerStart) {
+      await getOrCreateWorkerInstance(workerId, runtimeType);
+      await sendWorkerEvent(workerId, { type: 'onMessageReceived' });
+    }
   } catch (e) {
     await updateInstanceStatus(workerId, 'terminated');
     throw e;

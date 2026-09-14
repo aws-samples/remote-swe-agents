@@ -109,6 +109,7 @@ type MessageListProps = {
   agentName?: string;
   lastReadAt?: number;
   childSessions?: { workerId: string; title?: string }[];
+  onRewind?: (messageSK: string) => void;
 };
 
 export default function MessageList({
@@ -120,6 +121,7 @@ export default function MessageList({
   agentName,
   lastReadAt,
   childSessions,
+  onRewind,
 }: MessageListProps) {
   const t = useTranslations('sessions');
   const { userScrolledUp } = useScrollPosition();
@@ -268,6 +270,8 @@ export default function MessageList({
                 agentIconUrl={agentIconUrl}
                 agentName={agentName}
                 onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
+                onRewind={onRewind}
+                isRewindDisabled={agentStatus === 'working'}
               />
             </div>
           ))}

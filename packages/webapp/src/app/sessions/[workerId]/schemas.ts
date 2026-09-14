@@ -66,7 +66,20 @@ export const stopSessionSchema = z.object({
   workerId: z.string(),
 });
 
+export const handoverSessionSchema = z.object({
+  workerId: z.string(),
+});
+
 export const markSessionReadSchema = z.object({
+  workerId: z.string(),
+});
+
+export const rewindSessionSchema = z.object({
+  workerId: z.string(),
+  cutoffSK: z.string().min(1),
+});
+
+export const undoRewindSchema = z.object({
   workerId: z.string(),
 });
 

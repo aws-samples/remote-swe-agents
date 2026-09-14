@@ -12,6 +12,8 @@ type MessageGroupProps = {
   agentIconUrl?: string;
   agentName?: string;
   onInterrupt?: () => void;
+  onRewind?: (messageSK: string) => void;
+  isRewindDisabled?: boolean;
 };
 
 export const MessageGroupComponent = React.memo(function MessageGroupComponent({
@@ -19,6 +21,8 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
   agentIconUrl,
   agentName,
   onInterrupt,
+  onRewind,
+  isRewindDisabled,
 }: MessageGroupProps) {
   const locale = useLocale();
   const t = useTranslations('sessions');
@@ -144,6 +148,8 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
               showTimestamp={showTimestamp}
               onInterrupt={isLastExecutingTool ? onInterrupt : undefined}
               agentName={agentName}
+              onRewind={onRewind}
+              isRewindDisabled={isRewindDisabled}
             />
           );
         })}

@@ -6,11 +6,14 @@ import {
   updateAgentStatusSchema,
   sendEventSchema,
   stopSessionSchema,
+  handoverSessionSchema,
   markSessionReadSchema,
+  rewindSessionSchema,
+  undoRewindSchema,
   searchSessionContentSchema,
   updateSessionModelSchema,
 } from './schemas';
-import { authActionClient } from '@/lib/safe-action';
+import { authActionClient, MyCustomError } from '@/lib/safe-action';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import {
@@ -21,10 +24,25 @@ import {
   stopWorkerInstance,
   markSessionRead as markSessionReadLib,
   getUnreadSummary,
+  rewindSession as rewindSessionLib,
+  undoRewind as undoRewindLib,
   addSessionParticipant,
   notifyOtherParticipants,
   updateSessionLastMessage,
   searchSessionContent,
+  createSession,
+  getConversationHistory,
+  getChildSessions,
+  reparentSessions,
+  copySessionParticipants,
+  markSessionHandedOver,
+  updateInstanceStatus,
+  renderSystemNotification,
+  buildHandoverMessage,
+  buildHandoverTitle,
+  collectRecentConversation,
+  collectWorkStateScanTexts,
+  extractWorkState,
   updateSession,
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
@@ -201,6 +219,228 @@ export const stopSession = authActionClient.inputSchema(stopSessionSchema).actio
   return { success: true };
 });
 
+const HANDOVER_RECENT_MESSAGE_COUNT = 8;
+const HANDOVER_WORK_STATE_SCAN_ITEMS = 50;
+
+/**
+ * Persist a system-notification message into a session's history.
+ * When `wake` is true, the target worker is also woken up to process it.
+ */
+const putSystemNotification = async (targetWorkerId: string, message: string, wake: boolean) => {
+  const item: MessageItem = {
+    PK: `message-${targetWorkerId}`,
+    SK: `${String(Date.now()).padStart(15, '0')}`,
+    content: JSON.stringify([{ text: renderSystemNotification({ message }) }]),
+    role: 'user',
+    tokenCount: 0,
+    messageType: 'eventTrigger',
+  };
+  await ddb.send(new PutCommand({ TableName, Item: item }));
+  if (wake) {
+    await sendWorkerEvent(targetWorkerId, { type: 'onMessageReceived' });
+  }
+};
+
+/**
+ * Idempotent, resumable finalization of a claimed handover. Every step is
+ * safe to re-run, so this can be invoked both by the winning request and by
+ * later requests that find `handedOverTo` already set but the finalization
+ * incomplete (e.g. after a crash mid-way). Step order matters:
+ * re-parenting → successor boot → old session completion. `agentStatus ===
+ * 'completed'` (with re-parenting done) is the "fully finalized" marker, so
+ * anything before it is re-attempted on resume.
+ */
+const finalizeHandover = async (workerId: string, successorId: string) => {
+  const session = await getSession(workerId);
+  if (!session) return;
+
+  const reparentDone = session.parentSessionId === successorId;
+  if (reparentDone && session.agentStatus === 'completed') {
+    // Fully finalized — nothing to resume.
+    return;
+  }
+
+  // The successor takes the old session's place in the hierarchy: it
+  // inherits the old parent (if any), and the old session plus its children
+  // become children of the successor. After the first successful pass the
+  // old session's parent IS the successor, so the original parent must then
+  // be recovered from the successor's own parent pointer.
+  let originalParentId: string | undefined;
+  if (!reparentDone) {
+    originalParentId = session.parentSessionId;
+    if (originalParentId) {
+      await reparentSessions(originalParentId, [successorId]);
+    }
+    const children = await getChildSessions(workerId);
+    await reparentSessions(successorId, [
+      workerId,
+      ...children.map((c) => c.workerId).filter((id) => id !== successorId),
+    ]);
+  } else {
+    originalParentId = (await getSession(successorId))?.parentSessionId;
+  }
+
+  try {
+    await copySessionParticipants(workerId, successorId);
+  } catch (e) {
+    console.error('[handover] Failed to copy participants to new session:', e);
+  }
+
+  // Record the handover in the old session's history (marker only — the old
+  // session's worker must NOT be woken, it is being retired). Best-effort:
+  // a failure here must not abort the finalization.
+  try {
+    await putSystemNotification(
+      workerId,
+      `[Session Handover] This session has been handed over to session ${successorId}. It is now completed and re-parented under the successor session.`,
+      false
+    );
+  } catch (e) {
+    console.error('[handover] Failed to write handover marker to old session:', e);
+  }
+
+  // Notify the old parent that its child has been replaced, so it stops
+  // messaging the retired session (which would resume a completed worker).
+  if (originalParentId) {
+    try {
+      await putSystemNotification(
+        originalParentId,
+        `Session handover: your child session "${session.title ?? workerId}" (${workerId}) has been handed over to a new session (${successorId}). The old session is completed and is now a child of the new session. Send future messages to ${successorId}.`,
+        true
+      );
+    } catch (e) {
+      console.error('[handover] Failed to notify old parent session:', e);
+    }
+  }
+
+  // Boot the successor now that the hierarchy is final. Runs BEFORE the old
+  // session is marked completed so a boot failure keeps the handover
+  // resumable (the next request re-enters finalization and retries).
+  const successor = await getSession(successorId);
+  await getOrCreateWorkerInstance(successorId, successor?.runtimeType ?? 'ec2');
+  await sendWorkerEvent(successorId, { type: 'onMessageReceived' });
+
+  await updateSessionAgentStatus(workerId, 'completed');
+
+  // Best-effort: a failure to stop the old worker must not fail the
+  // handover — the handover itself has already fully succeeded.
+  try {
+    await stopWorkerInstance(workerId, session.runtimeType ?? 'ec2');
+  } catch (e) {
+    console.error('[handover] Failed to stop old session worker:', e);
+  }
+};
+
+const finalizeHandoverOrExplain = async (workerId: string, successorId: string) => {
+  try {
+    await finalizeHandover(workerId, successorId);
+  } catch (e) {
+    console.error('[handover] Finalization failed:', e);
+    throw new MyCustomError(
+      `Handover partially completed: the new session exists (id: ${successorId}) but finalization failed — retry the handover to resume it, or open /sessions/${successorId} directly. (${e instanceof Error ? e.message : String(e)})`
+    );
+  }
+};
+
+export const handoverSession = authActionClient
+  .inputSchema(handoverSessionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { workerId } = parsedInput;
+    const session = await getSession(workerId);
+    if (!session) {
+      throw new MyCustomError('Session not found');
+    }
+    // Idempotency: a repeated request converges on the existing successor.
+    // Finalization is resumed first in case a previous attempt crashed
+    // between the claim and full finalization.
+    if (session.handedOverTo) {
+      await finalizeHandoverOrExplain(workerId, session.handedOverTo);
+      return { workerId: session.handedOverTo, alreadyHandedOver: true };
+    }
+    if (session.agentStatus === 'completed') {
+      throw new MyCustomError('Session is already completed');
+    }
+
+    // Gather handover context from the old session. All of this is
+    // best-effort: an unresponsive session may have partial or no data.
+    const [todoList, history] = await Promise.all([getTodoList(workerId), getConversationHistory(workerId)]);
+    const recentMessages = collectRecentConversation(history.items, HANDOVER_RECENT_MESSAGE_COUNT);
+    const workState = extractWorkState(collectWorkStateScanTexts(history.items, HANDOVER_WORK_STATE_SCAN_ITEMS));
+
+    const message = buildHandoverMessage({
+      oldSessionId: workerId,
+      todoList,
+      recentMessages,
+      workState,
+    });
+
+    // Preserve the Slack mention target when the old session was
+    // Slack-initiated (mirrors the successor flow in createNewSessionTool).
+    const initiator = session.initiator;
+    const slackMentionUserId = initiator?.startsWith('slack#') ? initiator.replace('slack#', '') : undefined;
+
+    // Create the successor WITHOUT starting its worker. The seed message
+    // states that the re-parenting has already happened, so the worker must
+    // not read it before the hierarchy is final (see deferWorkerStart docs).
+    const newWorkerId = await createSession({
+      message,
+      initiator: `webapp#${ctx.userId}`,
+      customAgentId: session.customAgentId,
+      title: buildHandoverTitle(session.title),
+      agentName: session.agentName,
+      slackChannelId: session.slackChannelId,
+      slackMentionUserId,
+      senderUserId: ctx.userId,
+      senderType: 'webapp',
+      ...(ctx.displayName ? { senderDisplayName: ctx.displayName } : {}),
+      inferenceMode: session.inferenceMode,
+      kiroModel: session.kiroDefaultModel ?? session.kiroModel,
+      bedrockDefaultModel: session.bedrockDefaultModel,
+      kiroDefaultModel: session.kiroDefaultModel,
+      deferWorkerStart: true,
+      handoverSourceSessionId: workerId,
+    });
+
+    // Commit point: atomically claim the handover. The conditional write
+    // succeeds at most once per session, so two concurrent attempts cannot
+    // both spawn a successor.
+    //
+    // IMPORTANT: on claim failure, ownership is decided by re-reading the
+    // session BEFORE any cleanup. The write may have been applied
+    // server-side even though the call threw (lost response + SDK retry
+    // hitting our own claim yields ConditionalCheckFailedException) — in
+    // that case WE are the winner and must not destroy our own successor.
+    try {
+      await markSessionHandedOver(workerId, newWorkerId);
+    } catch (e) {
+      const latest = await getSession(workerId);
+      if (latest?.handedOverTo !== newWorkerId) {
+        // Definitively not the winner: our successor (never started) is an
+        // orphan — retire it, then converge on the actual winner if any.
+        try {
+          await updateSessionAgentStatus(newWorkerId, 'completed');
+          await updateInstanceStatus(newWorkerId, 'terminated');
+        } catch (cleanupError) {
+          console.error('[handover] Failed to clean up orphan successor session:', cleanupError);
+        }
+        if (latest?.handedOverTo) {
+          await finalizeHandoverOrExplain(workerId, latest.handedOverTo);
+          return { workerId: latest.handedOverTo, alreadyHandedOver: true };
+        }
+        if ((e as { name?: string })?.name === 'ConditionalCheckFailedException') {
+          throw new MyCustomError('Session is already completed');
+        }
+        throw e;
+      }
+      // latest.handedOverTo === newWorkerId: our claim actually applied —
+      // proceed to finalization as the winner.
+    }
+
+    await finalizeHandoverOrExplain(workerId, newWorkerId);
+
+    return { workerId: newWorkerId };
+  });
+
 export const markSessionReadAction = authActionClient
   .inputSchema(markSessionReadSchema)
   .action(async ({ parsedInput, ctx }) => {
@@ -209,6 +449,32 @@ export const markSessionReadAction = authActionClient
     const summary = await getUnreadSummary(ctx.userId);
     return { success: true, badge: summary };
   });
+
+export const rewindSessionAction = authActionClient.inputSchema(rewindSessionSchema).action(async ({ parsedInput }) => {
+  const { workerId, cutoffSK } = parsedInput;
+  const session = await getSession(workerId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+  if (session.agentStatus === 'working') {
+    throw new Error('Cannot rewind while agent is working');
+  }
+  await rewindSessionLib(workerId, cutoffSK);
+  return { success: true };
+});
+
+export const undoRewindAction = authActionClient.inputSchema(undoRewindSchema).action(async ({ parsedInput }) => {
+  const { workerId } = parsedInput;
+  const session = await getSession(workerId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+  if (session.agentStatus === 'working') {
+    throw new Error('Cannot undo rewind while agent is working');
+  }
+  await undoRewindLib(workerId);
+  return { success: true };
+});
 
 export type { SearchHit as SearchResult } from '@remote-swe-agents/agent-core/lib';
 
