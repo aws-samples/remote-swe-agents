@@ -69,7 +69,7 @@
     "copyMessage": "メッセージをコピー",
     "messageOptions": "メッセージオプション",
     "copySuccess": "クリップボードにコピーしました",
-    "copyFailed": "コピーに失敗しました",
+    "copyFailed": "クリップボードへのコピーに失敗しました",
     "showThinking": "思考内容を表示",
     "hideThinking": "思考内容を非表示",
     "scrollToTop": "一番上までスクロール",
@@ -87,8 +87,6 @@
     "markAsIncomplete": "未完了としてマーク",
     "completed": "完了",
     "incomplete": "未完了",
-    "interrupt": "中断",
-    "interruptToolTip": "Escapeキーで中断",
     "initiatedByOtherUsers": "他のユーザーが開始",
     "sortByCreatedAt": "作成日順",
     "sortByUpdatedAt": "更新日順",
@@ -164,7 +162,11 @@
     "settingsNotCarriedOver": "アプリ更新をまたいだため一部の設定を引き継げず、デフォルト値を使用しました。",
     "rewindConfirmTitle": "ここまで巻き戻しますか？",
     "rewindConfirmDescription": "この地点より後のメッセージが非表示になります。あとで元に戻すこともできます。",
-    "rewindConfirmAction": "巻き戻す"
+    "rewindConfirmAction": "巻き戻す",
+    "forceStopEscape": "停止 (Escape)",
+    "copySessionId": "セッションタイトルとIDをコピー",
+    "agentErrorRetrying": "エラーが発生しました。リトライ中... ({errorType})",
+    "agentErrorStopped": "エラーによりエージェントが停止しました: {errorType}"
   },
   "home": {
     "title": "Remote SWE Agents へようこそ",

@@ -10,7 +10,9 @@ import {
   renderUserMessage,
   notifyOtherParticipants,
   addSessionParticipant,
+  MSG_TOOLS,
 } from '@remote-swe-agents/agent-core/lib';
+import { toolNameInSet } from '@remote-swe-agents/agent-core/tool-name-utils';
 import { ddb, TableName } from '@remote-swe-agents/agent-core/aws';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
@@ -97,8 +99,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
   );
 
-  // Start EC2 instance for the worker
-  await getOrCreateWorkerInstance(sessionId);
+  // Start the worker instance (EC2 or agent-core) based on the session's runtimeType
+  await getOrCreateWorkerInstance(sessionId, session.runtimeType ?? 'ec2');
 
   // Send worker event to notify message received
   await sendWorkerEvent(sessionId, { type: 'onMessageReceived' });
@@ -150,14 +152,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 });
   }
 
-  // Get conversation history
-  const { items: historyItems } = await getConversationHistory(sessionId);
-  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems);
+  // Get conversation history. This endpoint only renders user / assistant / sendMessageToUser
+  // toolUse entries, so `agentMessage` and `communicationLog` items are irrelevant. We pass
+  // `includeAll: true` to preserve historical behaviour (previously no filtering happened)
+  // and to keep the response stable if the switch below is extended in the future.
+  // `forUi: true` skips the S3 byte-rehydration in `postProcessMessageContent` — the
+  // attachment blocks are not consumed here (only `text` blocks are read), and downloading
+  // multi-GB referenced objects on every poll would OOM the Lambda.
+  const { items: historyItems } = await getConversationHistory(sessionId, { includeAll: true });
+  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(historyItems, { forUi: true });
 
   // Process messages similar to page.tsx
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-  const isMsg = (toolName: string | undefined) =>
-    ['sendMessageToUser', 'sendMessageToUserIfNecessary'].includes(toolName ?? '');
+  const isMsg = (toolName: string | undefined) => toolNameInSet(toolName ?? '', MSG_TOOLS);
 
   for (let i = 0; i < filteredMessages.length; i++) {
     const message = filteredMessages[i];
@@ -168,7 +175,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const msgBlocks = message.content?.filter((block) => isMsg(block.toolUse?.name)) ?? [];
 
         if (msgBlocks.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let messageText = msgBlocks.map((b) => (b.toolUse?.input as any)?.message ?? '').join('\n');
           messageText = formatMessage(messageText);
           if (messageText) {

@@ -1,30 +1,38 @@
 import {
-  getAttachedFileKey,
+  getAttachedImageKey,
   isImageKey,
   getConversationHistory,
   getCustomAgent,
   getLastReadAt,
   getPreferences,
   getSession,
-  getSessions,
+  getAllSessionsIncludingChildren,
   getTodoList,
   getUnreadMap,
   noOpFiltering,
+  parseAttachmentSentinel,
+  readMetadata,
   resolveModelConfig,
+  isEndOfTurnPlaceholder,
+  isScaffoldingArtifact,
   applyRewindFilter,
   countRewoundMessages,
+  MSG_TOOLS,
 } from '@remote-swe-agents/agent-core/lib';
+import { toolNameInSet } from '@remote-swe-agents/agent-core/tool-name-utils';
 import SessionPageClient from './component/SessionPageClient';
 import { MessageView } from './component/MessageList';
 import { notFound } from 'next/navigation';
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import { extractUserMessage, formatMessage, stripAgentMessagePrefix, stripSenderPrefix } from '@/lib/message-formatter';
 import { getSession as getAuthSession } from '@/lib/auth';
+import { toSessionListItems } from '@/lib/session-list';
+import type { PortMapping } from '@/lib/port-url-transform';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function SessionPage({ params }: PageProps<'/sessions/[workerId]'>) {
+export default async function SessionPage({ params }: { params: Promise<{ workerId: string }> }) {
   const { workerId } = await params;
   const session = await getSession(workerId);
   if (!session) {
@@ -32,26 +40,53 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   }
 
   const preferences = await getPreferences();
-  // Load conversation history from DynamoDB
-  const { items: historyItems } = await getConversationHistory(workerId);
+  // Load conversation history from DynamoDB.
+  // Use `includeAll: true` so sibling-to-sibling agent communication logs
+  // (messageType === 'communicationLog') are included in the UI view.
+  // Pass `forUi: true` to `noOpFiltering` so attachment blocks
+  // (`image.source.s3Key`, `file.source.s3Key`) are returned verbatim — the
+  // webapp resolves them to pre-signed URLs client-side. The default LLM
+  // path would otherwise download every referenced object into the Lambda
+  // heap, which OOMs for multi-GB attachments and silently truncates the
+  // SSR response (browsers report `ERR_CONTENT_DECODING_FAILED`).
+  const { items: historyItems } = await getConversationHistory(workerId, { includeAll: true });
   const rewindedCount = countRewoundMessages(historyItems, session.rewindState);
   const visibleItems = applyRewindFilter(historyItems, session.rewindState);
-  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(visibleItems);
+  const { messages: filteredMessages, items: filteredItems } = await noOpFiltering(visibleItems, { forUi: true });
 
   const messages: MessageView[] = [];
-  const isMsg = (toolName: string | undefined) =>
-    ['sendMessageToUser', 'sendMessageToUserIfNecessary', 'sendFileToUser'].includes(toolName ?? '');
+  const isMsg = (toolName: string | undefined) => toolNameInSet(toolName ?? '', MSG_TOOLS);
+  const HIDDEN_AGENT_TOOLS = new Set([
+    'sendMessageToAgent',
+    'acknowledgeAgent',
+    'confirmSendToUser',
+    'confirmCompleteSession',
+    'Send Message To Agent',
+    'Acknowledge Agent',
+    'Confirm Send To User',
+    'Confirm Complete Session',
+  ]);
+  const SEND_IMAGE_TOOLS = new Set(['sendImageToUser', 'Send Image To User']);
+  const SEND_FILE_TOOLS = new Set(['sendFileToUser', 'Send File To User']);
   const isHiddenTool = (toolName: string | undefined) =>
-    isMsg(toolName) ||
-    ['sendMessageToAgent', 'acknowledgeAgent', 'confirmSendToUser', 'confirmCompleteSession'].includes(toolName ?? '');
+    isMsg(toolName) || toolNameInSet(toolName ?? '', HIDDEN_AGENT_TOOLS);
 
-  // Collect all completed toolUseIds from toolResult messages
+  // Collect all completed toolUseIds from toolResult messages, and capture
+  // the textual output for each so we can recover backend-provided metadata
+  // (e.g. the `sendFileToUser` attachment sentinel carrying the canonical
+  // S3 key — see `buildAttachmentSentinel` in agent-core).
   const completedToolUseIds = new Set<string>();
+  const toolResultTextById = new Map<string, string>();
   for (const msg of filteredMessages) {
     for (const block of msg.content ?? []) {
-      if (block.toolResult?.toolUseId) {
-        completedToolUseIds.add(block.toolResult.toolUseId);
-      }
+      const tr = block.toolResult;
+      if (!tr?.toolUseId) continue;
+      completedToolUseIds.add(tr.toolUseId);
+      const text = (tr.content ?? [])
+        .map((c) => (typeof c === 'object' && c && 'text' in c ? (c as { text?: string }).text : undefined))
+        .filter((t): t is string => typeof t === 'string')
+        .join('\n');
+      if (text) toolResultTextById.set(tr.toolUseId, text);
     }
   }
 
@@ -67,13 +102,11 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           for (const block of msgBlocks) {
             const toolName = block.toolUse!.name;
             const toolUseId = block.toolUse!.toolUseId!;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const input = block.toolUse?.input as any;
 
-            if (toolName === 'sendFileToUser') {
+            if (toolNameInSet(toolName ?? '', SEND_IMAGE_TOOLS)) {
               const messageText = formatMessage(input?.message ?? '');
-              const key = getAttachedFileKey(workerId, toolUseId, input.filePath);
-              const isToolComplete = completedToolUseIds.has(toolUseId);
+              const key = getAttachedImageKey(workerId, toolUseId, input.imagePath);
 
               // Extract reasoning content if available
               let reasoningText: string | undefined;
@@ -82,29 +115,50 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
                 reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
               }
 
-              if (isImageKey(key)) {
-                messages.push({
-                  id: `${item.SK}-${i}-${toolUseId}`,
-                  role: 'assistant',
-                  content: messageText,
-                  timestamp: new Date(parseInt(item.SK)),
-                  type: 'message',
-                  imageKeys: isToolComplete ? [key] : undefined,
-                  thinkingBudget: item.thinkingBudget,
-                  reasoningText,
-                });
-              } else {
-                messages.push({
-                  id: `${item.SK}-${i}-${toolUseId}`,
-                  role: 'assistant',
-                  content: messageText,
-                  timestamp: new Date(parseInt(item.SK)),
-                  type: 'message',
-                  fileKeys: isToolComplete ? [key] : undefined,
-                  thinkingBudget: item.thinkingBudget,
-                  reasoningText,
-                });
+              messages.push({
+                id: `${item.SK}-${i}-${toolUseId}`,
+                role: 'assistant',
+                content: messageText,
+                timestamp: new Date(parseInt(item.SK)),
+                type: 'message',
+                imageKeys: [key],
+                thinkingBudget: item.thinkingBudget,
+                reasoningText,
+              });
+            } else if (toolNameInSet(toolName ?? '', SEND_FILE_TOOLS)) {
+              const messageText = formatMessage(input?.message ?? '');
+              const isToolComplete = completedToolUseIds.has(toolUseId);
+              // The backend embeds a `<!--remote-swe-attachment:...-->` sentinel
+              // in the toolResult text carrying the canonical S3 key and
+              // image flag. Parsing this avoids having to re-derive the key
+              // from `context.toolUseId`, which is unreliable for kiro-cli
+              // sessions where the MCP server falls back to `randomUUID()`.
+              const sentinel = parseAttachmentSentinel(toolResultTextById.get(toolUseId));
+
+              // Extract reasoning content if available
+              let reasoningText: string | undefined;
+              const reasoningBlocks = message.content?.filter((block) => block.reasoningContent) ?? [];
+              if (reasoningBlocks.length > 0) {
+                reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
               }
+
+              const attachmentKey = sentinel?.key;
+              const attachmentIsImage = sentinel?.isImage ?? (attachmentKey ? isImageKey(attachmentKey) : false);
+
+              messages.push({
+                id: `${item.SK}-${i}-${toolUseId}`,
+                role: 'assistant',
+                content: messageText,
+                timestamp: new Date(parseInt(item.SK)),
+                type: 'message',
+                ...(isToolComplete && attachmentKey
+                  ? attachmentIsImage
+                    ? { imageKeys: [attachmentKey] }
+                    : { fileKeys: [attachmentKey] }
+                  : {}),
+                thinkingBudget: item.thinkingBudget,
+                reasoningText,
+              });
             } else {
               // Handle sendMessageToUser and sendMessageToUserIfNecessary as before
               const messageText = formatMessage(input?.message ?? '');
@@ -191,7 +245,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         // `[from: ... (webapp|slack)]` sender prefix. The prefix exists for
         // LLM-side sender attribution only; the UI renders the sender name
         // separately via `userSenderDisplayName` so showing the literal
-        // `[from: ...]` line inside the bubble is redundant.
+        // `[from: ...]` line inside the bubble was flagged as redundant
+        // during E2E.
         const extracted = stripSenderPrefix(extractUserMessage(text));
 
         // Extract image keys from user message content
@@ -212,10 +267,12 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         // Older messages persisted before this feature have neither and
         // correctly fall back to "User" via MessageGroup's default.
         const userSenderType: 'slack' | 'webapp' | 'apikey' | undefined =
-          item.senderType ?? (item.slackUserId ? 'slack' : undefined);
+          (item as any).senderType ?? ((item as any).slackUserId ? 'slack' : undefined);
         const userSenderDisplayName =
-          item.senderDisplayName ?? (item.slackUserId ? `<@${item.slackUserId}>` : undefined);
-        const userSenderUserId: string | undefined = item.senderUserId ?? item.slackUserId ?? undefined;
+          (item as any).senderDisplayName ??
+          ((item as any).slackUserId ? `<@${(item as any).slackUserId}>` : undefined);
+        const userSenderUserId: string | undefined =
+          (item as any).senderUserId ?? (item as any).slackUserId ?? undefined;
 
         messages.push({
           id: `${item.SK}-${i}`,
@@ -246,7 +303,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         });
         break;
       }
-      case 'agentMessage': {
+      case 'agentMessage':
+      case 'communicationLog': {
         const text = (message.content?.map((c) => c.text).filter((c) => c) ?? []).join('\n');
         const extracted = stripAgentMessagePrefix(extractUserMessage(text));
 
@@ -275,7 +333,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
           reasoningText = reasoningBlocks[0].reasoningContent?.reasoningText?.text;
         }
 
-        if (formatted) {
+        if (formatted && !isEndOfTurnPlaceholder(formatted) && !isScaffoldingArtifact(formatted)) {
           messages.push({
             id: `${item.SK}-${i}`,
             role: 'assistant',
@@ -288,14 +346,20 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         }
         break;
       }
+      case 'assistantRejected':
+      case 'mermaidFeedback':
+        // Rejected assistant messages (failed mermaid validation) and their
+        // feedback are internal retry artifacts — never render them.
+        break;
     }
   }
 
   // Get todo list for this session
   const todoList = await getTodoList(workerId);
 
-  // Get sessions list for sidebar
-  const allSessions = await getSessions(100);
+  // Get sessions list for sidebar (trimmed: the sidebar never renders full
+  // initialMessage bodies, and shipping them bloats the RSC payload)
+  const allSessions = toSessionListItems(await getAllSessionsIncludingChildren());
 
   // Get unread data
   const { userId, displayName: currentUserDisplayName } = await getAuthSession();
@@ -305,10 +369,15 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   let agentIconUrl: string | undefined;
   const customAgent = session.customAgentId ? await getCustomAgent(session.customAgentId) : undefined;
   const iconKey = customAgent?.iconKey || preferences.defaultAgentIconKey;
+  if (iconKey) {
+    agentIconUrl = `/api/agent-icon?key=${encodeURIComponent(iconKey)}`;
+  }
 
-  // Resolve the effective inference mode / models for this session
-  // server-side, via the shared priority chain (session > customAgent > env >
-  // default).
+  // Resolve the *effective* inference mode for this session using the same
+  // priority chain the worker uses: session > customAgent > env > default.
+  // We do this server-side so the initial render already reflects the
+  // correct UI (Bedrock selector vs. Kiro model selector) — avoiding a
+  // client-side flicker and potential hydration mismatch.
   //
   // User preferences are DELIBERATELY not consulted here. They are only
   // the default used at session creation time; flipping them must not
@@ -335,8 +404,37 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
   });
   const effectiveInferenceMode = resolvedModel.inferenceMode;
   const effectiveKiroModel = effectiveInferenceMode === 'kiro-cli' ? resolvedModel.kiroModel : undefined;
-  if (iconKey) {
-    agentIconUrl = `/api/agent-icon?key=${encodeURIComponent(iconKey)}`;
+  const effectiveBedrockModel = resolvedModel.bedrockModel;
+
+  // Load persisted port mappings (hostname + opened ports) so message
+  // rendering can rewrite localhost:PORT links to the public EC2 URL. Only
+  // present for EC2-runtime sessions where `openPort` has been invoked.
+  // Also checks for MicroVM preview sessions (previewSession metadata).
+  const rawPortMetadata = (await readMetadata('openedPorts', workerId)) as PortMapping | undefined;
+  const rawPreviewMetadata = (await readMetadata('previewSession', workerId)) as
+    | { previewUrl?: string; localPort?: number; startedAt?: number }
+    | undefined;
+  let initialPortMapping: PortMapping | null = null;
+  if (rawPreviewMetadata?.previewUrl && rawPreviewMetadata?.localPort) {
+    initialPortMapping = {
+      previewBaseUrl: rawPreviewMetadata.previewUrl,
+      openedPorts: [
+        {
+          fromPort: rawPreviewMetadata.localPort,
+          toPort: rawPreviewMetadata.localPort,
+          cidr: '*',
+          // Server component, rendered once per request; Date.now() is a
+          // legitimate fallback for a missing persisted start time.
+          // eslint-disable-next-line react-hooks/purity
+          openedAt: rawPreviewMetadata.startedAt ?? Date.now(),
+        },
+      ],
+    };
+  } else if (rawPortMetadata) {
+    initialPortMapping = {
+      hostname: rawPortMetadata.hostname,
+      openedPorts: Array.isArray(rawPortMetadata.openedPorts) ? rawPortMetadata.openedPorts : [],
+    };
   }
 
   return (
@@ -344,6 +442,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
       <SessionPageClient
         workerId={workerId}
         userId={userId}
+        currentUserDisplayName={currentUserDisplayName}
         preferences={preferences}
         initialTitle={session.title}
         initialMessages={messages}
@@ -358,7 +457,9 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[work
         parentSessionId={session.parentSessionId}
         inferenceMode={effectiveInferenceMode}
         kiroModel={effectiveKiroModel}
-        currentUserDisplayName={currentUserDisplayName}
+        bedrockModel={effectiveBedrockModel}
+        sessionBedrockDefaultModel={session.bedrockDefaultModel}
+        initialPortMapping={initialPortMapping}
         initialRewindHiddenCount={rewindedCount}
       />
       <RefreshOnFocus />

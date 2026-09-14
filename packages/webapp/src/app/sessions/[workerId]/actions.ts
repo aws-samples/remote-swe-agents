@@ -24,12 +24,12 @@ import {
   stopWorkerInstance,
   markSessionRead as markSessionReadLib,
   getUnreadSummary,
+  updateSessionLastMessage,
+  imageFormatFromKey,
   rewindSession as rewindSessionLib,
   undoRewind as undoRewindLib,
   addSessionParticipant,
   notifyOtherParticipants,
-  updateSessionLastMessage,
-  searchSessionContent,
   createSession,
   getConversationHistory,
   getChildSessions,
@@ -47,6 +47,7 @@ import {
 } from '@remote-swe-agents/agent-core/lib';
 import { sendWorkerEvent, updateSessionAgentStatus, sendWebappEvent } from '@remote-swe-agents/agent-core/lib';
 import { MessageItem, ModelType, KiroModelId } from '@remote-swe-agents/agent-core/schema';
+import { searchSessionContent } from '@remote-swe-agents/agent-core/lib';
 
 export const sendMessageToAgent = authActionClient
   .inputSchema(sendMessageToAgentSchema)
@@ -62,7 +63,7 @@ export const sendMessageToAgent = authActionClient
     } = parsedInput;
     const session = await getSession(workerId);
     if (!session) {
-      throw new Error('Session not found');
+      throw new MyCustomError('Session not found');
     }
 
     // Sync session-level model from the form's selector value on every send.
@@ -85,7 +86,7 @@ export const sendMessageToAgent = authActionClient
     imageKeys.forEach((key) => {
       content.push({
         image: {
-          format: 'webp',
+          format: imageFormatFromKey(key) ?? 'png',
           source: {
             s3Key: key,
           },
@@ -496,7 +497,7 @@ export const updateSessionModel = authActionClient
     const { workerId, bedrockDefaultModel, kiroDefaultModel } = parsedInput;
     const session = await getSession(workerId);
     if (!session) {
-      throw new Error('Session not found');
+      throw new MyCustomError('Session not found');
     }
     const updates: { bedrockDefaultModel?: ModelType; kiroDefaultModel?: KiroModelId } = {};
     if (bedrockDefaultModel) updates.bedrockDefaultModel = bedrockDefaultModel;

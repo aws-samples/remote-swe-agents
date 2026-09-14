@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { Bot, Pause, ChevronUp } from 'lucide-react';
+import { Bot, ChevronUp } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
@@ -28,7 +28,8 @@ export type MessageView = {
    * Memory-only by construction: this field exists solely on the client
    * `MessageView` type — the server action input (`sendMessageToAgentSchema`)
    * strips it, nothing writes it to DynamoDB, and a page reload resolves the
-   * image through the normal `imageKeys` → pre-signed URL path.
+   * image through the normal `imageKeys` → pre-signed URL path. See
+   * `schemas.test.ts` for the guarantee test.
    */
   localImageUrls?: Record<string, string>;
   thinkingBudget?: number;
@@ -104,7 +105,6 @@ type MessageListProps = {
   messages: MessageView[];
   instanceStatus?: 'starting' | 'running' | 'stopped' | 'terminated';
   agentStatus?: 'pending' | 'working' | 'completed';
-  onInterrupt: () => void;
   agentIconUrl?: string;
   agentName?: string;
   lastReadAt?: number;
@@ -116,7 +116,6 @@ export default function MessageList({
   messages,
   instanceStatus,
   agentStatus,
-  onInterrupt,
   agentIconUrl,
   agentName,
   lastReadAt,
@@ -187,30 +186,100 @@ export default function MessageList({
     if (!userScrolledUp) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
+    // Fire only when the message list changes. `userScrolledUp` is read as
+    // a live guard, not a trigger: adding it would auto-scroll the moment
+    // the user scrolls back down, fighting their scroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
-  // Scroll to bottom on initial page load
+  const scrollToHash = useCallback((hash: string) => {
+    if (!hash || !hash.startsWith('#msg-')) return false;
+    const targetId = hash.slice(1);
+    const sk = targetId.replace('msg-', '');
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('search-highlight-flash');
+      setTimeout(() => el.classList.remove('search-highlight-flash'), 3000);
+      return true;
+    }
+    if (/^\d{15}$/.test(sk)) {
+      try {
+        const skEl = document.querySelector(`[data-msg-sk="${sk}"]`);
+        if (skEl) {
+          skEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          skEl.classList.add('search-highlight-flash');
+          setTimeout(() => skEl.classList.remove('search-highlight-flash'), 3000);
+          return true;
+        }
+        const prefixEl = document.querySelector(`[id^="msg-${sk}"]`);
+        if (prefixEl) {
+          prefixEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          prefixEl.classList.add('search-highlight-flash');
+          setTimeout(() => prefixEl.classList.remove('search-highlight-flash'), 3000);
+          return true;
+        }
+      } catch {
+        // Malformed selector — ignore
+      }
+    }
+    return false;
+  }, []);
+
+  // C1 fix: When showAll becomes true and there's a pending hash target, scroll after re-render
+  const pendingHashRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (showAll && pendingHashRef.current) {
+      const hash = pendingHashRef.current;
+      pendingHashRef.current = null;
+      requestAnimationFrame(() => {
+        scrollToHash(hash);
+      });
+    }
+  }, [showAll, scrollToHash]);
+
+  // Scroll to bottom on initial page load, or to hash target
   const initialScrollDone = useRef(false);
   useEffect(() => {
     if (!initialScrollDone.current && messages.length > 0) {
       initialScrollDone.current = true;
-      // Use requestAnimationFrame to ensure DOM is rendered
       requestAnimationFrame(() => {
-        // If URL has a #msg-{id} hash, scroll to that message and flash it
         const hash = window.location.hash;
-        if (hash.startsWith('#msg-')) {
-          const el = document.getElementById(hash.slice(1));
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.add('search-highlight-flash');
-            setTimeout(() => el.classList.remove('search-highlight-flash'), 3000);
+        if (hash && hash.startsWith('#msg-')) {
+          // C1 fix: expand hidden messages FIRST, then scroll after re-render
+          if (!showAll) {
+            pendingHashRef.current = hash;
+            setShowAll(true);
             return;
           }
+          if (scrollToHash(hash)) return;
         }
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
       });
     }
+    // Initial scroll/hash handling keyed on the message list only;
+    // `scrollToHash` and `showAll` are stable helpers/one-shot flags whose
+    // inclusion would re-run this scroll on unrelated updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  // C2 fix: React to hash changes for same-session navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (!hash || !hash.startsWith('#msg-')) return;
+      if (!showAll) {
+        pendingHashRef.current = hash;
+        setShowAll(true);
+        return;
+      }
+      requestAnimationFrame(() => {
+        scrollToHash(hash);
+      });
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [showAll, scrollToHash]);
 
   // Check if the last message is a toolUse that is still executing (no output yet)
   const lastMessage = messages[messages.length - 1];
@@ -269,7 +338,6 @@ export default function MessageList({
                 group={group}
                 agentIconUrl={agentIconUrl}
                 agentName={agentName}
-                onInterrupt={agentStatus === 'working' ? onInterrupt : undefined}
                 onRewind={onRewind}
                 isRewindDisabled={agentStatus === 'working'}
               />
@@ -301,15 +369,6 @@ export default function MessageList({
                     : t('aiAgentResponding', { agentName: agentName || 'Assistant' })}
                 </span>
               </div>
-              {agentStatus === 'working' && (
-                <button
-                  onClick={onInterrupt}
-                  className="flex items-center px-4 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <Pause className="w-4 h-4 mr-2" />
-                  {t('interrupt')}
-                </button>
-              )}
             </div>
           </div>
         </div>

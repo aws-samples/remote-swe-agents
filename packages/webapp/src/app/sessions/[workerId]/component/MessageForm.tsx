@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
 import { useAction } from 'next-safe-action/hooks';
-import { Loader2, Send, Paperclip } from 'lucide-react';
+import { Loader2, Send, Paperclip, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent, updateSessionModel } from '../actions';
 import { sendMessageToAgentSchema } from '../schemas';
@@ -29,6 +29,7 @@ import { clearDraftAttachments, loadDraftAttachments, saveDraftAttachments } fro
 import { isUsable } from '@/lib/local-image-urls';
 import { fallbackKeysForFailedLookup, planRollbackImageRestore } from '@/lib/rollback-attachments';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { KEYBOARD_OPEN_VIEWPORT_DELTA_PX, PINCH_ZOOM_SCALE_THRESHOLD } from '@/hooks/use-viewport-state';
 import {
   ModelType,
   InferenceMode,
@@ -36,6 +37,7 @@ import {
   modelConfigs,
   kiroModelConfigs,
   getKiroModelIds,
+  AgentStatus,
   KiroModelId,
 } from '@remote-swe-agents/agent-core/schema';
 
@@ -43,33 +45,87 @@ const MAX_TEXTAREA_HEIGHT = 600;
 
 /**
  * Resize the given textarea to fit its content (up to `MAX_TEXTAREA_HEIGHT`)
- * while compensating the page scroll by the height delta so the chat log
- * above the form does not visually jump. Shared by every code path that
- * mutates the textarea height (input auto-resize, post-submit reset, error
- * rollback restore, draft restore on mount).
+ * while preserving the user's visual scroll position on the page-level
+ * `window` scroll. This is shared by every code path that mutates the
+ * textarea height — the initial `autoResize` on input, the post-submit
+ * reset, the optimistic-submit reset, the error rollback that restores
+ * unsent text, and the draft-restore on mount — so that none of them can
+ * re-introduce the "chat log pushed out of viewport" regression fixed in
+ * #91.
+ *
+ * Ordering rationale:
+ *   1. Capture `window.scrollY` first. This read does NOT flush layout, so
+ *      it is safe even before we measure the textarea. We must capture it
+ *      before the `height: 'auto'` mutation, because the intermediate
+ *      reflow can clamp `scrollY` to the new max and corrupt the
+ *      compensation basis.
+ *   2. Do the `height: 'auto'` + `scrollHeight` measurement, compute the
+ *      final height, and early-return if unchanged — this avoids any
+ *      work on no-op calls (e.g. a keystroke that produces the same
+ *      wrapped height).
+ *   3. Apply the new height, then compensate the page scroll by exactly
+ *      `heightDiff`. Because the textarea is the only element whose
+ *      height changed in this frame, `scrollBefore + heightDiff` keeps
+ *      every pixel above the textarea visually pinned to where it was,
+ *      including the "pinned to bottom" case (the maths collapse: the
+ *      post-mutation max scroll equals `scrollBefore + heightDiff`
+ *      whenever the user was previously at the max). No read of
+ *      `document.documentElement.scrollHeight` is required.
+ *
+ * Mobile keyboard exception:
+ *   When a soft keyboard is open (detected via `visualViewport.height`
+ *   shrinkage, excluding pinch-zoom), the re-anchor step is skipped
+ *   because per-keystroke `window.scrollTo` calls collide with the
+ *   keyboard's slide-in animation and cause the viewport to jump on
+ *   every character. The height mutation itself still runs, so the
+ *   textarea grows as expected; only the scroll compensation is
+ *   suppressed. Desktop is unaffected because `innerHeight` and
+ *   `visualViewport.height` match.
  */
 function adjustTextareaHeightWithScrollAnchor(textarea: HTMLTextAreaElement) {
+  // (1) Cheap capture before any DOM mutation.
+  const scrollBefore = window.scrollY;
+
+  // (2) Measure and compute new height.
   const currentHeight = textarea.style.height;
   textarea.style.height = 'auto';
   const scrollHeight = textarea.scrollHeight;
   const newHeight = Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT);
   const newHeightPx = `${newHeight}px`;
 
-  // skip updating the height when it is not changed.
+  // Early return on no-op. Restore the original inline height so we don't
+  // leave `auto` applied when the caller was only probing for a resize.
   if (currentHeight === newHeightPx) {
     textarea.style.height = currentHeight;
     return;
   }
 
-  // Save current scroll position and calculate height difference
-  const scrollBefore = window.scrollY;
   const oldHeight = parseFloat(currentHeight) || textarea.offsetHeight;
   const heightDiff = newHeight - oldHeight;
 
+  // Apply the final height and the overflow mode for `max-height` clamping.
   textarea.style.height = newHeightPx;
   textarea.style.overflowY = scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
 
-  // Compensate for the height change to prevent page from scrolling down
+  // Skip the page-scroll re-anchor while the mobile virtual keyboard is
+  // open. The `scale <= 1.01` guard excludes pinch-zoom, which also
+  // shrinks `visualViewport.height`. See the function-level JSDoc for
+  // the full rationale.
+  const visualViewport = window.visualViewport;
+  const keyboardOpen =
+    !!visualViewport &&
+    visualViewport.scale <= PINCH_ZOOM_SCALE_THRESHOLD &&
+    window.innerHeight - visualViewport.height > KEYBOARD_OPEN_VIEWPORT_DELTA_PX;
+  if (keyboardOpen) {
+    return;
+  }
+
+  // (3) Compensate the page scroll by exactly the height delta. Because
+  // the textarea is the only element whose height changed, this keeps
+  // every pixel above the textarea visually pinned. It also subsumes
+  // the "user was pinned to the bottom" case without a separate
+  // `wasAtBottom` branch: if the user was at the max scroll, then
+  // post-mutation `scrollBefore + heightDiff` equals the new max.
   if (heightDiff !== 0) {
     window.scrollTo({ top: scrollBefore + heightDiff, behavior: 'instant' });
   }
@@ -111,6 +167,8 @@ type MessageFormProps = {
    * value of the per-message selector on Kiro sessions.
    */
   kiroModel?: string;
+  agentStatus?: AgentStatus;
+  onInterrupt?: () => void;
 };
 
 export default function MessageForm({
@@ -123,6 +181,8 @@ export default function MessageForm({
   currentUserId,
   inferenceMode,
   kiroModel,
+  agentStatus,
+  onInterrupt,
 }: MessageFormProps) {
   const t = useTranslations('sessions');
   const draftStorageKey = `draft-message-${workerId}`;
@@ -130,6 +190,8 @@ export default function MessageForm({
   const isKiroSession = inferenceMode === 'kiro-cli';
   const kiroModelIds = getKiroModelIds();
   const defaultKiroModel = kiroModel && kiroModel in kiroModelConfigs ? kiroModel : 'auto';
+
+  const isAgentWorking = agentStatus === 'working';
 
   const { execute: executeUpdateModel } = useAction(updateSessionModel, {
     onError: () => {
@@ -776,30 +838,51 @@ export default function MessageForm({
                     ))}
                   </select>
                 )}
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="submit"
-                        disabled={!formState.isValid || isExecuting || isUploading}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      >
-                        {isExecuting ? (
-                          <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
-                        ) : isUploading ? (
-                          <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
-                        ) : (
-                          <Send className="w-6 h-6" strokeWidth={2.5} />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('sendWithCtrlEnter')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {isAgentWorking && !isExecuting && !messageValue?.trim() ? (
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          onClick={onInterrupt}
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Square className="w-5 h-5 fill-current" strokeWidth={2.5} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t('forceStopEscape')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="submit"
+                          disabled={!formState.isValid || isExecuting || isUploading}
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        >
+                          {isExecuting ? (
+                            <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
+                          ) : isUploading ? (
+                            <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
+                          ) : (
+                            <Send className="w-6 h-6" strokeWidth={2.5} />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t('sendWithCtrlEnter')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </div>
           </div>

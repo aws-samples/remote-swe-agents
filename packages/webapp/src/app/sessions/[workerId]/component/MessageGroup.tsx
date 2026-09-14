@@ -1,17 +1,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { Bot, User, Brain, GitBranch } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageView, MessageGroup } from './MessageList';
 import { MessageItem } from './MessageItem';
-import { formatDateTime } from '@/lib/utils';
+import LocalDateTime from '@/components/LocalDateTime';
 
 type MessageGroupProps = {
   group: MessageGroup;
   agentIconUrl?: string;
   agentName?: string;
-  onInterrupt?: () => void;
   onRewind?: (messageSK: string) => void;
   isRewindDisabled?: boolean;
 };
@@ -20,13 +19,10 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
   group,
   agentIconUrl,
   agentName,
-  onInterrupt,
   onRewind,
   isRewindDisabled,
 }: MessageGroupProps) {
-  const locale = useLocale();
   const t = useTranslations('sessions');
-  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const firstMessage = group.messages[0];
   const firstMessageDate = new Date(firstMessage.timestamp);
   const isChildSessionMessage = !!firstMessage.agentName;
@@ -103,7 +99,7 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
             )}
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-            {formatDateTime(firstMessageDate, localeForDate)}
+            <LocalDateTime timestamp={firstMessageDate} />
             {group.role === 'assistant' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -131,22 +127,21 @@ export const MessageGroupComponent = React.memo(function MessageGroupComponent({
         {group.messages.map((message, index) => {
           const showTimestamp =
             index !== 0 && !isSameTime(new Date(message.timestamp), new Date(group.messages[index - 1].timestamp));
-          const isLastExecutingTool =
-            message.type === 'toolUse' && message.output === undefined && index === group.messages.length - 1;
+
           return (
             <MessageItem
               // Prefer the per-submission clientId as the reconciliation key
               // for user message bubbles: the optimistic bubble's `id`
               // changes from `pending-*` to the confirmed DynamoDB SK in
-              // onConfirm, and keying by `id` would remount the subtree.
-              // The clientId is unique per submission and stable across that
-              // transition. Bubbles without a clientId (history reads,
-              // Slack/API senders, assistant messages) keep the id key —
-              // their ids never mutate in place.
+              // onConfirm, and keying by `id` would remount the subtree
+              // (re-running ImageViewer's pre-signed URL fetch and blob
+              // seeding for nothing). The clientId is unique per submission
+              // and stable across that transition. Bubbles without a
+              // clientId (history reads, Slack/API senders, assistant
+              // messages) keep the id key — their ids never mutate in place.
               key={message.clientId ?? message.id}
               message={message}
               showTimestamp={showTimestamp}
-              onInterrupt={isLastExecutingTool ? onInterrupt : undefined}
               agentName={agentName}
               onRewind={onRewind}
               isRewindDisabled={isRewindDisabled}

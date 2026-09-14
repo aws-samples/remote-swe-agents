@@ -119,13 +119,6 @@ export const webappEventSchema = z.discriminatedUnion('type', [
     workerId: z.string(),
   }),
   z.object({
-    type: z.literal('sessionReparented'),
-    workerId: z.string(),
-    newParentSessionId: z.string(),
-    oldParentSessionId: z.string().nullable(),
-    timestamp: z.number(),
-  }),
-  z.object({
     type: z.literal('portsUpdate'),
     workerId: z.string(),
     hostname: z.string().optional(),
@@ -137,6 +130,20 @@ export const webappEventSchema = z.discriminatedUnion('type', [
         openedAt: z.number(),
       })
     ),
+    timestamp: z.number(),
+  }),
+  z.object({
+    type: z.literal('sessionReparented'),
+    workerId: z.string(),
+    newParentSessionId: z.string(),
+    oldParentSessionId: z.string().nullable(),
+    timestamp: z.number(),
+  }),
+  z.object({
+    type: z.literal('childSleeping'),
+    childSessionId: z.string(),
+    hasPendingTriggers: z.boolean(),
+    workerId: z.string(),
     timestamp: z.number(),
   }),
 ]);

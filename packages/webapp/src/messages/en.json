@@ -69,7 +69,7 @@
     "copyMessage": "Copy message",
     "messageOptions": "Message options",
     "copySuccess": "Copied to clipboard",
-    "copyFailed": "Failed to copy",
+    "copyFailed": "Failed to copy to clipboard",
     "showThinking": "Show thinking",
     "hideThinking": "Hide thinking",
     "scrollToTop": "Scroll to top",
@@ -87,8 +87,6 @@
     "markAsIncomplete": "Mark as incomplete",
     "completed": "Completed",
     "incomplete": "Incomplete",
-    "interrupt": "Interrupt",
-    "interruptToolTip": "Interrupt (or press Escape)",
     "initiatedByOtherUsers": "Initiated by other users",
     "sortByCreatedAt": "Created date",
     "sortByUpdatedAt": "Updated date",
@@ -164,7 +162,11 @@
     "settingsNotCarriedOver": "Some settings could not be carried over across the app update, so defaults were used.",
     "rewindConfirmTitle": "Revert to here?",
     "rewindConfirmDescription": "Messages after this point will be hidden. You can undo this action afterwards.",
-    "rewindConfirmAction": "Revert"
+    "rewindConfirmAction": "Revert",
+    "forceStopEscape": "Stop agent (Escape)",
+    "copySessionId": "Copy session title and ID",
+    "agentErrorRetrying": "An error occurred. Retrying... ({errorType})",
+    "agentErrorStopped": "Agent stopped due to an error: {errorType}"
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

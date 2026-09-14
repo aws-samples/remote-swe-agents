@@ -6,6 +6,7 @@ import { Search, X, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { searchSessionContentAction, type SearchResult } from '../actions';
+import { useMounted } from '@/hooks/use-mounted';
 import { usePathname, useRouter } from 'next/navigation';
 
 interface SessionContentSearchProps {
@@ -51,14 +52,14 @@ export default function SessionContentSearch({ workerId, sidebarOpen }: SessionC
   const panelRef = useRef<HTMLDivElement>(null);
   const [timedOut, setTimedOut] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  // Close the search panel when the sidebar opens. This synchronizes local
+  // panel visibility with an external UI signal (the sidebar), so a
+  // set-in-effect is the appropriate tool here.
   useEffect(() => {
     if (sidebarOpen && isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOpen(false);
     }
   }, [sidebarOpen, isOpen]);

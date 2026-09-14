@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, ChevronDown, ChevronUp, ChevronRight, MoreHorizontal, RotateCcw } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { MessageView } from './MessageList';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -25,12 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { formatTime } from '@/lib/utils';
+import LocalDateTime from '@/components/LocalDateTime';
 
 type MessageItemProps = {
   message: MessageView;
   showTimestamp: boolean;
-  onInterrupt?: () => void;
   agentName?: string;
   onRewind?: (messageSK: string) => void;
   isRewindDisabled?: boolean;
@@ -39,14 +38,11 @@ type MessageItemProps = {
 export const MessageItem = React.memo(function MessageItem({
   message,
   showTimestamp,
-  onInterrupt,
   agentName,
   onRewind,
   isRewindDisabled,
 }: MessageItemProps) {
   const t = useTranslations('sessions');
-  const locale = useLocale();
-  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
   const [showReasoning, setShowReasoning] = useState(false);
   const [isRewindDialogOpen, setIsRewindDialogOpen] = useState(false);
 
@@ -74,22 +70,30 @@ export const MessageItem = React.memo(function MessageItem({
   };
 
   return (
-    <div id={`msg-${message.id}`} className="flex items-start gap-1 py-1">
+    <div
+      id={`msg-${message.id}`}
+      data-msg-sk={String(message.timestamp.getTime()).padStart(15, '0')}
+      className="flex items-start gap-1 py-1"
+    >
       <div
         className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-1 md:block hidden"
         style={{ minWidth: '55px' }}
       >
-        {showTimestamp && formatTime(new Date(message.timestamp))}
+        {showTimestamp && <LocalDateTime timestamp={message.timestamp} format="time" />}
       </div>
       <div className="flex-1 min-w-0">
         {message.type === 'toolUse' ? (
-          <ToolUseRenderer
-            content={message.content}
-            input={message.detail}
-            output={message.output}
-            messageId={message.id}
-            onInterrupt={onInterrupt}
-          />
+          <>
+            <ToolUseRenderer
+              content={message.content}
+              input={message.detail}
+              output={message.output}
+              messageId={message.id}
+            />
+            {message.imageKeys && message.imageKeys.length > 0 && (
+              <ImageViewer imageKeys={message.imageKeys} localImageUrls={message.localImageUrls} />
+            )}
+          </>
         ) : message.type === 'eventTrigger' ? (
           <EventTriggerRenderer name={message.detail} content={message.content} />
         ) : message.type === 'agentMessage' ? (
@@ -99,6 +103,10 @@ export const MessageItem = React.memo(function MessageItem({
             <span className="text-sm animate-shimmer-text bg-clip-text text-transparent bg-[length:200%_auto] whitespace-pre-wrap">
               {message.content}
             </span>
+            {message.imageKeys && message.imageKeys.length > 0 && (
+              <ImageViewer imageKeys={message.imageKeys} localImageUrls={message.localImageUrls} />
+            )}
+            {message.fileKeys && message.fileKeys.length > 0 && <FileViewer fileKeys={message.fileKeys} />}
           </div>
         ) : (
           <div className="text-gray-900 dark:text-white pb-2 break-all">
