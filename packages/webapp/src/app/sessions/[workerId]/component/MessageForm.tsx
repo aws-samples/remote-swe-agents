@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useHookFormAction } from '@next-safe-action/adapter-react-hook-form/hooks';
+import { useAction } from 'next-safe-action/hooks';
 import { Loader2, Send, Paperclip, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendMessageToAgent, updateSessionModel } from '../actions';
@@ -10,9 +11,24 @@ import { sendMessageToAgentSchema } from '../schemas';
 import { KeyboardEventHandler, useCallback, useEffect, useRef } from 'react';
 import { MessageView } from './MessageList';
 import { useTranslations } from 'next-intl';
-import ImageUploader from '@/components/ImageUploader';
+import { useImageUploader, type TakenOverAttachments } from '@/components/ImageUploader';
+import {
+  clearStaleDeploymentReloadGuard,
+  isChunkLoadError,
+  isStaleActionError,
+  reloadForStaleDeployment,
+} from '@/lib/deployment-recovery';
+import {
+  extractStringArray,
+  hasPendingResend,
+  salvageOptionalFields,
+  savePendingResend,
+  takePendingResend,
+} from '@/lib/pending-resend';
+import { clearDraftAttachments, loadDraftAttachments, saveDraftAttachments } from '@/lib/draft-attachments';
+import { isUsable } from '@/lib/local-image-urls';
+import { fallbackKeysForFailedLookup, planRollbackImageRestore } from '@/lib/rollback-attachments';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAction } from 'next-safe-action/hooks';
 import {
   ModelType,
   InferenceMode,
@@ -22,6 +38,42 @@ import {
   getKiroModelIds,
   KiroModelId,
 } from '@remote-swe-agents/agent-core/schema';
+
+const MAX_TEXTAREA_HEIGHT = 600;
+
+/**
+ * Resize the given textarea to fit its content (up to `MAX_TEXTAREA_HEIGHT`)
+ * while compensating the page scroll by the height delta so the chat log
+ * above the form does not visually jump. Shared by every code path that
+ * mutates the textarea height (input auto-resize, post-submit reset, error
+ * rollback restore, draft restore on mount).
+ */
+function adjustTextareaHeightWithScrollAnchor(textarea: HTMLTextAreaElement) {
+  const currentHeight = textarea.style.height;
+  textarea.style.height = 'auto';
+  const scrollHeight = textarea.scrollHeight;
+  const newHeight = Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT);
+  const newHeightPx = `${newHeight}px`;
+
+  // skip updating the height when it is not changed.
+  if (currentHeight === newHeightPx) {
+    textarea.style.height = currentHeight;
+    return;
+  }
+
+  // Save current scroll position and calculate height difference
+  const scrollBefore = window.scrollY;
+  const oldHeight = parseFloat(currentHeight) || textarea.offsetHeight;
+  const heightDiff = newHeight - oldHeight;
+
+  textarea.style.height = newHeightPx;
+  textarea.style.overflowY = scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+
+  // Compensate for the height change to prevent page from scrolling down
+  if (heightDiff !== 0) {
+    window.scrollTo({ top: scrollBefore + heightDiff, behavior: 'instant' });
+  }
+}
 
 type MessageFormProps = {
   onSubmit: (message: MessageView) => void;
@@ -34,15 +86,18 @@ type MessageFormProps = {
    * Display name of the currently signed-in user. When set, the optimistic
    * pending bubble the submitter sees carries
    * `userSenderDisplayName = currentUserDisplayName`, so their own message
-   * is labelled with their name instead of the generic "User".
+   * is labelled with their name instead of the generic "User". The server
+   * rebroadcast fires with the same field; `SessionPageClient`'s
+   * `case 'message'` dedupe recognizes the echo by clientId and merges it
+   * onto the existing bubble instead of adding a second one, so the bubble
+   * label does not flicker between "User" → "<name>".
    */
   currentUserDisplayName?: string;
   /**
    * Stable Cognito user id of the currently signed-in user. Mirrors
-   * `senderUserId` on the persisted message item so that the optimistic
-   * bubble carries the same `userSenderUserId` as the server-rendered
-   * variant — important for `MessageList` grouping (see
-   * `getMessageSenderKey`).
+   * `senderUserId` on the server-side rebroadcast so that the optimistic
+   * bubble carries the same `userSenderUserId` as the rebroadcast variant
+   * — important for `MessageList` grouping (see `getMessageSenderKey`).
    */
   currentUserId?: string;
   /**
@@ -78,8 +133,6 @@ export default function MessageForm({
   const kiroModelIds = getKiroModelIds();
   const defaultKiroModel = kiroModel && kiroModel in kiroModelConfigs ? kiroModel : 'auto';
 
-  // Session-level model sync: selector changes are debounced and persisted on
-  // the session item so they survive page reloads and apply to future turns.
   const { execute: executeUpdateModel } = useAction(updateSessionModel, {
     onError: () => {
       toast.error(t('modelUpdateFailed'));
@@ -129,7 +182,33 @@ export default function MessageForm({
     [workerId, executeUpdateModel]
   );
 
-  const pendingRef = useRef<{ id: string; message: string; modelOverride?: ModelType } | null>(null);
+  const pendingRef = useRef<{
+    id: string;
+    message: string;
+    /**
+     * Attachment keys captured at submit time. The error handlers MUST read
+     * these instead of `getValues('imageKeys'/'fileKeys')`: the uploader is
+     * cleared optimistically at submit (its previews move into the chat
+     * bubble), so by the time an error lands the form values have been
+     * fanned back to [].
+     */
+    imageKeys: string[];
+    fileKeys: string[];
+    /**
+     * Blob-preview attachments taken over from the uploader at submit time
+     * (ownership transfer, see `takeoverAttachments`). On rollback they are
+     * handed back to the uploader so the previews reappear instantly.
+     */
+    takenOver: TakenOverAttachments;
+  } | null>(null);
+
+  /**
+   * Attachment keys of an auto-resend consumed from sessionStorage. When the
+   * resent submission fails again with a non-stale error, the fresh page has
+   * no uploader state to show the still-attached objects — this ref lets the
+   * error handler rebuild the previews from the persisted S3 keys.
+   */
+  const resendAttachmentsRef = useRef<{ imageKeys: string[]; fileKeys: string[] } | null>(null);
 
   const {
     form: { register, formState, reset, watch, setValue, getValues },
@@ -142,6 +221,10 @@ export default function MessageForm({
           onConfirm(pendingRef.current.id, args.data.item.SK);
         }
         pendingRef.current = null;
+        resendAttachmentsRef.current = null;
+        try {
+          clearStaleDeploymentReloadGuard(window.sessionStorage);
+        } catch {}
         reset();
         setValue('modelOverride', args.input.modelOverride);
         setValue('kiroModelOverride', args.input.kiroModelOverride);
@@ -149,29 +232,95 @@ export default function MessageForm({
         try {
           localStorage.removeItem(draftStorageKey);
         } catch {}
+        clearDraftAttachments(workerId);
         if (textareaRef.current) {
-          textareaRef.current.style.height = 'auto';
-          textareaRef.current.style.overflowY = 'hidden';
+          adjustTextareaHeightWithScrollAnchor(textareaRef.current);
         }
       },
       onError: ({ error }) => {
+        // A stale build (the app was redeployed while this tab was open)
+        // makes the server reject the Server Action ID with 404 +
+        // `x-nextjs-action-not-found` BEFORE executing it, so it is safe to
+        // reload onto the new build and automatically re-submit
+        // (mode: 'resend'). A ChunkLoadError also indicates a stale build,
+        // but carries no guarantee the action did not execute — for that
+        // class we only persist the input for restoration after the reload
+        // (mode: 'restore'), never auto-resubmit (S1).
+        // The submission (text + already-uploaded attachment keys) survives
+        // the reload in sessionStorage; the draft is also re-saved to
+        // localStorage as insurance against sessionStorage quota failures.
+        // `reloadForStaleDeployment` is loop-guarded: if the attempt budget
+        // is exhausted, it returns false and we fall through to the regular
+        // rollback + toast below.
+        const staleAction = isStaleActionError(error.thrownError);
+        if (pendingRef.current && (staleAction || isChunkLoadError(error.thrownError))) {
+          try {
+            localStorage.setItem(draftStorageKey, pendingRef.current.message);
+          } catch {}
+          saveDraftAttachments(workerId, {
+            imageKeys: pendingRef.current.imageKeys,
+            fileKeys: pendingRef.current.fileKeys,
+          });
+          savePendingResend(`message-${workerId}`, {
+            mode: staleAction ? 'resend' : 'restore',
+            values: {
+              message: pendingRef.current.message,
+              imageKeys: pendingRef.current.imageKeys,
+              fileKeys: pendingRef.current.fileKeys,
+            },
+            clientId: getValues('clientId'),
+          });
+          if (reloadForStaleDeployment()) {
+            return;
+          }
+          takePendingResend(`message-${workerId}`);
+        }
         if (pendingRef.current) {
           onRollback(pendingRef.current.id);
-          setValue('message', pendingRef.current.message);
-          if (pendingRef.current.modelOverride) {
-            setValue('modelOverride', pendingRef.current.modelOverride);
+          // Re-persist both drafts, undoing the submit-time clear: the text
+          // draft re-saves through the watch-driven debounce triggered by
+          // this setValue; the attachment previews were taken over by the
+          // (now rolled-back) optimistic bubble, so hand them back to the
+          // uploader — blob URLs are reused as-is, no network round trip —
+          // and re-save the keys explicitly from the submit-time snapshot.
+          setValue('message', pendingRef.current.message, { shouldValidate: true });
+          // Partition the taken-over blobs by current ownership state: the
+          // bubble's ImageViewer may have already completed its pre-signed
+          // swap (and revoked the blob) before this failure landed. Live
+          // blobs go straight back to the uploader (zero network); revoked
+          // ones are restored via restoreFromKeys (pre-signed lookup). If
+          // that lookup itself fails, the keys re-enter the uploader as
+          // key-only placeholder entries — the submit-time key set must
+          // never be lost from uploader-derived state (form values + draft),
+          // or a resend would silently drop the image (W-A; invariant
+          // pinned in lib/rollback-attachments.test.ts).
+          const { takenOver } = pendingRef.current;
+          const { liveImages, revokedImageKeys } = planRollbackImageRestore(takenOver.images, isUsable);
+          restoreTakenOverRef.current({ images: liveImages, files: takenOver.files });
+          if (revokedImageKeys.length > 0) {
+            void restoreFromKeysRef.current(revokedImageKeys, []).then((restored) => {
+              const fallbackKeys = fallbackKeysForFailedLookup(revokedImageKeys, restored);
+              if (fallbackKeys.length > 0) {
+                restoreKeyOnlyImagesRef.current(fallbackKeys);
+              }
+            });
           }
+          saveDraftAttachments(workerId, {
+            imageKeys: pendingRef.current.imageKeys,
+            fileKeys: pendingRef.current.fileKeys,
+          });
+
           pendingRef.current = null;
           requestAnimationFrame(() => {
             if (textareaRef.current) {
-              textareaRef.current.style.height = 'auto';
-              const maxHeight = 600;
-              const scrollHeight = textareaRef.current.scrollHeight;
-              const newHeight = Math.min(scrollHeight, maxHeight);
-              textareaRef.current.style.height = `${newHeight}px`;
-              textareaRef.current.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+              adjustTextareaHeightWithScrollAnchor(textareaRef.current);
             }
           });
+        }
+        if (resendAttachmentsRef.current) {
+          const { imageKeys, fileKeys } = resendAttachmentsRef.current;
+          resendAttachmentsRef.current = null;
+          void restoreFromKeysRef.current(imageKeys, fileKeys);
         }
         toast.error(typeof error === 'string' ? error : 'Failed to send the message');
       },
@@ -189,6 +338,11 @@ export default function MessageForm({
   });
 
   const clearImagesRef = useRef<() => void>(() => {});
+  const restoreFromKeysRef = useRef<
+    (imageKeys: string[], fileKeys: string[]) => Promise<{ imageKeys: string[]; fileKeys: string[] } | null>
+  >(async () => null);
+  const restoreTakenOverRef = useRef<(attachments: TakenOverAttachments) => void>(() => {});
+  const restoreKeyOnlyImagesRef = useRef<(keys: string[]) => void>(() => {});
 
   // Restore draft message from localStorage on mount
   const draftRestoredRef = useRef(false);
@@ -198,21 +352,144 @@ export default function MessageForm({
     try {
       const savedDraft = localStorage.getItem(draftStorageKey);
       if (savedDraft) {
-        setValue('message', savedDraft);
+        // `shouldValidate` is required here: without it react-hook-form keeps
+        // the mount-time `isValid` (computed against the empty default), so
+        // the restored draft sat in the textarea while the send button stayed
+        // disabled until the user typed another character.
+        setValue('message', savedDraft, { shouldValidate: true });
         // Restore textarea height after setting value
         requestAnimationFrame(() => {
           if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            const maxHeight = 600;
-            const scrollHeight = textareaRef.current.scrollHeight;
-            const newHeight = Math.min(scrollHeight, maxHeight);
-            textareaRef.current.style.height = `${newHeight}px`;
-            textareaRef.current.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+            adjustTextareaHeightWithScrollAnchor(textareaRef.current);
           }
         });
       }
     } catch {}
   }, [draftStorageKey, setValue]);
+
+  // Restore draft attachment keys (previews + form keys) on mount so
+  // attachments survive ANY reload — manual reloads and browser restarts
+  // included, matching the text draft above. Restoration goes through
+  // `restoreFromKeys`, which verifies every key against S3 and gracefully
+  // drops (with a toast) any that no longer exist.
+  //
+  // Exclusivity with the stale-deployment recovery payload: when a
+  // pending-resend payload exists for this mount, the payload is the single
+  // owner of attachment state (the consume effect below either auto-resubmits
+  // the keys or restores them through the same restoreFromKeys path), so the
+  // draft-side restore is skipped entirely — otherwise the two sources could
+  // stack the same attachments twice. The check works because React runs
+  // effects in declaration order: this effect runs BEFORE the consume effect,
+  // while the payload is still in sessionStorage, so the non-consuming
+  // `hasPendingResend` peek can still observe it.
+  //
+  // `draftAttachmentsPersistEnabledRef` gates the save effect below until the
+  // restore has settled, so the uploader's initial empty fan-out cannot wipe
+  // the stored keys before they are read back.
+  const draftAttachmentsConsumedRef = useRef(false);
+  const draftAttachmentsPersistEnabledRef = useRef(false);
+  useEffect(() => {
+    if (draftAttachmentsConsumedRef.current) return;
+    draftAttachmentsConsumedRef.current = true;
+    if (hasPendingResend(`message-${workerId}`)) {
+      draftAttachmentsPersistEnabledRef.current = true;
+      return;
+    }
+    const saved = loadDraftAttachments(workerId);
+    if (!saved) {
+      draftAttachmentsPersistEnabledRef.current = true;
+      return;
+    }
+    requestAnimationFrame(() => {
+      void restoreFromKeysRef
+        .current(saved.imageKeys, saved.fileKeys)
+        .then((restored) => {
+          // Rewrite the entry with the subset that actually still exists in
+          // S3 (an empty subset removes it), so a key that was deleted
+          // server-side cannot re-toast "could not be restored" on every
+          // subsequent reload. On lookup failure (null) the entry is kept so
+          // the next mount retries. No race with the persist gate below:
+          // this write goes directly to storage and is NOT gated by
+          // `draftAttachmentsPersistEnabledRef` (the gate only guards the
+          // watch-driven save effect), and `.finally` runs after `.then`, so
+          // the gate opens only after the rewrite has landed. Any later
+          // fan-out-driven save just rewrites the same subset.
+          if (restored) {
+            saveDraftAttachments(workerId, restored);
+          }
+        })
+        .finally(() => {
+          draftAttachmentsPersistEnabledRef.current = true;
+        });
+    });
+  }, [workerId]);
+
+  // Consume a pending submission persisted by the stale-deployment handler
+  // (see onError above). mode 'resend' re-submits automatically on the fresh
+  // build; mode 'restore' only repopulates the form and lets the user press
+  // send. `takePendingResend` removes the payload before acting, so the
+  // auto-resend can only ever fire once per persisted failure.
+  //
+  // A resend crosses a deployment boundary: the values were produced by the
+  // OLD build and are validated by the NEW build's schema (model enums in
+  // particular change between deploys). Optional fields are salvaged one by
+  // one — only the fields that are actually invalid are dropped (with a
+  // toast telling the user), and when the message itself cannot be recovered
+  // the payload degrades to a draft restore — never a submission that would
+  // fail resolver validation and strand the optimistic bubble.
+  const resendConsumedRef = useRef(false);
+  useEffect(() => {
+    if (resendConsumedRef.current) return;
+    resendConsumedRef.current = true;
+    const pending = takePendingResend<Record<string, unknown>>(`message-${workerId}`);
+    if (!pending) return;
+    const raw = pending.values;
+    const message = typeof raw.message === 'string' ? raw.message : '';
+    if (!message.trim()) return;
+    const imageKeys = extractStringArray(raw.imageKeys);
+    const fileKeys = extractStringArray(raw.fileKeys);
+    const { values: optionals, dropped } = salvageOptionalFields(sendMessageToAgentSchema.shape, raw, [
+      'modelOverride',
+      'kiroModelOverride',
+    ]);
+    const parsed = sendMessageToAgentSchema.safeParse({ workerId, message, imageKeys, fileKeys, ...optionals });
+    const canResend = pending.mode === 'resend' && parsed.success;
+    const values = parsed.success ? parsed.data : { workerId, message, imageKeys, fileKeys };
+    const clientIdParse = sendMessageToAgentSchema.shape.clientId.safeParse(pending.clientId);
+    const clientId = clientIdParse.success ? clientIdParse.data : undefined;
+    resendAttachmentsRef.current = { imageKeys: values.imageKeys ?? [], fileKeys: values.fileKeys ?? [] };
+    // Defer past the mount effects (the uploader's initial fan-out resets
+    // imageKeys/fileKeys to []) so the restored values are the ones submitted.
+    requestAnimationFrame(() => {
+      setValue('message', values.message, { shouldValidate: true });
+      if ('modelOverride' in values && values.modelOverride) {
+        setValue('modelOverride', values.modelOverride);
+      }
+      if ('kiroModelOverride' in values && values.kiroModelOverride) {
+        setValue('kiroModelOverride', values.kiroModelOverride);
+      }
+      if (textareaRef.current) {
+        adjustTextareaHeightWithScrollAnchor(textareaRef.current);
+      }
+      if (dropped.length > 0) {
+        toast.warning(t('settingsNotCarriedOver'));
+      }
+      if (canResend) {
+        setValue('imageKeys', values.imageKeys ?? []);
+        setValue('fileKeys', values.fileKeys ?? []);
+        // Explain WHY the page just reloaded; the resent message itself is
+        // visible in the timeline, so its success is not announced.
+        toast.info(t('reloadedAfterUpdate'));
+        handleOptimisticSubmitRef.current(undefined, { clientId });
+      } else {
+        // Restore-only: bring back the attachment previews (which fan the
+        // restorable keys into the form) and let the user submit manually.
+        resendAttachmentsRef.current = null;
+        void restoreFromKeysRef.current(values.imageKeys ?? [], values.fileKeys ?? []);
+        toast.info(t('messageRestoredAfterUpdate'));
+      }
+    });
+  }, [workerId, setValue, t]);
 
   // Save draft message to localStorage on change
   const messageValue = watch('message');
@@ -238,38 +515,35 @@ export default function MessageForm({
     };
   }, [messageValue, draftStorageKey]);
 
+  // Save draft attachment keys to localStorage on change — same debounce and
+  // clearing semantics as the text draft above (an empty key set removes the
+  // entry, and a successful send clears it via clearDraftAttachments in
+  // onSuccess), so both drafts share one lifecycle.
+  const imageKeysValue = watch('imageKeys');
+  const fileKeysValue = watch('fileKeys');
+  const attachmentsSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!draftAttachmentsPersistEnabledRef.current) return;
+    if (attachmentsSaveTimeoutRef.current) {
+      clearTimeout(attachmentsSaveTimeoutRef.current);
+    }
+    attachmentsSaveTimeoutRef.current = setTimeout(() => {
+      saveDraftAttachments(workerId, { imageKeys: imageKeysValue ?? [], fileKeys: fileKeysValue ?? [] });
+    }, 300);
+    return () => {
+      if (attachmentsSaveTimeoutRef.current) {
+        clearTimeout(attachmentsSaveTimeoutRef.current);
+      }
+    };
+  }, [imageKeysValue, fileKeysValue, workerId]);
+
   const { ref: messageRef, ...messageRegister } = register('message');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const autoResize = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-
-    const currentHeight = textarea.style.height;
-    textarea.style.height = 'auto';
-    const maxHeight = 600;
-    const scrollHeight = textarea.scrollHeight;
-    const newHeight = Math.min(scrollHeight, maxHeight);
-    const newHeightPx = `${newHeight}px`;
-
-    // skip updating the height when it is not changed.
-    if (currentHeight === newHeightPx) {
-      textarea.style.height = currentHeight;
-      return;
-    }
-
-    // Save current scroll position and calculate height difference
-    const scrollBefore = window.scrollY;
-    const oldHeight = parseFloat(currentHeight) || textarea.offsetHeight;
-    const heightDiff = newHeight - oldHeight;
-
-    textarea.style.height = newHeightPx;
-    textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
-
-    // Compensate for the height change to prevent page from scrolling down
-    if (heightDiff !== 0) {
-      window.scrollTo({ top: scrollBefore + heightDiff, behavior: 'instant' });
-    }
+    adjustTextareaHeightWithScrollAnchor(textarea);
   }, []);
 
   const enterPost: KeyboardEventHandler = (keyEvent) => {
@@ -286,8 +560,12 @@ export default function MessageForm({
     handlePaste,
     ImagePreviewList,
     clearImages,
+    restoreFromKeys,
+    restoreKeyOnlyImages,
+    takeoverAttachments,
+    restoreTakenOverAttachments,
     isUploading: isUploadingFiles,
-  } = ImageUploader({
+  } = useImageUploader({
     workerId,
     onImagesChange: (imageKeys) => {
       setValue('imageKeys', imageKeys);
@@ -297,61 +575,129 @@ export default function MessageForm({
     },
   });
 
+  // Latest-ref pattern: these refs are consumed by the mount-time
+  // auto-resend effect (declared earlier, so it runs first). They must be
+  // assigned during render — before any effect runs — for that effect to
+  // see the current callbacks; an effect-based sync would run too late.
   clearImagesRef.current = clearImages;
+  // eslint-disable-next-line react-hooks/immutability
+  restoreFromKeysRef.current = restoreFromKeys;
+  restoreTakenOverRef.current = restoreTakenOverAttachments;
+  restoreKeyOnlyImagesRef.current = restoreKeyOnlyImages;
 
   const isUploading = isUploadingFiles;
 
   const handleOptimisticSubmit = useCallback(
-    (e?: React.BaseSyntheticEvent) => {
-      flushModelChange();
+    (e?: React.BaseSyntheticEvent, opts?: { clientId?: string }) => {
       const message = getValues('message');
-      const modelOverride = getValues('modelOverride');
+      flushModelChange();
       if (message?.trim()) {
-        // Per-submission identity for the realtime echo dedup: the id is
-        // stamped on the optimistic bubble AND shipped with the server
-        // action, which forwards it verbatim on the rebroadcast event.
+        // Generate a per-submission UUID. The optimistic bubble carries it
+        // locally; we also stamp it on the form so the server action
+        // forwards the same id verbatim onto the realtime rebroadcast.
         // When that rebroadcast lands on this tab, `dedup.ts` matches by
         // id and merges the event's attachment keys onto the existing
-        // bubble instead of rendering a duplicate.
+        // bubble instead of rendering a duplicate. Replaces the older
+        // body-content + 30s window heuristic.
         //
         // `crypto.randomUUID()` is supported in all evergreen browsers and
         // in Next.js's secure contexts. If it is somehow unavailable
         // (e.g. legacy headless test environment), we fall back to a
         // collision-resistant `pending-` + Date.now() string — that path
         // loses dedup but never crashes the submit.
+        //
+        // The stale-deployment auto-resend passes the ORIGINAL submission's
+        // clientId via `opts` so the retried message keeps a stable identity.
         const clientId =
-          typeof globalThis.crypto?.randomUUID === 'function'
+          opts?.clientId ??
+          (typeof globalThis.crypto?.randomUUID === 'function'
             ? globalThis.crypto.randomUUID()
-            : `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            : `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`);
         setValue('clientId', clientId);
         const pendingId = `pending-${Date.now()}`;
-        pendingRef.current = { id: pendingId, message, modelOverride };
+        // Snapshot the attachment keys BEFORE taking over the previews: the
+        // takeover clears the uploader, whose fan-out effect resets the form
+        // values to [] after this handler returns. react-hook-form snapshots
+        // `_formValues` synchronously inside `handleSubmitWithAction` below,
+        // so the in-flight submission still carries the keys — but the error
+        // handlers run much later and must use this snapshot (via pendingRef).
+        const imageKeys = getValues('imageKeys') ?? [];
+        const fileKeys = getValues('fileKeys') ?? [];
+        // Ownership transfer: the blob preview URLs move from the uploader
+        // strip into the optimistic bubble, so the just-sent image renders
+        // instantly (no network) and is not displayed twice. `ImageViewer`
+        // revokes each blob after swapping in the real pre-signed URL; on
+        // rollback the blobs are handed back to the uploader instead.
+        const takenOver = takeoverAttachments();
+        const localImageUrls = Object.fromEntries(
+          takenOver.images.filter((i) => i.previewUrl).map((i) => [i.key, i.previewUrl])
+        );
+        pendingRef.current = {
+          id: pendingId,
+          message,
+          imageKeys,
+          fileKeys,
+          takenOver,
+        };
         onSubmit({
           id: pendingId,
           role: 'user',
           content: message,
           timestamp: new Date(),
           type: 'message',
-          modelOverride,
           pending: true,
           clientId,
+          ...(imageKeys.length > 0 ? { imageKeys } : {}),
+          ...(fileKeys.length > 0 ? { fileKeys } : {}),
+          ...(Object.keys(localImageUrls).length > 0 ? { localImageUrls } : {}),
           // Label the optimistic bubble with the submitter's own display
           // name so they see "<displayName>" instead of the generic
-          // "User" while the server action is in flight.
+          // "User" while the server action is in flight. The server
+          // rebroadcast carries the same field and the `case 'message'`
+          // dedupe path merges the echo onto this bubble, so the label is
+          // stable.
           ...(currentUserDisplayName ? { userSenderDisplayName: currentUserDisplayName } : {}),
           ...(currentUserId ? { userSenderUserId: currentUserId } : {}),
           userSenderType: 'webapp',
         });
+        // Clear both drafts at SUBMIT time rather than waiting for
+        // onSuccess: if the tab unmounts while the action is in flight, an
+        // onSuccess-only clear would leave the just-sent text/attachments in
+        // localStorage and resurrect them on the next open ("my previous
+        // image is attached again"). Losing the draft on failure is covered:
+        // every failure path re-saves — the onError rollback re-persists
+        // both drafts, and the stale-deployment branch additionally writes
+        // the pending-resend payload before reloading.
+        try {
+          localStorage.removeItem(draftStorageKey);
+        } catch {}
+        clearDraftAttachments(workerId);
       }
       handleSubmitWithAction(e);
       setValue('message', '');
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.overflowY = 'hidden';
+        adjustTextareaHeightWithScrollAnchor(textareaRef.current);
       }
     },
-    [getValues, onSubmit, handleSubmitWithAction, setValue, currentUserDisplayName, currentUserId]
+    [
+      getValues,
+      onSubmit,
+      handleSubmitWithAction,
+      setValue,
+      takeoverAttachments,
+      currentUserDisplayName,
+      currentUserId,
+      draftStorageKey,
+      workerId,
+      flushModelChange,
+    ]
   );
+
+  // Latest-submit ref so the mount-time auto-resend effect (declared before
+  // the uploader hook this callback depends on) can invoke it safely.
+  const handleOptimisticSubmitRef = useRef(handleOptimisticSubmit);
+  // eslint-disable-next-line react-hooks/immutability
+  handleOptimisticSubmitRef.current = handleOptimisticSubmit;
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -365,6 +711,9 @@ export default function MessageForm({
               {...messageRegister}
               ref={(e) => {
                 messageRef(e);
+                // Ref-callback assignment (not a render-phase write): this is
+                // the standard way to fan a node out to a second ref.
+                // eslint-disable-next-line react-hooks/immutability
                 textareaRef.current = e;
               }}
               placeholder={isUploading ? t('waitingForImageUpload') : t('enterYourMessage')}

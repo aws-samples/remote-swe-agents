@@ -93,7 +93,9 @@ export const MessageItem = React.memo(function MessageItem({
                   </div>
                 )}
                 <MarkdownRenderer content={message.content} />
-                {message.imageKeys && message.imageKeys.length > 0 && <ImageViewer imageKeys={message.imageKeys} />}
+                {message.imageKeys && message.imageKeys.length > 0 && (
+                  <ImageViewer imageKeys={message.imageKeys} localImageUrls={message.localImageUrls} />
+                )}
                 {message.fileKeys && message.fileKeys.length > 0 && <FileViewer fileKeys={message.fileKeys} />}
               </div>
               {message.type === 'message' && message.role === 'assistant' && (
