@@ -307,6 +307,23 @@ export default function MessageForm({
       const message = getValues('message');
       const modelOverride = getValues('modelOverride');
       if (message?.trim()) {
+        // Per-submission identity for the realtime echo dedup: the id is
+        // stamped on the optimistic bubble AND shipped with the server
+        // action, which forwards it verbatim on the rebroadcast event.
+        // When that rebroadcast lands on this tab, `dedup.ts` matches by
+        // id and merges the event's attachment keys onto the existing
+        // bubble instead of rendering a duplicate.
+        //
+        // `crypto.randomUUID()` is supported in all evergreen browsers and
+        // in Next.js's secure contexts. If it is somehow unavailable
+        // (e.g. legacy headless test environment), we fall back to a
+        // collision-resistant `pending-` + Date.now() string — that path
+        // loses dedup but never crashes the submit.
+        const clientId =
+          typeof globalThis.crypto?.randomUUID === 'function'
+            ? globalThis.crypto.randomUUID()
+            : `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        setValue('clientId', clientId);
         const pendingId = `pending-${Date.now()}`;
         pendingRef.current = { id: pendingId, message, modelOverride };
         onSubmit({
@@ -317,6 +334,7 @@ export default function MessageForm({
           type: 'message',
           modelOverride,
           pending: true,
+          clientId,
           // Label the optimistic bubble with the submitter's own display
           // name so they see "<displayName>" instead of the generic
           // "User" while the server action is in flight.
