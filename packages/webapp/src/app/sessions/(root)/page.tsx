@@ -3,13 +3,13 @@ import { getAllSessionsIncludingChildren, getUnreadMap } from '@remote-swe-agent
 import { RefreshOnFocus } from '@/components/RefreshOnFocus';
 import SessionsList from './components/SessionsList';
 import { getSession } from '@/lib/auth';
+import { toSessionListItems } from '@/lib/session-list';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function SessionsPage() {
-  const allSessions = await getAllSessionsIncludingChildren();
-  const visibleSessions = allSessions.filter((s) => !s.isHidden);
+  const allSessions = toSessionListItems(await getAllSessionsIncludingChildren());
   const { userId } = await getSession();
   const unreadMap = await getUnreadMap(userId);
 
@@ -20,7 +20,7 @@ export default async function SessionsPage() {
 
       <main className="flex-grow pt-20">
         <div className="max-w-6xl mx-auto px-4 pb-8">
-          <SessionsList initialSessions={visibleSessions} currentUserId={userId} unreadMap={unreadMap} />
+          <SessionsList initialSessions={allSessions} currentUserId={userId} unreadMap={unreadMap} />
         </div>
       </main>
     </div>

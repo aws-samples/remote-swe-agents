@@ -4,6 +4,12 @@
     "deploymentRecovery": {
       "appUpdated": "The app has been updated. Please reload the page to continue.",
       "reload": "Reload"
+    },
+    "errorPage": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred while displaying this page. Reloading usually fixes it.",
+      "reload": "Reload page",
+      "backToHome": "Back to home"
     }
   },
   "header": {
@@ -104,7 +110,6 @@
     "copiedToClipboard": "Copied to clipboard",
     "deleteSession": "Delete Session",
     "deleteSessionConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
-    "deleteSessionSuccess": "Session deleted successfully",
     "deleteSessionError": "Failed to delete session",
     "selectMode": "Select",
     "selectAll": "Select All",
@@ -112,7 +117,6 @@
     "deleteSelected": "Delete {count} selected",
     "batchDeleteTitle": "Delete Selected Sessions",
     "batchDeleteConfirm": "Are you sure you want to delete {count} sessions? This action cannot be undone.",
-    "batchDeleteSuccess": "{count} sessions deleted successfully",
     "batchDeleteError": "Failed to delete sessions",
     "cancel": "Cancel",
     "sessionActions": "Actions",
@@ -166,7 +170,10 @@
     "forceStopEscape": "Stop agent (Escape)",
     "copySessionId": "Copy session title and ID",
     "agentErrorRetrying": "An error occurred. Retrying... ({errorType})",
-    "agentErrorStopped": "Agent stopped due to an error: {errorType}"
+    "agentErrorStopped": "Agent stopped due to an error: {errorType}",
+    "batchDeleteAccepted": "Deleting {count, plural, one {# session} other {# sessions}} in the background...",
+    "batchDeleteItemError": "Failed to delete some sessions. Retry the remaining selections.",
+    "filterByTitle": "Filter by title..."
   },
   "home": {
     "title": "Welcome to Remote SWE Agents",

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { getUnreadBadge } from '@/lib/unread-display';
 import { Button } from '@/components/ui/button';
+import { getUnreadBadge } from '@/lib/unread-display';
 import {
   Plus,
   MessageSquare,
@@ -18,6 +18,7 @@ import {
   CheckSquare,
   Square,
   X,
+  Search,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,15 +38,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useEventBus } from '@/hooks/use-event-bus';
-import { useCallback, useState, useEffect, useMemo } from 'react';
-import { SessionItem, webappEventSchema } from '@remote-swe-agents/agent-core/schema';
+import { useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { webappEventSchema } from '@remote-swe-agents/agent-core/schema';
 import { getUnifiedStatus } from '@/utils/session-status';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { deleteSessionAction, batchDeleteSessionsAction, updateAgentStatusFromListAction } from '../actions';
-import { extractUserMessage } from '@/lib/message-formatter';
-import { formatDateTime } from '@/lib/utils';
+import { MAX_BATCH_DELETE_SIZE } from '../constants';
+import type { SessionListItem } from '@/lib/session-list';
+import LocalDateTime from '@/components/LocalDateTime';
 import { toast } from 'sonner';
 import type { UnreadMap } from '@remote-swe-agents/agent-core/lib';
 
@@ -53,7 +55,7 @@ type SortKey = 'createdAt' | 'updatedAt' | 'lastMessageAt' | 'sessionCost';
 type SortOrder = 'desc' | 'asc';
 
 interface SessionsListProps {
-  initialSessions: SessionItem[];
+  initialSessions: SessionListItem[];
   currentUserId: string;
   unreadMap?: UnreadMap;
 }
@@ -61,9 +63,7 @@ interface SessionsListProps {
 export default function SessionsList({ initialSessions, currentUserId, unreadMap = {} }: SessionsListProps) {
   const t = useTranslations('sessions');
   const router = useRouter();
-  const locale = useLocale();
-  const localeForDate = locale === 'ja' ? 'ja-JP' : 'en-US';
-  const [sessions, setSessions] = useState<SessionItem[]>(initialSessions);
+  const [sessions, setSessions] = useState<SessionListItem[]>(initialSessions);
   const [sortKey, setSortKey] = useState<SortKey>('lastMessageAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -71,10 +71,73 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+  const [titleFilter, setTitleFilter] = useState('');
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  // Per-session safety timers: if the `sessionDeleted` realtime event is never
+  // received (e.g. AppSync subscription drop), the optimistic "deleting" state
+  // would otherwise stay stuck forever. When a timer fires we clear the flag
+  // and refresh from the server to reflect the true state.
+  const deletingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const DELETING_FALLBACK_MS = 60_000;
+
+  const clearDeletingFlag = useCallback((workerId: string) => {
+    const timer = deletingTimersRef.current.get(workerId);
+    if (timer) {
+      clearTimeout(timer);
+      deletingTimersRef.current.delete(workerId);
+    }
+    setDeletingIds((prev) => {
+      if (!prev.has(workerId)) return prev;
+      const next = new Set(prev);
+      next.delete(workerId);
+      return next;
+    });
+  }, []);
+
+  const markDeleting = useCallback(
+    (workerIds: string[]) => {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        for (const id of workerIds) next.add(id);
+        return next;
+      });
+      for (const id of workerIds) {
+        const existing = deletingTimersRef.current.get(id);
+        if (existing) clearTimeout(existing);
+        deletingTimersRef.current.set(
+          id,
+          setTimeout(() => {
+            deletingTimersRef.current.delete(id);
+            setDeletingIds((prev) => {
+              if (!prev.has(id)) return prev;
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
+            // The completion event was lost; reconcile with the server.
+            router.refresh();
+          }, DELETING_FALLBACK_MS)
+        );
+      }
+    },
+    [router]
+  );
+
+  useEffect(() => {
+    const timers = deletingTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
+
   const { execute: executeDeleteSession } = useAction(deleteSessionAction, {
-    onSuccess: () => {
-      toast.success(t('deleteSessionSuccess'));
-      router.refresh();
+    onSuccess: ({ input }) => {
+      // Single deletion is now also offloaded to the background job. Mark the
+      // session as deleting; it is removed when the `sessionDeleted` event
+      // arrives (or reconciled by the fallback timer).
+      if (input?.workerId) markDeleting([input.workerId]);
+      toast.success(t('batchDeleteAccepted', { count: 1 }));
     },
     onError: (error) => {
       console.error('Failed to delete session:', error);
@@ -92,11 +155,16 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
   });
 
   const { execute: executeBatchDelete, isExecuting: isBatchDeleting } = useAction(batchDeleteSessionsAction, {
-    onSuccess: ({ data }) => {
-      toast.success(t('batchDeleteSuccess', { count: data?.count ?? 0 }));
+    onSuccess: ({ data, input }) => {
+      // The action now offloads deletion to a background job and returns
+      // immediately. Optimistically mark the targeted sessions as "deleting";
+      // each one is removed (or restored on failure) when the corresponding
+      // `sessionDeleted` realtime event arrives.
+      const targetIds = input?.workerIds ?? [];
+      markDeleting(targetIds);
+      toast.success(t('batchDeleteAccepted', { count: data?.count ?? targetIds.length }));
       setSelectMode(false);
       setSelectedIds(new Set());
-      router.refresh();
     },
     onError: (error) => {
       console.error('Failed to batch delete sessions:', error);
@@ -106,6 +174,11 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
 
   useEventBus({
     channelName: 'webapp/worker/*',
+    // Recover realtime events lost while the WebSocket was down by
+    // re-fetching the server-rendered sessions list.
+    onReconnected: useCallback(() => {
+      router.refresh();
+    }, [router]),
     onReceived: useCallback(
       (payload: unknown) => {
         try {
@@ -162,11 +235,38 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
               );
             }
           }
+          if (event.type === 'sessionDeleted') {
+            if (event.success) {
+              // Background deletion finished: drop the session from the list.
+              setSessions((prevSessions) => prevSessions.filter((s) => s.workerId !== event.workerId));
+            } else {
+              // Deletion failed: surface the error and re-enter select mode with
+              // the failed session selected so the user can see and retry it.
+              toast.error(t('batchDeleteItemError'));
+              setSelectMode(true);
+              setSelectedIds((prev) => {
+                const next = new Set(prev);
+                next.add(event.workerId);
+                return next;
+              });
+            }
+            clearDeletingFlag(event.workerId);
+          }
+          if (event.type === 'sessionReparented') {
+            router.refresh();
+          }
         } catch (error) {
           console.error('Failed to parse webapp event:', error);
         }
       },
-      [router]
+      // `sessions` is intentionally omitted: including it would change the
+      // callback identity on every session update, and `useEventBus` tears
+      // down and re-subscribes the AppSync Events socket whenever `onReceived`
+      // changes. The reads of `sessions` here are a best-effort "do I already
+      // know this worker" existence check; a slightly stale closure only means
+      // we fall back to a full `router.refresh()`, which is the safe branch.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [router, t, clearDeletingFlag]
     ),
   });
 
@@ -234,7 +334,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
 
   // Build a map of parentSessionId -> child sessions
   const childrenMap = useMemo(() => {
-    const map: Record<string, SessionItem[]> = {};
+    const map: Record<string, SessionListItem[]> = {};
     for (const session of sessions) {
       if (session.parentSessionId) {
         if (!map[session.parentSessionId]) {
@@ -252,6 +352,13 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
     if (hideCompleted) {
       filtered = filtered.filter((s) => s.agentStatus !== 'completed');
     }
+    if (titleFilter.trim()) {
+      const query = titleFilter.trim().toLowerCase();
+      filtered = filtered.filter((s) => {
+        const title = (s.title || s.SK || '').toLowerCase();
+        return title.includes(query);
+      });
+    }
     return [...filtered].sort((a, b) => {
       let aVal: number;
       let bVal: number;
@@ -264,7 +371,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
       }
       return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
     });
-  }, [sessions, sortKey, sortOrder, hideCompleted]);
+  }, [sessions, sortKey, sortOrder, hideCompleted, titleFilter]);
 
   const selectAll = useCallback(() => {
     setSelectedIds(new Set(sortedSessions.map((s) => s.workerId)));
@@ -283,6 +390,33 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+          <input
+            type="text"
+            value={titleFilter}
+            onChange={(e) => setTitleFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setTitleFilter('');
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder={t('filterByTitle')}
+            aria-label={t('filterByTitle')}
+            className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {titleFilter && (
+            <button
+              onClick={() => setTitleFilter('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              aria-label={t('clearFilter')}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           <select
@@ -359,8 +493,12 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
           const isOtherUserSession = session.initiator && session.initiator !== `webapp#${currentUserId}`;
           const isSelected = selectedIds.has(session.workerId);
           const hasChildren = (childrenMap[session.workerId] ?? []).length > 0;
+          const isDeleting = deletingIds.has(session.workerId);
           return (
-            <div key={session.workerId} className="relative">
+            <div
+              key={session.workerId}
+              className={`relative ${isDeleting ? 'opacity-50 pointer-events-none animate-pulse' : ''}`}
+            >
               {selectMode ? (
                 <div onClick={() => toggleSelection(session.workerId)} className="block cursor-pointer">
                   <div
@@ -390,7 +528,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
                     </div>
 
                     <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                      {session.lastMessage || extractUserMessage(session.initialMessage)}
+                      {session.lastMessage || session.initialMessagePreview}
                     </p>
 
                     <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
@@ -433,7 +571,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
                     </div>
 
                     <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 flex-1 truncate">
-                      {session.lastMessage || extractUserMessage(session.initialMessage)}
+                      {session.lastMessage || session.initialMessagePreview}
                     </p>
 
                     <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
@@ -456,7 +594,7 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
                           <Clock className="w-3 h-3" />
                         </div>
                         <span className="truncate ml-1">
-                          {formatDateTime(new Date(session.updatedAt), localeForDate)}
+                          <LocalDateTime timestamp={session.updatedAt} />
                         </span>
                       </div>
                     </div>
@@ -556,7 +694,13 @@ export default function SessionsList({ initialSessions, currentUserId, unreadMap
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => {
-                executeBatchDelete({ workerIds: Array.from(selectedIds) });
+                const ids = Array.from(selectedIds);
+                // Split large selections into multiple background jobs so each
+                // stays within the async job Lambda's time budget (see
+                // MAX_BATCH_DELETE_SIZE). Each chunk is a separate invocation.
+                for (let i = 0; i < ids.length; i += MAX_BATCH_DELETE_SIZE) {
+                  executeBatchDelete({ workerIds: ids.slice(i, i + MAX_BATCH_DELETE_SIZE) });
+                }
                 setShowBatchDeleteDialog(false);
               }}
             >
