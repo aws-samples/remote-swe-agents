@@ -37,6 +37,14 @@ export const BACKGROUND_CANCELLATION_MARKER = 'is still running in background';
 export const PID_DIR = join(tmpdir(), '.remote-swe-pids');
 mkdirSync(PID_DIR, { recursive: true });
 
+/**
+ * Maximum number of bytes allowed in the stdout/stderr accumulation buffer
+ * before we truncate and kill the child process. This prevents unbounded
+ * string growth that crashes the worker with `RangeError: Invalid string length`.
+ * 10 MB is generous for legitimate output while preventing OOM on infinite streams.
+ */
+export const MAX_OUTPUT_BUFFER_BYTES = 10 * 1024 * 1024; // 10 MB
+
 const savePidFile = (toolUseId: string, pid: number, command: string) => {
   try {
     writeFileSync(join(PID_DIR, toolUseId), JSON.stringify({ pid, command }));
@@ -183,15 +191,46 @@ export const executeCommand = async (
       });
     });
 
+    let outputTruncated = false;
+
+    const handleBufferOverflow = () => {
+      if (outputTruncated) return;
+      outputTruncated = true;
+      clearTimeout(timer);
+      if (longRunningTimer) clearTimeout(longRunningTimer);
+      if (cancellationInterval) clearInterval(cancellationInterval);
+      hasExited = true;
+      if (toolUseId) removePidFile(toolUseId);
+      childProcess.kill();
+      childProcess.stdout.destroy();
+      childProcess.stderr.destroy();
+      const marker = `\n[output truncated: exceeded ${MAX_OUTPUT_BUFFER_BYTES} bytes, process killed]`;
+      const appendToStdout = stdout.length >= stderr.length;
+      safeResolve({
+        error: `Command output exceeded maximum buffer size (${MAX_OUTPUT_BUFFER_BYTES} bytes) and was killed`,
+        stdout: truncate(stdout, 40e3) + (appendToStdout ? marker : ''),
+        stderr: truncate(stderr) + (appendToStdout ? '' : marker),
+        suggestion: generateSuggestion(command, false),
+      });
+    };
+
     childProcess.stdout.on('data', (data) => {
       if (resolved) return;
       stdout += data.toString();
+      if (stdout.length + stderr.length >= MAX_OUTPUT_BUFFER_BYTES) {
+        handleBufferOverflow();
+        return;
+      }
       resetTimer();
     });
 
     childProcess.stderr.on('data', (data) => {
       if (resolved) return;
       stderr += data.toString();
+      if (stdout.length + stderr.length >= MAX_OUTPUT_BUFFER_BYTES) {
+        handleBufferOverflow();
+        return;
+      }
       resetTimer();
     });
 

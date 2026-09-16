@@ -13,6 +13,7 @@ import { sendFileTool } from '../tools/send-file';
 import { sendToAgentTool } from '../tools/send-to-agent';
 import { acknowledgeAgentTool } from '../tools/acknowledge-agent';
 import { confirmSendToUserTool } from '../tools/confirm-send-to-user';
+import { confirmSendFileToUserTool } from '../tools/confirm-send-file-to-user';
 import { todoInitTool, todoUpdateTool } from '../tools/todo';
 import { updateSessionTitleTool } from '../tools/session-title';
 import { thinkTool } from '../tools/think';
@@ -22,6 +23,7 @@ import { confirmCompleteSessionTool } from '../tools/confirm-complete-session';
 import { confirmCreateAgentTool } from '../tools/confirm-create-agent';
 import { listSessionsTool } from '../tools/list-sessions';
 import { reparentSessionTool } from '../tools/reparent-session';
+import { searchSessionsTool } from '../tools/search-sessions';
 import { exportSessionDiagnosticsTool } from '../tools/export-session-diagnostics';
 
 /**
@@ -44,6 +46,7 @@ export const kiroExportedTools: ToolDefinition<unknown>[] = [
   reportProgressTool,
   confirmSendToUserTool,
   sendFileTool,
+  confirmSendFileToUserTool,
   // agent-to-agent
   sendToAgentTool,
   acknowledgeAgentTool,
@@ -84,6 +87,7 @@ export const kiroExportedTools: ToolDefinition<unknown>[] = [
   confirmCreateAgentTool,
   listSessionsTool,
   reparentSessionTool,
+  searchSessionsTool,
   exportSessionDiagnosticsTool,
 ] as unknown as ToolDefinition<unknown>[];
 
