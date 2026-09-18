@@ -449,6 +449,20 @@ exports[`Snapshot test: MainStack 1`] = `
         },
         "Environment": {
           "Variables": {
+            "EVENT_HTTP_ENDPOINT": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Fn::GetAtt": [
+                      "WorkerBusApi8460ABC0",
+                      "Dns.Http",
+                    ],
+                  },
+                ],
+              ],
+            },
             "TABLE_NAME": {
               "Ref": "StorageHistory251A3AE8",
             },
@@ -456,12 +470,12 @@ exports[`Snapshot test: MainStack 1`] = `
         },
         "ImageConfig": {
           "Command": [
-            "async-handler.handler",
+            "async-job-runner.handler",
           ],
         },
         "MemorySize": 256,
         "PackageType": "Image",
-        "ReservedConcurrentExecutions": 1,
+        "ReservedConcurrentExecutions": 3,
         "Role": {
           "Fn::GetAtt": [
             "AsyncJobHandlerServiceRoleFE9F530F",
@@ -514,6 +528,25 @@ exports[`Snapshot test: MainStack 1`] = `
                   ],
                 },
               ],
+            },
+            {
+              "Action": "appsync:EventPublish",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:appsync:us-east-1:123456789012:apis/",
+                    {
+                      "Fn::GetAtt": [
+                        "WorkerBusApi8460ABC0",
+                        "ApiId",
+                      ],
+                    },
+                    "/channelNamespace/*",
+                  ],
+                ],
+              },
             },
             {
               "Action": [
@@ -2961,6 +2994,28 @@ exports.handler = async (event) => {
             },
             {
               "Action": [
+                "bedrock:InvokeModel",
+                "ec2:CreateTags",
+                "ec2:DescribeInstances",
+                "ec2:RunInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "iam:PassRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerRoleAAEB1603",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
                 "dynamodb:BatchGetItem",
                 "dynamodb:BatchWriteItem",
                 "dynamodb:ConditionCheckItem",
@@ -3079,18 +3134,6 @@ exports.handler = async (event) => {
                   ],
                 },
               ],
-            },
-            {
-              "Action": [
-                "bedrock:InvokeModel",
-                "ec2:CreateTags",
-                "ec2:DescribeInstances",
-                "ec2:RunInstances",
-                "ec2:StartInstances",
-                "iam:PassRole",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
             },
           ],
           "Version": "2012-10-17",
@@ -5006,6 +5049,27 @@ exports.handler = async (event) => {
             },
             {
               "Action": [
+                "ec2:CreateTags",
+                "ec2:DescribeInstances",
+                "ec2:RunInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "iam:PassRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerRoleAAEB1603",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
                 "ssm:DeleteParameter",
                 "ssm:GetParameter",
                 "ssm:PutParameter",
@@ -5155,7 +5219,10 @@ exports.handler = async (event) => {
               },
             },
             {
-              "Action": "bedrock-agentcore:InvokeAgentRuntime",
+              "Action": [
+                "bedrock-agentcore:InvokeAgentRuntime",
+                "bedrock-agentcore:StopRuntimeSession",
+              ],
               "Effect": "Allow",
               "Resource": [
                 {
@@ -5179,17 +5246,6 @@ exports.handler = async (event) => {
                   ],
                 },
               ],
-            },
-            {
-              "Action": [
-                "ec2:CreateTags",
-                "ec2:DescribeInstances",
-                "ec2:RunInstances",
-                "ec2:StartInstances",
-                "iam:PassRole",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
             },
           ],
           "Version": "2012-10-17",
@@ -5448,6 +5504,11 @@ exports.handler = async (event) => {
                 "bedrock-agentcore:StopRuntimeSession",
                 "bedrock:InvokeModel",
                 "cloudwatch:PutMetricData",
+                "ec2:CreateTags",
+                "ec2:DescribeInstances",
+                "ec2:RunInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
                 "ecr:GetAuthorizationToken",
                 "logs:CreateLogGroup",
                 "logs:CreateLogStream",
@@ -5573,6 +5634,17 @@ exports.handler = async (event) => {
                   "Fn::Join": [
                     "",
                     [
+                      "arn:aws:ssm:us-east-1:123456789012:parameter",
+                      {
+                        "Ref": "WorkerAmiId428C377C",
+                      },
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
                       "arn:aws:ssm:us-east-1:123456789012:parameter/",
                       {
                         "Ref": "VapidKeysPrivateKeyBA530D10",
@@ -5664,6 +5736,16 @@ exports.handler = async (event) => {
                 "arn:aws:lambda-microvms:us-east-1:123456789012:image/*",
                 "arn:aws:lambda-microvms:us-east-1:123456789012:microvm/*",
               ],
+            },
+            {
+              "Action": "iam:PassRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerRoleAAEB1603",
+                  "Arn",
+                ],
+              },
             },
             {
               "Action": "bedrock-agentcore:InvokeAgentRuntime",
@@ -5838,6 +5920,24 @@ exports.handler = async (event) => {
           },
           "SLACK_BOT_TOKEN_PARAMETER_NAME": "/remote-swe/slack/bot-token",
           "STACK_NAME": "TestMainStack",
+          "SUBNET_ID_LIST": {
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Ref": "VpcV2PublicSubnet1SubnetD67FC535",
+                },
+                ",",
+                {
+                  "Ref": "VpcV2PublicSubnet2Subnet63F50919",
+                },
+                ",",
+                {
+                  "Ref": "VpcV2PublicSubnet3SubnetC2A8D2E4",
+                },
+              ],
+            ],
+          },
           "TABLE_NAME": {
             "Ref": "StorageHistory251A3AE8",
           },
@@ -5849,6 +5949,12 @@ exports.handler = async (event) => {
           },
           "WEBAPP_ORIGIN_NAME_PARAMETER": {
             "Ref": "WebappOriginNameParameterBBAD7F85",
+          },
+          "WORKER_AMI_PARAMETER_NAME": {
+            "Ref": "WorkerAmiId428C377C",
+          },
+          "WORKER_LAUNCH_TEMPLATE_ID": {
+            "Ref": "WorkerLaunchTemplateCB68F8E3",
           },
           "WORKER_RUNTIME": "agent-core",
         },
@@ -6076,7 +6182,7 @@ exports.handler = async (event) => {
       "Properties": {
         "DefinitionS3Location": {
           "Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
-          "Key": "fa0e8048119c4ad1441c9dd4c0c397946cfb8a92d68ea9bdf163fe6a6190b8e4.json",
+          "Key": "b06f979a3a1567d588e5dc037a777be716bcc0c029e9bfc33ce97e5d927939d1.json",
         },
         "DefinitionSubstitutions": {
           "connectionArn": {

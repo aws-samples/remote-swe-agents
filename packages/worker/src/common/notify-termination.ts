@@ -3,6 +3,8 @@ import {
   sendAgentMessage,
   incrementUnread,
   sendPushNotificationToUser,
+  listEventTriggers,
+  sendWebappEvent,
 } from '@remote-swe-agents/agent-core/lib';
 
 export type TerminationKind = 'error' | 'sleeping';
@@ -34,15 +36,30 @@ export const notifyTermination = async (workerId: string, kind: TerminationKind,
     if (!session) return;
 
     if (session.parentSessionId) {
-      const tag = kind === 'error' ? '[Child error]' : '[Child sleeping]';
-      const detail =
-        kind === 'error' ? ` encountered an error: ${reason.slice(0, 500)}` : ` is going to sleep due to inactivity.`;
-      await sendAgentMessage({
-        senderWorkerId: workerId,
-        targetSessionIds: [session.parentSessionId],
-        message: `${tag} Session ${workerId}${detail}`,
-        acknowledge: kind === 'sleeping',
-      });
+      if (kind === 'error') {
+        const detail = ` encountered an error: ${reason.slice(0, 500)}`;
+        await sendAgentMessage({
+          senderWorkerId: workerId,
+          targetSessionIds: [session.parentSessionId],
+          message: `[Child error] Session ${workerId}${detail}`,
+        });
+      } else {
+        // sleeping: suppress DDB persist / parent wake entirely.
+        // Emit an ephemeral webapp event so the parent session's UI can show
+        // a transient indicator without polluting LLM history.
+        let hasPendingTriggers = false;
+        try {
+          const triggers = await listEventTriggers(workerId);
+          hasPendingTriggers = triggers.length > 0;
+        } catch (e) {
+          console.warn('[notify-termination] listEventTriggers failed; assuming no triggers:', e);
+        }
+        await sendWebappEvent(session.parentSessionId, {
+          type: 'childSleeping',
+          childSessionId: workerId,
+          hasPendingTriggers,
+        });
+      }
       return;
     }
 

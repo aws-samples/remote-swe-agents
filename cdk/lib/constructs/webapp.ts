@@ -16,10 +16,11 @@ import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { Storage } from './storage';
 import { WorkerBus } from './worker/bus';
-import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { IRole, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { LambdaWarmer } from './lambda-warmer';
 import { AgentCoreRuntime } from './worker/agent-core-runtime';
 import { VapidKeys } from './vapid-keys';
+import { grantWorkerLaunchCapability } from './worker/grant-worker-launch';
 
 export interface WebappProps {
   storage: Storage;
@@ -33,6 +34,7 @@ export interface WebappProps {
   workerAmiIdParameter: IStringParameter;
   originNameParameter: IStringParameter;
   agentCoreRuntime: AgentCoreRuntime;
+  workerInstanceRole: IRole;
 
   hostedZone?: IHostedZone;
   certificate?: ICertificate;
@@ -87,9 +89,6 @@ export class Webapp extends Construct {
         USER_POOL_ID: auth.userPool.userPoolId,
         USER_POOL_CLIENT_ID: auth.client.userPoolClientId,
         ASYNC_JOB_HANDLER_ARN: asyncJob.handler.functionArn,
-        WORKER_LAUNCH_TEMPLATE_ID: props.launchTemplateId,
-        WORKER_AMI_PARAMETER_NAME: props.workerAmiIdParameter.parameterName,
-        SUBNET_ID_LIST: props.subnetIdListForWorkers,
         EVENT_HTTP_ENDPOINT: props.workerBus.httpEndpoint,
         TABLE_NAME: storage.table.tableName,
         BUCKET_NAME: storage.bucket.bucketName,
@@ -107,7 +106,16 @@ export class Webapp extends Construct {
       memorySize: 1769,
       architecture: Architecture.ARM_64,
     });
-    props.workerAmiIdParameter.grantRead(handler);
+    const workerLaunchEnv = grantWorkerLaunchCapability({
+      grantee: handler,
+      amiIdParameter: props.workerAmiIdParameter,
+      launchTemplateId: props.launchTemplateId,
+      subnetIdListForWorkers: props.subnetIdListForWorkers,
+      workerInstanceRole: props.workerInstanceRole,
+    });
+    for (const [key, value] of Object.entries(workerLaunchEnv)) {
+      handler.addEnvironment(key, value);
+    }
 
     // Grant SSM access for per-user Kiro API keys
     handler.addToRolePolicy(
@@ -132,26 +140,13 @@ export class Webapp extends Construct {
     storage.skillBucket.grantReadWrite(handler);
     workerBus.api.grantPublish(handler);
     props.agentCoreRuntime.grantInvoke(handler);
+    props.agentCoreRuntime.grantStop(handler);
     if (props.vapidKeys) {
       props.vapidKeys.grantRead(handler);
       handler.node.addDependency(props.vapidKeys.customResource);
     }
 
     this.handler = handler;
-
-    handler.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          // required to run instances from launch template
-          'ec2:RunInstances',
-          'ec2:DescribeInstances',
-          'iam:PassRole',
-          'ec2:CreateTags',
-          'ec2:StartInstances',
-        ],
-        resources: ['*'],
-      })
-    );
 
     const service = new CloudFrontLambdaFunctionUrlService(this, 'Resource', {
       subDomain,
