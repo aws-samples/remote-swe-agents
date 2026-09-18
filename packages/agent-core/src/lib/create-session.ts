@@ -13,6 +13,7 @@ import {
 import { getOrCreateWorkerInstance, updateInstanceStatus } from './worker-manager';
 import { sendWorkerEvent } from './events';
 import { getCustomAgent } from './custom-agent';
+import { imageFormatFromKey } from './images';
 import { renderUserMessage, renderAgentMessage, renderSystemNotification, sanitizeSenderLabel } from './prompt';
 import { postNewSlackThread } from './slack';
 import { getWebappSessionUrl } from './webapp-origin';
@@ -199,7 +200,7 @@ export const createSession = async (params: CreateSessionParams): Promise<string
   for (const key of imageKeys) {
     content.push({
       image: {
-        format: 'webp',
+        format: imageFormatFromKey(key) ?? 'png',
         source: {
           s3Key: key,
         },

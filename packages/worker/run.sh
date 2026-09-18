@@ -19,4 +19,4 @@ if [ -n "$SLACK_BOT_TOKEN_PARAMETER_NAME" ]; then
   export SLACK_BOT_TOKEN=$(aws ssm get-parameter --name $SLACK_BOT_TOKEN_PARAMETER_NAME --query "Parameter.Value" --output text)
 fi
 
-exec npx tsx src/agent-core.ts
+exec node --import tsx src/agent-core.ts
