@@ -93,7 +93,7 @@ describe('completeSession', () => {
       expect(mockUpdateSessionAgentStatus).not.toHaveBeenCalled();
       expect(mockStopWorkerInstance).not.toHaveBeenCalled();
       expect(result).toContain('CONFIRMATION REQUIRED');
-      expect(result).toContain('Confirm Complete Session');
+      expect(result).toContain('confirm_complete_session');
     });
 
     test('self-completion with explicit sessionId also triggers confirmation guard', async () => {
@@ -105,7 +105,7 @@ describe('completeSession', () => {
       expect(mockUpdateSessionAgentStatus).not.toHaveBeenCalled();
       expect(mockStopWorkerInstance).not.toHaveBeenCalled();
       expect(result).toContain('CONFIRMATION REQUIRED');
-      expect(result).toContain('Confirm Complete Session');
+      expect(result).toContain('confirm_complete_session');
     });
 
     test('completing another session succeeds immediately', async () => {

@@ -12,10 +12,10 @@ export const loadAndDeletePendingUserMessage = (workerId: string): string | unde
 };
 
 export const confirmSendToUserTool = createConfirmTool({
-  name: 'confirmSendToUser',
-  description: `Confirm and send a blocked sendMessageToUser call in a child session. Call this after sendMessageToUser returns a confirmation prompt. If you do not want to send the message, simply do not call this tool.`,
+  name: 'confirm_send_to_user',
+  description: `Confirm and send a blocked send_message_to_user call in a child session. Call this after send_message_to_user returns a confirmation prompt. If you do not want to send the message, simply do not call this tool.`,
   pendingKey: PENDING_KEY,
-  noPendingMessage: 'No pending message to confirm. Use sendMessageToUser first.',
+  noPendingMessage: 'No pending message to confirm. Use send_message_to_user first.',
   execute: async (workerId: string, pendingData: string) => {
     await sendMessageToUser(workerId, pendingData);
     return 'Successfully sent the message to the user.';

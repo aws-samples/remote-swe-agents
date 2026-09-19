@@ -12,7 +12,7 @@ const inputSchema = z.object({
     ),
 });
 
-const name = 'acknowledgeAgent';
+const name = 'acknowledge_agent';
 
 export const acknowledgeAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -40,7 +40,7 @@ export const acknowledgeAgentTool: ToolDefinition<z.infer<typeof inputSchema>> =
 The message is saved in the target's conversation history but does NOT trigger a new agent turn.
 This is like a Slack reaction — the target will see it next time they wake up, but won't be interrupted.
 
-Use this instead of sendMessageToAgent when:
+Use this instead of send_message_to_agent when:
 - You want to confirm receipt without triggering a response loop
 - The conversation has reached a natural stopping point
 - You're providing a final status update that doesn't need immediate action`,

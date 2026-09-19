@@ -7,7 +7,7 @@ const inputSchema = z.object({
   imagePath: z.string().describe('The local file system path (absolute) to the image.'),
 });
 
-const name = 'readLocalImage';
+const name = 'read_local_image';
 
 export const readImageTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

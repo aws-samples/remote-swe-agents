@@ -16,7 +16,7 @@ const inputSchema = z.object({
   message: z.string().min(1).describe('The message you want to send to the user.'),
 });
 
-const name = 'sendMessageToUser';
+const name = 'send_message_to_user';
 
 /**
  * LLM-facing feedback returned when the tool is invoked with a placeholder
@@ -27,7 +27,7 @@ const name = 'sendMessageToUser';
  */
 const PLACEHOLDER_REJECTION_MESSAGE =
   "Your message was detected as a placeholder (empty / '.' / scaffolding artifact) and was NOT delivered to the user. " +
-  'Please call sendMessageToUser again with meaningful content, OR end your turn silently if you have nothing new to report.';
+  'Please call send_message_to_user again with meaningful content, OR end your turn silently if you have nothing new to report.';
 
 export const sendMessageToUser = async (workerId: string, message: string) => {
   if (await shouldSuppressUserDelivery(workerId, message)) {
@@ -95,9 +95,9 @@ const coreMessageHandler = async (
 
 const guardedMessageHandler = withChildSessionGuard(coreMessageHandler, {
   pendingKey: 'user-message',
-  confirmToolName: 'confirmSendToUser',
+  confirmToolName: 'confirm_send_to_user',
   serializePending: (input) => input.message,
-  toolDisplayName: 'sendMessageToUser',
+  toolDisplayName: 'send_message_to_user',
 });
 
 export const reportProgressTool: ToolDefinition<z.infer<typeof inputSchema>> = {

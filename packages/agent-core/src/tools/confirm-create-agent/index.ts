@@ -36,7 +36,7 @@ export const loadAndDeletePendingCreateAgent = (workerId: string): PendingFile |
 
 const inputSchema = z.object({});
 
-const name = 'confirmCreateAgent';
+const name = 'confirm_create_agent';
 
 export const confirmCreateAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -44,12 +44,12 @@ export const confirmCreateAgentTool: ToolDefinition<z.infer<typeof inputSchema>>
     const pending = loadAndDeletePendingCreateAgent(context.workerId);
 
     if (!pending) {
-      return 'No pending createAgent to confirm. Call createAgent first.';
+      return 'No pending create_agent to confirm. Call create_agent first.';
     }
 
     const elapsed = Date.now() - pending.timestamp;
     if (elapsed > PENDING_TTL_MS) {
-      return `The pending createAgent request has expired (requested ${Math.round(elapsed / 60000)} minutes ago, TTL is 30 minutes). Please call createAgent again to start a new request.`;
+      return `The pending create_agent request has expired (requested ${Math.round(elapsed / 60000)} minutes ago, TTL is 30 minutes). Please call create_agent again to start a new request.`;
     }
 
     const agent = await createCustomAgent(pending.data);
@@ -59,7 +59,7 @@ export const confirmCreateAgentTool: ToolDefinition<z.infer<typeof inputSchema>>
   schema: inputSchema,
   toolSpec: async () => ({
     name,
-    description: `Confirm and execute a blocked createAgent call. Call this after createAgent returns a confirmation prompt for top-level agent creation. Only call this if the user explicitly approved creating the new top-level agent. If the user did NOT approve, do NOT call this tool.`,
+    description: `Confirm and execute a blocked create_agent call. Call this after create_agent returns a confirmation prompt for top-level agent creation. Only call this if the user explicitly approved creating the new top-level agent. If the user did NOT approve, do NOT call this tool.`,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
     },

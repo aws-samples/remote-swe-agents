@@ -67,7 +67,7 @@ describe('confirmCompleteSession', () => {
 
     expect(mockUpdateSessionAgentStatus).not.toHaveBeenCalled();
     expect(mockStopWorkerInstance).not.toHaveBeenCalled();
-    expect(result).toContain('No pending completeSession');
+    expect(result).toContain('No pending complete_session');
   });
 
   test('returns error when session not found', async () => {

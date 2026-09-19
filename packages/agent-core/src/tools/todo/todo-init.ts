@@ -22,7 +22,7 @@ async function todoInit(params: z.infer<typeof todoInitInputSchema>, context: { 
   return formattedList;
 }
 
-const name = 'todoInit';
+const name = 'todo_init';
 
 export const todoInitTool: ToolDefinition<z.infer<typeof todoInitInputSchema>> = {
   name,

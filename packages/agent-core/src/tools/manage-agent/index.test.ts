@@ -280,7 +280,7 @@ describe('createAgentTool (parentAgentId validation)', () => {
     );
     expect(mockCreateCustomAgent).not.toHaveBeenCalled();
     expect(result).toContain('CONFIRMATION REQUIRED');
-    expect(result).toContain('confirmCreateAgent');
+    expect(result).toContain('confirm_create_agent');
     expect(result).toContain('New Agent');
   });
 

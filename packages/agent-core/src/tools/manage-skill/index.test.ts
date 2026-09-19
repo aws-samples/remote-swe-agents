@@ -173,10 +173,10 @@ description: Updated description
   });
 
   test('toolSpec names match tool names', async () => {
-    expect((await listSkillsTool.toolSpec()).name).toBe('listSkills');
-    expect((await getSkillTool.toolSpec()).name).toBe('getSkill');
-    expect((await createSkillTool.toolSpec()).name).toBe('createSkill');
-    expect((await updateSkillTool.toolSpec()).name).toBe('updateSkill');
-    expect((await deleteSkillTool.toolSpec()).name).toBe('deleteSkill');
+    expect((await listSkillsTool.toolSpec()).name).toBe('list_skills');
+    expect((await getSkillTool.toolSpec()).name).toBe('get_skill');
+    expect((await createSkillTool.toolSpec()).name).toBe('create_skill');
+    expect((await updateSkillTool.toolSpec()).name).toBe('update_skill');
+    expect((await deleteSkillTool.toolSpec()).name).toBe('delete_skill');
   });
 });

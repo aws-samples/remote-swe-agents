@@ -13,7 +13,7 @@ const inputSchema = z.object({
   message: z.string().describe('message to send along with the file to user'),
 });
 
-const name = 'sendFileToUser';
+const name = 'send_file_to_user';
 
 const getContentTypeFromExtension = (filePath: string): string => {
   const ext = extname(filePath).toLowerCase();
@@ -132,9 +132,9 @@ const coreSendFileHandler = async (
 
 const guardedSendFileHandler = withChildSessionGuard(coreSendFileHandler, {
   pendingKey: 'user-file',
-  confirmToolName: 'confirmSendFileToUser',
+  confirmToolName: 'confirm_send_file_to_user',
   serializePending: (input) => JSON.stringify(input),
-  toolDisplayName: 'sendFileToUser',
+  toolDisplayName: 'send_file_to_user',
 });
 
 export const sendFileTool: ToolDefinition<z.infer<typeof inputSchema>> = {

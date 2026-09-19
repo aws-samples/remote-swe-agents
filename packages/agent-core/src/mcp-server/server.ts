@@ -8,6 +8,21 @@ import { kiroExportedTools } from './selection';
 import { readEnvContext, resolveGlobalPreferences, type McpContextEnv } from './context';
 
 /**
+ * Names of the REQUIRED parameters of a tool, derived from its JSON Schema
+ * (`required` array). Used to build a self-correction hint when a tool call
+ * arrives with missing/empty arguments. Best-effort: any schema shape that is
+ * not a plain object schema yields an empty list. Pure; exported for testing.
+ */
+export const requiredParamNames = (schema: ToolDefinition<unknown>['schema']): string[] => {
+  try {
+    const json = zodToJsonSchemaBody(schema) as { required?: unknown };
+    return Array.isArray(json.required) ? (json.required.filter((r) => typeof r === 'string') as string[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
  * Build an MCP server that exposes the curated remote-swe tool catalogue.
  *
  * Each remote-swe `ToolDefinition` is wrapped into an MCP tool:
@@ -44,11 +59,15 @@ export const buildMcpServer = (
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
+    // Exact-match lookup. With tool IDs aligned to the model's snake_case
+    // prior, no tolerant name remapping is warranted: the ACP client rejects
+    // unknown names before dispatch, so a transformed name should hard-fail
+    // here rather than being silently resolved.
     const tool = toolByName.get(req.params.name);
     if (!tool) {
       return {
         isError: true,
-        content: [{ type: 'text', text: `tool not found: ${req.params.name}` }],
+        content: [{ type: 'text', text: `tool not found: ${req.params.name}.` }],
       };
     }
 
@@ -56,9 +75,16 @@ export const buildMcpServer = (
     // the MCP caller gets the same error messages a Bedrock caller would.
     const parsed = tool.schema.safeParse(req.params.arguments ?? {});
     if (!parsed.success) {
+      // Self-correction hint: name the tool and enumerate its required
+      // parameters so a call with missing/empty input can fix itself in one
+      // retry.
+      const required = requiredParamNames(tool.schema);
+      const requiredHint = required.length ? ` Required parameters for "${tool.name}": ${required.join(', ')}.` : '';
       return {
         isError: true,
-        content: [{ type: 'text', text: `invalid arguments: ${parsed.error.message}` }],
+        content: [
+          { type: 'text', text: `invalid arguments for "${tool.name}": ${parsed.error.message}.${requiredHint}` },
+        ],
       };
     }
 

@@ -66,7 +66,7 @@ export function withChildSessionGuard<Input>(
             `ERROR: ${options.toolDisplayName} is not available in this child session.`,
             `The user has never sent a message to this session directly (0 user messages), which means they do not expect to receive messages from here.`,
             ``,
-            `You MUST use sendMessageToAgent to report to your parent session instead.`,
+            `You MUST use send_message_to_agent to report to your parent session instead.`,
             `Do NOT call ${options.confirmToolName} — it will not work for this case.`,
           ].join('\n');
         }
@@ -82,7 +82,7 @@ export function withChildSessionGuard<Input>(
           ``,
           `The only scenario where sending directly to the user is appropriate is when the user previously asked you to investigate something directly in this session and you are reporting back after a long delay.`,
           ``,
-          `In almost all cases, you should use sendMessageToAgent to report to your parent session instead.`,
+          `In almost all cases, you should use send_message_to_agent to report to your parent session instead.`,
           `If you are ABSOLUTELY CERTAIN this is one of the rare exceptions, call ${options.confirmToolName} to proceed.`,
         ].join('\n');
       }

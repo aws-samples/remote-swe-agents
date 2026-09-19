@@ -227,7 +227,7 @@ describe('buildHandoverMessage', () => {
     expect(message).toContain('- Pull Request: https://github.com/o/r/pull/1');
     expect(message).toContain('unpushed local changes may have been lost');
     expect(message).toContain('## Instructions');
-    expect(message).toContain('searchSessions (scope: "tree")');
+    expect(message).toContain('search_sessions (scope: "tree")');
   });
 
   test('omits todo and messages sections when empty', () => {

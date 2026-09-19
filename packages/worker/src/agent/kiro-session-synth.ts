@@ -276,7 +276,7 @@ const buildIntermediateEvents = async (
             const { previewPath, fileName, s3Uri } = await materializeImage(imgS3Key);
             parts.push(
               `the image "${fileName}" is available as a resized preview at ${previewPath} (original: ${s3Uri})\n` +
-                `to view this image, use the readLocalImage tool on the preview path`
+                `to view this image, use the read_local_image tool on the preview path`
             );
           } catch {
             const s3Uri = BucketName ? `s3://${BucketName}/${imgS3Key}` : imgS3Key;
@@ -346,7 +346,7 @@ const buildIntermediateEvents = async (
                 kind: 'text',
                 data:
                   `the image "${fileName}" is available as a resized preview at ${previewPath} (original: ${s3Uri})\n` +
-                  `to view this image, use the readLocalImage tool on the preview path`,
+                  `to view this image, use the read_local_image tool on the preview path`,
               });
             } catch {
               const s3Uri = BucketName ? `s3://${BucketName}/${imgS3Key}` : imgS3Key;
