@@ -23,6 +23,8 @@ import {
   buildSkillCatalogue,
   downloadSkillFiles,
   deployKiroWorkspaceFiles,
+  retrieveRelevantLessons,
+  buildLessonsBlock,
   incrementUnread,
   sendPushNotificationToUser,
   notifyOtherParticipants,
@@ -152,6 +154,33 @@ export const buildRuntimeEnvironmentBlock = (opts: {
 };
 
 /**
+ * Extract plain query text from the most recent user message for lesson
+ * retrieval. Message `content` is a JSON string of Bedrock ContentBlocks;
+ * we concatenate any `text` blocks. Falls back to the raw string when the
+ * content is not JSON. Never throws.
+ */
+export const extractQueryTextFromHistory = (
+  history: import('@remote-swe-agents/agent-core/schema').MessageItem[]
+): string => {
+  const lastUser = history.filter((i) => i.role === 'user').at(-1);
+  if (!lastUser?.content) return '';
+  try {
+    const parsed = JSON.parse(lastUser.content);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((block) => (block && typeof block === 'object' && typeof block.text === 'string' ? block.text : ''))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+    }
+    if (typeof parsed === 'string') return parsed.trim();
+  } catch {
+    return lastUser.content.trim();
+  }
+  return '';
+};
+
+/**
  * Compose the layered system prompt in the same order as the original agent
  * loops: essential → knowledge → custom → common → repo knowledge → session
  * hierarchy. Kept in a single place so backends don't re-implement it.
@@ -202,6 +231,21 @@ const buildSystemPrompt = async (opts: {
       }
     } catch (error) {
       console.error('[orchestrator] Error loading skills:', error);
+    }
+
+    // Long-term memory: inject the lessons most relevant to the triggering
+    // user message. Fully failure-tolerant — a lesson-retrieval or embedding
+    // failure (or zero lessons) must never break the turn.
+    try {
+      const userId = session.initiator.includes('#') ? session.initiator.split('#').pop()! : session.initiator;
+      const lastUserText = extractQueryTextFromHistory(history);
+      const relevant = await retrieveRelevantLessons(userId, lastUserText);
+      const lessonBlock = buildLessonsBlock(relevant);
+      if (lessonBlock) {
+        systemPrompt = `${systemPrompt}\n\n${lessonBlock}`;
+      }
+    } catch (error) {
+      console.error('[orchestrator] Error loading lessons:', error);
     }
   }
 

@@ -146,6 +146,18 @@ export class Webapp extends Construct {
       handler.node.addDependency(props.vapidKeys.customResource);
     }
 
+    // Grant Bedrock embedding access for the lesson (memory) store. The webapp
+    // computes Titan embeddings when a lesson is created/edited from the UI;
+    // without this the Lambda role hits AccessDeniedException and lessons are
+    // stored without an embedding (semantic search silently degrades to
+    // recency). Mirrors the worker role grant in constructs/worker/index.ts.
+    handler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: ['*'],
+      })
+    );
+
     this.handler = handler;
 
     const service = new CloudFrontLambdaFunctionUrlService(this, 'Resource', {

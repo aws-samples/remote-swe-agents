@@ -21,7 +21,8 @@
     "apiKeys": "APIキー",
     "costAnalysis": "コスト分析",
     "customAgent": "カスタムエージェント",
-    "skills": "スキル"
+    "skills": "スキル",
+    "lessons": "レッスン"
   },
   "sessions": {
     "title": "セッション一覧",
@@ -554,5 +555,47 @@
       "FRONTMATTER_INVALID": "SKILL.mdのfrontmatterが不正です",
       "UPLOAD_FAILED": "ストレージへのアップロードに失敗しました"
     }
+  },
+  "lessons": {
+    "title": "レッスン",
+    "description": "エージェントが過去のセッションから学んだレッスンを閲覧・管理します",
+    "create": {
+      "title": "レッスンを追加",
+      "description": "将来のセッションに注入するレッスンを手動で追加します",
+      "button": "レッスンを追加"
+    },
+    "list": {
+      "title": "学習済みレッスン",
+      "description": "セマンティック検索で将来のセッションに注入される永続的なメモリー"
+    },
+    "fields": {
+      "content": "内容",
+      "category": "カテゴリ",
+      "sourceSession": "元セッション"
+    },
+    "contentPlaceholder": "エージェントに覚えさせたいことは?",
+    "categoryPlaceholder": "任意のカテゴリラベル",
+    "status": {
+      "active": "有効",
+      "archived": "無効"
+    },
+    "createdBy": {
+      "agent": "エージェント",
+      "user": "あなた"
+    },
+    "creating": "追加中...",
+    "edit": "編集",
+    "delete": "削除",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "enable": "有効化",
+    "disable": "無効化",
+    "noLessons": "レッスンはまだありません",
+    "confirmDelete": "このレッスンを削除しますか?",
+    "createSuccess": "レッスンを追加しました",
+    "createError": "レッスンの追加に失敗しました",
+    "updateSuccess": "レッスンを更新しました",
+    "updateError": "レッスンの更新に失敗しました",
+    "deleteError": "レッスンの削除に失敗しました"
   }
 }

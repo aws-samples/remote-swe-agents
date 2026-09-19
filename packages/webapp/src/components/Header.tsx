@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, Languages, LogOut, Check, Key, Settings, Bot, Puzzle } from 'lucide-react';
+import { Menu, Languages, LogOut, Check, Key, Settings, Bot, Puzzle, Brain } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import {
   DropdownMenu,
@@ -125,6 +125,12 @@ export default function Header({
                   <Link href="/skills" className="w-full cursor-default flex items-center" prefetch={false}>
                     <Puzzle className="mr-2 h-4 w-4" />
                     <span>{t('skills')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/lessons" className="w-full cursor-default flex items-center" prefetch={false}>
+                    <Brain className="mr-2 h-4 w-4" />
+                    <span>{t('lessons')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

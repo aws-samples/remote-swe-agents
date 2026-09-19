@@ -12,4 +12,5 @@ export * from './preferences';
 export * from './push-subscription';
 export * from './unread';
 export * from './skill';
+export * from './lesson';
 export * from './user-preferences';
