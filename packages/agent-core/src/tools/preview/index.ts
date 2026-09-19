@@ -178,7 +178,7 @@ const openPreviewInputSchema = z.object({
     .describe('The local port where the dev server is running (e.g. 3000 for Next.js, 5173 for Vite).'),
 });
 
-const openPreviewName = 'Open Preview';
+const openPreviewName = 'open_preview';
 
 export const openPreviewTool: ToolDefinition<z.infer<typeof openPreviewInputSchema>> = {
   name: openPreviewName,
@@ -188,11 +188,11 @@ export const openPreviewTool: ToolDefinition<z.infer<typeof openPreviewInputSche
 
     // S3: Prevent double MicroVM
     if (activePreview) {
-      return `Error: A preview session is already active (port ${activePreview.localPort}). Close it with closePreview first.`;
+      return `Error: A preview session is already active (port ${activePreview.localPort}). Close it with close_preview first.`;
     }
 
     if (process.env.WORKER_RUNTIME !== 'agent-core') {
-      return 'Error: openPreview is only available on AgentCore runtime.';
+      return 'Error: open_preview is only available on AgentCore runtime.';
     }
 
     const imageArn = getMicrovmImageArn();
@@ -324,7 +324,7 @@ export const openPreviewTool: ToolDefinition<z.infer<typeof openPreviewInputSche
         `The webapp automatically converts localhost:${port} mentions in your messages into clickable preview links, but always prefer giving the Preview URL directly.`,
         `Only one preview can be active in the user's browser at a time.`,
         `The preview will auto-suspend after 15 minutes of inactivity.`,
-        `Use closePreview to terminate when done.`,
+        `Use close_preview to terminate when done.`,
       ].join('\n');
     } catch (e: any) {
       // S1: Clean up MicroVM on failure at any step after RunMicrovm
@@ -354,7 +354,7 @@ Requirements:
 - Only one preview session can be active at a time
 - Only available on AgentCore runtime (not EC2)
 
-The preview will auto-suspend after 15 minutes of idle and auto-terminate after 1 hour suspended. Use closePreview to terminate early.
+The preview will auto-suspend after 15 minutes of idle and auto-terminate after 1 hour suspended. Use close_preview to terminate early.
 
 This is the ONLY way to expose a local port to the user's browser. Do NOT use localtunnel, ngrok, or any other external tunneling service.`,
     inputSchema: {
@@ -485,7 +485,7 @@ export function registerPreviewExitHandlers(): void {
 
 const closePreviewInputSchema = z.object({});
 
-const closePreviewName = 'Close Preview';
+const closePreviewName = 'close_preview';
 
 export const terminatePreview = async (workerId: string): Promise<string> => {
   if (!activePreview) {

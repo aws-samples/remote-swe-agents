@@ -39,6 +39,7 @@
  */
 
 import { normalizeForDedup, isNearDuplicateMessage, bigramSimilarity, RecentMessageForDedup } from './message-dedup';
+import { toolNameInSet } from '../tool-name-utils';
 
 /**
  * Minimum normalised length for the rehash containment signal to be eligible.
@@ -318,17 +319,22 @@ export const shouldSuppressWakeupMonologue = (opts: {
  * the wake-up monologue filter must stand down.
  */
 export const NON_WORK_TOOL_NAMES = new Set<string>([
-  'Send Message To User',
-  'Send Image To User',
-  'Send File To User',
-  'Send Message To Agent',
-  'Acknowledge Agent',
-  'Complete Session',
-  'Think',
-  'Update Session Title',
-  'Todo Init',
-  'Todo Update',
-  // Legacy camelCase names still present in persisted conversation history
+  // Canonical snake_case tool IDs. Matching is normalized (see hadNewWorkTool),
+  // so the equivalent space-separated display forms ('Send Message To User')
+  // also match without separate entries.
+  'send_message_to_user',
+  'send_image_to_user',
+  'send_file_to_user',
+  'send_message_to_agent',
+  'acknowledge_agent',
+  'complete_session',
+  'think',
+  'update_session_title',
+  'todo_init',
+  'todo_update',
+  // Legacy camelCase names still present in persisted conversation history.
+  // These do NOT normalize to the snake_case ids (no camel boundary split), so
+  // they are kept explicitly.
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
   'sendImageToUser',
@@ -336,7 +342,6 @@ export const NON_WORK_TOOL_NAMES = new Set<string>([
   'sendMessageToAgent',
   'acknowledgeAgent',
   'completeSession',
-  'think',
   'updateSessionTitle',
   'todoInit',
   'todoUpdate',
@@ -345,7 +350,7 @@ export const NON_WORK_TOOL_NAMES = new Set<string>([
 /** True when at least one tool OUTSIDE {@link NON_WORK_TOOL_NAMES} ran this turn. */
 export const hadNewWorkTool = (toolNamesThisTurn: Iterable<string>): boolean => {
   for (const name of toolNamesThisTurn) {
-    if (!NON_WORK_TOOL_NAMES.has(name)) return true;
+    if (!toolNameInSet(name, NON_WORK_TOOL_NAMES)) return true;
   }
   return false;
 };

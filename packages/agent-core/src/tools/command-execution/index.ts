@@ -284,7 +284,7 @@ const handler = async (
   return JSON.stringify(res, undefined, 1);
 };
 
-const name = 'executeCommand';
+const name = 'execute_command';
 
 export const commandExecutionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

@@ -50,10 +50,12 @@ export const SEARCHABLE_MESSAGE_TYPES = new Set([
 import { toolNameInSet } from './tool-name-utils';
 
 export const MSG_TOOLS = new Set([
-  'Send Message To User',
-  'Send Image To User',
-  'Send File To User',
-  // Legacy camelCase names still present in persisted conversation history
+  // Canonical snake_case tool IDs (matched normalized via toolNameInSet, so the
+  // space-separated display forms match too).
+  'send_message_to_user',
+  'send_image_to_user',
+  'send_file_to_user',
+  // Legacy camelCase names still present in persisted conversation history.
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
   'sendImageToUser',

@@ -50,7 +50,7 @@ describe('getEssentialSystemPrompt — anti-duplicate wake-up guidance', () => {
   });
 
   test('recommends acknowledgeAgent over sendMessageToAgent for noted/still-working replies', () => {
-    expect(prompt).toContain('prefer `acknowledgeAgent` (silent receipt)');
+    expect(prompt).toContain('prefer `acknowledge_agent` (silent receipt)');
   });
 
   test('notes that user-initiated wake-ups can only be silent-terminated', () => {

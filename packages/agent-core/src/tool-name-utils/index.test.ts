@@ -11,11 +11,22 @@ describe('prettifyToolName', () => {
     expect(prettifyToolName('Todo_Init')).toBe('Todo Init');
   });
 
-  it('leaves snake_case kiro native tools unchanged', () => {
-    expect(prettifyToolName('execute_bash')).toBe('execute_bash');
-    expect(prettifyToolName('str_replace')).toBe('str_replace');
-    expect(prettifyToolName('read_file')).toBe('read_file');
-    expect(prettifyToolName('list_directory')).toBe('list_directory');
+  it('Title-Cases canonical snake_case tool IDs for display', () => {
+    expect(prettifyToolName('execute_command')).toBe('Execute Command');
+    expect(prettifyToolName('send_message_to_user')).toBe('Send Message To User');
+    expect(prettifyToolName('create_event_trigger')).toBe('Create Event Trigger');
+    // kiro-native snake_case ids are also Title-Cased (display-only, cosmetic).
+    expect(prettifyToolName('execute_bash')).toBe('Execute Bash');
+    expect(prettifyToolName('str_replace')).toBe('Str Replace');
+  });
+
+  // Acronym/brand casing must survive the snake_case → display round-trip
+  // (exact parity with the pre-rename display names).
+  it('preserves acronym/brand casing (PR / GitHub) for exact display parity', () => {
+    expect(prettifyToolName('get_pr_comments')).toBe('Get PR Comments');
+    expect(prettifyToolName('reply_pr_comment')).toBe('Reply PR Comment');
+    expect(prettifyToolName('clone_github_repository')).toBe('Clone GitHub Repository');
+    expect(prettifyToolName('get_github_actions_latest_result')).toBe('Get GitHub Actions Latest Result');
   });
 
   it('leaves already-spaced names unchanged', () => {

@@ -14,6 +14,7 @@ import {
   mcpContentToSdkBlocks,
   type RemoteSweToolLike,
 } from './to-strands-tool';
+import { allTools } from '@remote-swe-agents/agent-core/tools';
 
 function makeTool<Input>(
   overrides: Partial<RemoteSweToolLike<Input>> & { handler: RemoteSweToolLike<Input>['handler'] }
@@ -38,6 +39,16 @@ describe('sanitizeToolName', () => {
     expect(sanitizeToolName('Send Message To User')).toBe('Send_Message_To_User');
     expect(sanitizeToolName('tool@v1.2')).toBe('tool_v1_2');
   });
+
+  // After the snake_case tool-ID rename, sanitize is a NO-OP for every
+  // registered tool ID — i.e. the model now sees the exact registered id on the
+  // Bedrock path (no more Title_Case underscore transform that primed the
+  // hallucination). Guards that no future tool reintroduces a name that would
+  // be mutated by the Bedrock ToolRegistry sanitizer.
+  it('is a no-op for all canonical snake_case tool IDs', () => {
+    const offenders = allTools.map((t) => t.name).filter((n) => sanitizeToolName(n) !== n);
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('toStrandsTool', () => {
@@ -47,7 +58,7 @@ describe('toStrandsTool', () => {
     expect(t.description).toBe('Echo the input text');
   });
 
-  it('sanitizes tool names with spaces ( regression)', async () => {
+  it('sanitizes tool names with spaces', async () => {
     const t = await toStrandsTool(makeTool({ name: 'Send Message To User', handler: async () => 'sent' }), deps);
     expect(t.name).toBe('Send_Message_To_User');
   });
@@ -93,14 +104,14 @@ describe('forceReport timer', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out = await (t as any).invoke({ text: 'x' }, { toolUse: { toolUseId: 'c' } });
     expect(out).toContain('Long time has passed');
-    expect(out).toContain('sendMessageToUser');
+    expect(out).toContain('send_message_to_user');
   });
 
   it('resets timer on communication tool → no nudge on subsequent tool', async () => {
     const forceReportState = { lastReportedTime: Date.now() - 301_000, parentSessionId: undefined };
     const depsWithTimer = { ...deps, forceReportState };
     const commTool = await toStrandsTool(
-      makeTool({ name: 'sendMessageToUser', handler: async () => 'sent' }),
+      makeTool({ name: 'send_message_to_user', handler: async () => 'sent' }),
       depsWithTimer
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,9 +124,9 @@ describe('forceReport timer', () => {
   });
 
   it('reset list derives from actual tool objects (drift detection)', () => {
-    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('sendMessageToUser'))).toBe(true);
-    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('sendMessageToAgent'))).toBe(true);
-    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('acknowledgeAgent'))).toBe(true);
+    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('send_message_to_user'))).toBe(true);
+    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('send_message_to_agent'))).toBe(true);
+    expect(REPORT_TIMER_RESET_TOOLS.has(sanitizeToolName('acknowledge_agent'))).toBe(true);
     expect(REPORT_TIMER_RESET_TOOLS.size).toBe(3);
   });
 });
@@ -170,7 +181,7 @@ describe('mcpContentToSdkBlocks', () => {
     expect(Buffer.from((result[1] as any).image.source.bytes).equals(pngBytes)).toBe(true);
   });
 
-  it('produces short placeholder for unknown content types ( token explosion fix)', () => {
+  it('produces short placeholder for unknown content types (token explosion fix)', () => {
     const content = [{ type: 'audio', data: 'x'.repeat(10000) }];
     const result = mcpContentToSdkBlocks(content, fakeNormalize);
     expect(result).toHaveLength(1);

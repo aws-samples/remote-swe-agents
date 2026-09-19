@@ -12,7 +12,7 @@ const inputSchema = z.object({
   newString: z.string().describe('The edited text to replace the oldString'),
 });
 
-const name = 'fileEditor';
+const name = 'file_editor';
 
 const editFile = async (input: z.infer<typeof inputSchema>) => {
   const { filePath, oldString, newString } = input;

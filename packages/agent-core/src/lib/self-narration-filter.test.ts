@@ -229,6 +229,16 @@ describe('hadNewWorkTool', () => {
     expect(hadNewWorkTool(['executeCommand'])).toBe(true);
     expect(hadNewWorkTool(['sendMessageToUser', 'fileEditor'])).toBe(true);
   });
+  // Canonical snake_case IDs must classify identically to the legacy
+  // display/camel forms (normalized matching). These exercise the real
+  // NON_WORK_TOOL_NAMES set via hadNewWorkTool.
+  test('snake_case send/ack IDs are NOT new work; snake_case work IDs ARE', () => {
+    expect(hadNewWorkTool(['send_message_to_agent', 'acknowledge_agent'])).toBe(false);
+    expect(hadNewWorkTool(['send_message_to_user', 'think', 'update_session_title'])).toBe(false);
+    expect(hadNewWorkTool(['todo_init', 'todo_update'])).toBe(false);
+    expect(hadNewWorkTool(['execute_command'])).toBe(true);
+    expect(hadNewWorkTool(['send_message_to_user', 'file_editor'])).toBe(true);
+  });
   // `think` (and the housekeeping tools) MUST NOT count as work, otherwise
   // the A-3 structural gate stands down on essentially every real monologue
   // turn (the agent almost always calls `think` first) and the filter never

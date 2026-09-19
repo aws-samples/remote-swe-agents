@@ -18,7 +18,7 @@ const inputSchema = z.object({
     .describe('Target session ID to send the file to. Defaults to parent session if omitted.'),
 });
 
-const name = 'sendFileToAgent';
+const name = 'send_file_to_agent';
 
 export const sendFileToAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -107,7 +107,7 @@ export const sendFileToAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = 
       return (
         `Error sending file to agent: ${result.failed[0].reason}\n` +
         `The file was uploaded to S3 and is available at: ${s3Uri}\n` +
-        `You may retry or use sendFileToUser to deliver directly.`
+        `You may retry or use send_file_to_user to deliver directly.`
       );
     }
 
@@ -120,7 +120,7 @@ export const sendFileToAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = 
 If targetSessionId is omitted, the file is sent to the parent session.
 
 Use this tool to share files (screenshots, logs, artifacts, etc.) with your parent or sibling sessions.
-The receiving agent can then use sendFileToUser to deliver the file to the user if appropriate.
+The receiving agent can then use send_file_to_user to deliver the file to the user if appropriate.
 
 The filePath parameter accepts:
 - Local file path: /tmp/output.png

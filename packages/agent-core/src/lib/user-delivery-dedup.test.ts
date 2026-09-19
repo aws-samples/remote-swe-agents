@@ -148,6 +148,14 @@ describe('isMessageDeliveryToolName', () => {
     expect(isMessageDeliveryToolName('Send File To User')).toBe(true);
   });
 
+  test('matches the canonical snake_case IDs', () => {
+    expect(isMessageDeliveryToolName('send_message_to_user')).toBe(true);
+    expect(isMessageDeliveryToolName('send_image_to_user')).toBe(true);
+    expect(isMessageDeliveryToolName('send_file_to_user')).toBe(true);
+    // non-delivery snake_case id must NOT match (no friendly fire)
+    expect(isMessageDeliveryToolName('send_message_to_agent')).toBe(false);
+  });
+
   test('does NOT match other tools (no friendly fire)', () => {
     expect(isMessageDeliveryToolName('Send Message To Agent')).toBe(false);
     expect(isMessageDeliveryToolName('fs_read')).toBe(false);

@@ -57,6 +57,10 @@ export default async function SessionPage({ params }: { params: Promise<{ worker
   const messages: MessageView[] = [];
   const isMsg = (toolName: string | undefined) => toolNameInSet(toolName ?? '', MSG_TOOLS);
   const HIDDEN_AGENT_TOOLS = new Set([
+    'send_message_to_agent',
+    'acknowledge_agent',
+    'confirm_send_to_user',
+    'confirm_complete_session',
     'sendMessageToAgent',
     'acknowledgeAgent',
     'confirmSendToUser',
@@ -66,8 +70,8 @@ export default async function SessionPage({ params }: { params: Promise<{ worker
     'Confirm Send To User',
     'Confirm Complete Session',
   ]);
-  const SEND_IMAGE_TOOLS = new Set(['sendImageToUser', 'Send Image To User']);
-  const SEND_FILE_TOOLS = new Set(['sendFileToUser', 'Send File To User']);
+  const SEND_IMAGE_TOOLS = new Set(['send_image_to_user', 'sendImageToUser', 'Send Image To User']);
+  const SEND_FILE_TOOLS = new Set(['send_file_to_user', 'sendFileToUser', 'Send File To User']);
   const isHiddenTool = (toolName: string | undefined) =>
     isMsg(toolName) || toolNameInSet(toolName ?? '', HIDDEN_AGENT_TOOLS);
 

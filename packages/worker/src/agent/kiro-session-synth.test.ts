@@ -134,7 +134,7 @@ describe('buildIntermediateEvents (DDB → intermediate)', () => {
       expect(ev[0]!.text).toContain(
         'the image "pic.png" is available as a resized preview at /tmp/.remote-swe-images/image0.jpeg'
       );
-      expect(ev[0]!.text).toContain('to view this image, use the readLocalImage tool on the preview path');
+      expect(ev[0]!.text).toContain('to view this image, use the read_local_image tool on the preview path');
     }
   });
 
@@ -241,7 +241,7 @@ describe('buildIntermediateEvents (DDB → intermediate)', () => {
       const content = ev[0]!.results[0]!.content;
       expect(content[0]!.kind).toBe('text');
       expect(content[0]!.data).toContain('the image "screenshot.png" is available as a resized preview at');
-      expect(content[0]!.data).toContain('to view this image, use the readLocalImage tool on the preview path');
+      expect(content[0]!.data).toContain('to view this image, use the read_local_image tool on the preview path');
     }
   });
 

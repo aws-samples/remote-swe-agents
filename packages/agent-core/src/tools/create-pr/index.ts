@@ -163,7 +163,7 @@ Suggestion: When you successfully created a PR, make sure you report its URL to 
   }
 };
 
-const name = 'createPullRequest';
+const name = 'create_pull_request';
 
 export const createPRTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

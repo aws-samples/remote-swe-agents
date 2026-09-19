@@ -9,15 +9,15 @@ import {
 
 describe('shouldResetReportTimer', () => {
   test('returns true for sendMessageToUser', () => {
-    expect(shouldResetReportTimer('sendMessageToUser')).toBe(true);
+    expect(shouldResetReportTimer('send_message_to_user')).toBe(true);
   });
 
   test('returns true for sendMessageToAgent', () => {
-    expect(shouldResetReportTimer('sendMessageToAgent')).toBe(true);
+    expect(shouldResetReportTimer('send_message_to_agent')).toBe(true);
   });
 
   test('returns true for acknowledgeAgent', () => {
-    expect(shouldResetReportTimer('acknowledgeAgent')).toBe(true);
+    expect(shouldResetReportTimer('acknowledge_agent')).toBe(true);
   });
 
   test('returns false for unrelated tools', () => {
@@ -38,9 +38,9 @@ describe('shouldResetReportTimer', () => {
 describe('toolNamesThatResetReportTimer', () => {
   test('contains exactly the three expected tool names', () => {
     expect(toolNamesThatResetReportTimer.size).toBe(3);
-    expect(toolNamesThatResetReportTimer.has('sendMessageToUser')).toBe(true);
-    expect(toolNamesThatResetReportTimer.has('sendMessageToAgent')).toBe(true);
-    expect(toolNamesThatResetReportTimer.has('acknowledgeAgent')).toBe(true);
+    expect(toolNamesThatResetReportTimer.has('send_message_to_user')).toBe(true);
+    expect(toolNamesThatResetReportTimer.has('send_message_to_agent')).toBe(true);
+    expect(toolNamesThatResetReportTimer.has('acknowledge_agent')).toBe(true);
   });
 });
 

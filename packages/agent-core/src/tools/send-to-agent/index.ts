@@ -7,7 +7,7 @@ const inputSchema = z.object({
   message: z.string().min(1).describe('The message to send to the target agent(s).'),
 });
 
-const name = 'sendMessageToAgent';
+const name = 'send_message_to_agent';
 
 export const sendToAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -32,10 +32,10 @@ export const sendToAgentTool: ToolDefinition<z.infer<typeof inputSchema>> = {
     name,
     description: `Send a message to one or more agent sessions. Use this for agent-to-agent communication.
 The target agent(s) will receive the message and be woken up to process it.
-The user will NOT be notified directly — use sendMessageToUser for user-facing messages.
+The user will NOT be notified directly — use send_message_to_user for user-facing messages.
 
 You can find session IDs of your parent/siblings from the session hierarchy information in your system prompt,
-or from the response of createNewSession when you create child sessions.`,
+or from the response of create_new_session when you create child sessions.`,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
     },

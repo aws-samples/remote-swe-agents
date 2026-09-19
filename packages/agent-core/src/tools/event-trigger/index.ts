@@ -64,7 +64,7 @@ function formatUtcNow(): string {
 }
 
 export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSchema>> = {
-  name: 'createEventTrigger',
+  name: 'create_event_trigger',
   handler: async (input, context) => {
     const { workerId } = context;
     const { name, scheduleExpression, eventPattern, message: triggerMessage, idleNotifyAfter } = input;
@@ -121,7 +121,7 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
   },
   schema: createInputSchema,
   toolSpec: async () => ({
-    name: 'createEventTrigger',
+    name: 'create_event_trigger',
     description: `Create a new EventBridge event trigger for this session. Triggers can wake up the agent on a schedule or when specific AWS events occur.
 
 ## Trigger types:
@@ -154,7 +154,7 @@ export const createEventTriggerTool: ToolDefinition<z.infer<typeof createInputSc
 const listInputSchema = z.object({});
 
 export const listEventTriggersTool: ToolDefinition<z.infer<typeof listInputSchema>> = {
-  name: 'listEventTriggers',
+  name: 'list_event_triggers',
   handler: async (_input, context) => {
     const triggers = await listEventTriggers(context.workerId);
     if (triggers.length === 0) {
@@ -169,7 +169,7 @@ export const listEventTriggersTool: ToolDefinition<z.infer<typeof listInputSchem
   },
   schema: listInputSchema,
   toolSpec: async () => ({
-    name: 'listEventTriggers',
+    name: 'list_event_triggers',
     description: 'List all EventBridge event triggers configured for this session.',
     inputSchema: {
       json: zodToJsonSchemaBody(listInputSchema),
@@ -182,18 +182,18 @@ export const listEventTriggersTool: ToolDefinition<z.infer<typeof listInputSchem
 const deleteInputSchema = z.object({
   id: z
     .string()
-    .describe('The ID of the event trigger to delete (returned by createEventTrigger or listEventTriggers).'),
+    .describe('The ID of the event trigger to delete (returned by create_event_trigger or list_event_triggers).'),
 });
 
 export const deleteEventTriggerTool: ToolDefinition<z.infer<typeof deleteInputSchema>> = {
-  name: 'deleteEventTrigger',
+  name: 'delete_event_trigger',
   handler: async (input, context) => {
     await deleteEventTrigger(context.workerId, input.id);
     return `Event trigger "${input.id}" has been deleted.`;
   },
   schema: deleteInputSchema,
   toolSpec: async () => ({
-    name: 'deleteEventTrigger',
+    name: 'delete_event_trigger',
     description: 'Delete an EventBridge event trigger from this session by its ID.',
     inputSchema: {
       json: zodToJsonSchemaBody(deleteInputSchema),

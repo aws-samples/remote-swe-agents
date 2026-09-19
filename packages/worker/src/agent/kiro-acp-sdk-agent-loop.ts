@@ -126,7 +126,12 @@ import { composeSystemPrompt } from './compose-system-prompt';
 import { kiroAgentPool, buildReuseKey, kiroProcessReuseEnabled } from './strands/kiro-agent-pool';
 
 /** Names treated as "sendMessageToUser" for the webappMessageAlreadyEmitted gate. */
-const SEND_MESSAGE_TO_USER_NAMES = ['sendMessageToUser', 'Send Message To User', 'Send_Message_To_User'];
+const SEND_MESSAGE_TO_USER_NAMES = [
+  'send_message_to_user',
+  'sendMessageToUser',
+  'Send Message To User',
+  'Send_Message_To_User',
+];
 
 /** Why the loop is finalizing the pooled agent for this turn (process reuse). */
 export type ReleaseReason = 'ok' | 'cancelled' | 'error';

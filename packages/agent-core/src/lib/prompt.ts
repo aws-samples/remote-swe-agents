@@ -16,7 +16,7 @@ export const renderToolResult = (props: { toolResult: string; forceReport: boole
   let forceReportMessage = '';
   if (props.forceReport) {
     forceReportMessage = props.parentSessionId
-      ? `Long time has passed since you sent the last message. Please use sendMessageToAgent tool to report progress to the parent (session ID: ${props.parentSessionId}).`
+      ? `Long time has passed since you sent the last message. Please use send_message_to_agent tool to report progress to the parent (session ID: ${props.parentSessionId}).`
       : `Long time has passed since you sent the last message. Please use ${reportProgressTool.name} tool to send a response asap.`;
   }
   return `
@@ -148,7 +148,7 @@ export const renderAgentMessage = (props: { message: string; senderSessionId: st
 ${props.message}
 </user_message>
 <command>
-An agent sent you a message. Please use sendMessageToAgent tool to reply to the sender (session ID: ${props.senderSessionId}).
+An agent sent you a message. Please use send_message_to_agent tool to reply to the sender (session ID: ${props.senderSessionId}).
 </command>
 `.trim();
 };
@@ -159,7 +159,7 @@ export const renderSystemNotification = (props: { message: string }) => {
 ${props.message}
 </user_message>
 <command>
-This is a system event notification, NOT a user message. Do not reply to the user. If action is needed, use sendMessageToAgent to communicate with your parent or the relevant session.
+This is a system event notification, NOT a user message. Do not reply to the user. If action is needed, use send_message_to_agent to communicate with your parent or the relevant session.
 </command>
 `.trim();
 };
