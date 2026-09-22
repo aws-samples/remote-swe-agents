@@ -43,7 +43,7 @@ async function todoUpdate(
   return `${message}\n\n${formattedList}`;
 }
 
-const name = 'todoUpdate';
+const name = 'todo_update';
 
 /**
  * Tool to update tasks in the todo list

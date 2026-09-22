@@ -24,7 +24,7 @@ const agentFieldsSchema = z.object({
   tools: z
     .array(z.string())
     .describe(
-      'List of tool names the agent can use. Use the "listAgents" tool first to see available tool names from existing agents.'
+      'List of tool names the agent can use. Use the "list_agents" tool first to see available tool names from existing agents.'
     ),
   useAllTools: z
     .boolean()
@@ -78,7 +78,7 @@ const updateAgentSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'List of tool names the agent can use. Use the "listAgents" tool first to see available tool names from existing agents.'
+      'List of tool names the agent can use. Use the "list_agents" tool first to see available tool names from existing agents.'
     ),
   useAllTools: z
     .boolean()
@@ -120,13 +120,13 @@ const agentManagementDescription = `Manage custom agents: list, get, create, upd
 - After making mistakes or discovering better approaches, update the agent to prevent similar issues
 
 ## Tips:
-- Use "listAgents" first to discover existing agents and their IDs
-- Use "getAgent" to retrieve the full configuration before making updates
-- "updateAgent" supports partial updates: only fields you specify are changed; omitted fields keep their existing values
+- Use "list_agents" first to discover existing agents and their IDs
+- Use "get_agent" to retrieve the full configuration before making updates
+- "update_agent" supports partial updates: only fields you specify are changed; omitted fields keep their existing values
 - The tools array should contain tool name strings; check existing agents for valid tool names`;
 
 export const listAgentsTool: ToolDefinition<z.infer<typeof listAgentsSchema>> = {
-  name: 'listAgents',
+  name: 'list_agents',
   handler: async () => {
     const agents = await getCustomAgents();
     if (agents.length === 0) {
@@ -149,14 +149,14 @@ export const listAgentsTool: ToolDefinition<z.infer<typeof listAgentsSchema>> = 
   },
   schema: listAgentsSchema,
   toolSpec: async () => ({
-    name: 'listAgents',
+    name: 'list_agents',
     description: `List all custom agents. Returns id, name, description, model, runtime, and tools for each agent.\n\n${agentManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(listAgentsSchema) },
   }),
 };
 
 export const getAgentTool: ToolDefinition<z.infer<typeof getAgentSchema>> = {
-  name: 'getAgent',
+  name: 'get_agent',
   handler: async (input) => {
     const agent = await getCustomAgent(input.agentId);
     if (!agent) {
@@ -187,14 +187,14 @@ export const getAgentTool: ToolDefinition<z.infer<typeof getAgentSchema>> = {
   },
   schema: getAgentSchema,
   toolSpec: async () => ({
-    name: 'getAgent',
+    name: 'get_agent',
     description: `Get full details of a specific agent including system prompt and MCP config.\n\n${agentManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(getAgentSchema) },
   }),
 };
 
 export const createAgentTool: ToolDefinition<z.infer<typeof createAgentSchema>> = {
-  name: 'createAgent',
+  name: 'create_agent',
   handler: async (input, context) => {
     if (input.parentAgentId) {
       const parent = await getCustomAgent(input.parentAgentId);
@@ -225,10 +225,10 @@ export const createAgentTool: ToolDefinition<z.infer<typeof createAgentSchema>> 
         `CONFIRMATION REQUIRED: You are about to create a new top-level agent "${input.name}".`,
         ``,
         `Top-level agent creation requires explicit user approval.`,
-        `Please ask the user whether they approve creating this agent, and only call confirmCreateAgent after receiving explicit approval.`,
+        `Please ask the user whether they approve creating this agent, and only call confirm_create_agent after receiving explicit approval.`,
         ``,
-        `To proceed: get user approval, then call confirmCreateAgent.`,
-        `To abort: simply do not call confirmCreateAgent.`,
+        `To proceed: get user approval, then call confirm_create_agent.`,
+        `To abort: simply do not call confirm_create_agent.`,
       ].join('\n');
     }
 
@@ -242,14 +242,14 @@ export const createAgentTool: ToolDefinition<z.infer<typeof createAgentSchema>> 
   },
   schema: createAgentSchema,
   toolSpec: async () => ({
-    name: 'createAgent',
-    description: `Create a new custom agent with all configuration fields. Top-level agent creation (parentAgentId not specified) requires user approval and a subsequent call to confirmCreateAgent.\n\n${agentManagementDescription}`,
+    name: 'create_agent',
+    description: `Create a new custom agent with all configuration fields. Top-level agent creation (parentAgentId not specified) requires user approval and a subsequent call to confirm_create_agent.\n\n${agentManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(createAgentSchema) },
   }),
 };
 
 export const updateAgentTool: ToolDefinition<z.infer<typeof updateAgentSchema>> = {
-  name: 'updateAgent',
+  name: 'update_agent',
   handler: async (input) => {
     const existing = await getCustomAgent(input.agentId);
     if (!existing) {
@@ -287,14 +287,14 @@ export const updateAgentTool: ToolDefinition<z.infer<typeof updateAgentSchema>> 
   },
   schema: updateAgentSchema,
   toolSpec: async () => ({
-    name: 'updateAgent',
+    name: 'update_agent',
     description: `Update an existing agent's configuration. Supports partial updates: only fields you specify are changed; omitted fields keep their existing values.\n\n${agentManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(updateAgentSchema) },
   }),
 };
 
 export const deleteAgentTool: ToolDefinition<z.infer<typeof deleteAgentSchema>> = {
-  name: 'deleteAgent',
+  name: 'delete_agent',
   handler: async (input) => {
     const existing = await getCustomAgent(input.agentId);
     if (!existing) {
@@ -305,7 +305,7 @@ export const deleteAgentTool: ToolDefinition<z.infer<typeof deleteAgentSchema>> 
   },
   schema: deleteAgentSchema,
   toolSpec: async () => ({
-    name: 'deleteAgent',
+    name: 'delete_agent',
     description: `Delete a custom agent by ID.\n\n${agentManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(deleteAgentSchema) },
   }),

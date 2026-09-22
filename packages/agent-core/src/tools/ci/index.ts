@@ -152,7 +152,7 @@ export const getPrCheckStatus = async (
   return { status: 'failure', failedActionsRuns, failedExternalChecks };
 };
 
-const name = 'getGitHubActionsLatestResult';
+const name = 'get_github_actions_latest_result';
 
 export const ciTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

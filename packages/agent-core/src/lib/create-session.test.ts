@@ -112,7 +112,7 @@ describe('createSession', () => {
     expect(text).toContain('[Message from Remote SWE PM (session-parent)]: please implement feature X');
     // Should still carry the agent-message envelope telling the child to
     // reply via sendMessageToAgent.
-    expect(text).toContain('sendMessageToAgent');
+    expect(text).toContain('send_message_to_agent');
     expect(text).toContain('session-parent');
   });
 

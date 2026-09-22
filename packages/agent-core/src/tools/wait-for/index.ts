@@ -171,7 +171,7 @@ export const waitForCondition = async (
   const multiplier = input.backoffMultiplier ?? DEFAULT_BACKOFF_MULTIPLIER;
 
   const capNote = wasCapped
-    ? ` (requested ${requestedMax}s was capped to the ${MAX_WAIT_CEILING_SECONDS}s ceiling; for longer waits hand off the turn with createEventTrigger)`
+    ? ` (requested ${requestedMax}s was capped to the ${MAX_WAIT_CEILING_SECONDS}s ceiling; for longer waits hand off the turn with create_event_trigger)`
     : '';
 
   const start = now();
@@ -191,7 +191,7 @@ export const waitForCondition = async (
         now(),
         checks,
         last,
-        `Condition not met within ${cappedMax}s${capNote}. If this is a long-running job, prefer createEventTrigger to release the turn and resume on completion.`
+        `Condition not met within ${cappedMax}s${capNote}. If this is a long-running job, prefer create_event_trigger to release the turn and resume on completion.`
       );
     }
 
@@ -250,7 +250,7 @@ export const waitForCondition = async (
         now(),
         checks,
         last,
-        `Condition not met within ${cappedMax}s${capNote}. If this is a long-running job, prefer createEventTrigger to release the turn and resume on completion.`
+        `Condition not met within ${cappedMax}s${capNote}. If this is a long-running job, prefer create_event_trigger to release the turn and resume on completion.`
       );
     }
 
@@ -284,7 +284,7 @@ const inputSchema = z.object({
     .min(1)
     .optional()
     .describe(
-      `Maximum total seconds to wait (at least 1; at least one check always runs). Default ${DEFAULT_MAX_WAIT_SECONDS}s, hard-capped at ${MAX_WAIT_CEILING_SECONDS}s. For waits longer than the cap, do NOT use this tool — release the turn with createEventTrigger and resume on completion.`
+      `Maximum total seconds to wait (at least 1; at least one check always runs). Default ${DEFAULT_MAX_WAIT_SECONDS}s, hard-capped at ${MAX_WAIT_CEILING_SECONDS}s. For waits longer than the cap, do NOT use this tool — release the turn with create_event_trigger and resume on completion.`
     ),
   initialIntervalMs: z
     .number()
@@ -316,7 +316,7 @@ const handler = async (
   return JSON.stringify(result, undefined, 1);
 };
 
-const name = 'waitForCondition';
+const name = 'wait_for_condition';
 
 export const waitForConditionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -334,12 +334,12 @@ How it works:
 - \`failWhen\` (optional regex) fast-fails the wait when matched. If both \`failWhen\` and \`successWhen\` match the same output, \`failWhen\` wins.
 - \`maxWaitSeconds\` bounds the total wait (default ${DEFAULT_MAX_WAIT_SECONDS}s, capped at ${MAX_WAIT_CEILING_SECONDS}s).
 
-Note: when a new message interrupts the turn, the wait returns promptly with outcome 'interrupted'. The check command that was in-flight at that moment is left running in the background (not killed), mirroring executeCommand's interruption behaviour.
+Note: when a new message interrupts the turn, the wait returns promptly with outcome 'interrupted'. The check command that was in-flight at that moment is left running in the background (not killed), mirroring execute_command's interruption behaviour.
 
 IMPORTANT — choosing a wait mechanism:
-- Very short waits (a few seconds): just run a single command with a higher \`timeoutMs\` on executeCommand.
+- Very short waits (a few seconds): just run a single command with a higher \`timeoutMs\` on execute_command.
 - Minutes up to ~${Math.round(MAX_WAIT_CEILING_SECONDS / 60)} minutes: use this tool.
-- Longer than that, or when cost/interrupt risk is a concern: do NOT hold the turn — use createEventTrigger (oneTimeSchedule or eventPattern) to release the turn and have the job's completion wake you. The whole turn is bounded by an unconditional wall-clock limit, so a wait that approaches it will get the turn killed; that is why the ceiling is kept conservative.
+- Longer than that, or when cost/interrupt risk is a concern: do NOT hold the turn — use create_event_trigger (oneTimeSchedule or eventPattern) to release the turn and have the job's completion wake you. The whole turn is bounded by an unconditional wall-clock limit, so a wait that approaches it will get the turn killed; that is why the ceiling is kept conservative.
 
 The result is JSON: { outcome: 'succeeded' | 'failed' | 'timeout' | 'interrupted', elapsedSeconds, checks, lastExitCode, lastStdout, lastStderr, message }.`,
     inputSchema: {

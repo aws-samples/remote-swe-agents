@@ -58,7 +58,7 @@ const deleteLessonSchema = z.object({
 });
 
 export const listLessonsTool: ToolDefinition<z.infer<typeof listLessonsSchema>> = {
-  name: 'listLessons',
+  name: 'list_lessons',
   handler: async (_input, context) => {
     const userId = await resolveUserId(context.workerId);
     const lessons = await listLessons(userId);
@@ -76,14 +76,14 @@ export const listLessonsTool: ToolDefinition<z.infer<typeof listLessonsSchema>> 
   },
   schema: listLessonsSchema,
   toolSpec: async () => ({
-    name: 'listLessons',
+    name: 'list_lessons',
     description: `List all lessons for the current user.\n\n${memoryManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(listLessonsSchema) },
   }),
 };
 
 export const getLessonTool: ToolDefinition<z.infer<typeof getLessonSchema>> = {
-  name: 'getLesson',
+  name: 'get_lesson',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     const lesson = await getLesson(userId, input.lessonId);
@@ -105,14 +105,14 @@ export const getLessonTool: ToolDefinition<z.infer<typeof getLessonSchema>> = {
   },
   schema: getLessonSchema,
   toolSpec: async () => ({
-    name: 'getLesson',
+    name: 'get_lesson',
     description: `Get details of a specific lesson by ID.\n\n${memoryManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(getLessonSchema) },
   }),
 };
 
 export const createLessonTool: ToolDefinition<z.infer<typeof createLessonSchema>> = {
-  name: 'createLesson',
+  name: 'create_lesson',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     try {
@@ -129,14 +129,14 @@ export const createLessonTool: ToolDefinition<z.infer<typeof createLessonSchema>
   },
   schema: createLessonSchema,
   toolSpec: async () => ({
-    name: 'createLesson',
+    name: 'create_lesson',
     description: `Create a new durable lesson. Its embedding is computed automatically for semantic retrieval. Max ${MAX_LESSONS_PER_USER} lessons per user.\n\n${memoryManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(createLessonSchema) },
   }),
 };
 
 export const updateLessonTool: ToolDefinition<z.infer<typeof updateLessonSchema>> = {
-  name: 'updateLesson',
+  name: 'update_lesson',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     if (input.content === undefined && input.category === undefined && input.status === undefined) {
@@ -162,14 +162,14 @@ export const updateLessonTool: ToolDefinition<z.infer<typeof updateLessonSchema>
   },
   schema: updateLessonSchema,
   toolSpec: async () => ({
-    name: 'updateLesson',
+    name: 'update_lesson',
     description: `Update a lesson's content, category, or status. Changing content recomputes its embedding.\n\n${memoryManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(updateLessonSchema) },
   }),
 };
 
 export const deleteLessonTool: ToolDefinition<z.infer<typeof deleteLessonSchema>> = {
-  name: 'deleteLesson',
+  name: 'delete_lesson',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     const lesson = await getLesson(userId, input.lessonId);
@@ -179,8 +179,8 @@ export const deleteLessonTool: ToolDefinition<z.infer<typeof deleteLessonSchema>
   },
   schema: deleteLessonSchema,
   toolSpec: async () => ({
-    name: 'deleteLesson',
-    description: `Delete a lesson by ID. To keep it but stop injecting it, use updateLesson with status="archived" instead.\n\n${memoryManagementDescription}`,
+    name: 'delete_lesson',
+    description: `Delete a lesson by ID. To keep it but stop injecting it, use update_lesson with status="archived" instead.\n\n${memoryManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(deleteLessonSchema) },
   }),
 };

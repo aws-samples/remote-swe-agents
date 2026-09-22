@@ -54,7 +54,7 @@ vi.mock('../../lib/user-delivery-dedup', () => ({
   recordUserDelivery: (...args: any[]) => mockRecordUserDelivery(...args),
 }));
 
-import { reportProgressTool } from './index';
+import { reportProgressTool, PLACEHOLDER_REJECTION_MESSAGE } from './index';
 import { confirmSendToUserTool, loadAndDeletePendingUserMessage } from '../confirm-send-to-user';
 
 const mockContext = {
@@ -116,7 +116,7 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(result).toContain('99%');
     expect(result).toContain('Messages from user in this session: 1');
     expect(result).toContain('agentMessage (PM Agent)');
-    expect(result).toContain('confirmSendToUser');
+    expect(result).toContain('confirm_send_to_user');
     expect(result).toContain('ABSOLUTELY CERTAIN');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
@@ -132,8 +132,8 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(result).toContain('ERROR');
     expect(result).toContain('not available');
     expect(result).toContain('0 user messages');
-    expect(result).toContain('sendMessageToAgent');
-    expect(result).toContain('Do NOT call confirmSendToUser');
+    expect(result).toContain('send_message_to_agent');
+    expect(result).toContain('Do NOT call confirm_send_to_user');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
@@ -198,7 +198,7 @@ describe('sendMessageToUser child session confirmation', () => {
     expect(result).toContain('ERROR');
     expect(result).toContain('not available');
     expect(result).toContain('0 user messages');
-    expect(result).toContain('Do NOT call confirmSendToUser');
+    expect(result).toContain('Do NOT call confirm_send_to_user');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
@@ -237,7 +237,7 @@ describe('confirmSendToUser', () => {
   test('returns error when no pending message', async () => {
     const result = await confirmSendToUserTool.handler({}, mockContext);
 
-    expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
+    expect(result).toBe('No pending message to confirm. Use send_message_to_user first.');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 
@@ -253,7 +253,7 @@ describe('confirmSendToUser', () => {
 
     // Second confirm should have no pending message
     const result = await confirmSendToUserTool.handler({}, mockContext);
-    expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
+    expect(result).toBe('No pending message to confirm. Use send_message_to_user first.');
   });
 
   test('confirmSendToUser fails when message was blocked by Case 1 (no user messages)', async () => {
@@ -267,7 +267,7 @@ describe('confirmSendToUser', () => {
 
     // confirmSendToUser should have no pending message
     const result = await confirmSendToUserTool.handler({}, mockContext);
-    expect(result).toBe('No pending message to confirm. Use sendMessageToUser first.');
+    expect(result).toBe('No pending message to confirm. Use send_message_to_user first.');
     expect(mockSendMessageToSlack).not.toHaveBeenCalled();
   });
 });
@@ -282,10 +282,6 @@ describe('sendMessageToUser placeholder / scaffolding filter (delivery-path safe
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
-  const PLACEHOLDER_REJECTION_MESSAGE =
-    "Your message was detected as a placeholder (empty / '.' / scaffolding artifact) and was NOT delivered to the user. " +
-    'Please call sendMessageToUser again with meaningful content, OR end your turn silently if you have nothing new to report.';
 
   const shouldReject = async (message: string) => {
     mockGetSession.mockResolvedValue({ parentSessionId: undefined });

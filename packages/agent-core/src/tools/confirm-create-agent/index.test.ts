@@ -63,7 +63,7 @@ describe('confirmCreateAgent', () => {
     const result = await confirmCreateAgentTool.handler({}, mockContext as any);
 
     expect(mockCreateCustomAgent).not.toHaveBeenCalled();
-    expect(result).toContain('No pending createAgent');
+    expect(result).toContain('No pending create_agent');
   });
 
   test('pending data is consumed (cannot confirm twice)', async () => {
@@ -77,7 +77,7 @@ describe('confirmCreateAgent', () => {
     const secondResult = await confirmCreateAgentTool.handler({}, mockContext as any);
 
     expect(mockCreateCustomAgent).toHaveBeenCalledTimes(1);
-    expect(secondResult).toContain('No pending createAgent');
+    expect(secondResult).toContain('No pending create_agent');
   });
 
   test('last createAgent call wins when called multiple times before confirm', async () => {
@@ -114,7 +114,7 @@ describe('confirmCreateAgent', () => {
     const secondConfirm = await confirmCreateAgentTool.handler({}, mockContext as any);
 
     expect(mockCreateCustomAgent).toHaveBeenCalledTimes(1);
-    expect(secondConfirm).toContain('No pending createAgent');
+    expect(secondConfirm).toContain('No pending create_agent');
   });
 
   test('rejects expired pending (TTL 30 minutes)', async () => {

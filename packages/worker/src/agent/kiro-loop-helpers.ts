@@ -27,7 +27,7 @@ const SYSTEM_PROMPT_OPEN = '<|SYSTEM_PROMPT|>';
 const SYSTEM_PROMPT_CLOSE = '<|/SYSTEM_PROMPT|>';
 
 export const NON_EMPTY_DISCARD_WARNING =
-  '\n<system>WARNING: Your previous response included text blocks alongside tool calls. These text blocks were NOT delivered to the user. If the text was intended for the user, you must resend it using the Send Message To User tool.</system>';
+  '\n<system>WARNING: Your previous response included text blocks alongside tool calls. These text blocks were NOT delivered to the user. If the text was intended for the user, you must resend it using the send_message_to_user tool.</system>';
 
 /**
  * Legacy history-replay delimiters retained ONLY as a leak-detection
@@ -578,7 +578,7 @@ export const materialisePromptSegments = async (
         const { previewPath, fileName, s3Uri } = await materializeImage(seg.s3Key);
         appendText(
           `the image "${fileName}" is available as a resized preview at ${previewPath} (original: ${s3Uri})\n` +
-            `to view this image, use the readLocalImage tool on the preview path`
+            `to view this image, use the read_local_image tool on the preview path`
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

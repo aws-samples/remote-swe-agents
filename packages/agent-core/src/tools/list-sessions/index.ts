@@ -25,7 +25,7 @@ const inputSchema = z.object({
     ),
 });
 
-const name = 'List Sessions';
+const name = 'list_sessions';
 
 export const listSessionsTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

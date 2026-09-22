@@ -326,7 +326,7 @@ export const createSession = async (params: CreateSessionParams): Promise<string
         const notifyContent = [
           {
             text: renderSystemNotification({
-              message: `A new sibling session has joined: "${displayName}" (ID: ${workerId}). You can communicate with it using sendMessageToAgent.`,
+              message: `A new sibling session has joined: "${displayName}" (ID: ${workerId}). You can communicate with it using send_message_to_agent.`,
             }),
           },
         ];

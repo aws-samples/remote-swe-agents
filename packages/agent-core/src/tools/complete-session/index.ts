@@ -12,7 +12,7 @@ const inputSchema = z.object({
     .describe('The session ID to complete. Defaults to the current session if not specified.'),
 });
 
-const name = 'Complete Session';
+const name = 'complete_session';
 
 export const completeSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -44,11 +44,11 @@ export const completeSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = 
       return [
         `CONFIRMATION REQUIRED: You are about to complete a top-level session.`,
         ``,
-        `Only call Confirm Complete Session if the user EXPLICITLY instructed you to end/close/complete this session.`,
+        `Only call confirm_complete_session if the user EXPLICITLY instructed you to end/close/complete this session.`,
         `If the user did NOT give such instruction, your mission is still in progress — do NOT complete.`,
         ``,
-        `To proceed: call Confirm Complete Session.`,
-        `To abort: simply do not call Confirm Complete Session and continue working.`,
+        `To proceed: call confirm_complete_session.`,
+        `To abort: simply do not call confirm_complete_session and continue working.`,
       ].join('\n');
     }
 
@@ -80,7 +80,7 @@ Permission model:
 - Child/sub-agent sessions: Can only complete themselves (the default). Specifying another session's ID will be rejected.
 - Top-level sessions (no parent): Can complete any session by ID.
   - Completing another session: Executes immediately with no confirmation.
-  - Completing itself (self-completion): Triggers a confirmation guard — you must then call Confirm Complete Session to proceed. This guard exists because top-level sessions should only self-complete when the user explicitly asks.
+  - Completing itself (self-completion): Triggers a confirmation guard — you must then call confirm_complete_session to proceed. This guard exists because top-level sessions should only self-complete when the user explicitly asks.
 
 You can determine whether you are a child session by checking the Session Hierarchy section in your context. If it says "You are a child agent" or shows a Parent session, you are a child session. If there is no Session Hierarchy section or it says "You are a parent agent", you are a top-level session.`,
     inputSchema: {

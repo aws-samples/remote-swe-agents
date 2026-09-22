@@ -1,7 +1,8 @@
 /**
  * Normalize a tool name for comparison purposes. Treats spaces, underscores,
- * and hyphens as equivalent separators so that 'Send Message To User',
- * 'Send_Message_To_User', and 'send-message-to-user' all match.
+ * and hyphens as equivalent separators so that 'send_message_to_user',
+ * 'Send Message To User', and 'send-message-to-user' all match. (Canonical tool
+ * IDs are snake_case; the space/Title-Case forms are legacy history.)
  */
 export const normalizeToolName = (name: string): string => name.replace(/[\s_-]+/g, '_').toLowerCase();
 
@@ -22,14 +23,37 @@ export const toolNameInSet = (name: string, set: Set<string>): boolean => {
 };
 
 /**
- * Convert a Bedrock-sanitized tool name back to its canonical display form.
- * Only applies to names that match Title_Case pattern (e.g. 'Execute_Command'
- * → 'Execute Command'). snake_case names (e.g. 'execute_bash', 'str_replace')
- * and names already containing spaces are returned unchanged.
+ * Per-word display overrides so acronyms/brand casing survive the snake_case →
+ * Title Case round-trip (e.g. `get_pr_comments` → 'Get PR Comments',
+ * `clone_github_repository` → 'Clone GitHub Repository'). Keyed by the
+ * lower-case snake_case word segment.
+ */
+const DISPLAY_WORD_OVERRIDES: Record<string, string> = {
+  pr: 'PR',
+  github: 'GitHub',
+};
+
+/**
+ * Convert a tool name to its canonical display form (spaced, Title Case).
+ * Handles three input shapes:
+ *   - canonical snake_case IDs      ('execute_command'      → 'Execute Command',
+ *                                     'get_pr_comments'      → 'Get PR Comments',
+ *                                     'clone_github_repository' → 'Clone GitHub Repository')
+ *   - Bedrock-sanitized Title_Case  ('Execute_Command'      → 'Execute Command')
+ *   - already-spaced / other        (returned unchanged)
+ * Acronym/brand casing is preserved via {@link DISPLAY_WORD_OVERRIDES}.
  */
 export const prettifyToolName = (name: string): string => {
+  // Bedrock-sanitized Title_Case form (e.g. 'Execute_Command' -> 'Execute Command').
   if (/^[A-Z][a-zA-Z0-9]*(_[A-Z][a-zA-Z0-9]*)*$/.test(name)) {
     return name.replace(/_/g, ' ');
+  }
+  // Canonical snake_case tool IDs (e.g. 'execute_command' -> 'Execute Command').
+  if (/^[a-z0-9]+(_[a-z0-9]+)*$/.test(name)) {
+    return name
+      .split('_')
+      .map((w) => DISPLAY_WORD_OVERRIDES[w] ?? w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
   }
   return name;
 };

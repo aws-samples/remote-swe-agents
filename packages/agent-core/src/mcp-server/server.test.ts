@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { buildMcpServer } from './server';
+import { buildMcpServer, requiredParamNames } from './server';
 import type { ToolDefinition } from '../private/common/lib';
 import { zodToJsonSchemaBody } from '../private/common/lib';
 
@@ -84,6 +84,35 @@ describe('remote-swe MCP server', () => {
     const res = await client.callTool({ name: 'echo', arguments: { wrong: 'key' } });
     expect(res.isError).toBe(true);
     expect(JSON.stringify(res.content)).toMatch(/invalid arguments/);
+  });
+
+  test('tools/call reports the tool name + required parameters on empty/invalid input', async () => {
+    // A call with empty {} input must fail validation, and the error must name
+    // the tool and its required parameters so the model can self-correct in one
+    // retry.
+    const { client } = await connectPair([makeEchoTool('run_command') as unknown as ToolDefinition<unknown>]);
+    const res = await client.callTool({ name: 'run_command', arguments: {} });
+    expect(res.isError).toBe(true);
+    const text = (res.content as { type: string; text: string }[])[0].text;
+    expect(text).toMatch(/invalid arguments for "run_command"/);
+    expect(text).toMatch(/Required parameters for "run_command": text/);
+  });
+
+  test('tools/call does NOT resolve a transformed name (exact-match only after the snake_case rename)', async () => {
+    // Tool lookup is exact-match only: a space/underscore variant of a
+    // registered id must hard-fail as not-found (the snake_case rename makes
+    // the model emit the exact id, so no tolerant remap is warranted).
+    const { client } = await connectPair([makeEchoTool('send_message_to_user') as unknown as ToolDefinition<unknown>]);
+    const res = await client.callTool({ name: 'Send Message To User', arguments: { text: 'hi' } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toMatch(/tool not found/);
+  });
+
+  describe('pure helpers', () => {
+    test('requiredParamNames returns the schema required list, empty on non-object', () => {
+      expect(requiredParamNames(z.object({ text: z.string(), n: z.number().optional() }))).toEqual(['text']);
+      expect(requiredParamNames(z.object({}))).toEqual([]);
+    });
   });
 
   test('a handler that calls console.log does NOT leak onto MCP response stream', async () => {

@@ -23,7 +23,7 @@ const inputSchema = z.object({
     .describe('Maximum number of sessions to export in tree mode. Default: 50.'),
 });
 
-const name = 'Export Session Diagnostics';
+const name = 'export_session_diagnostics';
 
 interface ExportResult {
   sessionId: string;
@@ -173,7 +173,7 @@ export const exportSessionDiagnosticsTool: ToolDefinition<z.infer<typeof inputSc
 
 Dumps the full session metadata and all messages (including errors, tool use details, and raw content) to JSON files on disk.
 
-Use this when searchSessions doesn't provide enough detail — for example when you need to inspect raw tool use payloads, error messages, token counts, or the complete message timeline.
+Use this when search_sessions doesn't provide enough detail — for example when you need to inspect raw tool use payloads, error messages, token counts, or the complete message timeline.
 
 Permission: When exporting another session's diagnostics (sessionId != self), the caller must be one of:
 - The target session's current parent

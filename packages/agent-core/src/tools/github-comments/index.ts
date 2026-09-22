@@ -170,11 +170,11 @@ const addIssueCommentHandler = async (input: z.infer<typeof addIssueCommentSchem
 
 // Tool definitions
 export const getPRCommentsTool: ToolDefinition<z.infer<typeof getPRCommentsSchema>> = {
-  name: 'getPRComments',
+  name: 'get_pr_comments',
   handler: getPRCommentsHandler,
   schema: getPRCommentsSchema,
   toolSpec: async () => ({
-    name: 'getPRComments',
+    name: 'get_pr_comments',
     description: 'Get review comments for a specific GitHub PR.',
     inputSchema: {
       json: zodToJsonSchemaBody(getPRCommentsSchema),
@@ -183,11 +183,11 @@ export const getPRCommentsTool: ToolDefinition<z.infer<typeof getPRCommentsSchem
 };
 
 export const replyPRCommentTool: ToolDefinition<z.infer<typeof replyPRCommentSchema>> = {
-  name: 'replyPRComment',
+  name: 'reply_pr_comment',
   handler: replyPRCommentHandler,
   schema: replyPRCommentSchema,
   toolSpec: async () => ({
-    name: 'replyPRComment',
+    name: 'reply_pr_comment',
     description: 'Reply to a specific comment in a GitHub pull request.',
     inputSchema: {
       json: zodToJsonSchemaBody(replyPRCommentSchema),
@@ -196,11 +196,11 @@ export const replyPRCommentTool: ToolDefinition<z.infer<typeof replyPRCommentSch
 };
 
 export const addIssueCommentTool: ToolDefinition<z.infer<typeof addIssueCommentSchema>> = {
-  name: 'addIssueComment',
+  name: 'add_issue_comment',
   handler: addIssueCommentHandler,
   schema: addIssueCommentSchema,
   toolSpec: async () => ({
-    name: 'addIssueComment',
+    name: 'add_issue_comment',
     description: 'Add a comment to a specific GitHub issue.',
     inputSchema: {
       json: zodToJsonSchemaBody(addIssueCommentSchema),

@@ -81,7 +81,7 @@ const deleteSkillSchema = z.object({
 });
 
 export const listSkillsTool: ToolDefinition<z.infer<typeof listSkillsSchema>> = {
-  name: 'listSkills',
+  name: 'list_skills',
   handler: async (_input, context) => {
     const userId = await resolveUserId(context.workerId);
     const skills = await listSkills(userId);
@@ -99,14 +99,14 @@ export const listSkillsTool: ToolDefinition<z.infer<typeof listSkillsSchema>> = 
   },
   schema: listSkillsSchema,
   toolSpec: async () => ({
-    name: 'listSkills',
+    name: 'list_skills',
     description: `List all skills for the current user.\n\n${skillManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(listSkillsSchema) },
   }),
 };
 
 export const getSkillTool: ToolDefinition<z.infer<typeof getSkillSchema>> = {
-  name: 'getSkill',
+  name: 'get_skill',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     const skill = await getSkill(userId, input.skillId);
@@ -129,14 +129,14 @@ export const getSkillTool: ToolDefinition<z.infer<typeof getSkillSchema>> = {
   },
   schema: getSkillSchema,
   toolSpec: async () => ({
-    name: 'getSkill',
+    name: 'get_skill',
     description: `Get details of a specific skill by ID.\n\n${skillManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(getSkillSchema) },
   }),
 };
 
 export const createSkillTool: ToolDefinition<z.infer<typeof createSkillSchema>> = {
-  name: 'createSkill',
+  name: 'create_skill',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     try {
@@ -148,14 +148,14 @@ export const createSkillTool: ToolDefinition<z.infer<typeof createSkillSchema>> 
   },
   schema: createSkillSchema,
   toolSpec: async () => ({
-    name: 'createSkill',
+    name: 'create_skill',
     description: `Create a new skill from SKILL.md content and optional supporting files. Binary or large supporting files can be passed by S3 URI reference via files[].s3Uri.\n\n${skillManagementDescription}\n\nSKILL.md must have YAML frontmatter with required fields:\n- name: lowercase alphanumeric + hyphens, 1-${MAX_SKILL_NAME_LENGTH} chars, pattern: ${SKILL_NAME_PATTERN.source}\n- description: 1-1536 chars\n- allowed-tools (optional): array of tool names to restrict available tools when skill is active`,
     inputSchema: { json: zodToJsonSchemaBody(createSkillSchema) },
   }),
 };
 
 export const updateSkillTool: ToolDefinition<z.infer<typeof updateSkillSchema>> = {
-  name: 'updateSkill',
+  name: 'update_skill',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     try {
@@ -171,14 +171,14 @@ export const updateSkillTool: ToolDefinition<z.infer<typeof updateSkillSchema>> 
   },
   schema: updateSkillSchema,
   toolSpec: async () => ({
-    name: 'updateSkill',
+    name: 'update_skill',
     description: `Update an existing skill in-place. The skill ID and S3 prefix are preserved (S3 versioning retains previous versions for rollback). By default all files are replaced by the provided set; pass keepExistingFiles=true for a partial update that keeps unlisted files. Binary or large files can be passed by S3 URI reference via files[].s3Uri.\n\n${skillManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(updateSkillSchema) },
   }),
 };
 
 export const deleteSkillTool: ToolDefinition<z.infer<typeof deleteSkillSchema>> = {
-  name: 'deleteSkill',
+  name: 'delete_skill',
   handler: async (input, context) => {
     const userId = await resolveUserId(context.workerId);
     const skill = await getSkill(userId, input.skillId);
@@ -193,7 +193,7 @@ export const deleteSkillTool: ToolDefinition<z.infer<typeof deleteSkillSchema>> 
   },
   schema: deleteSkillSchema,
   toolSpec: async () => ({
-    name: 'deleteSkill',
+    name: 'delete_skill',
     description: `Delete a skill by ID. Removes DDB record and S3 files (S3 versioning retains delete markers for recovery).\n\n${skillManagementDescription}`,
     inputSchema: { json: zodToJsonSchemaBody(deleteSkillSchema) },
   }),

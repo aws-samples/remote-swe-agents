@@ -73,13 +73,14 @@ const CONSISTENCY_REFRESH_DEBOUNCE_MS = 2500;
 const CONSISTENCY_REFRESH_MIN_INTERVAL_MS = 3000;
 
 const SEND_MSG_TOOLS = new Set([
+  'send_message_to_user',
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
   'Send Message To User',
   'Send_Message_To_User',
 ]);
-const SEND_FILE_TOOLS = new Set(['sendFileToUser', 'Send File To User']);
-const TODO_TOOLS = new Set(['todoInit', 'todoUpdate', 'Todo Init', 'Todo Update']);
+const SEND_FILE_TOOLS = new Set(['send_file_to_user', 'sendFileToUser', 'Send File To User']);
+const TODO_TOOLS = new Set(['todo_init', 'todo_update', 'todoInit', 'todoUpdate', 'Todo Init', 'Todo Update']);
 
 interface SessionPageClientProps {
   workerId: string;
@@ -633,7 +634,9 @@ function SessionPageClientInner({
                     },
                   ]);
                 }
-              } else if (toolNameInSet(event.toolName, new Set(['sendImageToUser', 'Send Image To User']))) {
+              } else if (
+                toolNameInSet(event.toolName, new Set(['send_image_to_user', 'sendImageToUser', 'Send Image To User']))
+              ) {
                 const input = JSON.parse(event.input);
                 const messageText = input.message;
                 // TODO: share the same logic with backend
@@ -678,6 +681,10 @@ function SessionPageClientInner({
                 toolNameInSet(
                   event.toolName,
                   new Set([
+                    'send_message_to_agent',
+                    'acknowledge_agent',
+                    'confirm_send_to_user',
+                    'confirm_complete_session',
                     'sendMessageToAgent',
                     'acknowledgeAgent',
                     'confirmSendToUser',

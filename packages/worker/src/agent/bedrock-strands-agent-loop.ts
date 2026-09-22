@@ -75,7 +75,7 @@
  *  are silently dropped (safer than turn crash from SDK throw).
  *  - **forceReport timer system:** RESOLVED — renderToolResult wraps all
  *  tool results; forceReport=true after 5min without communication-tool use.
- *  shouldResetReportTimer resets on Send Message To User/Agent, Acknowledge.
+ *  shouldResetReportTimer resets on send_message_to_user/send_message_to_agent, acknowledge_agent.
  *  Timer state shared via ToolAdapterDeps.forceReportState mutable object.
  *  - **MCP multimodal tool results:** RESOLVED — MCP image content decoded
  *  from base64 and returned as SDK-native ImageBlock via FunctionTool callback.

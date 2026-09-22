@@ -243,7 +243,7 @@ export const buildHandoverMessage = (params: BuildHandoverMessageParams): string
   sections.push(`## Detected Work State (best-effort)\n${workStateLines.join('\n')}`);
 
   sections.push(
-    `## Instructions\nContinue the work. Old session ${oldSessionId} is now your child; use searchSessions (scope: "tree") for additional context before asking the user.`
+    `## Instructions\nContinue the work. Old session ${oldSessionId} is now your child; use search_sessions (scope: "tree") for additional context before asking the user.`
   );
 
   return sections.join('\n\n');

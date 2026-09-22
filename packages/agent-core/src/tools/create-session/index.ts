@@ -22,7 +22,7 @@ const inputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "ID of a custom agent to use for the new session. If omitted, the new session inherits the current session's agent configuration. Use listAgents to find available agent IDs."
+      "ID of a custom agent to use for the new session. If omitted, the new session inherits the current session's agent configuration. Use list_agents to find available agent IDs."
     ),
   role: z
     .enum(['child', 'successor', 'independent'])
@@ -34,7 +34,7 @@ const inputSchema = z.object({
     ),
 });
 
-const name = 'createNewSession';
+const name = 'create_new_session';
 
 export const createNewSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -135,7 +135,7 @@ The \`role\` parameter is REQUIRED. Pick the correct one:
 - If the current session is linked to Slack, a new thread will be created in the same Slack channel
 - The new session will start processing the message immediately after creation
 - When creating child sessions, provide a descriptive 'agentName' so sibling agents can identify each other (e.g. "Frontend Dev", "Backend Dev")
-- Use 'customAgentId' to assign a specific custom agent configuration to the new session (use listAgents to find IDs)`,
+- Use 'customAgentId' to assign a specific custom agent configuration to the new session (use list_agents to find IDs)`,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
     },

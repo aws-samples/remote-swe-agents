@@ -9,6 +9,7 @@ import {
   RecentMessageForDedup,
 } from './message-dedup';
 import { MessageItem } from '../schema';
+import { toolNameInSet } from '../tool-name-utils';
 
 /**
  * Internal messageType used to mirror every message that was actually
@@ -135,20 +136,23 @@ export const recordUserDelivery = async (
  * renderer, so it is included defensively even though no live tool registers
  * it today.
  */
-export const MESSAGE_DELIVERY_TOOL_NAMES = [
-  'Send Message To User',
-  'Send Image To User',
-  'Send File To User',
-  // Legacy camelCase names still present in persisted conversation history
+export const MESSAGE_DELIVERY_TOOL_NAMES = new Set<string>([
+  // Canonical snake_case tool IDs. Matching is normalized (see
+  // isMessageDeliveryToolName), so the space-separated display forms match too.
+  'send_message_to_user',
+  'send_image_to_user',
+  'send_file_to_user',
+  // Legacy camelCase names still present in persisted conversation history.
+  // These do NOT normalize to the snake_case ids, so they are kept explicitly.
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
   'sendImageToUser',
   'sendFileToUser',
-] as const;
+]);
 
 /** True when `name` is one of the user-facing message-delivery tools. */
 export const isMessageDeliveryToolName = (name: string | undefined): boolean =>
-  MESSAGE_DELIVERY_TOOL_NAMES.includes((name ?? '') as (typeof MESSAGE_DELIVERY_TOOL_NAMES)[number]);
+  toolNameInSet(name ?? '', MESSAGE_DELIVERY_TOOL_NAMES);
 
 /**
  * Extract the user-facing `message` text from persisted `toolUse` history

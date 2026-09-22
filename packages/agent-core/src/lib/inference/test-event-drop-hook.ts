@@ -21,6 +21,7 @@ const TEST_ENV_VAR = 'REMOTE_SWE_TEST_EVENT_DROP_ENABLED';
  * `isPreviewRendered` (which only matches message-type bubbles).
  */
 const MESSAGE_RENDERING_TOOLS = new Set([
+  'send_message_to_user',
   'sendMessageToUser',
   'sendMessageToUserIfNecessary',
   'Send Message To User',

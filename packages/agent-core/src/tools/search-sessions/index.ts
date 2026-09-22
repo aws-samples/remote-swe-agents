@@ -28,7 +28,7 @@ const inputSchema = z.object({
     .describe('Timeout in milliseconds. Default: 30000. Search stops and returns partial results if exceeded.'),
 });
 
-const name = 'searchSessions';
+const name = 'search_sessions';
 
 export const searchSessionsTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

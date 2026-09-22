@@ -892,7 +892,7 @@ export const runTurnWithBackend = async (
           {
             text: `[System] Auto-retrigger after prompt timeout
 <command>
-This is an automatic retry after a temporary internal failure. Your previous attempt on this turn may have already sent a reply (Send Message To Agent / Acknowledge Agent / Send Message To User). Do NOT re-send the same or similar message. Only produce output if you have genuinely new work to perform. If you have nothing new to add, end your turn silently with no text output.
+This is an automatic retry after a temporary internal failure. Your previous attempt on this turn may have already sent a reply (send_message_to_agent / acknowledge_agent / send_message_to_user). Do NOT re-send the same or similar message. Only produce output if you have genuinely new work to perform. If you have nothing new to add, end your turn silently with no text output.
 </command>`,
           },
         ],

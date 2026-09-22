@@ -105,7 +105,7 @@ describe('waitForCondition', () => {
     );
 
     expect(result.outcome).toBe('timeout');
-    expect(result.message).toContain('createEventTrigger');
+    expect(result.message).toContain('create_event_trigger');
   });
 
   test('interrupted when cancellation token flips mid-wait', async () => {

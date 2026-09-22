@@ -12,7 +12,7 @@ const inputSchema = z.object({
     ),
 });
 
-const name = 'updateSessionTitle';
+const name = 'update_session_title';
 
 export const updateSessionTitleTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

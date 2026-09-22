@@ -62,7 +62,7 @@ const cloneRepository = async (input: { owner: string; repo: string }) => {
   return `repo is cloned in "${repoDirectory}"${fork ? ' (forked)' : ''}`;
 };
 
-const name = 'cloneGitHubRepository';
+const name = 'clone_github_repository';
 
 export const cloneRepositoryTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,

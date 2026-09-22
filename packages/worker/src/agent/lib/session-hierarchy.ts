@@ -14,15 +14,15 @@ export const buildSessionHierarchyPrompt = async (workerId: string, session: Ses
     hierarchyLines.push('### Message Routing Rules for Child Sessions');
     hierarchyLines.push('Always reply to whoever sent you the message:');
     hierarchyLines.push(
-      '- **Parent agent** (via `Send Message To Agent`) → Reply with `Send Message To Agent` to the parent.'
+      '- **Parent agent** (via `send_message_to_agent`) → Reply with `send_message_to_agent` to the parent.'
     );
-    hierarchyLines.push("- **User** (typed directly in this session's WebUI) → Reply with `sendMessageToUser`.");
-    hierarchyLines.push('- **Event trigger** (no sender) → Report to the parent with `Send Message To Agent`.');
+    hierarchyLines.push("- **User** (typed directly in this session's WebUI) → Reply with `send_message_to_user`.");
+    hierarchyLines.push('- **Event trigger** (no sender) → Report to the parent with `send_message_to_agent`.');
     hierarchyLines.push('');
     hierarchyLines.push(
-      'IMPORTANT: After calling `Send Message To User` or `Send Message To Agent`, end your turn with NO text output. Text output at end-of-turn is also delivered to the user, causing duplicate messages.'
+      'IMPORTANT: After calling `send_message_to_user` or `send_message_to_agent`, end your turn with NO text output. Text output at end-of-turn is also delivered to the user, causing duplicate messages.'
     );
-    hierarchyLines.push('Use `Acknowledge Agent` for lightweight responses that do not need immediate action.');
+    hierarchyLines.push('Use `acknowledge_agent` for lightweight responses that do not need immediate action.');
 
     const siblings = await getChildSessions(session.parentSessionId);
     const otherSiblings = siblings.filter((s) => s.workerId !== workerId);
@@ -51,7 +51,7 @@ export const buildSessionHierarchyPrompt = async (workerId: string, session: Ses
       hierarchyLines.push('');
       hierarchyLines.push(`This session was created by: "${creatorName}" (Session ID: ${session.creatorSessionId})`);
       hierarchyLines.push(
-        'You can use Send Message To Agent to communicate with the creator session if you need more context or have questions.'
+        'You can use send_message_to_agent to communicate with the creator session if you need more context or have questions.'
       );
     }
   }
@@ -59,11 +59,11 @@ export const buildSessionHierarchyPrompt = async (workerId: string, session: Ses
   if (hierarchyLines.length === 0) return '';
 
   hierarchyLines.push('');
-  hierarchyLines.push('Use Send Message To Agent to send messages to other agents by session ID.');
-  hierarchyLines.push('Use Acknowledge Agent to respond without waking up the target (like a read receipt).');
+  hierarchyLines.push('Use send_message_to_agent to send messages to other agents by session ID.');
+  hierarchyLines.push('Use acknowledge_agent to respond without waking up the target (like a read receipt).');
   hierarchyLines.push('');
   hierarchyLines.push('### Session Role Selection');
-  hierarchyLines.push('When creating new sessions with `Create New Session`, the `role` parameter is required:');
+  hierarchyLines.push('When creating new sessions with `create_new_session`, the `role` parameter is required:');
   hierarchyLines.push(
     "- **role='child'**: Sub-task of the current session. Current session becomes the parent. Use when the task is directly related to your current work."
   );

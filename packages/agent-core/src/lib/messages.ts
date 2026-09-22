@@ -8,6 +8,7 @@ import { ddb, TableName } from './aws/ddb';
 import { writeBytesToKey, getBytesFromKey, BucketName } from './aws/s3';
 import { sendWebappEvent } from './events';
 import { sendMessageToSlack } from './slack';
+import { toolNamesEqual } from '../tool-name-utils';
 import { getWebappSessionUrl } from './webapp-origin';
 import { updateSessionLastMessage } from './sessions';
 import {
@@ -86,8 +87,14 @@ export const repairDanglingToolUse = async (workerId: string, items: MessageItem
         const toolResultContent = toolUses.map(({ toolUseId, name }) => {
           let message = 'This tool execution was interrupted and no result is available.';
 
-          // Try to read PID info from file if it was an executeCommand
-          if (name === 'executeCommand') {
+          // Try to read PID info from file if it was execute_command. Use
+          // normalized comparison so the canonical snake_case ID and the legacy
+          // space-separated display form ('Execute Command') both match
+          // (normalizeToolName folds separators only; it does NOT split camel
+          // boundaries, so pure-camelCase 'executeCommand' would NOT match — but
+          // that form was never a registered name here). This branch was dead
+          // under the old `=== 'executeCommand'` exact check.
+          if (name != null && toolNamesEqual(name, 'execute_command')) {
             try {
               const pidFilePath = path.join(PID_DIR, toolUseId);
               if (existsSync(pidFilePath)) {
@@ -734,7 +741,7 @@ const postProcessMessageContent = async (content: string, forUi = false, isTopLe
           flattenedArray.push({
             text:
               `the image "${fileName}" is available as a resized preview at ${previewPath} (original: ${s3Uri})\n` +
-              `to view this image, use the readLocalImage tool on the preview path`,
+              `to view this image, use the read_local_image tool on the preview path`,
           });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);

@@ -28,7 +28,7 @@ export const loadAndDeletePendingCompleteSession = (workerId: string): boolean =
 
 const inputSchema = z.object({});
 
-const name = 'Confirm Complete Session';
+const name = 'confirm_complete_session';
 
 export const confirmCompleteSessionTool: ToolDefinition<z.infer<typeof inputSchema>> = {
   name,
@@ -36,7 +36,7 @@ export const confirmCompleteSessionTool: ToolDefinition<z.infer<typeof inputSche
     const hasPending = loadAndDeletePendingCompleteSession(context.workerId);
 
     if (!hasPending) {
-      return 'No pending completeSession to confirm. Call completeSession first.';
+      return 'No pending complete_session to confirm. Call complete_session first.';
     }
 
     const session = await getSession(context.workerId);
@@ -64,7 +64,7 @@ export const confirmCompleteSessionTool: ToolDefinition<z.infer<typeof inputSche
   schema: inputSchema,
   toolSpec: async () => ({
     name,
-    description: `Confirm and execute a blocked completeSession call. Call this after completeSession returns a confirmation prompt. Only call this if the user explicitly asked you to close/complete the session. If the user did NOT instruct you to complete, do NOT call this tool.`,
+    description: `Confirm and execute a blocked complete_session call. Call this after complete_session returns a confirmation prompt. Only call this if the user explicitly asked you to close/complete the session. If the user did NOT instruct you to complete, do NOT call this tool.`,
     inputSchema: {
       json: zodToJsonSchemaBody(inputSchema),
     },
