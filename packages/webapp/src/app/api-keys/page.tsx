@@ -5,9 +5,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { getTranslations } from 'next-intl/server';
 import ApiKeyClientActions from './components/ApiKeyClientActions';
 import { AppOrigin } from '@/lib/origin';
+import { getSession } from '@/lib/auth';
 
 export default async function ApiKeysPage() {
-  const apiKeys = await getApiKeys();
+  const { userId } = await getSession();
+  const apiKeys = await getApiKeys(userId);
   const t = await getTranslations('api_settings');
   const documentationT = await getTranslations('api_settings.documentation');
 

@@ -105,39 +105,83 @@ export const getApiKeySenderInfo = async (
 };
 
 /**
- * Get all API keys
+ * Get the API keys owned by a user.
+ *
+ * API keys are bearer credentials, so a caller must only ever see the keys
+ * they created themselves. Keys are stored in a single partition, so we page
+ * through it and keep only the items whose `ownerId` matches. DynamoDB applies
+ * `Limit` before `FilterExpression`, which is why the limit is enforced here
+ * rather than passed to the query.
+ *
+ * @param ownerId The id of the user whose keys to return
  * @param limit Maximum number of keys to return
- * @returns Array of API key items
+ * @returns Array of API key items owned by `ownerId`, newest first
  */
-export const getApiKeys = async (limit: number = 50): Promise<ApiKeyItem[]> => {
-  const res = await ddb.send(
-    new QueryCommand({
-      TableName,
-      IndexName: 'LSI1',
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': 'api-key',
-      },
-      ScanIndexForward: false, // DESC order
-      Limit: limit,
-    })
-  );
+export const getApiKeys = async (ownerId: string, limit: number = 50): Promise<ApiKeyItem[]> => {
+  if (!ownerId) {
+    throw new Error('ownerId is required to list API keys');
+  }
 
-  return (res.Items ?? []) as ApiKeyItem[];
+  const items: ApiKeyItem[] = [];
+  let exclusiveStartKey: Record<string, unknown> | undefined;
+
+  do {
+    const res = await ddb.send(
+      new QueryCommand({
+        TableName,
+        IndexName: 'LSI1',
+        KeyConditionExpression: 'PK = :pk',
+        FilterExpression: 'ownerId = :ownerId',
+        ExpressionAttributeValues: {
+          ':pk': 'api-key',
+          ':ownerId': ownerId,
+        },
+        ScanIndexForward: false, // DESC order
+        ExclusiveStartKey: exclusiveStartKey,
+      })
+    );
+
+    items.push(...((res.Items ?? []) as ApiKeyItem[]));
+    exclusiveStartKey = res.LastEvaluatedKey;
+  } while (exclusiveStartKey && items.length < limit);
+
+  return items.slice(0, limit);
 };
 
 /**
- * Delete an API key
+ * Delete an API key owned by a user.
+ *
+ * The delete is conditioned on `ownerId` matching, so a user cannot revoke
+ * another user's key. A key that does not exist and a key owned by someone
+ * else both fail the condition, so the caller cannot tell them apart.
+ *
  * @param apiKey The API key to delete
+ * @param ownerId The id of the user who must own the key
+ * @throws Error if the key does not exist or is not owned by `ownerId`
  */
-export const deleteApiKey = async (apiKey: string): Promise<void> => {
-  await ddb.send(
-    new DeleteCommand({
-      TableName,
-      Key: {
-        PK: 'api-key',
-        SK: apiKey,
-      },
-    })
-  );
+export const deleteApiKey = async (apiKey: string, ownerId: string): Promise<void> => {
+  if (!ownerId) {
+    throw new Error('ownerId is required to delete an API key');
+  }
+
+  try {
+    await ddb.send(
+      new DeleteCommand({
+        TableName,
+        Key: {
+          PK: 'api-key',
+          SK: apiKey,
+        },
+        ConditionExpression: 'ownerId = :ownerId',
+        ExpressionAttributeValues: {
+          ':ownerId': ownerId,
+        },
+      })
+    );
+  } catch (e) {
+    if (e instanceof Error && e.name === 'ConditionalCheckFailedException') {
+      throw new Error('API key not found');
+    }
+    throw e;
+  }
 };
