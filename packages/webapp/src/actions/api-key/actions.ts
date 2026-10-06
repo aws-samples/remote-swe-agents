@@ -2,11 +2,11 @@
 
 import { createApiKey, deleteApiKey, getApiKeys } from '@remote-swe-agents/agent-core/lib';
 import { ApiKeyItem } from '@remote-swe-agents/agent-core/schema';
-import { authActionClient } from '@/lib/safe-action';
+import { authActionClient, MyCustomError } from '@/lib/safe-action';
 import { createApiKeySchema, deleteApiKeySchema } from './schemas';
 
 export const listApiKeysAction = authActionClient.action(async ({ ctx }) => {
-  const apiKeys = await getApiKeys();
+  const apiKeys = await getApiKeys(ctx.userId);
   return { apiKeys };
 });
 
@@ -18,8 +18,14 @@ export const createApiKeyAction = authActionClient
     return { apiKey };
   });
 
-export const deleteApiKeyAction = authActionClient.inputSchema(deleteApiKeySchema).action(async ({ parsedInput }) => {
-  const { apiKey } = parsedInput;
-  await deleteApiKey(apiKey);
-  return { success: true };
-});
+export const deleteApiKeyAction = authActionClient
+  .inputSchema(deleteApiKeySchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { apiKey } = parsedInput;
+    try {
+      await deleteApiKey(apiKey, ctx.userId);
+    } catch (e) {
+      throw new MyCustomError(e instanceof Error ? e.message : 'Failed to delete API key');
+    }
+    return { success: true };
+  });

@@ -10,7 +10,88 @@ vi.mock('./aws', () => ({
   TableName: 'test-table',
 }));
 
-import { deriveApiKeyId, getApiKeySenderInfo } from './api-key';
+import { deleteApiKey, deriveApiKeyId, getApiKeySenderInfo, getApiKeys } from './api-key';
+
+const makeItem = (sk: string, ownerId?: string) => ({
+  PK: 'api-key',
+  SK: sk,
+  LSI1: '0',
+  createdAt: 0,
+  ownerId,
+});
+
+describe('getApiKeys', () => {
+  beforeEach(() => {
+    mockSend.mockReset();
+  });
+
+  test('requires an ownerId', async () => {
+    await expect(getApiKeys('')).rejects.toThrow();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  test('filters the query by ownerId', async () => {
+    mockSend.mockResolvedValueOnce({ Items: [makeItem('k-a', 'user-a')] });
+    const out = await getApiKeys('user-a');
+    expect(out).toEqual([makeItem('k-a', 'user-a')]);
+    const cmd = mockSend.mock.calls[0][0];
+    expect(cmd.input.FilterExpression).toBe('ownerId = :ownerId');
+    expect(cmd.input.ExpressionAttributeValues[':ownerId']).toBe('user-a');
+  });
+
+  test("NEVER returns another user's key", async () => {
+    // The filter is applied server-side by DynamoDB; here we assert the
+    // request carries the caller's id and nothing else is passed through.
+    mockSend.mockResolvedValueOnce({ Items: [] });
+    const out = await getApiKeys('user-b');
+    expect(out).toEqual([]);
+    const cmd = mockSend.mock.calls[0][0];
+    expect(cmd.input.ExpressionAttributeValues[':ownerId']).toBe('user-b');
+    expect(cmd.input.Limit).toBeUndefined();
+  });
+
+  test('pages through the partition until the limit is reached', async () => {
+    mockSend
+      .mockResolvedValueOnce({ Items: [makeItem('k1', 'u')], LastEvaluatedKey: { PK: 'api-key', SK: 'k1' } })
+      .mockResolvedValueOnce({ Items: [makeItem('k2', 'u'), makeItem('k3', 'u')] });
+    const out = await getApiKeys('u', 2);
+    expect(out.map((i) => i.SK)).toEqual(['k1', 'k2']);
+    expect(mockSend).toHaveBeenCalledTimes(2);
+    expect(mockSend.mock.calls[1][0].input.ExclusiveStartKey).toEqual({ PK: 'api-key', SK: 'k1' });
+  });
+});
+
+describe('deleteApiKey', () => {
+  beforeEach(() => {
+    mockSend.mockReset();
+  });
+
+  test('requires an ownerId', async () => {
+    await expect(deleteApiKey('k', '')).rejects.toThrow();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  test('conditions the delete on the caller owning the key', async () => {
+    mockSend.mockResolvedValueOnce({});
+    await deleteApiKey('k-a', 'user-a');
+    const cmd = mockSend.mock.calls[0][0];
+    expect(cmd.input.Key).toEqual({ PK: 'api-key', SK: 'k-a' });
+    expect(cmd.input.ConditionExpression).toBe('ownerId = :ownerId');
+    expect(cmd.input.ExpressionAttributeValues[':ownerId']).toBe('user-a');
+  });
+
+  test('rejects when the key is not owned by the caller', async () => {
+    const err = new Error('The conditional request failed');
+    err.name = 'ConditionalCheckFailedException';
+    mockSend.mockRejectedValueOnce(err);
+    await expect(deleteApiKey('k-a', 'user-b')).rejects.toThrow('API key not found');
+  });
+
+  test('propagates unrelated errors', async () => {
+    mockSend.mockRejectedValueOnce(new Error('boom'));
+    await expect(deleteApiKey('k-a', 'user-a')).rejects.toThrow('boom');
+  });
+});
 
 describe('deriveApiKeyId', () => {
   test('returns a stable, deterministic id for the same key', () => {
